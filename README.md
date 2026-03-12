@@ -38,12 +38,6 @@ Porta custom (con scale):
 ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
 ```
 
-PowerShell:
-```powershell
-$env:ERDB_HTTP_PORT=4000
-docker compose up -d --build --scale app=4
-```
-
 ## Utilizzo API
 
 L'endpoint principale è:
