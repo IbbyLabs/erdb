@@ -466,7 +466,7 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">imageText</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">original, clean, alternative</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">original (poster/logo), clean (backdrop)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">original (poster), clean (backdrop)</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatingsLayout</td>
@@ -708,7 +708,7 @@ ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, lette
                         | anilist, kitsu                                              |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)          | en
 ratingStyle             | glass, square, plain                                                 | glass (poster/backdrop), plain (logo)
-imageText               | original, clean, alternative                                         | original (poster/logo), clean (backdrop)
+imageText               | original, clean, alternative                                         | original (poster), clean (backdrop)
 posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
 posterRatingsMaxPerSide | Number (1-20)                                                        | auto
 backdropRatingsLayout   | center, right, right-vertical                                        | center
@@ -753,6 +753,7 @@ logo:
               </div>
             </div>
           </div>
+        </div>
         </section>
       </main>
 
