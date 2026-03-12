@@ -2162,10 +2162,13 @@ const buildBadgeSvg = ({
   const valueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
   const valueRightInset = getBadgeTextRightInset(value, fontSize, paddingX, compactText);
   const valueAvailableWidth = Math.max(0, width - valueX - valueRightInset);
-  const valueTextLength =
-    valueAvailableWidth > 0 && valueTextWidth > valueAvailableWidth
-      ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
-      : '';
+  const normalizedValue = value.trim();
+  const shouldAdjustTextLength =
+    valueAvailableWidth > 0 &&
+    (valueTextWidth > valueAvailableWidth - 1 || normalizedValue.includes('%') || normalizedValue.includes('/'));
+  const valueTextLength = shouldAdjustTextLength
+    ? ` textLength="${Math.max(0, Math.min(valueAvailableWidth, Math.round(valueTextWidth * 0.98)))}" lengthAdjust="spacingAndGlyphs"`
+    : '';
   const valueFontFamily = compactText
     ? `'Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
     : 'Arial, sans-serif';
