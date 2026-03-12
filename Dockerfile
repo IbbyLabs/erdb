@@ -17,7 +17,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN apk add --no-cache fontconfig ttf-dejavu ttf-freefont
+RUN apk add --no-cache fontconfig ttf-dejavu ttf-freefont font-noto
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next

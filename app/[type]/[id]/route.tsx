@@ -2167,8 +2167,8 @@ const buildBadgeSvg = ({
       ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
       : '';
   const valueFontFamily = compactText
-    ? `'Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
-    : 'Arial, sans-serif';
+    ? `'Noto Sans','DejaVu Sans','Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
+    : `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
   const valueLetterSpacing = compactText ? ' letter-spacing="-0.04em"' : '';
   const iconX = paddingX;
   const iconY = Math.round((height - iconSize) / 2);
