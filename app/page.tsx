@@ -142,7 +142,7 @@ logo:
    - Style: glass, square, plain.
    - Per-type Rating Style Overrides: Allow different ratingStyle for poster, backdrop, logo.
    - Enable/Disable Types: Toggles for poster, backdrop, logo. If disabled, do not call ERDB for that type (keep original artwork).
-   - Image Text: original, clean, alternative.
+   - Image Text (per-type): original, clean, alternative (config separata tra poster e backdrop).
    - Layouts: posterRatingsLayout, backdropRatingsLayout (with all values from API Reference).
    - Poster Max Ratings Per Side: Number input (1-20) with Auto default.
    - TMDB API Key (Required): Users MUST provide their own v3 key.
@@ -734,11 +734,11 @@ logo:
 2. Add a "Setup" button that opens a modal containing the full configuration UI (keep the main page clean).
 3. Settings MUST be per-type (poster/backdrop/logo). Do NOT use global settings for ratings, lang, style, imageText, or layouts.
    When a user selects a type, show ONLY that type’s settings.
-4. Global required fields: ERDB API Base URL, TMDB API Key, MDBList API Key.
-5. Language MUST be a selectable list (dropdown) of TMDB ISO 639-1 codes, not a free text input.
-6. Live Preview that updates instantly.
-7. Dynamic URL: /{type}/{id}.jpg?tmdbKey=...&mdblistKey=...&ratings=...&lang=...&ratingStyle=...&imageText=...`}</div>
-                  </div>
+4. Image Text MUST be configured separately for poster and backdrop.
+5. Global required fields: ERDB API Base URL, TMDB API Key, MDBList API Key.
+6. Language MUST be a selectable list (dropdown) of TMDB ISO 639-1 codes, not a free text input.
+7. Live Preview that updates instantly.
+8. Dynamic URL: /{type}/{id}.jpg?tmdbKey=...&mdblistKey=...&ratings=...&lang=...&ratingStyle=...&imageText=...`}</div>
                 </div>
 
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Live Examples</h4>
