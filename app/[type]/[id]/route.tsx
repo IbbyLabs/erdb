@@ -1907,7 +1907,10 @@ const getMinimumCompressedBadgeWidth = (
   paddingX +
   gap +
   getBadgeTextRightInset(value, fontSize, paddingX, compactText) +
-  Math.round(fontSize * (compactText ? 0.82 : 0.92));
+  Math.max(
+    Math.round(fontSize * (compactText ? 0.9 : 1.0)),
+    Math.round(estimateBadgeTextWidth(value, fontSize, compactText) * (compactText ? 0.8 : 0.86))
+  );
 
 const measureBadgeRowWidth = (
   rowBadges: RatingBadge[],
