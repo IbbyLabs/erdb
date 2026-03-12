@@ -66,7 +66,7 @@ L'endpoint principale è:
 | `ratingStyle` (o `style`) | Stile badge | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (es. `your_key`) | **Richiesto** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (es. `your_key`) | **Richiesto** |
-| `imageText` | Testo sulle immagini | `original`, `clean`, `alternative` | `original` (poster/logo), `clean` (backdrop) |
+| `imageText` | Testo sulle immagini (solo poster/backdrop) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
 | `posterRatingsLayout` | Layout Poster | `top`, `bottom`, `left`, `right`, `top-bottom`, `left-right` | `top-bottom` |
 | `posterRatingsMaxPerSide` | Max Badge Side | Numero (1-20) | `auto` |
 | `backdropRatingsLayout` | Layout Backdrop | `center`, `right`, `right-vertical` | `center` |
@@ -84,7 +84,7 @@ ERDB supporta diversi formati per identificare i media:
 
 Per integrare ERDB nel tuo addon:
 
-1. **Impostazioni**: Crea un pannello opzioni per `ratings`, `ratingStyle`, `lang`, `imageText` e layout.
+1. **Impostazioni**: Crea un pannello opzioni per `ratings`, `ratingStyle`, `lang`, `imageText` (solo poster/backdrop) e layout.
 2. **UI consigliata**: Aggiungi un pulsante "Setup" che apre una modal con tutte le opzioni (mantieni la pagina principale pulita).
 3. **Opzioni suggerite**:
    - Ratings (multi-select): tutti i provider della tabella.
@@ -92,7 +92,7 @@ Per integrare ERDB nel tuo addon:
    - Style: `glass`, `square`, `plain`.
    - Per-type ratingStyle: override per poster/backdrop/logo.
    - Enable/Disable Types: toggle per poster/backdrop/logo.
-   - Image Text: `original`, `clean`, `alternative`.
+   - Image Text (solo poster/backdrop, config separata): `original`, `clean`, `alternative`.
    - Layouts: `posterRatingsLayout`, `backdropRatingsLayout`.
    - Poster Max Ratings Per Side: 1-20 con default auto.
    - TMDB API Key (Required)
@@ -121,7 +121,7 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 | ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu             | all     |
 | lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, zh, pt, ru, ar, hi, etc.)                                                                     | en      |
 | ratingStyle             | glass, square, plain                                                                                                                                 | glass (poster/backdrop), plain (logo)   |
-| imageText               | original, clean, alternative                                                                                                                         | original (poster/logo), clean (backdrop)|
+| imageText               | original, clean, alternative                                                                                                                         | original (poster), clean (backdrop)|
 | posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                                                                                                     | top-bottom |
 | posterRatingsMaxPerSide | Number (1-20)                                                                                                                                        | auto    |
 | backdropRatingsLayout   | center, right, right-vertical                                                                                                                        | center  |
@@ -156,19 +156,20 @@ logo:
 2. Add a "Setup" button that opens a modal containing the full configuration UI (keep the main page clean).
 3. The settings UI MUST be per-type (poster/backdrop/logo). Do NOT use global settings for ratings, lang, style, imageText, or layouts.
    When a user selects a type, show ONLY that type's settings.
-4. Global required fields:
+4. Image Text MUST be configured separately for poster and backdrop.
+5. Global required fields:
    - ERDB API Base URL (Required)
    - TMDB API Key (Required): Users MUST provide their own v3 key.
    - MDBList API Key (Required): Users MUST provide their own key.
-5. Per-type settings (each type has its own values):
+6. Per-type settings (each type has its own values):
    - Ratings (Multi-select): All providers from the table above.
    - Language: MUST be a selectable list (dropdown) of TMDB ISO 639-1 codes, not a free text input.
    - Style: glass, square, plain.
-   - Image Text: original, clean, alternative.
+   - Image Text: original, clean, alternative (poster/backdrop only).
    - Layouts: posterRatingsLayout, backdropRatingsLayout (with all values from API Reference).
    - Poster Max Ratings Per Side: Number input (1-20) with Auto default (poster only).
-6. Live Preview (Crucial): The settings panel MUST include a live image preview that updates instantly as the user changes parameters.
-7. Dynamic URL Construction:
+7. Live Preview (Crucial): The settings panel MUST include a live image preview that updates instantly as the user changes parameters.
+8. Dynamic URL Construction:
   Structure: ${baseUrl}/${type}/${id}.jpg?tmdbKey=${tmdbKey}&mdblistKey=${mdblistKey}&ratings=${ratings}&lang=${lang}&ratingStyle=${style}&imageText=${imageText}&posterRatingsLayout=${layout}&posterRatingsMaxPerSide=${max}&backdropRatingsLayout=${bLayout}
 
 Goal: Generate the logic/code to manage these preferences and inject the generated URLs into the meta responses of the addon.
