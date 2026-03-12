@@ -16,6 +16,23 @@ cd erdb
 3. Avvia l'app: `npm run start`
 4. App disponibile su `http://localhost:3000`
 
+## Scalabilità & Docker
+
+Il compose include un reverse proxy (Caddy) per gestire lo scale dell'app.
+
+Avvio base:
+```bash
+docker compose up -d --build
+```
+
+Scale su più istanze (es. 4):
+```bash
+docker compose up -d --build --scale app=4
+```
+
+La porta pubblica è `ERDB_HTTP_PORT` (default `3000`) esposta da Caddy.
+I dati (database SQLite e cache immagini) sono persistiti nel volume `./data`.
+
 ## Utilizzo API
 
 L'endpoint principale è:
@@ -148,19 +165,3 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
 
 © 2026 ERDB Project
 
-## Scalabilità & Docker
-
-Il compose include un reverse proxy (Caddy) per gestire lo scale dell'app.
-
-Avvio base:
-```bash
-docker compose up -d --build
-```
-
-Scale su più istanze (es. 4):
-```bash
-docker compose up -d --build --scale app=4
-```
-
-La porta pubblica è `ERDB_HTTP_PORT` (default `3000`) esposta da Caddy.
-I dati (database SQLite e cache immagini) sono persistiti nel volume `./data`.
