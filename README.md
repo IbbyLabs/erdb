@@ -183,15 +183,15 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
 ERDB puo fare da proxy per qualsiasi addon Stremio e sostituire sempre le immagini
 (poster, background, logo) con quelle generate da ERDB.
 
-### Manifest proxy
+### Manifest proxy (Stremio)
 
-Lo schema per Stremio non usa query param (manifest.json deve essere alla fine):
+Per Stremio non si usano query param. **Devi generare il link dal sito ERDB** usando la sezione "Addon Proxy":
 
 ```text
 https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 ```
 
-Il valore `{config}` e' un JSON codificato (base64url) generato dal sito.
+`{config}` viene creato automaticamente dal sito in base ai parametri inseriti.
 
 ### Note
 - Il proxy riscrive sempre `meta.poster`, `meta.background`, `meta.logo`.
