@@ -2163,7 +2163,7 @@ const buildBadgeSvg = ({
   const valueRightInset = getBadgeTextRightInset(value, fontSize, paddingX, compactText);
   const valueAvailableWidth = Math.max(0, width - valueX - valueRightInset);
   const valueTextLength =
-    compactText && valueTextWidth > valueAvailableWidth
+    valueAvailableWidth > 0 && valueTextWidth > valueAvailableWidth
       ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
       : '';
   const valueFontFamily = compactText
