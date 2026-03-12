@@ -20,6 +20,14 @@ cd erdb
 
 Il compose include un reverse proxy (Caddy) per gestire lo scale dell'app.
 
+## Requisiti Consigliati
+
+Per performance elevate (rendering immagini on-the-fly), è consigliato un server con CPU potente e molta RAM.
+
+Minimo consigliato:
+- CPU: 4 vCPU
+- RAM: 4 GB
+
 Avvio base:
 ```bash
 docker compose up -d --build
