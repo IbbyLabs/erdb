@@ -1832,14 +1832,14 @@ const getBadgeTextRightInset = (
 ) => {
   const normalized = value.trim();
   const baseInset = Math.max(
-    compactText ? 2 : 2,
-    Math.round(fontSize * (compactText ? 0.05 : 0.07)) + Math.round(paddingX * 0.12)
+    compactText ? 0 : 0,
+    Math.round(fontSize * (compactText ? 0.04 : 0.06)) + Math.round(paddingX * 0.08)
   );
   const trailingPercentInset =
     normalized.endsWith('%')
       ? Math.max(
-          compactText ? 4 : 3,
-          Math.round(fontSize * (compactText ? 0.20 : 0.14))
+          compactText ? 12 : 11,
+          Math.round(fontSize * (compactText ? 0.28 : 0.22))
         )
       : 0;
   return baseInset + trailingPercentInset;
@@ -1907,10 +1907,7 @@ const getMinimumCompressedBadgeWidth = (
   paddingX +
   gap +
   getBadgeTextRightInset(value, fontSize, paddingX, compactText) +
-  Math.max(
-    Math.round(fontSize * (compactText ? 0.9 : 1.0)),
-    Math.round(estimateBadgeTextWidth(value, fontSize, compactText) * (compactText ? 0.8 : 0.86))
-  );
+  Math.round(fontSize * (compactText ? 0.82 : 0.92));
 
 const measureBadgeRowWidth = (
   rowBadges: RatingBadge[],
@@ -2165,13 +2162,10 @@ const buildBadgeSvg = ({
   const valueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
   const valueRightInset = getBadgeTextRightInset(value, fontSize, paddingX, compactText);
   const valueAvailableWidth = Math.max(0, width - valueX - valueRightInset);
-  const normalizedValue = value.trim();
-  const shouldAdjustTextLength =
-    valueAvailableWidth > 0 &&
-    (valueTextWidth > valueAvailableWidth - 1 || normalizedValue.includes('%') || normalizedValue.includes('/'));
-  const valueTextLength = shouldAdjustTextLength
-    ? ` textLength="${Math.max(0, Math.min(valueAvailableWidth, Math.round(valueTextWidth * 0.98)))}" lengthAdjust="spacingAndGlyphs"`
-    : '';
+  const valueTextLength =
+    compactText && valueTextWidth > valueAvailableWidth
+      ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
+      : '';
   const valueFontFamily = compactText
     ? `'Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
     : 'Arial, sans-serif';
