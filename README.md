@@ -4,6 +4,13 @@ ERDB genera poster/backdrop/logo con ratings dinamici on-the-fly.
 
 ## Avvio Rapido
 
+## Installazione da GitHub
+
+```bash
+git clone <REPO_URL>
+cd erdb
+```
+
 1. Installa le dipendenze: `npm install`
 2. Build: `npm run build`
 3. Avvia l'app: `npm run start`
