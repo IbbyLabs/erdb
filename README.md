@@ -7,7 +7,7 @@ ERDB genera poster/backdrop/logo con ratings dinamici on-the-fly.
 ## Installazione da GitHub
 
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/realbestia1/erdb
 cd erdb
 ```
 
