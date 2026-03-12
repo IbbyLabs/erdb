@@ -30,8 +30,19 @@ Scale su più istanze (es. 4):
 docker compose up -d --build --scale app=4
 ```
 
-La porta pubblica è `ERDB_HTTP_PORT` (default `3000`) esposta da Caddy.
+La porta pubblica è `ERDB_HTTP_PORT` (default `3000`) esposta da Caddy. Impostala nel file `.env`.
 I dati (database SQLite e cache immagini) sono persistiti nel volume `./data`.
+
+Porta custom (con scale):
+```bash
+ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
+```
+
+PowerShell:
+```powershell
+$env:ERDB_HTTP_PORT=4000
+docker compose up -d --build --scale app=4
+```
 
 ## Utilizzo API
 
@@ -164,4 +175,3 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
 ---
 
 © 2026 ERDB Project
-
