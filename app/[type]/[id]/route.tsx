@@ -1832,8 +1832,8 @@ const getBadgeTextRightInset = (
 ) => {
   const normalized = value.trim();
   const baseInset = Math.max(
-    compactText ? 0 : 0,
-    Math.round(fontSize * (compactText ? 0.04 : 0.06)) + Math.round(paddingX * 0.08)
+    compactText ? 1 : 2,
+    Math.round(fontSize * (compactText ? 0.06 : 0.08)) + Math.round(paddingX * 0.12)
   );
   const trailingPercentInset =
     normalized.endsWith('%')
