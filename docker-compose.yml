@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_URL: ${APP_URL:?Set APP_URL to your public origin in .env}
+      TOKEN_SIGNING_SECRET: ${TOKEN_SIGNING_SECRET:?Set TOKEN_SIGNING_SECRET in .env}
+      PREVIEW_SIGNING_SECRET: ${PREVIEW_SIGNING_SECRET:?Set PREVIEW_SIGNING_SECRET in .env}
+      PREVIEW_BYPASS_SECRET: ${PREVIEW_BYPASS_SECRET:?Set PREVIEW_BYPASS_SECRET in .env}
+      PREVIEW_INTERNAL_ORIGIN: ${PREVIEW_INTERNAL_ORIGIN:-http://127.0.0.1:3000}
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      MDBLIST_API_KEYS: ${MDBLIST_API_KEYS}
+      MDBLIST_API_KEY: ${MDBLIST_API_KEY}
+      ERDB_KITSU_CACHE_TTL_MS: ${ERDB_KITSU_CACHE_TTL_MS:-1800000}
+      ERDB_PROVIDER_ICON_CACHE_TTL_MS: ${ERDB_PROVIDER_ICON_CACHE_TTL_MS:-604800000}
+    expose:
+      - '3000'
+    volumes:
+      - ./data:/app/data
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '${ERDB_HTTP_PORT:-3000}:3000'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
