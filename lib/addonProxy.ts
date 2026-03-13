@@ -63,7 +63,7 @@ export type ProxyConfig = {
   logoEnabled?: boolean;
 };
 
-const PROXY_OPTIONAL_STRING_KEYS: Array<keyof ProxyConfig> = [
+const PROXY_OPTIONAL_STRING_KEYS = [
   'ratings',
   'lang',
   'ratingStyle',
@@ -77,12 +77,15 @@ const PROXY_OPTIONAL_STRING_KEYS: Array<keyof ProxyConfig> = [
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
   'erdbBase',
-];
-const PROXY_OPTIONAL_BOOLEAN_KEYS: Array<keyof ProxyConfig> = [
+ ] as const satisfies readonly (keyof ProxyConfig)[];
+type ProxyOptionalStringKey = (typeof PROXY_OPTIONAL_STRING_KEYS)[number];
+
+const PROXY_OPTIONAL_BOOLEAN_KEYS = [
   'posterEnabled',
   'backdropEnabled',
   'logoEnabled',
-];
+] as const satisfies readonly (keyof ProxyConfig)[];
+type ProxyOptionalBooleanKey = (typeof PROXY_OPTIONAL_BOOLEAN_KEYS)[number];
 
 const SUPPORTED_PREFIXES = new Set(['tmdb', 'kitsu', 'anilist', 'myanimelist']);
 const IMDB_RE = /^tt\d+$/i;
