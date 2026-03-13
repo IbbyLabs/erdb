@@ -17,6 +17,7 @@ import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   DEFAULT_POSTER_RATING_LAYOUT,
   POSTER_RATING_LAYOUT_OPTIONS,
+  isVerticalPosterRatingLayout,
   type PosterRatingLayout,
 } from '@/lib/posterRatingLayout';
 import {
@@ -214,7 +215,7 @@ Skip any params that are empty/undefined.`;
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
-      if (posterRatingsLayout === 'left-right' && posterRatingsMaxPerSide !== null) {
+      if (isVerticalPosterRatingLayout(posterRatingsLayout) && posterRatingsMaxPerSide !== null) {
         query.set('posterRatingsMaxPerSide', String(posterRatingsMaxPerSide));
       }
     } else if (previewType === 'backdrop') {
@@ -285,7 +286,7 @@ Skip any params that are empty/undefined.`;
     if (posterRatingsLayout) {
       config.posterRatingsLayout = posterRatingsLayout;
     }
-    if (posterRatingsLayout === 'left-right' && posterRatingsMaxPerSide !== null) {
+    if (isVerticalPosterRatingLayout(posterRatingsLayout) && posterRatingsMaxPerSide !== null) {
       config.posterRatingsMaxPerSide = posterRatingsMaxPerSide;
     }
     if (backdropRatingsLayout) {
@@ -350,7 +351,7 @@ Skip any params that are empty/undefined.`;
     if (proxyPosterRatingsLayout) {
       config.posterRatingsLayout = proxyPosterRatingsLayout;
     }
-    if (proxyPosterRatingsLayout === 'left-right' && proxyPosterRatingsMaxPerSide !== null) {
+    if (isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && proxyPosterRatingsMaxPerSide !== null) {
       config.posterRatingsMaxPerSide = String(proxyPosterRatingsMaxPerSide);
     }
     if (proxyBackdropRatingsLayout) {
@@ -583,7 +584,7 @@ Skip any params that are empty/undefined.`;
                       ))}
                     </div>
                   </div>
-                  {posterRatingsLayout === 'left-right' && (
+                  {isVerticalPosterRatingLayout(posterRatingsLayout) && (
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
                       <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
@@ -857,7 +858,7 @@ Skip any params that are empty/undefined.`;
                             ))}
                           </div>
                         </div>
-                        {proxyPosterRatingsLayout === 'left-right' && (
+                        {isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && (
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
                             <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
