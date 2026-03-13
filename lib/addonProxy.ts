@@ -28,6 +28,9 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'tmdbKey',
   'mdblistKey',
   'erdbBase',
+  'posterEnabled',
+  'backdropEnabled',
+  'logoEnabled',
   'ratingStyle',
   'imageText',
   'posterRatingStyle',
@@ -55,9 +58,12 @@ export type ProxyConfig = {
   posterRatingsMaxPerSide?: string;
   backdropRatingsLayout?: string;
   erdbBase?: string;
+  posterEnabled?: boolean;
+  backdropEnabled?: boolean;
+  logoEnabled?: boolean;
 };
 
-const PROXY_OPTIONAL_KEYS: Array<keyof ProxyConfig> = [
+const PROXY_OPTIONAL_STRING_KEYS: Array<keyof ProxyConfig> = [
   'ratings',
   'lang',
   'ratingStyle',
@@ -71,6 +77,11 @@ const PROXY_OPTIONAL_KEYS: Array<keyof ProxyConfig> = [
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
   'erdbBase',
+];
+const PROXY_OPTIONAL_BOOLEAN_KEYS: Array<keyof ProxyConfig> = [
+  'posterEnabled',
+  'backdropEnabled',
+  'logoEnabled',
 ];
 
 const SUPPORTED_PREFIXES = new Set(['tmdb', 'kitsu', 'anilist', 'myanimelist']);
@@ -159,6 +170,18 @@ const toOptionalString = (value: unknown): string | undefined => {
   return undefined;
 };
 
+const toOptionalBoolean = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return undefined;
+    if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false;
+  }
+  return undefined;
+};
+
 const decodeBase64Url = (value: string) => {
   try {
     return Buffer.from(value, 'base64url').toString('utf8');
@@ -181,9 +204,15 @@ export const decodeProxyConfig = (encoded: string): ProxyConfig | null => {
     if (!url || !tmdbKey || !mdblistKey) return null;
 
     const config: ProxyConfig = { url, tmdbKey, mdblistKey };
-    for (const key of PROXY_OPTIONAL_KEYS) {
+    for (const key of PROXY_OPTIONAL_STRING_KEYS) {
       const value = toOptionalString((parsed as ProxyConfig)[key]);
       if (value) {
+        config[key] = value;
+      }
+    }
+    for (const key of PROXY_OPTIONAL_BOOLEAN_KEYS) {
+      const value = toOptionalBoolean((parsed as ProxyConfig)[key]);
+      if (value !== undefined) {
         config[key] = value;
       }
     }
@@ -200,9 +229,15 @@ export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyCon
   if (!url || !tmdbKey || !mdblistKey) return null;
 
   const config: ProxyConfig = { url, tmdbKey, mdblistKey };
-  for (const key of PROXY_OPTIONAL_KEYS) {
+  for (const key of PROXY_OPTIONAL_STRING_KEYS) {
     const value = searchParams.get(key);
     if (value) {
+      config[key] = value;
+    }
+  }
+  for (const key of PROXY_OPTIONAL_BOOLEAN_KEYS) {
+    const value = toOptionalBoolean(searchParams.get(key));
+    if (value !== undefined) {
       config[key] = value;
     }
   }
@@ -210,7 +245,12 @@ export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyCon
 };
 
 const getProxyParam = (reqUrl: URL, config: ProxyConfig | null, key: keyof ProxyConfig) => {
-  return (config && config[key]) || reqUrl.searchParams.get(key) || null;
+  const configValue = config ? config[key] : null;
+  if (typeof configValue === 'string' && configValue) {
+    return configValue;
+  }
+  const queryValue = reqUrl.searchParams.get(key);
+  return queryValue || null;
 };
 
 export const buildErdbImageUrl = (options: {

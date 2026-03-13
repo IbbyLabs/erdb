@@ -38,6 +38,9 @@ const SUPPORTED_LANGUAGES = [
   { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
+const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
+type ProxyType = (typeof PROXY_TYPES)[number];
+type ProxyEnabledTypes = Record<ProxyType, boolean>;
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
 
@@ -69,12 +72,16 @@ export default function Home() {
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
-  const [proxyBaseUrl, setProxyBaseUrl] = useState('');
   const [proxyTmdbKey, setProxyTmdbKey] = useState('');
   const [proxyMdblistKey, setProxyMdblistKey] = useState('');
   const [proxyRatingPreferences, setProxyRatingPreferences] = useState<RatingPreference[]>(['imdb', 'tmdb', 'mdblist']);
   const [proxyLang, setProxyLang] = useState('en');
   const [proxyConfigType, setProxyConfigType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
+  const [proxyEnabledTypes, setProxyEnabledTypes] = useState<ProxyEnabledTypes>({
+    poster: true,
+    backdrop: true,
+    logo: true,
+  });
   const [proxyPosterRatingStyle, setProxyPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [proxyBackdropRatingStyle, setProxyBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [proxyLogoRatingStyle, setProxyLogoRatingStyle] = useState<RatingStyle>('plain');
@@ -96,12 +103,6 @@ export default function Home() {
       setBaseUrl(origin);
     }
   }, []);
-
-  useEffect(() => {
-    if (!proxyBaseUrl && baseUrl) {
-      setProxyBaseUrl(baseUrl);
-    }
-  }, [baseUrl, proxyBaseUrl]);
 
   useEffect(() => {
     if (!proxyTmdbKey && tmdbKey) {
@@ -213,7 +214,7 @@ Skip any params that are empty/undefined.`;
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
-      if (posterRatingsMaxPerSide !== null) {
+      if (posterRatingsLayout === 'left-right' && posterRatingsMaxPerSide !== null) {
         query.set('posterRatingsMaxPerSide', String(posterRatingsMaxPerSide));
       }
     } else if (previewType === 'backdrop') {
@@ -284,7 +285,7 @@ Skip any params that are empty/undefined.`;
     if (posterRatingsLayout) {
       config.posterRatingsLayout = posterRatingsLayout;
     }
-    if (posterRatingsMaxPerSide !== null) {
+    if (posterRatingsLayout === 'left-right' && posterRatingsMaxPerSide !== null) {
       config.posterRatingsMaxPerSide = posterRatingsMaxPerSide;
     }
     if (backdropRatingsLayout) {
@@ -309,8 +310,7 @@ Skip any params that are empty/undefined.`;
   ]);
 
   useEffect(() => {
-    const rawOrigin = proxyBaseUrl || baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
-    const origin = rawOrigin.trim().replace(/\/+$/, '');
+    const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
     if (!origin) {
       setProxyUrl('');
       return;
@@ -324,7 +324,7 @@ Skip any params that are empty/undefined.`;
       return;
     }
 
-    const config: Record<string, string> = {
+    const config: Record<string, string | boolean> = {
       url: manifestUrl,
       tmdbKey: tmdb,
       mdblistKey: mdb,
@@ -343,11 +343,14 @@ Skip any params that are empty/undefined.`;
     config.logoRatingStyle = proxyLogoRatingStyle;
     config.posterImageText = proxyPosterImageText;
     config.backdropImageText = proxyBackdropImageText;
+    config.posterEnabled = proxyEnabledTypes.poster;
+    config.backdropEnabled = proxyEnabledTypes.backdrop;
+    config.logoEnabled = proxyEnabledTypes.logo;
 
     if (proxyPosterRatingsLayout) {
       config.posterRatingsLayout = proxyPosterRatingsLayout;
     }
-    if (proxyPosterRatingsMaxPerSide !== null) {
+    if (proxyPosterRatingsLayout === 'left-right' && proxyPosterRatingsMaxPerSide !== null) {
       config.posterRatingsMaxPerSide = String(proxyPosterRatingsMaxPerSide);
     }
     if (proxyBackdropRatingsLayout) {
@@ -374,7 +377,7 @@ Skip any params that are empty/undefined.`;
     proxyPosterRatingsLayout,
     proxyPosterRatingsMaxPerSide,
     proxyBackdropRatingsLayout,
-    proxyBaseUrl,
+    proxyEnabledTypes,
     baseUrl,
   ]);
 
@@ -392,6 +395,13 @@ Skip any params that are empty/undefined.`;
         ? current.filter((item) => item !== rating)
         : [...current, rating]
     );
+  };
+
+  const toggleProxyEnabledType = (type: ProxyType) => {
+    setProxyEnabledTypes((current) => ({
+      ...current,
+      [type]: !current[type],
+    }));
   };
 
   const handleCopyConfig = useCallback(() => {
@@ -573,11 +583,13 @@ Skip any params that are empty/undefined.`;
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                    <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
-                    <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-                  </div>
+                  {posterRatingsLayout === 'left-right' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
+                      <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
+                      <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -684,7 +696,7 @@ Skip any params that are empty/undefined.`;
             <div className="space-y-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">Addon Proxy</h2>
-                <p className="text-sm text-zinc-400">Paste a Stremio addon manifest to generate a new manifest that always uses ERDB images.</p>
+                <p className="text-sm text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
               </div>
 
               <div className="space-y-3">
@@ -722,17 +734,6 @@ Skip any params that are empty/undefined.`;
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">ERDB Base URL</label>
-                  <input
-                    type="text"
-                    value={proxyBaseUrl}
-                    onChange={(e) => setProxyBaseUrl(e.target.value)}
-                    placeholder={baseUrl || 'https://erdb.example.com'}
-                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
-                  />
-                </div>
-
                 <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
                   <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
                     <div>
@@ -747,11 +748,24 @@ Skip any params that are empty/undefined.`;
                       </div>
                     </div>
 
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Enabled Types</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {PROXY_TYPES.map(type => (
+                          <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-orange-500" />
+                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="mt-1 text-[10px] text-zinc-500">Disabled types keep the original artwork.</div>
+                    </div>
+
                     <div className="flex flex-wrap gap-4 items-end">
                       <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
                         <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {(['poster', 'backdrop', 'logo'] as const).map(type => (
+                          {PROXY_TYPES.map(type => (
                             <button key={`proxy-type-${type}`} onClick={() => setProxyConfigType(type)} className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${proxyConfigType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
                               {type === 'poster' && <ImageIcon className="w-3.5 h-3.5" />}
                               {type === 'backdrop' && <MonitorPlay className="w-3.5 h-3.5" />}
@@ -833,30 +847,36 @@ Skip any params that are empty/undefined.`;
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-4 items-end">
+                    {proxyConfigType === 'poster' && (
+                      <div className="flex flex-wrap gap-4 items-end">
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
+                          <div className="flex flex-wrap gap-1">
+                            {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
+                              <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        {proxyPosterRatingsLayout === 'left-right' && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
+                            <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
+                            <button onClick={() => setProxyPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {proxyConfigType === 'backdrop' && (
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
                         <div className="flex flex-wrap gap-1">
-                          {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                            <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                          {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
+                            <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                           ))}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                        <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
-                        <button onClick={() => setProxyPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
-                      <div className="flex flex-wrap gap-1">
-                        {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                          <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                        ))}
-                      </div>
-                    </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -869,7 +889,7 @@ Skip any params that are empty/undefined.`;
                 </p>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4">
                   <div className="font-mono text-xs text-zinc-300 break-all">
-                    {proxyUrl || `${proxyBaseUrl || baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
+                    {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -913,8 +933,8 @@ Skip any params that are empty/undefined.`;
                     <Zap className="w-4 h-4 text-orange-500" />
                   </div>
                   <div className="space-y-1">
-                    <div className="text-zinc-200 font-semibold">Always replace images</div>
-                    <div>Proxy rewrites `meta.poster`, `meta.background`, `meta.logo` for both `catalog` and `meta` responses.</div>
+                    <div className="text-zinc-200 font-semibold">Replace enabled types</div>
+                    <div>Proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` for both `catalog` and `meta` responses.</div>
                   </div>
                 </div>
               </div>

@@ -165,7 +165,7 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 `{config}` is created automatically by the site based on the inserted parameters.
 
 ### Notes
-- The proxy always rewrites `meta.poster`, `meta.background`, `meta.logo`.
+- The proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` (types can be toggled in the Addon Proxy UI).
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` and `mdblistKey` are required.
 

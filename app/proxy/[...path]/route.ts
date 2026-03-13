@@ -34,6 +34,12 @@ const getPublicRequestUrl = (request: NextRequest) => {
 const buildError = (message: string, status = 400) =>
   NextResponse.json({ error: message }, { status, headers: corsHeaders });
 
+const isTypeEnabled = (config: ProxyConfig, type: 'poster' | 'backdrop' | 'logo') => {
+  if (type === 'poster') return config.posterEnabled !== false;
+  if (type === 'backdrop') return config.backdropEnabled !== false;
+  return config.logoEnabled !== false;
+};
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
@@ -49,33 +55,42 @@ const rewriteMetaImages = (
   const erdbId = normalizeErdbId(rawId, rawType);
   if (!erdbId) return meta;
 
-  return {
-    ...meta,
-    poster: buildErdbImageUrl({
+  const nextMeta: Record<string, unknown> = { ...meta };
+
+  if (isTypeEnabled(config, 'poster')) {
+    nextMeta.poster = buildErdbImageUrl({
       reqUrl: requestUrl,
       imageType: 'poster',
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
       config,
-    }),
-    background: buildErdbImageUrl({
+    });
+  }
+
+  if (isTypeEnabled(config, 'backdrop')) {
+    nextMeta.background = buildErdbImageUrl({
       reqUrl: requestUrl,
       imageType: 'backdrop',
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
       config,
-    }),
-    logo: buildErdbImageUrl({
+    });
+  }
+
+  if (isTypeEnabled(config, 'logo')) {
+    nextMeta.logo = buildErdbImageUrl({
       reqUrl: requestUrl,
       imageType: 'logo',
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
       config,
-    }),
-  };
+    });
+  }
+
+  return nextMeta;
 };
 
 export async function GET(
