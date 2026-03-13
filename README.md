@@ -11,7 +11,7 @@ git clone https://github.com/realbestia1/erdb
 cd erdb
 ```
 
-1. Install dependencies: `npm install`
+1. Install dependencies: `sudo npm install`
 2. Build: `npm run build`
 3. Start the app: `npm run start`
 4. App available at `http://localhost:3000`
