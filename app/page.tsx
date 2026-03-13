@@ -37,19 +37,31 @@ const SUPPORTED_LANGUAGES = [
   { code: 'zh', label: '中文', flag: '🇨🇳' },
   { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
 ];
-const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS.filter(
-  (provider) => provider.id !== 'thetvdb'
-);
+const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
+
+const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
+
+const encodeBase64Url = (value: string) => {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
 
 export default function Home() {
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
-  const [posterText, setPosterText] = useState<'original' | 'clean' | 'alternative'>('original');
+  const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('original');
+  const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('original');
   const [ratingPreferences, setRatingPreferences] = useState<RatingPreference[]>(['imdb', 'tmdb', 'mdblist']);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>(DEFAULT_POSTER_RATING_LAYOUT);
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
-  const [ratingStyle, setRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
+  const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
+  const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
+  const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -73,15 +85,15 @@ export default function Home() {
   const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [proxyUrl, setProxyUrl] = useState('');
   const [proxyCopied, setProxyCopied] = useState(false);
+  const [configString, setConfigString] = useState('');
+  const [configCopied, setConfigCopied] = useState(false);
 
   const [copied, setCopied] = useState(false);
-  const [promptBaseUrl, setPromptBaseUrl] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const origin = window.location.origin;
       setBaseUrl(origin);
-      setPromptBaseUrl(origin);
     }
   }, []);
 
@@ -122,82 +134,70 @@ export default function Home() {
   }, [tmdbKey]);
 
   const handleCopyPrompt = useCallback(() => {
-    const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon (e.g., Stremio, Kodi).
+    const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
-API Base URL: ${promptBaseUrl || '(YOUR_API_BASE_URL)'}
-Base URL must be entered during configuration and must remain editable (do not hardcode or lock it).
+--- CONFIG INPUT ---
+Add a single text field called \"erdbConfig\" (base64url). The user will paste it from the ERDB site after configuring there.
+Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from erdbConfig.
+
+--- DECODE ---
+Node/JS: const cfg = JSON.parse(Buffer.from(erdbConfig, 'base64url').toString('utf8'));
 
 --- FULL API REFERENCE ---
-
 Endpoint: GET /{type}/{id}.jpg?...queryParams
 
-| Parameter               | Values                                                                                                                                               | Default       |
-|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| type (path)             | poster, backdrop, logo                                                                                                                               | —             |
-| id (path)               | IMDb (tt0133093), TMDB (tmdb:603), Kitsu (kitsu:1), AniList (anilist:id), MAL (myanimelist:id)                                                      | —             |
-| ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu             | all           |
-| lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, zh, pt, ru, ar, hi, etc.)                                                                     | en            |
-| ratingStyle             | glass, square, plain                                                                                                                                 | glass         |
-| imageText               | original, clean, alternative                                                                                                                         | original      |
-| posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                                                                                                     | top-bottom    |
-| posterRatingsMaxPerSide | Number (1-20)                                                                                                                                        | auto          |
-| backdropRatingsLayout   | center, right, right-vertical                                                                                                                        | center        |
-| tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                                                                                                 | —             |
-| mdblistKey (REQUIRED)   | Your MDBList.com API Key                                                                                                                             | —             |
-
---- TYPE-SPECIFIC CONFIGS ---
-poster:
-- imageText: original, clean, alternative
-- ratingStyle: glass, square, plain (per-type override)
-- posterRatingsLayout: top, bottom, left, right, top-bottom, left-right
-- posterRatingsMaxPerSide: 1-20 (auto if omitted)
-backdrop:
-- imageText: original, clean, alternative
-- ratingStyle: glass, square, plain (per-type override)
-- backdropRatingsLayout: center, right, right-vertical
-logo:
-- ratingStyle: glass, square, plain (per-type override)
-- no extra layout config (base params only)
-
---- ID FORMATS ---
-| Source          | Format          | Example              |
-|-----------------|-----------------|----------------------|
-| IMDb            | tt + numbers    | tt0133093            |
-| TMDB            | tmdb:id         | tmdb:603             |
-| Kitsu           | kitsu:id        | kitsu:1              |
-| AniList         | anilist:id      | anilist:123          |
-| MyAnimeList     | myanimelist:id  | myanimelist:456      |
+Parameter               | Values                                                              | Default
+type (path)             | poster, backdrop, logo                                               | -
+id (path)               | IMDb (tt...), TMDB (tmdb:id), Kitsu (kitsu:id), AniList, MAL          | -
+ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu                                                       |
+lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+ratingStyle             | glass, square, plain                                                 | glass
+imageText               | original, clean, alternative                                         | original
+posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
+posterRatingsMaxPerSide | Number (1-20)                                                        | auto
+backdropRatingsLayout   | center, right, right-vertical                                        | center
+tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
+mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 
 --- INTEGRATION REQUIREMENTS ---
-1. Create a configuration settings panel for users to customize the imagery.
-2. Add a "Setup" button that opens a modal containing the full configuration UI (keep the main page clean).
-3. Options to include in the settings UI:
-   - Ratings (Multi-select): All providers from the table above.
-   - Languages: Support all TMDB ISO 639-1 language codes.
-   - Style: glass, square, plain.
-   - Per-type Rating Style Overrides: Allow different ratingStyle for poster, backdrop, logo.
-   - Enable/Disable Types: Toggles for poster, backdrop, logo. If disabled, do not call ERDB for that type (keep original artwork).
-   - Image Text (per-type): original, clean, alternative (config separata tra poster e backdrop).
-   - Layouts: posterRatingsLayout, backdropRatingsLayout (with all values from API Reference).
-   - Poster Max Ratings Per Side: Number input (1-20) with Auto default.
-   - TMDB API Key (Required): Users MUST provide their own v3 key.
-   - MDBList API Key (Required): Users MUST provide their own key.
-4. **Live Preview (Crucial)**: The settings panel MUST include a live image preview that updates instantly as the user changes parameters.
-5. Dynamic URL Construction:
-   Structure: ${baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${tmdbKey}&mdblistKey=\${mdblistKey}&ratings=\${ratings}&lang=\${lang}&ratingStyle=\${style}&imageText=\${imageText}&posterRatingsLayout=\${layout}&posterRatingsMaxPerSide=\${max}&backdropRatingsLayout=\${bLayout}
+1. Use ONLY the \"erdbConfig\" field (no modal and no extra settings panels).
+2. Add toggles to enable/disable: poster, backdrop, logo.
+3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
+4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
 
-Goal: Generate the logic/code to manage these preferences and inject the generated URLs into the meta responses of the addon.`;
+--- PER-TYPE SETTINGS ---
+poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
+backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
+logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
+
+--- URL BUILD ---
+const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
+const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&lang=\${cfg.lang}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+
+Omit imageText when type=logo.
+
+Skip any params that are empty/undefined.`;
 
     navigator.clipboard.writeText(prompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [promptBaseUrl]);
+  }, []);
 
   useEffect(() => {
     const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferences);
+    const ratingStyleForType =
+      previewType === 'poster'
+        ? posterRatingStyle
+        : previewType === 'backdrop'
+          ? backdropRatingStyle
+          : logoRatingStyle;
+    const imageTextForType = previewType === 'backdrop' ? backdropImageText : posterImageText;
     const query = new URLSearchParams({
       ratings: ratingsQuery,
-      ratingStyle,
+      ratingStyle: ratingStyleForType,
       lang,
     });
 
@@ -209,7 +209,7 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
     }
 
     if (previewType === 'poster' || previewType === 'backdrop') {
-      query.set('posterText', posterText);
+      query.set('imageText', imageTextForType);
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
@@ -220,9 +220,93 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
       query.set('backdropRatingsLayout', backdropRatingsLayout);
     }
 
-    const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+    const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
+    if (!origin) {
+      setPreviewUrl('');
+      return;
+    }
     setPreviewUrl(`${origin}/${previewType}/${mediaId}.jpg?${query.toString()}`);
-  }, [previewType, mediaId, lang, posterText, ratingPreferences, posterRatingsLayout, posterRatingsMaxPerSide, backdropRatingsLayout, ratingStyle, baseUrl, mdblistKey, tmdbKey]);
+  }, [
+    previewType,
+    mediaId,
+    lang,
+    posterImageText,
+    backdropImageText,
+    ratingPreferences,
+    posterRatingsLayout,
+    posterRatingsMaxPerSide,
+    backdropRatingsLayout,
+    posterRatingStyle,
+    backdropRatingStyle,
+    logoRatingStyle,
+    baseUrl,
+    mdblistKey,
+    tmdbKey,
+  ]);
+
+  useEffect(() => {
+    const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
+    const tmdb = tmdbKey.trim();
+    const mdb = mdblistKey.trim();
+    if (!origin || !tmdb || !mdb) {
+      setConfigString('');
+      return;
+    }
+
+    const config: Record<string, string | number> = {
+      baseUrl: origin,
+      tmdbKey: tmdb,
+      mdblistKey: mdb,
+    };
+
+    const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferences);
+    if (ratingsQuery) {
+      config.ratings = ratingsQuery;
+    }
+    if (lang) {
+      config.lang = lang;
+    }
+    if (posterRatingStyle) {
+      config.posterRatingStyle = posterRatingStyle;
+    }
+    if (backdropRatingStyle) {
+      config.backdropRatingStyle = backdropRatingStyle;
+    }
+    if (logoRatingStyle) {
+      config.logoRatingStyle = logoRatingStyle;
+    }
+    if (posterImageText) {
+      config.posterImageText = posterImageText;
+    }
+    if (backdropImageText) {
+      config.backdropImageText = backdropImageText;
+    }
+    if (posterRatingsLayout) {
+      config.posterRatingsLayout = posterRatingsLayout;
+    }
+    if (posterRatingsMaxPerSide !== null) {
+      config.posterRatingsMaxPerSide = posterRatingsMaxPerSide;
+    }
+    if (backdropRatingsLayout) {
+      config.backdropRatingsLayout = backdropRatingsLayout;
+    }
+
+    setConfigString(encodeBase64Url(JSON.stringify(config)));
+  }, [
+    baseUrl,
+    tmdbKey,
+    mdblistKey,
+    ratingPreferences,
+    lang,
+    posterRatingStyle,
+    backdropRatingStyle,
+    logoRatingStyle,
+    posterImageText,
+    backdropImageText,
+    posterRatingsLayout,
+    posterRatingsMaxPerSide,
+    backdropRatingsLayout,
+  ]);
 
   useEffect(() => {
     const rawOrigin = proxyBaseUrl || baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -274,13 +358,7 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
       config.erdbBase = origin;
     }
 
-    const json = JSON.stringify(config);
-    const bytes = new TextEncoder().encode(json);
-    let binary = '';
-    for (const byte of bytes) {
-      binary += String.fromCharCode(byte);
-    }
-    const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const encoded = encodeBase64Url(JSON.stringify(config));
     setProxyUrl(`${origin}/proxy/${encoded}/manifest.json`);
   }, [
     proxyManifestUrl,
@@ -316,6 +394,13 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
     );
   };
 
+  const handleCopyConfig = useCallback(() => {
+    if (!configString) return;
+    navigator.clipboard.writeText(configString);
+    setConfigCopied(true);
+    setTimeout(() => setConfigCopied(false), 2000);
+  }, [configString]);
+
   const handleCopyProxy = useCallback(() => {
     if (!proxyUrl) return;
     navigator.clipboard.writeText(proxyUrl);
@@ -323,7 +408,37 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
     setTimeout(() => setProxyCopied(false), 2000);
   }, [proxyUrl]);
 
+  const canGenerateConfig = Boolean(configString);
   const canGenerateProxy = Boolean(proxyManifestUrl.trim() && proxyTmdbKey.trim() && proxyMdblistKey.trim());
+  const activeRatingStyle =
+    previewType === 'poster'
+      ? posterRatingStyle
+      : previewType === 'backdrop'
+        ? backdropRatingStyle
+        : logoRatingStyle;
+  const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
+  const styleLabel = previewType === 'poster' ? 'Poster Style' : previewType === 'backdrop' ? 'Backdrop Style' : 'Logo Style';
+  const textLabel = previewType === 'backdrop' ? 'Backdrop Text' : 'Poster Text';
+
+  const setRatingStyleForType = (value: RatingStyle) => {
+    if (previewType === 'poster') {
+      setPosterRatingStyle(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropRatingStyle(value);
+      return;
+    }
+    setLogoRatingStyle(value);
+  };
+
+  const setImageTextForType = (value: 'original' | 'clean' | 'alternative') => {
+    if (previewType === 'backdrop') {
+      setBackdropImageText(value);
+      return;
+    }
+    setPosterImageText(value);
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-300 selection:bg-orange-500/30">
@@ -336,7 +451,7 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
             <span className="font-bold text-white tracking-tight text-lg">ERDB <span className="text-orange-500 text-sm font-medium ml-1">Stateless</span></span>
           </div>
           <div className="flex items-center gap-4 text-sm font-medium">
-            <a href="#preview" className="hover:text-white transition-colors">Previewer</a>
+            <a href="#preview" className="hover:text-white transition-colors">Configurator</a>
             <a href="#proxy" className="hover:text-white transition-colors">Addon Proxy</a>
             <a href="#docs" className="hover:text-white transition-colors">API Docs</a>
             <a href="https://github.com/realbestia1/erdb" className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 hover:bg-zinc-800 transition-colors">GitHub</a>
@@ -360,7 +475,7 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <a href="#preview" className="px-8 py-4 rounded-full bg-white text-black font-semibold hover:bg-zinc-200 transition-colors">
-              Try the Previewer
+              Open Configurator
             </a>
             <a href="#docs" className="px-8 py-4 rounded-full bg-zinc-900 text-white font-semibold border border-white/10 hover:bg-zinc-800 transition-colors">
               Read API Docs
@@ -374,8 +489,8 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
             {/* Controls */}
             <div className="space-y-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Configuration</h2>
-                <p className="text-sm text-zinc-400">Adjust parameters to see the preview update in real-time.</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Configurator</h2>
+                <p className="text-sm text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
               </div>
 
               {/* API Keys - compact row */}
@@ -429,19 +544,19 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
               {/* Style + Image Text row */}
               <div className="flex flex-wrap gap-4 items-center">
                 <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Style</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
                   <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                     {RATING_STYLE_OPTIONS.map(opt => (
-                      <button key={opt.id} onClick={() => setRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${ratingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                      <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                     ))}
                   </div>
                 </div>
                 {previewType !== 'logo' && (
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Text</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
                     <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                       {(['original', 'clean', 'alternative'] as const).map(option => (
-                        <button key={option} onClick={() => setPosterText(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${posterText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
+                        <button key={option} onClick={() => setImageTextForType(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
                       ))}
                     </div>
                   </div>
@@ -487,6 +602,44 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <Code2 className="w-5 h-5 text-orange-500" /> ERDB Config String
+                </h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
+                </p>
+                <div className="mt-4 rounded-2xl border border-white/10 bg-black/70 p-4">
+                  <div className="font-mono text-xs text-zinc-300 break-all">
+                    {configString || 'Add TMDB key and MDBList key to generate the config string.'}
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleCopyConfig}
+                    disabled={!canGenerateConfig}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateConfig ? (configCopied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                  >
+                    {configCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>COPIED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Clipboard className="w-3.5 h-3.5" />
+                        <span>COPY STRING</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {!canGenerateConfig && (
+                  <p className="mt-3 text-[11px] text-zinc-500">
+                    Add TMDB key and MDBList key to generate a valid config string.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1035,16 +1188,6 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 ml-1 tracking-wider">Your API URL</label>
-                        <input
-                          type="text"
-                          value={promptBaseUrl}
-                          onChange={(e) => setPromptBaseUrl(e.target.value)}
-                          placeholder="https://erdb.example.com"
-                          className="bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 w-full md:w-64 focus:border-orange-500/50 outline-none transition-colors"
-                        />
-                      </div>
                       <button
                         onClick={handleCopyPrompt}
                         className={`mt-4 px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${copied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400'}`}
@@ -1067,51 +1210,50 @@ Goal: Generate the logic/code to manage these preferences and inject the generat
                   <div className="bg-black/40 border border-white/5 rounded-xl p-4 font-mono text-[11px] text-zinc-400 leading-relaxed overflow-auto relative max-h-[340px]">
                     <div className="whitespace-pre-wrap">{`Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
-API Base URL: ${promptBaseUrl || '(YOUR_API_BASE_URL)'}
-Base URL must be entered during configuration and must remain editable (do not hardcode or lock it).
+--- CONFIG INPUT ---
+Add a single text field called "erdbConfig" (base64url). The user will paste it from the ERDB site after configuring there.
+Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from erdbConfig.
+
+--- DECODE ---
+Node/JS: const cfg = JSON.parse(Buffer.from(erdbConfig, 'base64url').toString('utf8'));
 
 --- FULL API REFERENCE ---
 Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
-type (path)             | poster, backdrop, logo                                    | —
-id (path)               | IMDb (tt...), TMDB (tmdb:id), Kitsu (kitsu:id), AniList, MAL         | —
+type (path)             | poster, backdrop, logo                                               | -
+id (path)               | IMDb (tt...), TMDB (tmdb:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu                                              |
-lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)          | en
-ratingStyle             | glass, square, plain                                                 | glass (poster/backdrop), plain (logo)
-imageText               | original, clean, alternative                                         | original (poster), clean (backdrop)
+                        | anilist, kitsu                                                       |
+lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+ratingStyle             | glass, square, plain                                                 | glass
+imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
 posterRatingsMaxPerSide | Number (1-20)                                                        | auto
 backdropRatingsLayout   | center, right, right-vertical                                        | center
-tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | —
-mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | —
-
---- TYPE-SPECIFIC CONFIGS ---
-poster:
-- imageText: original, clean, alternative
-- ratingStyle: glass, square, plain (per-type override)
-- posterRatingsLayout: top, bottom, left, right, top-bottom, left-right
-- posterRatingsMaxPerSide: 1-20 (auto if omitted)
-backdrop:
-- imageText: original, clean, alternative
-- ratingStyle: glass, square, plain (per-type override)
-- backdropRatingsLayout: center, right, right-vertical
-logo:
-- ratingStyle: glass, square, plain (per-type override)
-- no extra layout config (base params only)
+tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
+mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 
 --- INTEGRATION REQUIREMENTS ---
-1. Settings panel with all parameters above.
-2. Add a "Setup" button that opens a modal containing the full configuration UI (keep the main page clean).
-3. Settings MUST be per-type (poster/backdrop/logo). Do NOT use global settings for ratings, lang, style, imageText, or layouts.
-   When a user selects a type, show ONLY that type’s settings.
-4. Image Text MUST be configured separately for poster and backdrop.
-5. Global required fields: ERDB API Base URL, TMDB API Key, MDBList API Key.
-6. Language MUST be a selectable list (dropdown) of TMDB ISO 639-1 codes, not a free text input.
-7. Live Preview that updates instantly.
-8. Dynamic URL: /{type}/{id}.jpg?tmdbKey=...&mdblistKey=...&ratings=...&lang=...&ratingStyle=...&imageText=...`}</div>
+1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
+2. Add toggles to enable/disable: poster, backdrop, logo.
+3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
+4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
+
+--- PER-TYPE SETTINGS ---
+poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
+backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
+logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
+
+--- URL BUILD ---
+const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
+const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&lang=\${cfg.lang}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+
+Omit imageText when type=logo.
+
+Skip any params that are empty/undefined.`}</div>
                 </div>
 
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Live Examples</h4>
@@ -1144,6 +1286,11 @@ logo:
     </div>
   );
 }
+
+
+
+
+
 
 
 

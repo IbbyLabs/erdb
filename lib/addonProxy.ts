@@ -203,7 +203,7 @@ export const buildErdbImageUrl = (options: {
   base.searchParams.set('mdblistKey', mdblistKey);
 
   for (const key of ERDB_OPTIONAL_PARAMS) {
-    const value = getProxyParam(reqUrl, config, key);
+    const value = getProxyParam(reqUrl, config, key as keyof ProxyConfig);
     if (value) base.searchParams.set(key, value);
   }
 

@@ -77,7 +77,10 @@ const rewriteMetaImages = (
   };
 };
 
-export async function GET(request: NextRequest, context: { params: { path?: string[] } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ path?: string[] }> }
+) {
   const { searchParams } = request.nextUrl;
   const params = await context.params;
   const pathSegments = params?.path || [];

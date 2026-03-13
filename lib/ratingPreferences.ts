@@ -25,8 +25,9 @@ export const RATING_PROVIDER_OPTIONS = [
   },
   {
     id: 'tomatoesaudience',
-    label: 'RT Audience',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=rottentomatoes.com&sz=64',
+    label: 'Popcorntime',
+    iconUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/d/da/Rotten_Tomatoes_positive_audience.svg',
     accentColor: '#198754',
   },
   {
@@ -77,12 +78,6 @@ export const RATING_PROVIDER_OPTIONS = [
     iconUrl: 'https://www.google.com/s2/favicons?domain=kitsu.io&sz=64',
     accentColor: '#f75239',
   },
-  {
-    id: 'thetvdb',
-    label: 'TheTVDB',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=thetvdb.com&sz=64',
-    accentColor: '#1f7be5',
-  },
 ] as const;
 
 export type RatingPreference = (typeof RATING_PROVIDER_OPTIONS)[number]['id'];
@@ -99,6 +94,7 @@ const ALIASES: Record<string, RatingPreference> = {
   tomatoesaudience: 'tomatoesaudience',
   rottentomatoesaudience: 'tomatoesaudience',
   rtaudience: 'tomatoesaudience',
+  popcorntime: 'tomatoesaudience',
   letterboxd: 'letterboxd',
   metacritic: 'metacritic',
   metacriticuser: 'metacriticuser',
@@ -108,8 +104,6 @@ const ALIASES: Record<string, RatingPreference> = {
   mal: 'myanimelist',
   anilist: 'anilist',
   kitsu: 'kitsu',
-  thetvdb: 'thetvdb',
-  tvdb: 'thetvdb',
 };
 
 export const normalizeRatingPreference = (value: string): RatingPreference | null => {

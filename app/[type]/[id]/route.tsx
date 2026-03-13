@@ -42,7 +42,7 @@ import { getMetadata, setMetadata } from '@/lib/metadataCache';
 export const runtime = 'nodejs';
 
 type PosterTextPreference = 'original' | 'clean' | 'alternative';
-type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
+type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
 const FALLBACK_IMAGE_LANGUAGE = 'en';
 const ALLOWED_IMAGE_TYPES = new Set(['poster', 'backdrop', 'logo']);
 const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
@@ -50,7 +50,6 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anilist',
   'imdb',
   'tmdb',
-  'tvdb',
   'anidb',
 ]);
 const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'anilist', 'anidb']);
@@ -136,12 +135,6 @@ const IMDB_DATASET_CACHE_TTL_MS = parseCacheTtlMs(
   60 * 60 * 1000,
   365 * 24 * 60 * 60 * 1000
 );
-const THETVDB_CACHE_TTL_MS = parseCacheTtlMs(
-  process.env.ERDB_THETVDB_CACHE_TTL_MS,
-  3 * 24 * 60 * 60 * 1000,
-  10 * 60 * 1000,
-  30 * 24 * 60 * 60 * 1000
-);
 const KITSU_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_KITSU_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -158,7 +151,6 @@ const FINAL_IMAGE_CACHE_MAX_ENTRIES = 300;
 const SOURCE_IMAGE_CACHE_MAX_ENTRIES = 128;
 const METADATA_CACHE_MAX_ENTRIES = 2000;
 const PROVIDER_ICON_CACHE_MAX_ENTRIES = 64;
-const THETVDB_TOKEN_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const TMDB_ANIMATION_GENRE_ID = 16;
 const MDBLIST_API_KEYS = parseApiKeyList(process.env.MDBLIST_API_KEYS, process.env.MDBLIST_API_KEY);
 type TimedCacheEntry<T> = {
@@ -219,7 +211,6 @@ const metadataInFlight = new Map<string, Promise<CachedJsonResponse>>();
 const textMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
 const providerIconInFlight = new Map<string, Promise<string | null>>();
 const mdbListRateLimitedUntil = new Map<string, number>();
-let theTvdbTokenCache: { token: string; expiresAt: number } | null = null;
 let mdbListApiKeyCursor = 0;
 const sha1Hex = (value: string) => createHash('sha1').update(value).digest('hex');
 const safeCompareText = (left: string, right: string) => {
@@ -338,7 +329,6 @@ const SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, string>> =
   imdb: '/10',
   letterboxd: '/5',
   myanimelist: '/10',
-  thetvdb: '/10',
   rogerebert: '/4',
 };
 type RatingBadge = {
@@ -686,28 +676,6 @@ const fetchOmdbRatings = async ({
   } catch {
     return null;
   }
-};
-
-const extractTheTvdbRating = (payload: any) => {
-  const candidates = [
-    payload?.data?.siteRating,
-    payload?.data?.rating,
-    payload?.data?.ratingsInfo?.average,
-    payload?.data?.statistics?.rating,
-    payload?.data?.averageRating,
-  ];
-
-  for (const candidate of candidates) {
-    const normalized = normalizeRatingValue(candidate);
-    if (!normalized) continue;
-
-    const numericValue = Number(normalized.replace(',', '.').trim());
-    if (Number.isFinite(numericValue) && numericValue > 0 && numericValue <= 10) {
-      return normalized;
-    }
-  }
-
-  return null;
 };
 
 const normalizeKitsuId = (value: unknown) => {
@@ -1117,100 +1085,6 @@ const fetchImdbRating = async (
   } catch {
     return null;
   }
-};
-
-const getTheTvdbApiToken = async (phases: PhaseDurations, manualApiKey?: string | null): Promise<string | null> => {
-  const apiKey = manualApiKey || process.env.THETVDB_API_KEY;
-  if (!apiKey) return null;
-
-  const now = Date.now();
-  if (!manualApiKey && theTvdbTokenCache && theTvdbTokenCache.expiresAt > now) {
-    return theTvdbTokenCache.token;
-  }
-
-  const pin = (process.env.THETVDB_PIN || '').trim();
-  const body: Record<string, string> = { apikey: apiKey };
-  if (pin) {
-    body.pin = pin;
-  }
-
-  try {
-    const tokenResponse = await fetchJsonCached(
-      `thetvdb:token:${apiKey}`,
-      'https://api4.thetvdb.com/v4/login',
-      THETVDB_TOKEN_CACHE_TTL_MS,
-      phases,
-      'auth',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        cache: 'no-store',
-      }
-    );
-    if (!tokenResponse.ok) return null;
-
-    const token = tokenResponse.data?.data?.token;
-    if (token && !manualApiKey) {
-      theTvdbTokenCache = { token, expiresAt: Date.now() + THETVDB_TOKEN_CACHE_TTL_MS };
-    }
-    return token || null;
-  } catch {
-    return null;
-  }
-};
-
-const fetchTheTvdbRating = async ({
-  tvdbId,
-  mediaType,
-  phases,
-  manualApiKey,
-}: {
-  tvdbId: string;
-  mediaType: 'movie' | 'tv';
-  phases: PhaseDurations;
-  manualApiKey?: string | null;
-}) => {
-  try {
-    const token = await measurePhase(phases, 'auth', () => getTheTvdbApiToken(phases, manualApiKey));
-    if (!token) return null;
-
-    const normalizedTvdbId = String(tvdbId || '').trim();
-    if (!normalizedTvdbId) return null;
-
-    const encodedId = encodeURIComponent(normalizedTvdbId);
-    const primaryPath = mediaType === 'tv' ? `series/${encodedId}/extended` : `movies/${encodedId}/extended`;
-    const fallbackPath = mediaType === 'tv' ? `movies/${encodedId}/extended` : `series/${encodedId}/extended`;
-
-    for (const path of [primaryPath, fallbackPath]) {
-      try {
-        const response = await fetchJsonCached(
-          `thetvdb:${path}`,
-          `https://api4.thetvdb.com/v4/${path}`,
-          THETVDB_CACHE_TTL_MS,
-          phases,
-          'mdb',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) continue;
-
-        const rating = extractTheTvdbRating(response.data);
-        if (rating) return rating;
-      } catch {
-        // Ignore TheTVDB failures for this specific path and try next.
-      }
-    }
-  } catch {
-    // Ignore TheTVDB failures and keep other ratings.
-  }
-
-  return null;
 };
 
 const fetchJsonCached = async (
@@ -2569,7 +2443,6 @@ export async function GET(
       : DEFAULT_RATING_STYLE;
   const mdblistKey = request.nextUrl.searchParams.get('mdblistKey') || request.nextUrl.searchParams.get('mdblist_key');
   const tmdbKey = request.nextUrl.searchParams.get('tmdbKey') || request.nextUrl.searchParams.get('tmdb_key');
-  const tvdbKey = request.nextUrl.searchParams.get('tvdbKey') || request.nextUrl.searchParams.get('tvdb_key');
   const omdbKey = request.nextUrl.searchParams.get('omdbKey') || request.nextUrl.searchParams.get('omdb_key');
 
   const parts = cleanId.split(':');
@@ -2865,9 +2738,7 @@ export async function GET(
       const needsExternalRatings = [...requestedExternalRatings].some((provider) => provider !== 'tmdb');
       const needsImdbRating = requestedExternalRatings.has('imdb');
       const needsKitsuRating = requestedExternalRatings.has('kitsu');
-      const needsTheTvdbRating = requestedExternalRatings.has('thetvdb');
       const hasMdbListApiKey = MDBLIST_API_KEYS.length > 0;
-      const hasTheTvdbApiKey = Boolean((process.env.THETVDB_API_KEY || '').trim());
       const shouldRenderRawKitsuFallbackRating =
         useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
       const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
@@ -2875,10 +2746,9 @@ export async function GET(
         shouldRenderRatings &&
           !useRawKitsuFallback &&
           needsExternalRatings &&
-          (mdblistKey || hasMdbListApiKey || (needsTheTvdbRating && (tvdbKey || hasTheTvdbApiKey)) || needsKitsuRating || needsImdbRating || omdbKey)
+          (mdblistKey || hasMdbListApiKey || needsKitsuRating || needsImdbRating || omdbKey)
           ? (async () => {
             let imdbId: string | null = null;
-            let tvdbId: string | null = null;
             let kitsuId: string | null = isKitsu ? mediaId : null;
             if (kitsuId) {
               hasConfirmedAnimeMapping = true;
@@ -2902,21 +2772,18 @@ export async function GET(
                 if (externalIds?.imdb_id && !imdbId) {
                   imdbId = externalIds.imdb_id;
                 }
-                if (externalIds?.tvdb_id) {
-                  tvdbId = String(externalIds.tvdb_id);
-                }
               }
             };
 
             const targetType = mediaType === 'movie' ? 'movie' : 'tv';
             imdbId = media?.imdb_id || mappedImdbId;
-            if (needsTheTvdbRating || !imdbId) {
+            if (!imdbId) {
               await fetchExternalIds(targetType);
             }
             if (!imdbId && mappedImdbId) {
               imdbId = mappedImdbId;
             }
-            if (!imdbId && !tvdbId && !kitsuId && !needsAnimeOnlyRatings) {
+            if (!imdbId && !kitsuId && !needsAnimeOnlyRatings) {
               return new Map<RatingPreference, string>();
             }
 
@@ -2941,14 +2808,6 @@ export async function GET(
                 kitsuId = await fetchKitsuIdFromReverseMapping({
                   provider: 'tmdb',
                   externalId: String(media.id),
-                  season,
-                  phases,
-                });
-              }
-              if (!kitsuId && tvdbId) {
-                kitsuId = await fetchKitsuIdFromReverseMapping({
-                  provider: 'tvdb',
-                  externalId: tvdbId,
                   season,
                   phases,
                 });
@@ -3020,30 +2879,6 @@ export async function GET(
               }
             }
 
-            if (needsTheTvdbRating && tvdbKey && tvdbId && !combinedRatings.has('thetvdb')) {
-              try {
-                const tvdbCacheTtlMs = getRatingCacheTtlMs({
-                  id: tvdbId,
-                  mediaType: mediaType as 'movie' | 'tv',
-                  releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
-                  defaultTtlMs: THETVDB_CACHE_TTL_MS,
-                  oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
-                });
-                const tvdbRating = await fetchTheTvdbRating({
-                  tvdbId,
-                  mediaType: mediaType as 'movie' | 'tv',
-                  phases,
-                  manualApiKey: tvdbKey
-                });
-                if (tvdbRating) {
-                  combinedRatings.set('thetvdb', tvdbRating);
-                  renderedRatingTtlByProvider.set('thetvdb', tvdbCacheTtlMs);
-                }
-              } catch {
-                // Ignore
-              }
-            }
-
             if (imdbId && omdbKey) {
               try {
                 const omdbCacheTtlMs = getRatingCacheTtlMs({
@@ -3109,7 +2944,20 @@ export async function GET(
       }
 
       if (!useRawKitsuFallback) {
-        // Fetch Details and Images
+        const buildImagesUrl = (includeLanguage?: string) => {
+          const langQuery = includeLanguage ? `&include_image_language=${includeLanguage}` : '';
+          return `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}${langQuery}`;
+        };
+        const fetchImagesWithLanguage = (includeLanguage?: string) =>
+          fetchJsonCached(
+            `tmdb:${mediaType}:${media.id}:images:${includeLanguage || 'all'}`,
+            buildImagesUrl(includeLanguage),
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          );
+
+        // Fetch Details and Images (preferred + fallback language)
         const [detailsResponse, imagesResponse] = await Promise.all([
           fetchJsonCached(
             `tmdb:${mediaType}:${media.id}:details:${requestedImageLang}`,
@@ -3118,121 +2966,168 @@ export async function GET(
             phases,
             'tmdb'
           ),
-          fetchJsonCached(
-            `tmdb:${mediaType}:${media.id}:images:${includeImageLanguage}`,
-            `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}&include_image_language=${includeImageLanguage}`,
-            TMDB_CACHE_TTL_MS,
-            phases,
-            'tmdb'
-          )
+          fetchImagesWithLanguage(includeImageLanguage)
         ]);
 
         const details = detailsResponse.data || {};
-        const images = imagesResponse.data || {};
         tmdbRating = details.vote_average ? normalizeRatingValue(details.vote_average) || 'N/A' : 'N/A';
-        let posterCollection = images.posters || [];
-        const backdropCollection = images.backdrops || [];
-        const localizedPosterPath =
-          pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
-        let originalPosterPath =
-          localizedPosterPath ||
-          details?.poster_path ||
-          media?.poster_path ||
-          posterCollection[0]?.file_path;
-        const localizedBackdropPath =
-          pickByLanguageWithFallback(backdropCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
-        const originalBackdropPath =
-          localizedBackdropPath ||
-          details?.backdrop_path ||
-          media?.backdrop_path ||
-          backdropCollection[0]?.file_path;
 
-        // Kitsu IDs usually represent a specific anime season: prefer season posters over unified show posters.
-        if (isKitsu && season && !episode && type === 'poster') {
-          const [seasonDetailsResponse, seasonImagesResponse] = await Promise.all([
-            fetchJsonCached(
-              `tmdb:season_details:${media.id}:${season}:${requestedImageLang}`,
-              `https://api.themoviedb.org/3/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${requestedImageLang}`,
-              TMDB_CACHE_TTL_MS,
-              phases,
-              'tmdb'
-            ),
-            fetchJsonCached(
-              `tmdb:season_images:${media.id}:${season}:${includeImageLanguage}`,
-              `https://api.themoviedb.org/3/tv/${media.id}/season/${season}/images?api_key=${tmdbKey}&include_image_language=${includeImageLanguage}`,
-              TMDB_CACHE_TTL_MS,
-              phases,
-              'tmdb'
-            )
-          ]);
+        const selectImagePath = async (input: {
+          posters: any[];
+          backdrops: any[];
+          logos: any[];
+          seasonIncludeImageLanguage?: string;
+        }) => {
+          let posterCollection = input.posters || [];
+          const backdropCollection = input.backdrops || [];
+          const logoCollection = input.logos || [];
 
-          let seasonPosterPath = null;
-          if (seasonDetailsResponse.ok) {
-            const seasonDetails = seasonDetailsResponse.data;
-            if (seasonDetails?.poster_path) {
-              seasonPosterPath = seasonDetails.poster_path;
-            }
-          }
+          const localizedPosterPath =
+            pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
+          let originalPosterPath =
+            localizedPosterPath ||
+            details?.poster_path ||
+            media?.poster_path ||
+            posterCollection[0]?.file_path;
+          const localizedBackdropPath =
+            pickByLanguageWithFallback(backdropCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
+          const originalBackdropPath =
+            localizedBackdropPath ||
+            details?.backdrop_path ||
+            media?.backdrop_path ||
+            backdropCollection[0]?.file_path;
 
-          if (!seasonPosterPath && requestedImageLang !== FALLBACK_IMAGE_LANGUAGE) {
-            const seasonFallbackDetailsResponse = await fetchJsonCached(
-              `tmdb:season_details:${media.id}:${season}:${FALLBACK_IMAGE_LANGUAGE}`,
-              `https://api.themoviedb.org/3/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}`,
-              TMDB_CACHE_TTL_MS,
-              phases,
-              'tmdb'
-            );
-            if (seasonFallbackDetailsResponse.ok) {
-              const seasonFallbackDetails = seasonFallbackDetailsResponse.data;
-              if (seasonFallbackDetails?.poster_path) {
-                seasonPosterPath = seasonFallbackDetails.poster_path;
+          // Kitsu IDs usually represent a specific anime season: prefer season posters over unified show posters.
+          if (isKitsu && season && !episode && type === 'poster') {
+            const seasonImagesQuery = input.seasonIncludeImageLanguage
+              ? `&include_image_language=${input.seasonIncludeImageLanguage}`
+              : '';
+            const seasonImagesCacheKey = input.seasonIncludeImageLanguage
+              ? `tmdb:season_images:${media.id}:${season}:${input.seasonIncludeImageLanguage}`
+              : `tmdb:season_images:${media.id}:${season}:all`;
+
+            const [seasonDetailsResponse, seasonImagesResponse] = await Promise.all([
+              fetchJsonCached(
+                `tmdb:season_details:${media.id}:${season}:${requestedImageLang}`,
+                `https://api.themoviedb.org/3/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${requestedImageLang}`,
+                TMDB_CACHE_TTL_MS,
+                phases,
+                'tmdb'
+              ),
+              fetchJsonCached(
+                seasonImagesCacheKey,
+                `https://api.themoviedb.org/3/tv/${media.id}/season/${season}/images?api_key=${tmdbKey}${seasonImagesQuery}`,
+                TMDB_CACHE_TTL_MS,
+                phases,
+                'tmdb'
+              )
+            ]);
+
+            let seasonPosterPath = null;
+            if (seasonDetailsResponse.ok) {
+              const seasonDetails = seasonDetailsResponse.data;
+              if (seasonDetails?.poster_path) {
+                seasonPosterPath = seasonDetails.poster_path;
               }
             }
-          }
 
-          if (seasonImagesResponse.ok) {
-            const seasonImages = seasonImagesResponse.data;
-            if (Array.isArray(seasonImages?.posters) && seasonImages.posters.length > 0) {
-              posterCollection = seasonImages.posters;
+            if (!seasonPosterPath && requestedImageLang !== FALLBACK_IMAGE_LANGUAGE) {
+              const seasonFallbackDetailsResponse = await fetchJsonCached(
+                `tmdb:season_details:${media.id}:${season}:${FALLBACK_IMAGE_LANGUAGE}`,
+                `https://api.themoviedb.org/3/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}`,
+                TMDB_CACHE_TTL_MS,
+                phases,
+                'tmdb'
+              );
+              if (seasonFallbackDetailsResponse.ok) {
+                const seasonFallbackDetails = seasonFallbackDetailsResponse.data;
+                if (seasonFallbackDetails?.poster_path) {
+                  seasonPosterPath = seasonFallbackDetails.poster_path;
+                }
+              }
             }
+
+            if (seasonImagesResponse.ok) {
+              const seasonImages = seasonImagesResponse.data;
+              if (Array.isArray(seasonImages?.posters) && seasonImages.posters.length > 0) {
+                posterCollection = seasonImages.posters;
+              }
+            }
+
+            originalPosterPath =
+              seasonPosterPath ||
+              pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path ||
+              originalPosterPath;
           }
 
-          originalPosterPath =
-            seasonPosterPath ||
-            pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path ||
-            originalPosterPath;
-        }
+          if (type === 'poster') {
+            const selectedPoster = pickPosterByPreference(
+              posterCollection,
+              posterTextPreference,
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE,
+              originalPosterPath
+            );
+            return { imgPath: selectedPoster?.file_path || '', logoAspectRatio: null };
+          }
 
-        if (type === 'poster') {
-          const selectedPoster = pickPosterByPreference(
-            posterCollection,
-            posterTextPreference,
-            requestedImageLang,
-            FALLBACK_IMAGE_LANGUAGE,
-            originalPosterPath
-          );
-          imgPath = selectedPoster?.file_path;
-        } else if (type === 'backdrop') {
-          const selectedBackdrop = pickBackdropByPreference(
-            backdropCollection,
-            imageText as PosterTextPreference,
-            requestedImageLang,
-            FALLBACK_IMAGE_LANGUAGE,
-            originalBackdropPath
-          );
-          imgPath = selectedBackdrop?.file_path;
-        } else if (type === 'logo') {
-          const bestLogo = pickByLanguageWithFallback(images.logos || [], requestedImageLang, FALLBACK_IMAGE_LANGUAGE);
-          imgPath = bestLogo?.file_path;
-          selectedLogoAspectRatio =
+          if (type === 'backdrop') {
+            const selectedBackdrop = pickBackdropByPreference(
+              backdropCollection,
+              imageText as PosterTextPreference,
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE,
+              originalBackdropPath
+            );
+            return { imgPath: selectedBackdrop?.file_path || '', logoAspectRatio: null };
+          }
+
+          const bestLogo = pickByLanguageWithFallback(logoCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE);
+          const logoAspectRatio =
             typeof bestLogo?.aspect_ratio === 'number' && bestLogo.aspect_ratio > 0
               ? bestLogo.aspect_ratio
               : null;
-          if (selectedLogoAspectRatio) {
-            outputWidth = Math.max(
-              LOGO_MIN_WIDTH,
-              Math.min(LOGO_MAX_WIDTH, Math.round(LOGO_BASE_HEIGHT * selectedLogoAspectRatio))
-            );
+          return { imgPath: bestLogo?.file_path || '', logoAspectRatio };
+        };
+
+        const initialImages = imagesResponse.data || {};
+        const initialSelection = await selectImagePath({
+          posters: initialImages.posters || [],
+          backdrops: initialImages.backdrops || [],
+          logos: initialImages.logos || [],
+          seasonIncludeImageLanguage: includeImageLanguage
+        });
+
+        imgPath = initialSelection.imgPath;
+        selectedLogoAspectRatio = initialSelection.logoAspectRatio;
+        if (selectedLogoAspectRatio) {
+          outputWidth = Math.max(
+            LOGO_MIN_WIDTH,
+            Math.min(LOGO_MAX_WIDTH, Math.round(LOGO_BASE_HEIGHT * selectedLogoAspectRatio))
+          );
+        }
+
+        // If the filtered languages returned nothing, retry with all languages and pick the first available.
+        if (!imgPath && !imgUrl) {
+          const fallbackImagesResponse = await fetchImagesWithLanguage();
+          if (fallbackImagesResponse.ok) {
+            const fallbackImages = fallbackImagesResponse.data || {};
+            const fallbackSelection = await selectImagePath({
+              posters: fallbackImages.posters || [],
+              backdrops: fallbackImages.backdrops || [],
+              logos: fallbackImages.logos || [],
+              seasonIncludeImageLanguage: undefined
+            });
+            if (fallbackSelection.imgPath) {
+              imgPath = fallbackSelection.imgPath;
+              selectedLogoAspectRatio = fallbackSelection.logoAspectRatio;
+              if (selectedLogoAspectRatio) {
+                outputWidth = Math.max(
+                  LOGO_MIN_WIDTH,
+                  Math.min(LOGO_MAX_WIDTH, Math.round(LOGO_BASE_HEIGHT * selectedLogoAspectRatio))
+                );
+              }
+            }
           }
         }
       }
