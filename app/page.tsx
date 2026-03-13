@@ -148,7 +148,7 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | -
-id (path)               | IMDb (tt...), TMDB (tmdb:id), Kitsu (kitsu:id), AniList, MAL          | -
+id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
                         | anilist, kitsu                                                       |
@@ -1108,8 +1108,8 @@ Skip any params that are empty/undefined.`;
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">TMDB</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb:id</td>
-                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">tmdb:603</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb:id or tmdb:movie:id or tmdb:tv:id</td>
+                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">tmdb:movie:603, tmdb:tv:1399</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">Kitsu</td>
@@ -1222,7 +1222,7 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | -
-id (path)               | IMDb (tt...), TMDB (tmdb:id), Kitsu (kitsu:id), AniList, MAL          | -
+id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
                         | anilist, kitsu                                                       |
@@ -1234,6 +1234,8 @@ posterRatingsMaxPerSide | Number (1-20)                                         
 backdropRatingsLayout   | center, right, right-vertical                                        | center
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
+
+TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).

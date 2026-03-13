@@ -45,7 +45,8 @@ const rewriteMetaImages = (
 ) => {
   if (!meta || typeof meta !== 'object') return meta;
   const rawId = typeof meta.id === 'string' ? meta.id : null;
-  const erdbId = normalizeErdbId(rawId);
+  const rawType = typeof meta.type === 'string' ? meta.type : null;
+  const erdbId = normalizeErdbId(rawId, rawType);
   if (!erdbId) return meta;
 
   return {

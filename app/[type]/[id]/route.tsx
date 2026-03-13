@@ -2448,7 +2448,7 @@ export async function GET(
   const parts = cleanId.split(':');
   const idPrefix = (parts[0] || '').trim().toLowerCase();
   const inputAnimeMappingProvider = toAnimeMappingProvider(idPrefix);
-  const inputAnimeMappingExternalId =
+  let inputAnimeMappingExternalId =
     inputAnimeMappingProvider && typeof parts[1] === 'string' && parts[1].trim().length > 0
       ? parts[1].trim()
       : null;
@@ -2457,15 +2457,27 @@ export async function GET(
   let episode: string | null = null;
   let isTmdb = false;
   let isKitsu = false;
+  let explicitTmdbMediaType: 'movie' | 'tv' | null = null;
   const hasNativeAnimeInput = ANIME_NATIVE_INPUT_ID_PREFIX_SET.has(idPrefix);
   let hasConfirmedAnimeMapping = hasNativeAnimeInput;
   let allowAnimeOnlyRatings = hasNativeAnimeInput;
 
   if (idPrefix === 'tmdb') {
     isTmdb = true;
-    mediaId = parts[1];
-    season = parts.length > 2 ? parts[2] : null;
-    episode = parts.length > 3 ? parts[3] : null;
+    const explicitTypeCandidate = (parts[1] || '').trim().toLowerCase();
+    if (explicitTypeCandidate === 'movie' || explicitTypeCandidate === 'tv') {
+      explicitTmdbMediaType = explicitTypeCandidate as 'movie' | 'tv';
+      mediaId = parts[2];
+      season = parts.length > 3 ? parts[3] : null;
+      episode = parts.length > 4 ? parts[4] : null;
+      if (mediaId) {
+        inputAnimeMappingExternalId = mediaId;
+      }
+    } else {
+      mediaId = parts[1];
+      season = parts.length > 2 ? parts[2] : null;
+      episode = parts.length > 3 ? parts[3] : null;
+    }
   } else if (idPrefix === 'kitsu') {
     isKitsu = true;
     mediaId = parts[1];
@@ -2539,29 +2551,43 @@ export async function GET(
       let mappedImdbId: string | null = null;
 
       if (isTmdb) {
-        // Try to fetch as movie
-        const movieResponse = await fetchJsonCached(
-          `tmdb:movie:${mediaId}`,
-          `https://api.themoviedb.org/3/movie/${mediaId}?api_key=${tmdbKey}`,
-          TMDB_CACHE_TTL_MS,
-          phases,
-          'tmdb'
-        );
-        if (movieResponse.ok) {
-          media = movieResponse.data;
-          mediaType = 'movie';
-        } else {
-          // Try as TV
-          const tvResponse = await fetchJsonCached(
-            `tmdb:tv:${mediaId}`,
-            `https://api.themoviedb.org/3/tv/${mediaId}?api_key=${tmdbKey}`,
+        if (explicitTmdbMediaType) {
+          const tmdbResponse = await fetchJsonCached(
+            `tmdb:${explicitTmdbMediaType}:${mediaId}`,
+            `https://api.themoviedb.org/3/${explicitTmdbMediaType}/${mediaId}?api_key=${tmdbKey}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
           );
-          if (tvResponse.ok) {
-            media = tvResponse.data;
-            mediaType = 'tv';
+          if (tmdbResponse.ok) {
+            media = tmdbResponse.data;
+            mediaType = explicitTmdbMediaType;
+          }
+        } else {
+          // Try to fetch as movie
+          const movieResponse = await fetchJsonCached(
+            `tmdb:movie:${mediaId}`,
+            `https://api.themoviedb.org/3/movie/${mediaId}?api_key=${tmdbKey}`,
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          );
+          if (movieResponse.ok) {
+            media = movieResponse.data;
+            mediaType = 'movie';
+          } else {
+            // Try as TV
+            const tvResponse = await fetchJsonCached(
+              `tmdb:tv:${mediaId}`,
+              `https://api.themoviedb.org/3/tv/${mediaId}?api_key=${tmdbKey}`,
+              TMDB_CACHE_TTL_MS,
+              phases,
+              'tmdb'
+            );
+            if (tvResponse.ok) {
+              media = tvResponse.data;
+              mediaType = 'tv';
+            }
           }
         }
       } else if (isKitsu) {

@@ -112,7 +112,7 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | -
-id (path)               | IMDb (tt...), TMDB (tmdb:id), Kitsu (kitsu:id), AniList, MAL          | -
+id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
                         | anilist, kitsu                                                       |

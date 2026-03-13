@@ -100,7 +100,19 @@ export const parseAddonBaseUrl = (manifestUrl: string) => {
   return url.toString();
 };
 
-export const normalizeErdbId = (rawId: string | undefined | null): string | null => {
+const normalizeStremioType = (value: string | undefined | null): 'movie' | 'tv' | null => {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === 'movie' || normalized === 'film') return 'movie';
+  if (normalized === 'series' || normalized === 'tv' || normalized === 'show') return 'tv';
+  return null;
+};
+
+export const normalizeErdbId = (
+  rawId: string | undefined | null,
+  mediaType?: string | null
+): string | null => {
   if (!rawId) return null;
   const trimmed = rawId.trim();
   if (!trimmed) return null;
@@ -112,6 +124,21 @@ export const normalizeErdbId = (rawId: string | undefined | null): string | null
   const prefix = head.toLowerCase();
   if (prefix === 'imdb' && parts.length >= 2 && IMDB_RE.test(parts[1])) {
     return parts[1];
+  }
+
+  if (prefix === 'tmdb') {
+    const explicitTypeCandidate = (parts[1] || '').trim().toLowerCase();
+    if ((explicitTypeCandidate === 'movie' || explicitTypeCandidate === 'tv') && parts.length >= 3 && parts[2]) {
+      return `tmdb:${explicitTypeCandidate}:${parts[2]}`;
+    }
+
+    if (parts.length >= 2 && parts[1]) {
+      const inferredType = normalizeStremioType(mediaType);
+      if (inferredType) {
+        return `tmdb:${inferredType}:${parts[1]}`;
+      }
+      return `tmdb:${parts[1]}`;
+    }
   }
 
   if (SUPPORTED_PREFIXES.has(prefix) && parts.length >= 2 && parts[1]) {
