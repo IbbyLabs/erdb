@@ -1,34 +1,68 @@
 $ErrorActionPreference = "Stop"
 
-function Test-Command {
-  param([string]$Name)
-  return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
+function Get-FontFamilyName {
+  param([string]$FontPath)
+  try {
+    Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+    $pfc = New-Object System.Drawing.Text.PrivateFontCollection
+    $pfc.AddFontFile($FontPath)
+    if ($pfc.Families.Length -gt 0) {
+      return $pfc.Families[0].Name
+    }
+  } catch {
+    # Fallback to filename if parsing fails
+  }
+  return [System.IO.Path]::GetFileNameWithoutExtension($FontPath)
 }
 
-if (-not (Test-Command "winget")) {
-  Write-Warning "winget not found. Install the App Installer from Microsoft Store, then retry."
-  exit 1
+function Install-FontFile {
+  param([string]$FontPath)
+  if (-not $script:installedHashes) {
+    $script:installedHashes = @{}
+  }
+  try {
+    $hash = (Get-FileHash -Path $FontPath -Algorithm SHA256).Hash
+    if ($script:installedHashes.ContainsKey($hash)) {
+      Write-Host "Skipping duplicate font file: $(Split-Path $FontPath -Leaf)"
+      return
+    }
+    $script:installedHashes[$hash] = $true
+  } catch {
+    # If hashing fails, continue without dedupe
+  }
+  $fontsDir = Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"
+  if (-not (Test-Path $fontsDir)) {
+    New-Item -ItemType Directory -Path $fontsDir | Out-Null
+  }
+  $dest = Join-Path $fontsDir (Split-Path $FontPath -Leaf)
+  Copy-Item $FontPath $dest -Force
+
+  $family = Get-FontFamilyName -FontPath $dest
+  $ext = [System.IO.Path]::GetExtension($dest).ToLowerInvariant()
+  $fontType = if ($ext -eq ".otf") { "OpenType" } else { "TrueType" }
+  $regPath = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+  $valueName = "$family ($fontType)"
+  Set-ItemProperty -Path $regPath -Name $valueName -Value (Split-Path $dest -Leaf)
+  $script:installedAny = $true
 }
 
-function Find-WingetId {
+function Download-FirstAvailable {
   param(
-    [string]$Query,
-    [string]$IdRegex
+    [string[]]$Urls,
+    [string]$OutPath
   )
-  $output = winget search --name $Query --source winget --accept-source-agreements 2>$null
-  if (-not $output) { return $null }
-
-  foreach ($line in $output) {
-    if ($line -match '^\s*Name\s+Id\s+Version') { continue }
-    if ($line -match '^-{3,}') { continue }
-    if ($line -match '^\s*(?<Name>.+?)\s{2,}(?<Id>[\w\.\-]+)\s{2,}(?<Version>\S+)\s{2,}(?<Source>\S+)') {
-      $name = $Matches['Name']
-      $id = $Matches['Id']
-      if ([string]::IsNullOrEmpty($IdRegex)) { return $id }
-      if ($id -match $IdRegex -or $name -match $IdRegex) { return $id }
+  foreach ($u in $Urls) {
+    try {
+      Invoke-WebRequest -Uri $u -OutFile $OutPath -UseBasicParsing
+      $size = (Get-Item $OutPath).Length
+      if ($size -ge 10240) {
+        return $u
+      }
+      Remove-Item $OutPath -Force -ErrorAction SilentlyContinue
+    } catch {
+      # try next
     }
   }
-
   return $null
 }
 
@@ -40,22 +74,83 @@ $targets = @(
 )
 
 $installedAny = $false
-foreach ($t in $targets) {
-  Write-Host "Searching for $($t.Label)..."
-  $id = Find-WingetId -Query $t.Query -IdRegex $t.IdRegex
-  if (-not $id) {
-    Write-Warning "No winget package found for $($t.Label)."
-    continue
-  }
-
-  Write-Host "Installing $($t.Label) ($id)..."
-  winget install --id $id --source winget --accept-source-agreements --accept-package-agreements --silent
-  if ($LASTEXITCODE -eq 0) {
-    $installedAny = $true
-  } else {
-    Write-Warning "Install failed for $($t.Label) ($id)."
-  }
+$installedAny = $false
+if ($env:ERDB_FONT_DOWNLOAD -eq "0") {
+  Write-Warning "Font download disabled (ERDB_FONT_DOWNLOAD=0)."
+  exit 1
 }
+
+Write-Host "Downloading fonts directly..."
+  $downloadTargets = @(
+    @{
+      Label = "Noto Sans"
+      Files = @(
+        @{
+          Name = "NotoSans-Regular.ttf"
+          Urls = @(
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/static/NotoSans-Regular.ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans[wdth,wght].ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans-VariableFont_wdth,wght.ttf"
+          )
+        },
+        @{
+          Name = "NotoSans-Bold.ttf"
+          Urls = @(
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/static/NotoSans-Bold.ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans[wdth,wght].ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans-VariableFont_wdth,wght.ttf"
+          )
+        }
+      )
+    },
+    @{
+      Label = "Noto Serif"
+      Files = @(
+        @{
+          Name = "NotoSerif-Regular.ttf"
+          Urls = @(
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/static/NotoSerif-Regular.ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif[wght].ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif[wdth,wght].ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif-VariableFont_wght.ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif-VariableFont_wdth,wght.ttf"
+          )
+        },
+        @{
+          Name = "NotoSerif-Bold.ttf"
+          Urls = @(
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/static/NotoSerif-Bold.ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif[wght].ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif[wdth,wght].ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif-VariableFont_wght.ttf",
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notoserif/NotoSerif-VariableFont_wdth,wght.ttf"
+          )
+        }
+      )
+    }
+  )
+
+  foreach ($d in $downloadTargets) {
+    $tmpDir = Join-Path $env:TEMP ("erdb-fonts-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $tmpDir | Out-Null
+    try {
+      Write-Host "Downloading $($d.Label)..."
+      foreach ($f in $d.Files) {
+        $outPath = Join-Path $tmpDir $f.Name
+        $usedUrl = Download-FirstAvailable -Urls $f.Urls -OutPath $outPath
+        if (-not $usedUrl) {
+          Write-Warning "Download failed for $($f.Name)."
+          continue
+        }
+        Write-Host "Downloaded $($f.Name) from $usedUrl"
+        Install-FontFile -FontPath $outPath
+      }
+    } catch {
+      Write-Warning "Download/install failed for $($d.Label): $($_.Exception.Message)"
+    } finally {
+      Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  }
 
 if (-not $installedAny) {
   Write-Warning "No fonts installed. You may need to install manually."

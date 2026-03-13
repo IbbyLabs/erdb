@@ -28,7 +28,7 @@ if (process.platform === 'win32') {
     process.exit(0);
   }
 
-  console.log('[postinstall] Installing system fonts for Windows via winget (may require admin).');
+  console.log('[postinstall] Installing system fonts for Windows (may require admin).');
   const result = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath], {
     stdio: 'inherit',
   });
