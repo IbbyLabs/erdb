@@ -45,6 +45,24 @@ type ProxyEnabledTypes = Record<ProxyType, boolean>;
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
 
+const normalizeManifestUrl = (value: string, allowBareScheme = false) => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const lower = trimmed.toLowerCase();
+  if (!lower.startsWith('stremio://')) {
+    return trimmed;
+  }
+
+  const withoutScheme = trimmed.slice('stremio://'.length);
+  if (!withoutScheme) return allowBareScheme ? 'https://' : '';
+  if (/^https?:\/\//i.test(withoutScheme)) {
+    return withoutScheme;
+  }
+  return `https://${withoutScheme}`;
+};
+
+const isBareHttpUrl = (value: string) => value === 'http://' || value === 'https://';
+
 const encodeBase64Url = (value: string) => {
   const bytes = new TextEncoder().encode(value);
   let binary = '';
@@ -317,10 +335,10 @@ Skip any params that are empty/undefined.`;
       return;
     }
 
-    const manifestUrl = proxyManifestUrl.trim();
+    const manifestUrl = normalizeManifestUrl(proxyManifestUrl);
     const tmdb = proxyTmdbKey.trim();
     const mdb = proxyMdblistKey.trim();
-    if (!manifestUrl || !tmdb || !mdb) {
+    if (!manifestUrl || isBareHttpUrl(manifestUrl) || !tmdb || !mdb) {
       setProxyUrl('');
       return;
     }
@@ -420,7 +438,13 @@ Skip any params that are empty/undefined.`;
   }, [proxyUrl]);
 
   const canGenerateConfig = Boolean(configString);
-  const canGenerateProxy = Boolean(proxyManifestUrl.trim() && proxyTmdbKey.trim() && proxyMdblistKey.trim());
+  const normalizedProxyManifestUrl = normalizeManifestUrl(proxyManifestUrl);
+  const canGenerateProxy = Boolean(
+    normalizedProxyManifestUrl &&
+    !isBareHttpUrl(normalizedProxyManifestUrl) &&
+    proxyTmdbKey.trim() &&
+    proxyMdblistKey.trim()
+  );
   const activeRatingStyle =
     previewType === 'poster'
       ? posterRatingStyle
@@ -706,7 +730,7 @@ Skip any params that are empty/undefined.`;
                   <input
                     type="url"
                     value={proxyManifestUrl}
-                    onChange={(e) => setProxyManifestUrl(e.target.value)}
+                    onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
                     placeholder="https://addon.example.com/manifest.json"
                     className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
                   />
