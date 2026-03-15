@@ -169,4 +169,10 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` and `mdblistKey` are required.
 
+https://github.com/user-attachments/assets/cb70624f-75c8-49da-96fc-b7f6e177df98
+
+https://github.com/user-attachments/assets/b041ae36-c2d1-44ee-9daa-c92f72409a8b
+
 © 2026 ERDB Project
+
+
