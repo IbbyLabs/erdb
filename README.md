@@ -20,6 +20,31 @@ cd erdb
 
 The compose file includes a reverse proxy (Caddy) to handle app scaling.
 
+## Recommended Requirements
+
+For high performance (on-the-fly image rendering), a server with a strong CPU and plenty of RAM is recommended.
+
+Minimum recommended:
+- CPU: 4 vCPU
+- RAM: 4 GB
+
+Basic start:
+```bash
+docker compose up -d --build
+```
+
+Scale to multiple instances (e.g. 4):
+```bash
+docker compose up -d --build --scale app=4
+```
+
+The public port is `ERDB_HTTP_PORT` (default `3000`) exposed by Caddy. Set it in the `.env` file.
+Data (SQLite database and image cache) is persisted in `./data`.
+
+Custom port (with scale):
+```bash
+ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
+```
 ## HuggingFace Guide (NOT RECOMMENDED)
 
 (to avoid bans on HuggingFace)
@@ -61,32 +86,6 @@ Done! Your ERDB is ready to use on HuggingFace.
 
 Note: to update ERDB quickly, go to the Space settings and click
 "Factory Rebuild" only after syncing your fork on GitHub.
-
-## Recommended Requirements
-
-For high performance (on-the-fly image rendering), a server with a strong CPU and plenty of RAM is recommended.
-
-Minimum recommended:
-- CPU: 4 vCPU
-- RAM: 4 GB
-
-Basic start:
-```bash
-docker compose up -d --build
-```
-
-Scale to multiple instances (e.g. 4):
-```bash
-docker compose up -d --build --scale app=4
-```
-
-The public port is `ERDB_HTTP_PORT` (default `3000`) exposed by Caddy. Set it in the `.env` file.
-Data (SQLite database and image cache) is persisted in `./data`.
-
-Custom port (with scale):
-```bash
-ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
-```
 
 ## API Usage
 
