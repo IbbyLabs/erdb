@@ -2594,6 +2594,7 @@ export async function GET(
       const needsAnimeOnlyRatings = [...requestedExternalRatings].some((provider) =>
         ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
       );
+      const shouldAttemptAnimeMapping = hasNativeAnimeInput || mediaLooksAnimated;
       const needsExternalRatings = [...requestedExternalRatings].some((provider) => provider !== 'tmdb');
       const needsImdbRating = requestedExternalRatings.has('imdb');
       const needsKitsuRating = requestedExternalRatings.has('kitsu');
@@ -2664,7 +2665,7 @@ export async function GET(
               return new Map<RatingPreference, string>();
             }
 
-            if (needsAnimeOnlyRatings && !kitsuId) {
+            if (needsAnimeOnlyRatings && shouldAttemptAnimeMapping && !kitsuId) {
               if (inputAnimeMappingProvider && inputAnimeMappingExternalId) {
                 kitsuId = await fetchKitsuIdFromReverseMapping({
                   provider: inputAnimeMappingProvider,
@@ -2722,6 +2723,7 @@ export async function GET(
 
               const ensureAnimeMapping = async () => {
                 if (allowAnimeOnlyRatings || !needsAnimeOnlyRatings) return;
+                if (!shouldAttemptAnimeMapping) return;
                 if (kitsuId) {
                   hasConfirmedAnimeMapping = true;
                   allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
