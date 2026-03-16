@@ -1450,6 +1450,52 @@ const isTmdbSourceImageUrl = (value: string) => {
   }
 };
 
+const buildProviderIconStorageKey = (iconUrl: string) => `icons/${sha1Hex(iconUrl)}.png`;
+
+const readProviderIconFromStorage = async (iconUrl: string): Promise<string | null> => {
+  if (!isObjectStorageConfigured()) return null;
+  try {
+    const payload = await getCachedImageFromObjectStorage(buildProviderIconStorageKey(iconUrl));
+    if (!payload) return null;
+    const buffer = Buffer.from(payload.body);
+    const contentType = toImageContentType(payload.contentType);
+    return `data:${contentType};base64,${buffer.toString('base64')}`;
+  } catch {
+    return null;
+  }
+};
+
+const writeProviderIconToStorage = async (iconUrl: string, buffer: Buffer) => {
+  if (!isObjectStorageConfigured()) return;
+  try {
+    await putCachedImageToObjectStorage(buildProviderIconStorageKey(iconUrl), {
+      body: bufferToArrayBuffer(buffer),
+      contentType: 'image/png',
+      cacheControl: buildSourceImageFallbackCacheControl(PROVIDER_ICON_CACHE_TTL_MS),
+    });
+  } catch {
+    // Ignore icon cache write failures.
+  }
+};
+
+const pickTmdbImageSize = (imageType: 'poster' | 'backdrop' | 'logo', outputWidth: number) => {
+  if (imageType === 'poster') return 'w500';
+  if (imageType === 'backdrop') return 'w1280';
+  if (imageType === 'logo') {
+    return outputWidth <= 500 ? 'w500' : 'original';
+  }
+  return 'original';
+};
+
+const buildTmdbImageUrl = (
+  imageType: 'poster' | 'backdrop' | 'logo',
+  imgPath: string,
+  outputWidth: number
+) => {
+  const size = pickTmdbImageSize(imageType, outputWidth);
+  return `https://image.tmdb.org/t/p/${size}${imgPath}`;
+};
+
 const fetchSourceImageUncached = async (
   imgUrl: string,
   fallbackTtlMs: number
@@ -1557,6 +1603,12 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
     const warmLocal = getMetadata<string>(normalizedIconUrl);
     if (warmLocal) return warmLocal;
 
+    const storageCached = await readProviderIconFromStorage(normalizedIconUrl);
+    if (storageCached) {
+      setMetadata(normalizedIconUrl, storageCached, PROVIDER_ICON_CACHE_TTL_MS);
+      return storageCached;
+    }
+
     try {
       const response = await fetch(normalizedIconUrl, { cache: 'no-store' });
       if (!response.ok) return null;
@@ -1568,12 +1620,13 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
           fit: 'contain',
           background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
-        .png({ compressionLevel: 9 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
       const outputContentType = 'image/png';
 
       const dataUri = `data:${outputContentType};base64,${outputBuffer.toString('base64')}`;
       setMetadata(normalizedIconUrl, dataUri, PROVIDER_ICON_CACHE_TTL_MS);
+      await writeProviderIconToStorage(normalizedIconUrl, outputBuffer);
 
       return dataUri;
     } catch {
@@ -3192,7 +3245,7 @@ export async function GET(
         throw new HttpError('Image not found', 404);
       }
       if (!imgUrl) {
-        imgUrl = `https://image.tmdb.org/t/p/original${imgPath}`;
+        imgUrl = buildTmdbImageUrl(imageType, imgPath, outputWidth);
       }
       if (!shouldRenderRatings) {
         return getSourceImagePayload(imgUrl);
