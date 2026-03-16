@@ -17,7 +17,7 @@ const getFilePath = (key: string) => join(CACHE_DIR, key.replace(/\//g, '_'));
 
 export const isObjectStorageConfigured = () => true; // Always "configured" as local files
 
-export const buildObjectStorageImageKey = (cacheHash: string) => `final/${cacheHash}.png`;
+export const buildObjectStorageImageKey = (cacheHash: string, ext = 'png') => `final/${cacheHash}.${ext}`;
 export const buildObjectStorageSourceImageKey = (id: string, variant: string) => `source/${id.replace(/[^a-zA-Z0-9]/g, '_')}_${variant}.png`;
 
 export const getCachedImageFromObjectStorage = async (key: string): Promise<ObjectStorageResult | null> => {

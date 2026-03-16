@@ -309,6 +309,7 @@ const createImageHttpResponse = (
     headers: {
       'Content-Type': payload.contentType,
       'Cache-Control': payload.cacheControl,
+      Vary: 'Accept',
       'Server-Timing': serverTiming,
       'X-ERDB-Cache': cacheStatus,
     },
@@ -338,6 +339,7 @@ type RatingBadge = {
   iconUrl: string;
   accentColor: string;
 };
+type OutputFormat = 'png' | 'jpeg' | 'webp';
 const RATING_PROVIDER_META = new Map(
   RATING_PROVIDER_OPTIONS.map((provider) => [provider.id, provider] as const)
 );
@@ -389,6 +391,24 @@ const shouldRenderRatingValue = (value: string | null | undefined) => {
   if (!Number.isNaN(numericValue) && numericValue === 0) return false;
 
   return true;
+};
+
+const pickOutputFormat = (imageType: 'poster' | 'backdrop' | 'logo', acceptHeader?: string | null): OutputFormat => {
+  if (imageType === 'logo') return 'png';
+  const accept = (acceptHeader || '').toLowerCase();
+  return accept.includes('image/webp') ? 'webp' : 'jpeg';
+};
+
+const outputFormatToContentType = (format: OutputFormat) => {
+  if (format === 'webp') return 'image/webp';
+  if (format === 'jpeg') return 'image/jpeg';
+  return 'image/png';
+};
+
+const outputFormatToExtension = (format: OutputFormat) => {
+  if (format === 'webp') return 'webp';
+  if (format === 'jpeg') return 'jpg';
+  return 'png';
 };
 
 const isTmdbAnimationTitle = (media: any) => {
@@ -1340,6 +1360,7 @@ const pickBackdropByPreference = (
 
 type FastRenderInput = {
   imageType: 'poster' | 'backdrop' | 'logo';
+  outputFormat: OutputFormat;
   imgUrl: string;
   outputWidth: number;
   outputHeight: number;
@@ -2117,7 +2138,7 @@ const renderWithSharp = async (
         position: 'center',
         background: { r: 0, g: 0, b: 0, alpha: 0 },
       })
-      .png()
+      .png({ compressionLevel: 1 })
       .toBuffer();
     overlays.push({ input: resizedImageBuffer, top: 0, left: imageLeft });
 
@@ -2379,21 +2400,28 @@ const renderWithSharp = async (
         ? { r: 0, g: 0, b: 0, alpha: 0 }
         : { r: 17, g: 17, b: 17, alpha: 1 };
 
-    const finalBuffer: Buffer = await sharp({
+    const pipeline = sharp({
       create: {
         width: input.outputWidth,
         height: input.finalOutputHeight,
         channels: 4,
         background,
       },
-    })
-      .composite(overlays)
-      .png({ compressionLevel: 6 })
-      .toBuffer();
+    }).composite(overlays);
+
+    let finalBuffer: Buffer;
+    let outputContentType = outputFormatToContentType(input.outputFormat);
+    if (input.outputFormat === 'webp') {
+      finalBuffer = await pipeline.webp({ quality: 80, effort: 3 }).toBuffer();
+    } else if (input.outputFormat === 'jpeg') {
+      finalBuffer = await pipeline.jpeg({ quality: 82 }).toBuffer();
+    } else {
+      finalBuffer = await pipeline.png({ compressionLevel: 1 }).toBuffer();
+    }
 
     return {
       body: bufferToArrayBuffer(finalBuffer),
-      contentType: 'image/png',
+      contentType: outputContentType,
       cacheControl: input.cacheControl,
     };
   });
@@ -2423,6 +2451,7 @@ export async function GET(
   }
   scheduleImdbDatasetSync();
   const imageType = type as 'poster' | 'backdrop' | 'logo';
+  const outputFormat = pickOutputFormat(imageType, request.headers.get('accept'));
   const cleanId = id.replace('.jpg', '');
 
   // Extract configuration from query parameters
@@ -2512,6 +2541,7 @@ export async function GET(
   const finalImageCacheKey = [
     FINAL_IMAGE_RENDERER_CACHE_VERSION,
     imageType,
+    outputFormat,
     cleanId,
     requestedImageLang,
     posterTextPreference,
@@ -2523,7 +2553,7 @@ export async function GET(
     'v1', // Static version since we no longer have tokenConfigVersion
   ].join('|');
   const finalCacheHash = sha1Hex(finalImageCacheKey);
-  const finalObjectStorageKey = buildObjectStorageImageKey(finalCacheHash);
+  const finalObjectStorageKey = buildObjectStorageImageKey(finalCacheHash, outputFormatToExtension(outputFormat));
 
   const objectStorageEnabled = isObjectStorageConfigured();
   if (shouldCacheFinalImage) {
@@ -3440,6 +3470,7 @@ export async function GET(
       const renderedPayload = await renderWithSharp(
         {
           imageType,
+          outputFormat,
           imgUrl,
           outputWidth: finalOutputWidth,
           outputHeight: useLogoBadgeLayout ? logoImageHeight : outputHeight,
