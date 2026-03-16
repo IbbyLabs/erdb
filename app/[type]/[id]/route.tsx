@@ -3101,7 +3101,13 @@ export async function GET(
 
         // If the filtered languages returned nothing, retry with all languages and pick the first available.
         if (!imgPath && !imgUrl) {
-          const fallbackImagesResponse = await fetchImagesWithLanguage();
+          const fallbackImagesResponse = await fetchJsonCached(
+            `tmdb:${mediaType}:${media.id}:images:all`,
+            `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          );
           if (fallbackImagesResponse.ok) {
             const fallbackImages = fallbackImagesResponse.data || {};
             const fallbackSelection = await selectImagePath({
