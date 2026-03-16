@@ -21,7 +21,7 @@ cd erdb
 The compose file includes a reverse proxy (Caddy) to handle app scaling.
 For Hugging Face Spaces, use `Dockerfile.hf` (it clones the repo and starts the app on port 7860).
 
-## HuggingFace Guide (ERDB Ratings)
+## HuggingFace Guide (NOT RACCOMANDED)
 
 (to avoid bans on HuggingFace)
 1. Go to the ERDB GitHub repo: https://github.com/realbestia1/erdb
