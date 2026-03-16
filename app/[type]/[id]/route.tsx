@@ -117,12 +117,6 @@ const MDBLIST_RATE_LIMIT_COOLDOWN_MS = parseCacheTtlMs(
   30 * 1000,
   7 * 24 * 60 * 60 * 1000
 );
-const IMDB_CACHE_TTL_MS = parseCacheTtlMs(
-  process.env.ERDB_IMDB_CACHE_TTL_MS,
-  3 * 24 * 60 * 60 * 1000,
-  10 * 60 * 1000,
-  30 * 24 * 60 * 60 * 1000
-);
 const IMDB_DATASET_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_IMDB_DATASET_CACHE_TTL_MS,
   7 * 24 * 60 * 60 * 1000,
@@ -156,11 +150,6 @@ type CachedJsonResponse = {
   ok: boolean;
   status: number;
   data: any;
-};
-type CachedTextResponse = {
-  ok: boolean;
-  status: number;
-  text: string | null;
 };
 type CachedJsonNetworkObserver = {
   onNetworkResponse?: (input: {
@@ -202,7 +191,6 @@ class HttpError extends Error {
 const finalImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
 const sourceImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
 const metadataInFlight = new Map<string, Promise<CachedJsonResponse>>();
-const textMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
 const providerIconInFlight = new Map<string, Promise<string | null>>();
 const mdbListRateLimitedUntil = new Map<string, number>();
 let mdbListApiKeyCursor = 0;
@@ -919,112 +907,6 @@ const fetchKitsuRating = async (kitsuId: string, phases: PhaseDurations) => {
   return normalizeRatingValue(attributes?.averageRating);
 };
 
-const extractAggregateRatingValueFromPayload = (payload: any, depth = 0): string | null => {
-  if (payload === null || payload === undefined || depth > 8) return null;
-
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      const nestedValue = extractAggregateRatingValueFromPayload(item, depth + 1);
-      if (nestedValue) return nestedValue;
-    }
-    return null;
-  }
-
-  if (typeof payload === 'object') {
-    if (payload?.aggregateRating) {
-      const aggregateRatingValue = normalizeRatingValue(
-        payload.aggregateRating?.ratingValue ??
-        payload.aggregateRating?.rating ??
-        payload.aggregateRating?.value
-      );
-      if (aggregateRatingValue) return aggregateRatingValue;
-    }
-
-    if (payload?.['@type'] === 'AggregateRating') {
-      const directAggregateValue = normalizeRatingValue(
-        payload?.ratingValue ?? payload?.rating ?? payload?.value
-      );
-      if (directAggregateValue) return directAggregateValue;
-    }
-
-    for (const nestedValue of Object.values(payload)) {
-      const extracted = extractAggregateRatingValueFromPayload(nestedValue, depth + 1);
-      if (extracted) return extracted;
-    }
-  }
-
-  return null;
-};
-
-const extractImdbRatingFromHtml = (html: string) => {
-  if (!html) return null;
-
-  const ldJsonPattern = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  for (const match of html.matchAll(ldJsonPattern)) {
-    const scriptContent = match[1]?.trim();
-    if (!scriptContent) continue;
-    try {
-      const parsed = JSON.parse(scriptContent);
-      const ldJsonRating = extractAggregateRatingValueFromPayload(parsed);
-      if (ldJsonRating) return ldJsonRating;
-    } catch {
-      // Ignore malformed JSON-LD blocks and continue.
-    }
-  }
-
-  const directPatterns = [
-    /"aggregateRating"\s*:\s*\{[\s\S]{0,1000}?"ratingValue"\s*:\s*"?(?:\s*)(\d+(?:\.\d+)?)"?/i,
-    /"heroRating"\s*:\s*\{[\s\S]{0,400}?"aggregateRating"\s*:\s*"?(?:\s*)(\d+(?:\.\d+)?)"?/i,
-    /"ratingValue"\s*:\s*"?(?:\s*)(\d+(?:\.\d+)?)"?/i,
-  ];
-
-  for (const pattern of directPatterns) {
-    const match = html.match(pattern);
-    const value = match?.[1] || null;
-    const normalized = normalizeRatingValue(value);
-    if (normalized) return normalized;
-  }
-
-  return null;
-};
-
-const fetchImdbRating = async (
-  imdbId: string,
-  phases: PhaseDurations
-): Promise<{ value: string; cacheTtlMs: number } | null> => {
-  const normalizedImdbId = String(imdbId || '').trim();
-  if (!normalizedImdbId) return null;
-
-  try {
-    const response = await fetchTextCached(
-      `imdb:title:${normalizedImdbId}:rating`,
-      `https://www.imdb.com/title/${encodeURIComponent(normalizedImdbId)}/`,
-      IMDB_CACHE_TTL_MS,
-      phases,
-      'mdb',
-      {
-        headers: {
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-        },
-      }
-    );
-    if (!response.ok || !response.text) return null;
-
-    const rating = extractImdbRatingFromHtml(response.text);
-    if (!rating) return null;
-
-    return {
-      value: rating,
-      cacheTtlMs: IMDB_CACHE_TTL_MS,
-    };
-  } catch {
-    return null;
-  }
-};
-
 const fetchJsonCached = async (
   key: string,
   url: string,
@@ -1099,55 +981,6 @@ const fetchJsonCached = async (
         // Ignore observer failures for monitoring hooks.
       }
     }
-    const failureTtlMs = Math.min(ttlMs, 2 * 60 * 1000);
-    const targetTtlMs = response.ok ? ttlMs : failureTtlMs;
-    setMetadata(key, payload, targetTtlMs);
-
-    return payload;
-  });
-};
-
-const fetchTextCached = async (
-  key: string,
-  url: string,
-  ttlMs: number,
-  phases: PhaseDurations,
-  phase: keyof PhaseDurations,
-  init?: RequestInit
-): Promise<CachedTextResponse> => {
-
-
-  const cached = getMetadata<CachedTextResponse>(key);
-  if (cached) {
-    return cached;
-  }
-
-  return withDedupe(textMetadataInFlight, key, async () => {
-
-    const fromCache = getMetadata<CachedTextResponse>(key);
-    if (fromCache) return fromCache;
-
-
-
-    const response = await measurePhase(phases, phase, () =>
-      fetch(url, {
-        cache: 'no-store',
-        ...init,
-      })
-    );
-
-    let text: string | null = null;
-    try {
-      text = await response.text();
-    } catch {
-      text = null;
-    }
-
-    const payload: CachedTextResponse = {
-      ok: response.ok,
-      status: response.status,
-      text,
-    };
     const failureTtlMs = Math.min(ttlMs, 2 * 60 * 1000);
     const targetTtlMs = response.ok ? ttlMs : failureTtlMs;
     setMetadata(key, payload, targetTtlMs);
@@ -2863,6 +2696,189 @@ export async function GET(
             }
 
             const combinedRatings = new Map<RatingPreference, string>();
+            const shortCircuitLimit =
+              imageType === 'poster' ? getPosterRatingLayoutLimit(posterRatingsLayout) : null;
+
+            if (shortCircuitLimit) {
+              let mdbRatings: Map<RatingPreference, string> | null = null;
+              let mdbListCacheTtlMs: number | null = null;
+              let hasFetchedMdb = false;
+              let hasFetchedKitsu = false;
+
+              const ensureImdbId = async () => {
+                if (imdbId) return imdbId;
+                imdbId = media?.imdb_id || mappedImdbId || null;
+                if (!imdbId && detailsBundlePromise) {
+                  const bundle = await detailsBundlePromise;
+                  if (bundle?.bundledExternalIds?.imdb_id) {
+                    imdbId = bundle.bundledExternalIds.imdb_id;
+                  }
+                }
+                if (!imdbId && mappedImdbId) {
+                  imdbId = mappedImdbId;
+                }
+                return imdbId;
+              };
+
+              const ensureAnimeMapping = async () => {
+                if (allowAnimeOnlyRatings || !needsAnimeOnlyRatings) return;
+                if (kitsuId) {
+                  hasConfirmedAnimeMapping = true;
+                  allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
+                  return;
+                }
+                if (inputAnimeMappingProvider && inputAnimeMappingExternalId) {
+                  kitsuId = await fetchKitsuIdFromReverseMapping({
+                    provider: inputAnimeMappingProvider,
+                    externalId: inputAnimeMappingExternalId,
+                    season,
+                    phases,
+                  });
+                }
+                const resolvedImdbId = await ensureImdbId();
+                if (!kitsuId && resolvedImdbId) {
+                  kitsuId = await fetchKitsuIdFromReverseMapping({
+                    provider: 'imdb',
+                    externalId: resolvedImdbId,
+                    season,
+                    phases,
+                  });
+                }
+                if (!kitsuId && media?.id) {
+                  kitsuId = await fetchKitsuIdFromReverseMapping({
+                    provider: 'tmdb',
+                    externalId: String(media.id),
+                    season,
+                    phases,
+                  });
+                }
+                if (kitsuId) {
+                  hasConfirmedAnimeMapping = true;
+                  allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
+                }
+              };
+
+              const ensureMdbRatings = async () => {
+                if (hasFetchedMdb) return mdbRatings;
+                hasFetchedMdb = true;
+                const resolvedImdbId = await ensureImdbId();
+                if (!resolvedImdbId || !(mdblistKey || hasMdbListApiKey)) return null;
+                try {
+                  mdbListCacheTtlMs = getMdbListCacheTtlMs({
+                    imdbId: resolvedImdbId,
+                    mediaType: mediaType as 'movie' | 'tv',
+                    releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
+                  });
+                  mdbRatings = await fetchMdbListRatings({
+                    imdbId: resolvedImdbId,
+                    cacheTtlMs: mdbListCacheTtlMs,
+                    phases,
+                    requestSource: 'addon',
+                    imageType,
+                    cleanId,
+                    manualApiKey: mdblistKey,
+                  });
+                  if (mdbRatings) {
+                    for (const [provider, value] of mdbRatings.entries()) {
+                      combinedRatings.set(provider, value);
+                      renderedRatingTtlByProvider.set(provider, mdbListCacheTtlMs);
+                    }
+                  }
+                } catch {
+                  // Ignore MDBList failures.
+                }
+                return mdbRatings;
+              };
+
+              const ensureImdbDatasetRating = async () => {
+                if (combinedRatings.has('imdb')) return combinedRatings.get('imdb') || null;
+                const resolvedImdbId = await ensureImdbId();
+                if (!resolvedImdbId) return null;
+                const datasetRating = getImdbRatingFromDataset(resolvedImdbId);
+                if (datasetRating) {
+                  const normalized = normalizeRatingValue(datasetRating.rating);
+                  if (normalized) {
+                    combinedRatings.set('imdb', normalized);
+                    renderedRatingTtlByProvider.set('imdb', IMDB_DATASET_CACHE_TTL_MS);
+                  }
+                }
+                return combinedRatings.get('imdb') || null;
+              };
+
+              const ensureKitsuRating = async () => {
+                if (hasFetchedKitsu || combinedRatings.has('kitsu')) {
+                  return combinedRatings.get('kitsu') || null;
+                }
+                hasFetchedKitsu = true;
+                if (!kitsuId) return null;
+                try {
+                  const kitsuCacheTtlMs = getRatingCacheTtlMs({
+                    id: kitsuId,
+                    mediaType: mediaType as 'movie' | 'tv',
+                    releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
+                    defaultTtlMs: KITSU_CACHE_TTL_MS,
+                    oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+                  });
+                  const kitsuRating = await fetchKitsuRating(kitsuId, phases);
+                  if (kitsuRating) {
+                    combinedRatings.set('kitsu', kitsuRating);
+                    renderedRatingTtlByProvider.set('kitsu', kitsuCacheTtlMs);
+                  }
+                } catch {
+                  // Ignore
+                }
+                return combinedRatings.get('kitsu') || null;
+              };
+
+              const resolveProvider = async (provider: RatingPreference) => {
+                if (provider === 'tmdb') return tmdbRating;
+
+                if (provider === 'imdb') {
+                  const datasetRating = await ensureImdbDatasetRating();
+                  if (datasetRating) return datasetRating;
+                  await ensureMdbRatings();
+                  return combinedRatings.get('imdb') || null;
+                }
+
+                if (provider === 'kitsu') {
+                  if (combinedRatings.has('kitsu')) return combinedRatings.get('kitsu') || null;
+                  if (!needsAnimeOnlyRatings) return null;
+                  if (!allowAnimeOnlyRatings) {
+                    await ensureAnimeMapping();
+                  }
+                  if (!allowAnimeOnlyRatings) return null;
+                  const kitsuRating = await ensureKitsuRating();
+                  if (kitsuRating) return kitsuRating;
+                  await ensureMdbRatings();
+                  return combinedRatings.get('kitsu') || null;
+                }
+
+                if (ANIME_ONLY_RATING_PROVIDER_SET.has(provider)) {
+                  if (!needsAnimeOnlyRatings) return null;
+                  if (!allowAnimeOnlyRatings) {
+                    await ensureAnimeMapping();
+                  }
+                  if (!allowAnimeOnlyRatings) return null;
+                  await ensureMdbRatings();
+                  return combinedRatings.get(provider) || null;
+                }
+
+                await ensureMdbRatings();
+                return combinedRatings.get(provider) || null;
+              };
+
+              let renderableCount = 0;
+              for (const provider of effectiveRatingPreferences) {
+                if (renderableCount >= shortCircuitLimit) break;
+                const baseValue = await resolveProvider(provider);
+                if (!shouldRenderRatingValue(baseValue)) continue;
+                const formattedValue = formatDisplayRatingValue(provider, baseValue as string);
+                if (!shouldRenderRatingValue(formattedValue)) continue;
+                renderableCount += 1;
+              }
+
+              return combinedRatings;
+            }
 
             if (imdbId && (mdblistKey || hasMdbListApiKey)) {
               try {
@@ -2894,6 +2910,7 @@ export async function GET(
               }
             }
 
+            // IMDb HTML scraping removed: only dataset or MDBList can supply IMDb ratings.
             if (needsImdbRating && imdbId && !combinedRatings.has('imdb')) {
               const datasetRating = getImdbRatingFromDataset(imdbId);
               if (datasetRating) {
@@ -2901,24 +2918,6 @@ export async function GET(
                 if (normalized) {
                   combinedRatings.set('imdb', normalized);
                   renderedRatingTtlByProvider.set('imdb', IMDB_DATASET_CACHE_TTL_MS);
-                }
-              }
-              if (!combinedRatings.has('imdb')) {
-                try {
-                  const imdbCacheTtlMs = getRatingCacheTtlMs({
-                    id: imdbId,
-                    mediaType: mediaType as 'movie' | 'tv',
-                    releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
-                    defaultTtlMs: IMDB_CACHE_TTL_MS,
-                    oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
-                  });
-                  const imdbRating = await fetchImdbRating(imdbId, phases);
-                  if (imdbRating) {
-                    combinedRatings.set('imdb', imdbRating.value);
-                    renderedRatingTtlByProvider.set('imdb', imdbCacheTtlMs);
-                  }
-                } catch {
-                  // Ignore
                 }
               }
             }
