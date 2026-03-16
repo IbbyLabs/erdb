@@ -21,4 +21,4 @@ RUN mkdir -p /app/data
 VOLUME ["/app/data"]
 
 EXPOSE 7860
-CMD ["sh", "-c", "npm run start -- -p ${PORT:-7860}"]
+CMD ["node", ".next/standalone/server.js"]
