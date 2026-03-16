@@ -15,7 +15,7 @@ RUN npm run build
 # Ensure static assets are available when running the standalone server
 RUN mkdir -p /app/.next/standalone/.next \
   && cp -r /app/.next/static /app/.next/standalone/.next/ \
-  && cp -r /app/public /app/.next/standalone/public
+  && if [ -d /app/public ]; then cp -r /app/public /app/.next/standalone/public; fi
 
 # Runtime config
 ENV NODE_ENV=production
