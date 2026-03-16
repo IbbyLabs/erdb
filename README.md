@@ -19,7 +19,6 @@ cd erdb
 ## Scalability & Docker
 
 The compose file includes a reverse proxy (Caddy) to handle app scaling.
-For Hugging Face Spaces, use `Dockerfile.hf` (it clones the repo and starts the app on port 7860).
 
 ## HuggingFace Guide (NOT RECOMMENDED)
 
