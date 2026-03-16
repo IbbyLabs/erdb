@@ -117,12 +117,6 @@ const MDBLIST_RATE_LIMIT_COOLDOWN_MS = parseCacheTtlMs(
   30 * 1000,
   7 * 24 * 60 * 60 * 1000
 );
-const OMDB_CACHE_TTL_MS = parseCacheTtlMs(
-  process.env.ERDB_OMDB_CACHE_TTL_MS,
-  3 * 24 * 60 * 60 * 1000,
-  10 * 60 * 1000,
-  30 * 24 * 60 * 60 * 1000
-);
 const IMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_IMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -647,57 +641,6 @@ const fetchMdbListRatings = async ({
   return null;
 };
 
-const fetchOmdbRatings = async ({
-  imdbId,
-  phases,
-  manualApiKey,
-}: {
-  imdbId: string;
-  phases: PhaseDurations;
-  manualApiKey?: string | null;
-}) => {
-  const normalizedImdbId = String(imdbId || '').trim();
-  const apiKey = manualApiKey || (process.env.OMDB_API_KEY || '').trim();
-
-  if (!normalizedImdbId || !apiKey) return null;
-
-  try {
-    const response = await fetchJsonCached(
-      `omdb:${normalizedImdbId}:key:${sha1Hex(apiKey)}`,
-      `https://www.omdbapi.com/?apikey=${encodeURIComponent(apiKey)}&i=${encodeURIComponent(normalizedImdbId)}`,
-      OMDB_CACHE_TTL_MS,
-      phases,
-      'mdb'
-    );
-
-    if (!response.ok || !response.data || response.data.Response === 'False') {
-      return null;
-    }
-
-    const ratings = new Map<RatingPreference, string>();
-    const data = response.data;
-
-    const imdb = normalizeRatingValue(data.imdbRating);
-    if (imdb) ratings.set('imdb', imdb);
-
-    const metacritic = normalizeRatingValue(data.Metascore);
-    if (metacritic) ratings.set('metacritic', metacritic);
-
-    if (Array.isArray(data.Ratings)) {
-      for (const r of data.Ratings) {
-        if (r.Source === 'Rotten Tomatoes') {
-          const rt = normalizeRatingValue(r.Value);
-          if (rt) ratings.set('tomatoes', rt);
-        }
-      }
-    }
-
-    return ratings;
-  } catch {
-    return null;
-  }
-};
-
 const normalizeKitsuId = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     const asInt = Math.trunc(value);
@@ -1047,35 +990,10 @@ const extractImdbRatingFromHtml = (html: string) => {
 
 const fetchImdbRating = async (
   imdbId: string,
-  phases: PhaseDurations,
-  manualOmdbApiKey?: string | null
+  phases: PhaseDurations
 ): Promise<{ value: string; cacheTtlMs: number } | null> => {
   const normalizedImdbId = String(imdbId || '').trim();
   if (!normalizedImdbId) return null;
-
-  const omdbApiKey = manualOmdbApiKey || (process.env.OMDB_API_KEY || '').trim();
-  if (omdbApiKey) {
-    try {
-      const omdbResponse = await fetchJsonCached(
-        `omdb:title:${normalizedImdbId}:rating:key:${sha1Hex(omdbApiKey)}`,
-        `https://www.omdbapi.com/?apikey=${encodeURIComponent(omdbApiKey)}&i=${encodeURIComponent(normalizedImdbId)}`,
-        OMDB_CACHE_TTL_MS,
-        phases,
-        'mdb'
-      );
-      if (omdbResponse.ok || omdbResponse.data) {
-        const omdbRating = normalizeRatingValue(omdbResponse.data?.imdbRating);
-        if (omdbRating && omdbResponse.data?.Response !== 'False') {
-          return {
-            value: omdbRating,
-            cacheTtlMs: OMDB_CACHE_TTL_MS,
-          };
-        }
-      }
-    } catch {
-      // Ignore OMDb failures and fallback to direct IMDb page fetch.
-    }
-  }
 
   try {
     const response = await fetchTextCached(
@@ -2525,7 +2443,6 @@ export async function GET(
       : DEFAULT_RATING_STYLE;
   const mdblistKey = request.nextUrl.searchParams.get('mdblistKey') || request.nextUrl.searchParams.get('mdblist_key');
   const tmdbKey = request.nextUrl.searchParams.get('tmdbKey') || request.nextUrl.searchParams.get('tmdb_key');
-  const omdbKey = request.nextUrl.searchParams.get('omdbKey') || request.nextUrl.searchParams.get('omdb_key');
 
   const parts = cleanId.split(':');
   const idPrefix = (parts[0] || '').trim().toLowerCase();
@@ -2851,11 +2768,47 @@ export async function GET(
       const shouldRenderRawKitsuFallbackRating =
         useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
       const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
+      const detailsBundlePromise = !useRawKitsuFallback
+        ? (async () => {
+          const buildDetailsUrl = (language: string) =>
+            `https://api.themoviedb.org/3/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=images,external_ids&include_image_language=${encodeURIComponent(includeImageLanguage)}`;
+
+          const [detailsResponse, fallbackDetailsResponse] = await Promise.all([
+            fetchJsonCached(
+              `tmdb:${mediaType}:${media.id}:details:${requestedImageLang}:bundle:${includeImageLanguage}`,
+              buildDetailsUrl(requestedImageLang),
+              TMDB_CACHE_TTL_MS,
+              phases,
+              'tmdb'
+            ),
+            requestedImageLang !== FALLBACK_IMAGE_LANGUAGE
+              ? fetchJsonCached(
+                `tmdb:${mediaType}:${media.id}:details:${FALLBACK_IMAGE_LANGUAGE}:bundle:${includeImageLanguage}`,
+                buildDetailsUrl(FALLBACK_IMAGE_LANGUAGE),
+                TMDB_CACHE_TTL_MS,
+                phases,
+                'tmdb'
+              )
+              : Promise.resolve({ ok: false, status: 0, data: null } as CachedJsonResponse)
+          ]);
+
+          const details = detailsResponse.data || {};
+          const fallbackDetails = fallbackDetailsResponse?.data || {};
+
+          return {
+            details,
+            fallbackDetails,
+            bundledImages: details.images || {},
+            bundledExternalIds: details.external_ids || {},
+            tmdbRating: details.vote_average ? normalizeRatingValue(details.vote_average) || 'N/A' : 'N/A',
+          };
+        })()
+        : null;
       const providerRatingsPromise =
         shouldRenderRatings &&
           !useRawKitsuFallback &&
           needsExternalRatings &&
-          (mdblistKey || hasMdbListApiKey || needsKitsuRating || needsImdbRating || omdbKey)
+          (mdblistKey || hasMdbListApiKey || needsKitsuRating || needsImdbRating)
           ? (async () => {
             let imdbId: string | null = null;
             let kitsuId: string | null = isKitsu ? mediaId : null;
@@ -2864,30 +2817,12 @@ export async function GET(
               allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
             }
 
-            const fetchExternalIds = async (targetType: 'movie' | 'tv') => {
-              const externalIdsUrl =
-                targetType === 'movie'
-                  ? `https://api.themoviedb.org/3/movie/${media.id}/external_ids?api_key=${tmdbKey}`
-                  : `https://api.themoviedb.org/3/tv/${media.id}/external_ids?api_key=${tmdbKey}`;
-              const externalIdsResponse = await fetchJsonCached(
-                `tmdb:external_ids:${targetType}:${media.id}`,
-                externalIdsUrl,
-                TMDB_CACHE_TTL_MS,
-                phases,
-                'tmdb'
-              );
-              if (externalIdsResponse.ok) {
-                const externalIds = externalIdsResponse.data;
-                if (externalIds?.imdb_id && !imdbId) {
-                  imdbId = externalIds.imdb_id;
-                }
-              }
-            };
-
-            const targetType = mediaType === 'movie' ? 'movie' : 'tv';
             imdbId = media?.imdb_id || mappedImdbId;
-            if (!imdbId) {
-              await fetchExternalIds(targetType);
+            if (!imdbId && detailsBundlePromise) {
+              const bundle = await detailsBundlePromise;
+              if (bundle?.bundledExternalIds?.imdb_id) {
+                imdbId = bundle.bundledExternalIds.imdb_id;
+              }
             }
             if (!imdbId && mappedImdbId) {
               imdbId = mappedImdbId;
@@ -2988,33 +2923,6 @@ export async function GET(
               }
             }
 
-            if (imdbId && omdbKey) {
-              try {
-                const omdbCacheTtlMs = getRatingCacheTtlMs({
-                  id: imdbId,
-                  mediaType: mediaType as 'movie' | 'tv',
-                  releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
-                  defaultTtlMs: OMDB_CACHE_TTL_MS,
-                  oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
-                });
-                const omdbRatings = await fetchOmdbRatings({
-                  imdbId,
-                  phases,
-                  manualApiKey: omdbKey
-                });
-                if (omdbRatings) {
-                  for (const [provider, value] of omdbRatings.entries()) {
-                    if (!combinedRatings.has(provider)) {
-                      combinedRatings.set(provider, value);
-                      renderedRatingTtlByProvider.set(provider, omdbCacheTtlMs);
-                    }
-                  }
-                }
-              } catch {
-                // Ignore
-              }
-            }
-
             if (needsKitsuRating && allowAnimeOnlyRatings && kitsuId && !combinedRatings.has('kitsu')) {
               try {
                 const kitsuCacheTtlMs = getRatingCacheTtlMs({
@@ -3052,34 +2960,9 @@ export async function GET(
         );
       }
 
-      if (!useRawKitsuFallback) {
-        const buildImagesUrl = (includeLanguage?: string) => {
-          const langQuery = includeLanguage ? `&include_image_language=${includeLanguage}` : '';
-          return `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}${langQuery}`;
-        };
-        const fetchImagesWithLanguage = (includeLanguage?: string) =>
-          fetchJsonCached(
-            `tmdb:${mediaType}:${media.id}:images:${includeLanguage || 'all'}`,
-            buildImagesUrl(includeLanguage),
-            TMDB_CACHE_TTL_MS,
-            phases,
-            'tmdb'
-          );
-
-        // Fetch Details and Images (preferred + fallback language)
-        const [detailsResponse, imagesResponse] = await Promise.all([
-          fetchJsonCached(
-            `tmdb:${mediaType}:${media.id}:details:${requestedImageLang}`,
-            `https://api.themoviedb.org/3/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${requestedImageLang}`,
-            TMDB_CACHE_TTL_MS,
-            phases,
-            'tmdb'
-          ),
-          fetchImagesWithLanguage(includeImageLanguage)
-        ]);
-
-        const details = detailsResponse.data || {};
-        tmdbRating = details.vote_average ? normalizeRatingValue(details.vote_average) || 'N/A' : 'N/A';
+      if (!useRawKitsuFallback && detailsBundlePromise) {
+        const { details, fallbackDetails, bundledImages, tmdbRating: bundledRating } = await detailsBundlePromise;
+        tmdbRating = bundledRating;
 
         const selectImagePath = async (input: {
           posters: any[];
@@ -3199,7 +3082,7 @@ export async function GET(
           return { imgPath: bestLogo?.file_path || '', logoAspectRatio };
         };
 
-        const initialImages = imagesResponse.data || {};
+        const initialImages = bundledImages || {};
         const initialSelection = await selectImagePath({
           posters: initialImages.posters || [],
           backdrops: initialImages.backdrops || [],
