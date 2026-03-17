@@ -97,7 +97,7 @@ const parseNonNegativeInt = (value?: string | null, max = Number.MAX_SAFE_INTEGE
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.min(max, Math.floor(parsed));
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v26';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v27';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -2525,47 +2525,86 @@ const renderWithSharp = async (
         }
         rowWidth = measureCurrentRowWidth();
       }
-      const shouldSpreadRow =
+      const isPosterRowLayout =
         input.imageType === 'poster' &&
         (input.posterRatingsLayout === 'top' ||
           input.posterRatingsLayout === 'bottom' ||
-          input.posterRatingsLayout === 'top-bottom') &&
-        rowEntries.length === 3;
-      const shouldCenterSecond =
-        input.imageType === 'poster' &&
-        (input.posterRatingsLayout === 'top' ||
-          input.posterRatingsLayout === 'bottom' ||
-          input.posterRatingsLayout === 'top-bottom') &&
-        rowEntries.length === 2;
-      if (shouldCenterSecond) {
+          input.posterRatingsLayout === 'top-bottom');
+      const shouldCenterSingle = isPosterRowLayout && rowEntries.length === 1;
+      const shouldSplitRow = isPosterRowLayout && rowEntries.length === 2;
+      const shouldSpreadRow = isPosterRowLayout && rowEntries.length === 3;
+      if (shouldCenterSingle) {
+        const centerX =
+          regionLeft + Math.floor(regionWidth / 2) - Math.floor(rowEntries[0].badgeWidth / 2);
+        const clampedX = Math.max(
+          regionLeft,
+          Math.min(centerX, Math.max(regionLeft, regionRight - rowEntries[0].badgeWidth))
+        );
+        const entry = rowEntries[0];
+        const monogram = buildProviderMonogram(
+          entry.badge.label || String(entry.badge.key).toUpperCase()
+        );
+        const badgeSvg = buildBadgeSvg({
+          width: entry.badgeWidth,
+          height: badgeHeight,
+          iconSize: input.badgeIconSize,
+          fontSize: input.badgeFontSize,
+          paddingX: input.badgePaddingX,
+          gap: input.badgeGap,
+          accentColor: entry.badge.accentColor,
+          monogram,
+          iconDataUri: iconByProvider.get(entry.badge.key) || null,
+          value: entry.badge.value,
+          ratingStyle: input.ratingStyle,
+          compactText: compactPosterRowText,
+        });
+        overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: clampedX });
+        return;
+      }
+      if (shouldSplitRow) {
         const edgeInset = 12;
-        const leftX = regionLeft + edgeInset;
-        const centerX = regionLeft + Math.floor(regionWidth / 2) - Math.floor(rowEntries[1].badgeWidth / 2);
-        const overlaps = leftX + rowEntries[0].badgeWidth + rowGap > centerX;
-        if (!overlaps) {
-          const positions = [leftX, centerX];
-          for (let index = 0; index < rowEntries.length; index += 1) {
-            const entry = rowEntries[index];
-            const monogram = buildProviderMonogram(
-              entry.badge.label || String(entry.badge.key).toUpperCase()
-            );
-            const badgeSvg = buildBadgeSvg({
-              width: entry.badgeWidth,
-              height: badgeHeight,
-              iconSize: input.badgeIconSize,
-              fontSize: input.badgeFontSize,
-              paddingX: input.badgePaddingX,
-              gap: input.badgeGap,
-              accentColor: entry.badge.accentColor,
-              monogram,
-              iconDataUri: iconByProvider.get(entry.badge.key) || null,
-              value: entry.badge.value,
-              ratingStyle: input.ratingStyle,
-              compactText: compactPosterRowText,
-            });
-            overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: positions[index] });
+        const leftHalfWidth = Math.floor(regionWidth / 2);
+        const rightHalfWidth = Math.max(0, regionWidth - leftHalfWidth);
+        const leftMin = regionLeft + edgeInset;
+        const leftMax = regionLeft + leftHalfWidth - edgeInset - rowEntries[0].badgeWidth;
+        const rightMin = regionLeft + leftHalfWidth + edgeInset;
+        const rightMax = regionRight - edgeInset - rowEntries[1].badgeWidth;
+        if (leftMin <= leftMax && rightMin <= rightMax) {
+          const leftCenterX =
+            regionLeft + Math.floor(leftHalfWidth / 2) - Math.floor(rowEntries[0].badgeWidth / 2);
+          const rightCenterX =
+            regionLeft +
+            leftHalfWidth +
+            Math.floor(rightHalfWidth / 2) -
+            Math.floor(rowEntries[1].badgeWidth / 2);
+          const leftX = Math.max(leftMin, Math.min(leftCenterX, leftMax));
+          const rightX = Math.max(rightMin, Math.min(rightCenterX, rightMax));
+          const overlaps = leftX + rowEntries[0].badgeWidth + rowGap > rightX;
+          if (!overlaps) {
+            const positions = [leftX, rightX];
+            for (let index = 0; index < rowEntries.length; index += 1) {
+              const entry = rowEntries[index];
+              const monogram = buildProviderMonogram(
+                entry.badge.label || String(entry.badge.key).toUpperCase()
+              );
+              const badgeSvg = buildBadgeSvg({
+                width: entry.badgeWidth,
+                height: badgeHeight,
+                iconSize: input.badgeIconSize,
+                fontSize: input.badgeFontSize,
+                paddingX: input.badgePaddingX,
+                gap: input.badgeGap,
+                accentColor: entry.badge.accentColor,
+                monogram,
+                iconDataUri: iconByProvider.get(entry.badge.key) || null,
+                value: entry.badge.value,
+                ratingStyle: input.ratingStyle,
+                compactText: compactPosterRowText,
+              });
+              overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: positions[index] });
+            }
+            return;
           }
-          return;
         }
       }
       if (shouldSpreadRow) {
