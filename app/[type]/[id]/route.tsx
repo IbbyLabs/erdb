@@ -97,7 +97,7 @@ const parseNonNegativeInt = (value?: string | null, max = Number.MAX_SAFE_INTEGE
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.min(max, Math.floor(parsed));
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v25';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v26';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -4137,6 +4137,26 @@ export async function GET(
         imgPath = initialSelection.imgPath;
         selectedLogoAspectRatio = initialSelection.logoAspectRatio;
         selectedPosterLogoPath = initialSelection.logoPath || null;
+        if (imageType === 'poster' && posterTextPreference === 'clean' && !selectedPosterLogoPath) {
+          const logoFallbackImagesResponse = await fetchJsonCached(
+            `tmdb:${mediaType}:${media.id}:images:all`,
+            `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          );
+          if (logoFallbackImagesResponse.ok) {
+            const logoFallbackImages = logoFallbackImagesResponse.data || {};
+            const logoFallback = pickByLanguageWithFallback(
+              logoFallbackImages.logos || [],
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE
+            );
+            if (logoFallback?.file_path) {
+              selectedPosterLogoPath = logoFallback.file_path;
+            }
+          }
+        }
         if (selectedLogoAspectRatio) {
           outputWidth = Math.max(
             LOGO_MIN_WIDTH,
