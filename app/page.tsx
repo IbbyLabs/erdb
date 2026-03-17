@@ -39,9 +39,23 @@ const SUPPORTED_LANGUAGES = [
   { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
+const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
 const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
 type ProxyType = (typeof PROXY_TYPES)[number];
 type ProxyEnabledTypes = Record<ProxyType, boolean>;
+type StreamBadgesSetting = 'auto' | 'on' | 'off';
+type QualityBadgesSide = 'left' | 'right';
+const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
+const DEFAULT_PROXY_QUALITY_BADGES_STYLE: RatingStyle = DEFAULT_QUALITY_BADGES_STYLE;
+const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'on', label: 'On' },
+  { id: 'off', label: 'Off' },
+];
+const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }> = [
+  { id: 'left', label: 'Left' },
+  { id: 'right', label: 'Right' },
+];
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
 
@@ -78,7 +92,20 @@ export default function Home() {
   const [lang, setLang] = useState('en');
   const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('original');
   const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('original');
-  const [ratingPreferences, setRatingPreferences] = useState<RatingPreference[]>(['imdb', 'tmdb', 'mdblist']);
+  const [posterRatingPreferences, setPosterRatingPreferences] = useState<RatingPreference[]>(
+    DEFAULT_RATING_PREFERENCES
+  );
+  const [backdropRatingPreferences, setBackdropRatingPreferences] = useState<RatingPreference[]>(
+    DEFAULT_RATING_PREFERENCES
+  );
+  const [logoRatingPreferences, setLogoRatingPreferences] = useState<RatingPreference[]>(
+    DEFAULT_RATING_PREFERENCES
+  );
+  const [posterStreamBadges, setPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
+  const [backdropStreamBadges, setBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
+  const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
+  const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>(DEFAULT_POSTER_RATING_LAYOUT);
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
@@ -93,7 +120,20 @@ export default function Home() {
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
   const [proxyTmdbKey, setProxyTmdbKey] = useState('');
   const [proxyMdblistKey, setProxyMdblistKey] = useState('');
-  const [proxyRatingPreferences, setProxyRatingPreferences] = useState<RatingPreference[]>(['imdb', 'tmdb', 'mdblist']);
+  const [proxyPosterRatingPreferences, setProxyPosterRatingPreferences] = useState<RatingPreference[]>(
+    DEFAULT_RATING_PREFERENCES
+  );
+  const [proxyBackdropRatingPreferences, setProxyBackdropRatingPreferences] = useState<RatingPreference[]>(
+    DEFAULT_RATING_PREFERENCES
+  );
+  const [proxyLogoRatingPreferences, setProxyLogoRatingPreferences] = useState<RatingPreference[]>(
+    DEFAULT_RATING_PREFERENCES
+  );
+  const [proxyPosterStreamBadges, setProxyPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
+  const [proxyBackdropStreamBadges, setProxyBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
+  const [proxyQualityBadgesSide, setProxyQualityBadgesSide] = useState<QualityBadgesSide>('left');
+  const [proxyPosterQualityBadgesStyle, setProxyPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_PROXY_QUALITY_BADGES_STYLE);
+  const [proxyBackdropQualityBadgesStyle, setProxyBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_PROXY_QUALITY_BADGES_STYLE);
   const [proxyLang, setProxyLang] = useState('en');
   const [proxyConfigType, setProxyConfigType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [proxyEnabledTypes, setProxyEnabledTypes] = useState<ProxyEnabledTypes>({
@@ -115,6 +155,33 @@ export default function Home() {
   const [configCopied, setConfigCopied] = useState(false);
 
   const [copied, setCopied] = useState(false);
+  const shouldShowPosterQualityBadgesSide =
+    posterRatingsLayout === 'top' ||
+    posterRatingsLayout === 'bottom' ||
+    posterRatingsLayout === 'top-bottom';
+  const shouldShowQualityBadgesSide = previewType === 'poster' && shouldShowPosterQualityBadgesSide;
+  const shouldShowProxyPosterQualityBadgesSide =
+    proxyPosterRatingsLayout === 'top' ||
+    proxyPosterRatingsLayout === 'bottom' ||
+    proxyPosterRatingsLayout === 'top-bottom';
+  const shouldShowProxyQualityBadgesSide =
+    proxyConfigType === 'poster' && shouldShowProxyPosterQualityBadgesSide;
+  const qualityBadgeTypeLabel = previewType === 'backdrop' ? 'Backdrop' : 'Poster';
+  const proxyQualityBadgeTypeLabel = proxyConfigType === 'backdrop' ? 'Backdrop' : 'Poster';
+  const activeStreamBadges = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
+  const setActiveStreamBadges = previewType === 'backdrop' ? setBackdropStreamBadges : setPosterStreamBadges;
+  const activeQualityBadgesStyle =
+    previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
+  const setActiveQualityBadgesStyle =
+    previewType === 'backdrop' ? setBackdropQualityBadgesStyle : setPosterQualityBadgesStyle;
+  const proxyStreamBadgesForType =
+    proxyConfigType === 'backdrop' ? proxyBackdropStreamBadges : proxyPosterStreamBadges;
+  const setProxyStreamBadgesForType =
+    proxyConfigType === 'backdrop' ? setProxyBackdropStreamBadges : setProxyPosterStreamBadges;
+  const proxyQualityBadgesStyleForType =
+    proxyConfigType === 'backdrop' ? proxyBackdropQualityBadgesStyle : proxyPosterQualityBadgesStyle;
+  const setProxyQualityBadgesStyleForType =
+    proxyConfigType === 'backdrop' ? setProxyBackdropQualityBadgesStyle : setProxyPosterQualityBadgesStyle;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -171,8 +238,24 @@ type (path)             | poster, backdrop, logo                                
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu                                                       |
+                        | anilist, kitsu (global fallback)                                     |
+posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (poster only)                                         |
+backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (backdrop only)                                       |
+logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (logo only)                                           |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+streamBadges            | auto, on, off (global fallback)                                      | auto
+posterStreamBadges      | auto, on, off (poster only)                                          | auto
+backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
+qualityBadgesSide       | left, right (poster only)                                            | left
+qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
+posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
+backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
@@ -191,15 +274,17 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
+Ratings providers can be set per-type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
+Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&lang=\${cfg.lang}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
 
 Omit imageText when type=logo.
 
-Skip any params that are empty/undefined.`;
+Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable providers.`;
 
     navigator.clipboard.writeText(prompt);
     setCopied(true);
@@ -207,7 +292,13 @@ Skip any params that are empty/undefined.`;
   }, []);
 
   useEffect(() => {
-    const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferences);
+    const ratingPreferencesForType =
+      previewType === 'poster'
+        ? posterRatingPreferences
+        : previewType === 'backdrop'
+          ? backdropRatingPreferences
+          : logoRatingPreferences;
+    const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferencesForType);
     const ratingStyleForType =
       previewType === 'poster'
         ? posterRatingStyle
@@ -215,11 +306,32 @@ Skip any params that are empty/undefined.`;
           ? backdropRatingStyle
           : logoRatingStyle;
     const imageTextForType = previewType === 'backdrop' ? backdropImageText : posterImageText;
+    const streamBadgesForType = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
+    const qualityBadgesStyleForType =
+      previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
     const query = new URLSearchParams({
-      ratings: ratingsQuery,
       ratingStyle: ratingStyleForType,
       lang,
     });
+    if (previewType === 'poster') {
+      query.set('posterRatings', ratingsQuery);
+    } else if (previewType === 'backdrop') {
+      query.set('backdropRatings', ratingsQuery);
+    } else {
+      query.set('logoRatings', ratingsQuery);
+    }
+    if (previewType !== 'logo' && streamBadgesForType !== 'auto') {
+      query.set(previewType === 'backdrop' ? 'backdropStreamBadges' : 'posterStreamBadges', streamBadgesForType);
+    }
+    if (shouldShowQualityBadgesSide && qualityBadgesSide !== 'left') {
+      query.set('qualityBadgesSide', qualityBadgesSide);
+    }
+    if (previewType !== 'logo' && qualityBadgesStyleForType !== DEFAULT_QUALITY_BADGES_STYLE) {
+      query.set(
+        previewType === 'backdrop' ? 'backdropQualityBadgesStyle' : 'posterQualityBadgesStyle',
+        qualityBadgesStyleForType
+      );
+    }
 
     if (mdblistKey) {
       query.set('mdblistKey', mdblistKey);
@@ -252,10 +364,17 @@ Skip any params that are empty/undefined.`;
     lang,
     posterImageText,
     backdropImageText,
-    ratingPreferences,
+    posterRatingPreferences,
+    backdropRatingPreferences,
+    logoRatingPreferences,
+    posterStreamBadges,
+    backdropStreamBadges,
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     backdropRatingsLayout,
+    qualityBadgesSide,
+    posterQualityBadgesStyle,
+    backdropQualityBadgesStyle,
     posterRatingStyle,
     backdropRatingStyle,
     logoRatingStyle,
@@ -279,12 +398,35 @@ Skip any params that are empty/undefined.`;
       mdblistKey: mdb,
     };
 
-    const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferences);
-    if (ratingsQuery) {
-      config.ratings = ratingsQuery;
+    const posterRatingsQuery = stringifyRatingPreferencesAllowEmpty(posterRatingPreferences);
+    const backdropRatingsQuery = stringifyRatingPreferencesAllowEmpty(backdropRatingPreferences);
+    const logoRatingsQuery = stringifyRatingPreferencesAllowEmpty(logoRatingPreferences);
+    const ratingsMatch =
+      posterRatingsQuery === backdropRatingsQuery && posterRatingsQuery === logoRatingsQuery;
+    if (ratingsMatch) {
+      config.ratings = posterRatingsQuery;
+    } else {
+      config.posterRatings = posterRatingsQuery;
+      config.backdropRatings = backdropRatingsQuery;
+      config.logoRatings = logoRatingsQuery;
     }
     if (lang) {
       config.lang = lang;
+    }
+    if (posterStreamBadges !== 'auto') {
+      config.posterStreamBadges = posterStreamBadges;
+    }
+    if (backdropStreamBadges !== 'auto') {
+      config.backdropStreamBadges = backdropStreamBadges;
+    }
+    if (shouldShowPosterQualityBadgesSide && qualityBadgesSide !== 'left') {
+      config.qualityBadgesSide = qualityBadgesSide;
+    }
+    if (posterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+      config.posterQualityBadgesStyle = posterQualityBadgesStyle;
+    }
+    if (backdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+      config.backdropQualityBadgesStyle = backdropQualityBadgesStyle;
     }
     if (posterRatingStyle) {
       config.posterRatingStyle = posterRatingStyle;
@@ -316,7 +458,14 @@ Skip any params that are empty/undefined.`;
     baseUrl,
     tmdbKey,
     mdblistKey,
-    ratingPreferences,
+    posterRatingPreferences,
+    backdropRatingPreferences,
+    logoRatingPreferences,
+    posterStreamBadges,
+    backdropStreamBadges,
+    qualityBadgesSide,
+    posterQualityBadgesStyle,
+    backdropQualityBadgesStyle,
     lang,
     posterRatingStyle,
     backdropRatingStyle,
@@ -349,12 +498,35 @@ Skip any params that are empty/undefined.`;
       mdblistKey: mdb,
     };
 
-    const proxyRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyRatingPreferences);
-    if (proxyRatingsQuery) {
-      config.ratings = proxyRatingsQuery;
+    const proxyPosterRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyPosterRatingPreferences);
+    const proxyBackdropRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyBackdropRatingPreferences);
+    const proxyLogoRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyLogoRatingPreferences);
+    const proxyRatingsMatch =
+      proxyPosterRatingsQuery === proxyBackdropRatingsQuery && proxyPosterRatingsQuery === proxyLogoRatingsQuery;
+    if (proxyRatingsMatch) {
+      config.ratings = proxyPosterRatingsQuery;
+    } else {
+      config.posterRatings = proxyPosterRatingsQuery;
+      config.backdropRatings = proxyBackdropRatingsQuery;
+      config.logoRatings = proxyLogoRatingsQuery;
     }
     if (proxyLang) {
       config.lang = proxyLang;
+    }
+    if (proxyPosterStreamBadges !== 'auto') {
+      config.posterStreamBadges = proxyPosterStreamBadges;
+    }
+    if (proxyBackdropStreamBadges !== 'auto') {
+      config.backdropStreamBadges = proxyBackdropStreamBadges;
+    }
+    if (shouldShowProxyPosterQualityBadgesSide && proxyQualityBadgesSide !== 'left') {
+      config.qualityBadgesSide = proxyQualityBadgesSide;
+    }
+    if (proxyPosterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+      config.posterQualityBadgesStyle = proxyPosterQualityBadgesStyle;
+    }
+    if (proxyBackdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+      config.backdropQualityBadgesStyle = proxyBackdropQualityBadgesStyle;
     }
 
     config.posterRatingStyle = proxyPosterRatingStyle;
@@ -386,8 +558,15 @@ Skip any params that are empty/undefined.`;
     proxyManifestUrl,
     proxyTmdbKey,
     proxyMdblistKey,
-    proxyRatingPreferences,
+    proxyPosterRatingPreferences,
+    proxyBackdropRatingPreferences,
+    proxyLogoRatingPreferences,
     proxyLang,
+    proxyPosterStreamBadges,
+    proxyBackdropStreamBadges,
+    proxyQualityBadgesSide,
+    proxyPosterQualityBadgesStyle,
+    proxyBackdropQualityBadgesStyle,
     proxyPosterRatingStyle,
     proxyBackdropRatingStyle,
     proxyLogoRatingStyle,
@@ -400,16 +579,46 @@ Skip any params that are empty/undefined.`;
     baseUrl,
   ]);
 
+  const updateRatingPreferencesForType = (
+    type: 'poster' | 'backdrop' | 'logo',
+    updater: (current: RatingPreference[]) => RatingPreference[]
+  ) => {
+    if (type === 'poster') {
+      setPosterRatingPreferences(updater);
+      return;
+    }
+    if (type === 'backdrop') {
+      setBackdropRatingPreferences(updater);
+      return;
+    }
+    setLogoRatingPreferences(updater);
+  };
+
   const toggleRatingPreference = (rating: RatingPreference) => {
-    setRatingPreferences((current) =>
+    updateRatingPreferencesForType(previewType, (current) =>
       current.includes(rating)
         ? current.filter((item) => item !== rating)
         : [...current, rating]
     );
   };
 
+  const updateProxyRatingPreferencesForType = (
+    type: ProxyType,
+    updater: (current: RatingPreference[]) => RatingPreference[]
+  ) => {
+    if (type === 'poster') {
+      setProxyPosterRatingPreferences(updater);
+      return;
+    }
+    if (type === 'backdrop') {
+      setProxyBackdropRatingPreferences(updater);
+      return;
+    }
+    setProxyLogoRatingPreferences(updater);
+  };
+
   const toggleProxyRatingPreference = (rating: RatingPreference) => {
-    setProxyRatingPreferences((current) =>
+    updateProxyRatingPreferencesForType(proxyConfigType, (current) =>
       current.includes(rating)
         ? current.filter((item) => item !== rating)
         : [...current, rating]
@@ -452,8 +661,37 @@ Skip any params that are empty/undefined.`;
         ? backdropRatingStyle
         : logoRatingStyle;
   const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
-  const styleLabel = previewType === 'poster' ? 'Poster Style' : previewType === 'backdrop' ? 'Backdrop Style' : 'Logo Style';
+  const styleLabel =
+    previewType === 'poster'
+      ? 'Poster Ratings Style'
+      : previewType === 'backdrop'
+        ? 'Backdrop Ratings Style'
+        : 'Logo Ratings Style';
   const textLabel = previewType === 'backdrop' ? 'Backdrop Text' : 'Poster Text';
+  const providersLabel =
+    previewType === 'poster'
+      ? 'Poster Providers'
+      : previewType === 'backdrop'
+        ? 'Backdrop Providers'
+        : 'Logo Providers';
+  const activeRatingPreferences =
+    previewType === 'poster'
+      ? posterRatingPreferences
+      : previewType === 'backdrop'
+        ? backdropRatingPreferences
+        : logoRatingPreferences;
+  const proxyProvidersLabel =
+    proxyConfigType === 'poster'
+      ? 'Poster Providers'
+      : proxyConfigType === 'backdrop'
+        ? 'Backdrop Providers'
+        : 'Logo Providers';
+  const proxyRatingPreferencesForType =
+    proxyConfigType === 'poster'
+      ? proxyPosterRatingPreferences
+      : proxyConfigType === 'backdrop'
+        ? proxyBackdropRatingPreferences
+        : proxyLogoRatingPreferences;
 
   const setRatingStyleForType = (value: RatingStyle) => {
     if (previewType === 'poster') {
@@ -522,138 +760,189 @@ Skip any params that are empty/undefined.`;
         <section id="preview" className="scroll-mt-24">
           <div className="grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
             {/* Controls */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">Configurator</h2>
                 <p className="text-sm text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
               </div>
 
-              {/* API Keys - compact row */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
-                  <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                  <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
+                      <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
+                      <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
-                  <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
-                </div>
-              </div>
 
-              {/* Main row: Type + Media ID + Lang */}
-              <div className="flex flex-wrap gap-3 items-end">
                 <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
-                  <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                    {(['poster', 'backdrop', 'logo'] as const).map(type => (
-                      <button key={type} onClick={() => setPreviewType(type)} className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${previewType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                        {type === 'poster' && <ImageIcon className="w-3.5 h-3.5" />}
-                        {type === 'backdrop' && <MonitorPlay className="w-3.5 h-3.5" />}
-                        {type === 'logo' && <Layers className="w-3.5 h-3.5" />}
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                  <div className="text-[11px] font-semibold text-zinc-400 mb-2">Media Target</div>
+                  <div className="flex flex-wrap gap-2 items-end">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
+                      <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                        {(['poster', 'backdrop', 'logo'] as const).map(type => (
+                          <button key={type} onClick={() => setPreviewType(type)} className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${previewType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                            {type === 'poster' && <ImageIcon className="w-3.5 h-3.5" />}
+                            {type === 'backdrop' && <MonitorPlay className="w-3.5 h-3.5" />}
+                            {type === 'logo' && <Layers className="w-3.5 h-3.5" />}
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Media ID</span>
+                      <input type="text" value={mediaId} onChange={(e) => setMediaId(e.target.value)} placeholder="tt0133093" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                    </div>
+                    {tmdbKey ? (
+                      <div className="w-32">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
+                        <div className="relative">
+                          <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-orange-500/50">
+                            {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
+                          </select>
+                          <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded-lg bg-black border border-white/10 text-[10px] text-zinc-500 flex items-center gap-1.5">
+                        <Globe2 className="w-3 h-3 shrink-0" /> Add TMDB key for lang
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+                  <div className="flex flex-wrap gap-3 items-center">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
+                      <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                        {RATING_STYLE_OPTIONS.map(opt => (
+                          <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {previewType !== 'logo' && (
+                      <div>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
+                        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                          {(['original', 'clean', 'alternative'] as const).map(option => (
+                            <button key={option} onClick={() => setImageTextForType(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {(previewType === 'poster' || previewType === 'backdrop') && (
+                  <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+                    <div className="text-[11px] font-semibold text-zinc-400">Layouts</div>
+                    {previewType === 'poster' && (
+                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Poster Layout</div>
+                        <div className="flex flex-wrap gap-3 items-end">
+                          <div>
+                            <div className="flex flex-wrap gap-1">
+                              {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
+                                <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${posterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {isVerticalPosterRatingLayout(posterRatingsLayout) && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
+                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
+                              <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {previewType === 'backdrop' && (
+                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop Layout</div>
+                        <div className="flex flex-wrap gap-1">
+                          {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
+                            <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {previewType !== 'logo' && (
+                  <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+                    <div className="text-[11px] font-semibold text-zinc-400">
+                      Quality Badges · {qualityBadgeTypeLabel}
+                    </div>
+                    <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                    {STREAM_BADGE_OPTIONS.map(option => (
+                      <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeStreamBadges === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                        {option.label}
                       </button>
                     ))}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Media ID</span>
-                  <input type="text" value={mediaId} onChange={(e) => setMediaId(e.target.value)} placeholder="tt0133093" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
-                </div>
-                {tmdbKey ? (
-                  <div className="w-32">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
-                    <div className="relative">
-                      <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-orange-500/50">
-                        {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
-                      </select>
-                      <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
                     </div>
-                  </div>
-                ) : (
-                  <div className="p-2 rounded-lg bg-black border border-white/10 text-[10px] text-zinc-500 flex items-center gap-1.5">
-                    <Globe2 className="w-3 h-3 shrink-0" /> Add TMDB key for lang
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
+                      <div className="flex flex-wrap gap-1">
+                      {RATING_STYLE_OPTIONS.map(option => (
+                        <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                          {option.label}
+                        </button>
+                      ))}
+                      </div>
+                    </div>
+                    {shouldShowQualityBadgesSide && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
+                        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                          {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
+                            <button key={option.id} onClick={() => setQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${qualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
 
-              {/* Style + Image Text row */}
-              <div className="flex flex-wrap gap-4 items-center">
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
-                  <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                    {RATING_STYLE_OPTIONS.map(opt => (
-                      <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">{providersLabel}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
+                      <label key={provider.id} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${activeRatingPreferences.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                        <input type="checkbox" checked={activeRatingPreferences.includes(provider.id as RatingPreference)} onChange={() => toggleRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
+                        <span>{provider.label}</span>
+                      </label>
                     ))}
                   </div>
                 </div>
-                {previewType !== 'logo' && (
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
-                    <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                      {(['original', 'clean', 'alternative'] as const).map(option => (
-                        <button key={option} onClick={() => setImageTextForType(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {previewType === 'poster' && (
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
-                    <div className="flex flex-wrap gap-1">
-                      {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                        <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${posterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                      ))}
-                    </div>
-                  </div>
-                  {isVerticalPosterRatingLayout(posterRatingsLayout) && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                      <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
-                      <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {previewType === 'backdrop' && (
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
-                  <div className="flex flex-wrap gap-1">
-                    {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                      <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Providers</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
-                    <label key={provider.id} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${ratingPreferences.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                      <input type="checkbox" checked={ratingPreferences.includes(provider.id as RatingPreference)} onChange={() => toggleRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
-                      <span>{provider.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+              <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <Code2 className="w-5 h-5 text-orange-500" /> ERDB Config String
                 </h3>
                 <p className="mt-2 text-sm text-zinc-400">
                   Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
                 </p>
-                <div className="mt-4 rounded-2xl border border-white/10 bg-black/70 p-4">
+                <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4">
                   <div className="font-mono text-xs text-zinc-300 break-all">
                     {configString || 'Add TMDB key and MDBList key to generate the config string.'}
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleCopyConfig}
                     disabled={!canGenerateConfig}
@@ -724,7 +1013,8 @@ Skip any params that are empty/undefined.`;
                 <p className="text-sm text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+                <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
                   <input
@@ -759,33 +1049,18 @@ Skip any params that are empty/undefined.`;
                   </div>
                 </div>
 
-                <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
-                  <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Providers</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
-                          <label key={`proxy-${provider.id}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyRatingPreferences.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                            <input type="checkbox" checked={proxyRatingPreferences.includes(provider.id as RatingPreference)} onChange={() => toggleProxyRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
-                            <span>{provider.label}</span>
-                          </label>
-                        ))}
-                      </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Enabled Types</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PROXY_TYPES.map(type => (
+                        <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                          <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-orange-500" />
+                          <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                        </label>
+                      ))}
                     </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Enabled Types</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {PROXY_TYPES.map(type => (
-                          <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                            <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-orange-500" />
-                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                          </label>
-                        ))}
-                      </div>
-                      <div className="mt-1 text-[10px] text-zinc-500">Disabled types keep the original artwork.</div>
-                    </div>
-
+                    <div className="mt-1 text-[10px] text-zinc-500">Disabled types keep the original artwork.</div>
+                  </div>
                     <div className="flex flex-wrap gap-4 items-end">
                       <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
@@ -821,7 +1096,7 @@ Skip any params that are empty/undefined.`;
                       {proxyConfigType === 'poster' && (
                         <div className="flex flex-wrap gap-4 items-center">
                           <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Style</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Ratings Style</span>
                             <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                               {RATING_STYLE_OPTIONS.map(opt => (
                                 <button key={`proxy-poster-style-${opt.id}`} onClick={() => setProxyPosterRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyPosterRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
@@ -842,7 +1117,7 @@ Skip any params that are empty/undefined.`;
                       {proxyConfigType === 'backdrop' && (
                         <div className="flex flex-wrap gap-4 items-center">
                           <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Style</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Ratings Style</span>
                             <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                               {RATING_STYLE_OPTIONS.map(opt => (
                                 <button key={`proxy-backdrop-style-${opt.id}`} onClick={() => setProxyBackdropRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyBackdropRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
@@ -862,7 +1137,7 @@ Skip any params that are empty/undefined.`;
 
                       {proxyConfigType === 'logo' && (
                         <div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Logo Style</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Logo Ratings Style</span>
                           <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                             {RATING_STYLE_OPTIONS.map(opt => (
                               <button key={`proxy-logo-style-${opt.id}`} onClick={() => setProxyLogoRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyLogoRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
@@ -872,37 +1147,89 @@ Skip any params that are empty/undefined.`;
                       )}
                     </div>
 
-                    {proxyConfigType === 'poster' && (
-                      <div className="flex flex-wrap gap-4 items-end">
+                    {(proxyConfigType === 'poster' || proxyConfigType === 'backdrop') && (
+                      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">Layouts</span>
+                        {proxyConfigType === 'poster' && (
+                          <div className="flex flex-wrap gap-4 items-end">
+                            <div>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
+                              <div className="flex flex-wrap gap-1">
+                                {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
+                                  <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                                ))}
+                              </div>
+                            </div>
+                            {isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
+                                <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
+                                <button onClick={() => setProxyPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {proxyConfigType === 'backdrop' && (
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
+                            <div className="flex flex-wrap gap-1">
+                              {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
+                                <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {proxyConfigType !== 'logo' && (
+                      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
+                          Quality Badges · {proxyQualityBadgeTypeLabel}
+                        </span>
+                        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                          {STREAM_BADGE_OPTIONS.map(option => (
+                            <button key={`proxy-stream-${option.id}`} onClick={() => setProxyStreamBadgesForType(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyStreamBadgesForType === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
                         <div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
                           <div className="flex flex-wrap gap-1">
-                            {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                              <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                            {RATING_STYLE_OPTIONS.map(option => (
+                              <button key={`proxy-quality-style-${option.id}`} onClick={() => setProxyQualityBadgesStyleForType(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyQualityBadgesStyleForType === option.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                                {option.label}
+                              </button>
                             ))}
                           </div>
                         </div>
-                        {isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && (
+                        {shouldShowProxyQualityBadgesSide && (
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                            <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
-                            <button onClick={() => setProxyPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
+                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                              {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
+                                <button key={`proxy-quality-side-${option.id}`} onClick={() => setProxyQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyQualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
                     )}
 
-                    {proxyConfigType === 'backdrop' && (
-                      <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
-                        <div className="flex flex-wrap gap-1">
-                          {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                            <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                          ))}
-                        </div>
+                    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">{proxyProvidersLabel}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
+                          <label key={`proxy-${provider.id}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyRatingPreferencesForType.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={proxyRatingPreferencesForType.includes(provider.id as RatingPreference)} onChange={() => toggleProxyRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
+                            <span>{provider.label}</span>
+                          </label>
+                        ))}
                       </div>
-                    )}
-                </div>
+                    </div>
               </div>
             </div>
 
@@ -1021,13 +1348,63 @@ Skip any params that are empty/undefined.`;
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratings</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatings</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropRatings</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (backdrop only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">logoRatings</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (logo only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">lang</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{SUPPORTED_LANGUAGES.map(l => l.code).join(', ')}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">en</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">streamBadges</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterStreamBadges</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropStreamBadges</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (backdrop only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesSide</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">left, right (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">left</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesStyle</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterQualityBadgesStyle</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropQualityBadgesStyle</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (backdrop only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratingStyle</td>
@@ -1126,7 +1503,7 @@ Skip any params that are empty/undefined.`;
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Base params for all types: ratings, lang, ratingStyle, tmdbKey, mdblistKey.
+                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type.
                 </div>
               </div>
 
@@ -1270,8 +1647,24 @@ type (path)             | poster, backdrop, logo                                
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu                                                       |
+                        | anilist, kitsu (global fallback)                                     |
+posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (poster only)                                         |
+backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (backdrop only)                                       |
+logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (logo only)                                           |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+streamBadges            | auto, on, off (global fallback)                                      | auto
+posterStreamBadges      | auto, on, off (poster only)                                          | auto
+backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
+qualityBadgesSide       | left, right (poster only)                                            | left
+qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
+posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
+backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
@@ -1292,15 +1685,17 @@ TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can col
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
+Ratings providers can be set per-type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
+Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&lang=\${cfg.lang}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
 
 Omit imageText when type=logo.
 
-Skip any params that are empty/undefined.`}</div>
+Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable providers.`}</div>
                 </div>
 
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Live Examples</h4>

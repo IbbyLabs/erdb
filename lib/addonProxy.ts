@@ -3,9 +3,23 @@ import { createHash } from 'node:crypto';
 const ERDB_OPTIONAL_PARAMS = [
   'ratings',
   'lang',
+  'streamBadges',
+  'qualityBadgesSide',
+  'qualityBadgesStyle',
   'posterRatingsLayout',
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
+];
+const ERDB_TYPE_OPTIONAL_PARAMS = {
+  poster: ['posterStreamBadges', 'posterQualityBadgesStyle', 'posterRatings'],
+  backdrop: ['backdropStreamBadges', 'backdropQualityBadgesStyle', 'backdropRatings'],
+  logo: ['logoRatings'],
+} as const;
+const ERDB_OPTIONAL_PARAM_KEYS = [
+  ...ERDB_OPTIONAL_PARAMS,
+  ...ERDB_TYPE_OPTIONAL_PARAMS.poster,
+  ...ERDB_TYPE_OPTIONAL_PARAMS.backdrop,
+  ...ERDB_TYPE_OPTIONAL_PARAMS.logo,
 ];
 
 const ERDB_TYPE_STYLE_PARAMS = {
@@ -38,7 +52,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'logoRatingStyle',
   'posterImageText',
   'backdropImageText',
-  ...ERDB_OPTIONAL_PARAMS,
+  ...ERDB_OPTIONAL_PARAM_KEYS,
 ]);
 
 export type ProxyConfig = {
@@ -46,7 +60,17 @@ export type ProxyConfig = {
   tmdbKey: string;
   mdblistKey: string;
   ratings?: string;
+  posterRatings?: string;
+  backdropRatings?: string;
+  logoRatings?: string;
   lang?: string;
+  streamBadges?: string;
+  posterStreamBadges?: string;
+  backdropStreamBadges?: string;
+  qualityBadgesSide?: string;
+  qualityBadgesStyle?: string;
+  posterQualityBadgesStyle?: string;
+  backdropQualityBadgesStyle?: string;
   ratingStyle?: string;
   imageText?: string;
   posterRatingStyle?: string;
@@ -65,7 +89,17 @@ export type ProxyConfig = {
 
 const PROXY_OPTIONAL_STRING_KEYS = [
   'ratings',
+  'posterRatings',
+  'backdropRatings',
+  'logoRatings',
   'lang',
+  'streamBadges',
+  'posterStreamBadges',
+  'backdropStreamBadges',
+  'qualityBadgesSide',
+  'qualityBadgesStyle',
+  'posterQualityBadgesStyle',
+  'backdropQualityBadgesStyle',
   'ratingStyle',
   'imageText',
   'posterRatingStyle',
@@ -173,6 +207,16 @@ const toOptionalString = (value: unknown): string | undefined => {
   return undefined;
 };
 
+const toOptionalStringAllowEmpty = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+  return undefined;
+};
+
 const toOptionalBoolean = (value: unknown): boolean | undefined => {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
@@ -208,8 +252,8 @@ export const decodeProxyConfig = (encoded: string): ProxyConfig | null => {
 
     const config: ProxyConfig = { url, tmdbKey, mdblistKey };
     for (const key of PROXY_OPTIONAL_STRING_KEYS) {
-      const value = toOptionalString((parsed as ProxyConfig)[key]);
-      if (value) {
+      const value = toOptionalStringAllowEmpty((parsed as ProxyConfig)[key]);
+      if (value !== undefined) {
         config[key] = value;
       }
     }
@@ -234,7 +278,7 @@ export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyCon
   const config: ProxyConfig = { url, tmdbKey, mdblistKey };
   for (const key of PROXY_OPTIONAL_STRING_KEYS) {
     const value = searchParams.get(key);
-    if (value) {
+    if (value !== null) {
       config[key] = value;
     }
   }
@@ -249,11 +293,11 @@ export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyCon
 
 const getProxyParam = (reqUrl: URL, config: ProxyConfig | null, key: keyof ProxyConfig) => {
   const configValue = config ? config[key] : null;
-  if (typeof configValue === 'string' && configValue) {
+  if (typeof configValue === 'string') {
     return configValue;
   }
   const queryValue = reqUrl.searchParams.get(key);
-  return queryValue || null;
+  return queryValue !== null ? queryValue : null;
 };
 
 export const buildErdbImageUrl = (options: {
@@ -274,7 +318,12 @@ export const buildErdbImageUrl = (options: {
 
   for (const key of ERDB_OPTIONAL_PARAMS) {
     const value = getProxyParam(reqUrl, config, key as keyof ProxyConfig);
-    if (value) base.searchParams.set(key, value);
+    if (value !== null) base.searchParams.set(key, value);
+  }
+  const typeOptionalParams = ERDB_TYPE_OPTIONAL_PARAMS[imageType] || [];
+  for (const key of typeOptionalParams) {
+    const value = getProxyParam(reqUrl, config, key as keyof ProxyConfig);
+    if (value !== null) base.searchParams.set(key, value);
   }
 
   const styleParams = ERDB_TYPE_STYLE_PARAMS[imageType];
