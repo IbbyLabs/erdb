@@ -90,8 +90,8 @@ export default function Home() {
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
-  const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('original');
-  const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('original');
+  const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
+  const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
   const [posterRatingPreferences, setPosterRatingPreferences] = useState<RatingPreference[]>(
     DEFAULT_RATING_PREFERENCES
   );
@@ -106,11 +106,11 @@ export default function Home() {
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
-  const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>(DEFAULT_POSTER_RATING_LAYOUT);
+  const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
-  const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
+  const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -144,9 +144,9 @@ export default function Home() {
   const [proxyPosterRatingStyle, setProxyPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [proxyBackdropRatingStyle, setProxyBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [proxyLogoRatingStyle, setProxyLogoRatingStyle] = useState<RatingStyle>('plain');
-  const [proxyPosterImageText, setProxyPosterImageText] = useState<'original' | 'clean' | 'alternative'>('original');
+  const [proxyPosterImageText, setProxyPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
   const [proxyBackdropImageText, setProxyBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [proxyPosterRatingsLayout, setProxyPosterRatingsLayout] = useState<PosterRatingLayout>(DEFAULT_POSTER_RATING_LAYOUT);
+  const [proxyPosterRatingsLayout, setProxyPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [proxyPosterRatingsMaxPerSide, setProxyPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [proxyUrl, setProxyUrl] = useState('');
