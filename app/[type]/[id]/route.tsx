@@ -97,7 +97,7 @@ const parseNonNegativeInt = (value?: string | null, max = Number.MAX_SAFE_INTEGE
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.min(max, Math.floor(parsed));
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v20';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v25';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -1095,6 +1095,28 @@ const pickKitsuOriginalTitle = (attributes: any) => {
   return null;
 };
 
+const pickPosterTitleFromMedia = (
+  media: any,
+  mediaType: 'movie' | 'tv' | null,
+  fallbackTitle?: string | null
+) => {
+  const candidates = [
+    mediaType === 'movie' ? media?.title : mediaType === 'tv' ? media?.name : null,
+    mediaType === 'movie' ? media?.original_title : mediaType === 'tv' ? media?.original_name : null,
+    media?.title,
+    media?.name,
+    media?.original_title,
+    media?.original_name,
+    fallbackTitle,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const normalized = candidate.replace(/\s+/g, ' ').trim();
+    if (normalized) return normalized;
+  }
+  return null;
+};
+
 const fetchKitsuFallbackAsset = async (
   kitsuId: string,
   imageType: 'poster' | 'backdrop' | 'logo',
@@ -1116,6 +1138,7 @@ const fetchKitsuFallbackAsset = async (
     return {
       imageUrl: generatedLogo.dataUrl,
       rating,
+      title: originalTitle,
       logoAspectRatio: generatedLogo.aspectRatio,
     };
   }
@@ -1124,6 +1147,7 @@ const fetchKitsuFallbackAsset = async (
     return {
       imageUrl: posterUrl || coverUrl,
       rating,
+      title: originalTitle,
       logoAspectRatio: null,
     };
   }
@@ -1132,6 +1156,7 @@ const fetchKitsuFallbackAsset = async (
     return {
       imageUrl: coverUrl || posterUrl,
       rating,
+      title: originalTitle,
       logoAspectRatio: null,
     };
   }
@@ -1139,6 +1164,7 @@ const fetchKitsuFallbackAsset = async (
   return {
     imageUrl: posterUrl || coverUrl,
     rating,
+    title: originalTitle,
     logoAspectRatio: null,
   };
 };
@@ -1363,6 +1389,8 @@ type FastRenderInput = {
   logoBadgeMaxWidth: number;
   logoBadgesPerRow: number;
   posterRowHorizontalInset: number;
+  posterTitleText?: string | null;
+  posterLogoUrl?: string | null;
   badgeIconSize: number;
   badgeFontSize: number;
   badgePaddingX: number;
@@ -1735,6 +1763,55 @@ const buildGeneratedLogoDataUrl = (title: string) => {
     dataUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`,
     aspectRatio,
   };
+};
+
+const splitTitleForPosterText = (title: string) => {
+  const lines = splitTitleForGeneratedLogo(title);
+  if (lines.length <= 2) return lines;
+  return [lines[0], lines.slice(1).join(' ')];
+};
+
+const buildPosterTitleSvg = (title: string, maxWidth: number) => {
+  const normalized = title.replace(/\s+/g, ' ').trim();
+  if (!normalized) return null;
+  const lines = splitTitleForPosterText(normalized);
+  const width = Math.max(260, Math.round(maxWidth));
+  const availableLineWidth = Math.max(220, width - 48);
+  const maxLineLength = Math.max(...lines.map((line) => line.length), 1);
+  const baseFontSize = lines.length === 1 ? 64 : 54;
+  const compressedFontSize = Math.floor((availableLineWidth / Math.max(1, maxLineLength)) * 1.35);
+  const preliminaryFontSize = Math.min(baseFontSize, compressedFontSize);
+  const longestEstimatedLineWidth = Math.max(
+    ...lines.map((line) => estimateGeneratedLogoLineWidth(line, preliminaryFontSize)),
+    1
+  );
+  const widthFitScale = Math.min(1, availableLineWidth / longestEstimatedLineWidth);
+  const fontSize = Math.max(26, Math.floor(preliminaryFontSize * widthFitScale));
+  const lineHeight = Math.round(fontSize * 1.08);
+  const height = Math.round(lineHeight * lines.length);
+  const startY = Math.round(fontSize * 0.9);
+  const strokeWidth = Math.max(2, Math.round(fontSize * 0.1));
+  const letterSpacing = Math.max(1, Math.round(fontSize * 0.015));
+  const tspans = lines
+    .map((line, index) => {
+      const y = startY + index * lineHeight;
+      const estimatedLineWidth = estimateGeneratedLogoLineWidth(line, fontSize);
+      const textLength =
+        estimatedLineWidth > availableLineWidth
+          ? ` textLength="${availableLineWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
+      return `<tspan x="${Math.round(width / 2)}" y="${y}"${textLength}>${escapeXml(line)}</tspan>`;
+    })
+    .join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<defs>
+  <filter id="poster-title-shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.5" />
+  </filter>
+</defs>
+<text x="${Math.round(width / 2)}" y="${startY}" text-anchor="middle" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" letter-spacing="${letterSpacing}" fill="#ffffff" stroke="rgba(0,0,0,0.65)" stroke-width="${strokeWidth}" paint-order="stroke fill" filter="url(#poster-title-shadow)">${tspans}</text>
+</svg>`;
+  return { svg, width, height };
 };
 
 const chunkBy = <T,>(items: T[], size: number): T[][] => {
@@ -2347,6 +2424,36 @@ const renderWithSharp = async (
         ? 'right'
         : 'left'
       : 'center';
+    const posterTitleSpec =
+      input.imageType === 'poster' && input.posterTitleText
+        ? buildPosterTitleSvg(input.posterTitleText, posterRowRegionWidth)
+        : null;
+    let posterLogoSpec: { buffer: Buffer; width: number; height: number } | null = null;
+    if (input.imageType === 'poster' && input.posterLogoUrl) {
+      try {
+        const logoPayload = await getSourceImagePayload(input.posterLogoUrl);
+        const logoBuffer = Buffer.from(logoPayload.body);
+        const logoMeta = await sharp(logoBuffer).metadata();
+        if (logoMeta.width && logoMeta.height) {
+          const maxLogoWidth = Math.min(posterRowRegionWidth, Math.round(input.outputWidth * 0.78));
+          const maxLogoHeight = Math.max(48, Math.round(input.outputHeight * 0.16));
+          const scale = Math.min(
+            1,
+            maxLogoWidth / logoMeta.width,
+            maxLogoHeight / logoMeta.height
+          );
+          const logoWidth = Math.max(1, Math.round(logoMeta.width * scale));
+          const logoHeight = Math.max(1, Math.round(logoMeta.height * scale));
+          const resizedLogoBuffer = await sharp(logoBuffer)
+            .resize(logoWidth, logoHeight, { fit: 'fill' })
+            .png()
+            .toBuffer();
+          posterLogoSpec = { buffer: resizedLogoBuffer, width: logoWidth, height: logoHeight };
+        }
+      } catch {
+        posterLogoSpec = null;
+      }
+    }
     const composeBadgeRow = (
       rowBadges: RatingBadge[],
       rowY: number,
@@ -2541,6 +2648,40 @@ const renderWithSharp = async (
         rowX += entry.badgeWidth + rowGap;
       }
     };
+    const composePosterCleanOverlayAboveBottom = (bottomRowY: number) => {
+      if (input.imageType !== 'poster') return;
+      const overlay = posterLogoSpec
+        ? {
+            buffer: posterLogoSpec.buffer,
+            width: posterLogoSpec.width,
+            height: posterLogoSpec.height,
+          }
+        : posterTitleSpec
+          ? {
+              buffer: Buffer.from(posterTitleSpec.svg),
+              width: posterTitleSpec.width,
+              height: posterTitleSpec.height,
+            }
+          : null;
+      if (!overlay) return;
+      const overlayGap = Math.max(8, Math.round(input.badgeGap * 0.9));
+      let overlayY = Math.round(bottomRowY - overlayGap - overlay.height);
+      const topRowBottom =
+        input.topBadges.length > 0
+          ? input.badgeTopOffset + badgeHeight + input.badgeGap
+          : input.badgeTopOffset;
+      if (overlayY < topRowBottom) {
+        overlayY = topRowBottom;
+      }
+      if (overlayY + overlay.height + overlayGap > bottomRowY) {
+        return;
+      }
+      const overlayX = Math.max(
+        input.posterRowHorizontalInset,
+        Math.round((input.outputWidth - overlay.width) / 2)
+      );
+      overlays.push({ input: overlay.buffer, top: overlayY, left: overlayX });
+    };
     const composeBadgeColumn = (
       columnBadges: RatingBadge[],
       side: 'left' | 'right',
@@ -2705,7 +2846,10 @@ const renderWithSharp = async (
           rowY += badgeHeight + input.badgeGap;
         }
       }
-    } else if (input.badges.length > 0) {
+    } else if (
+      input.badges.length > 0 ||
+      (input.imageType === 'poster' && (posterTitleSpec || posterLogoSpec))
+    ) {
       if (input.imageType === 'backdrop') {
         if (input.backdropRatingsLayout === 'right-vertical') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.28));
@@ -2728,6 +2872,10 @@ const renderWithSharp = async (
           }
         }
       } else if (input.imageType === 'poster') {
+        const bottomRowY = Math.max(
+          input.badgeTopOffset,
+          input.outputHeight - input.badgeBottomOffset - badgeHeight
+        );
         if (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.46));
           composeBadgeColumn(
@@ -2748,17 +2896,14 @@ const renderWithSharp = async (
             });
           }
           if (input.bottomBadges.length > 0) {
-            const bottomY = Math.max(
-              input.badgeTopOffset,
-              input.outputHeight - input.badgeBottomOffset - badgeHeight
-            );
-            composeBadgeRow(input.bottomBadges, bottomY, {
+            composeBadgeRow(input.bottomBadges, bottomRowY, {
               regionLeft: input.posterRowHorizontalInset,
               regionWidth: posterRowRegionWidth,
               align: posterRowAlign,
             });
           }
         }
+        composePosterCleanOverlayAboveBottom(bottomRowY);
       }
     }
 
@@ -2770,7 +2915,11 @@ const renderWithSharp = async (
             ? 'left'
             : input.posterRatingsLayout === 'left-right'
               ? 'bottom'
-              : input.qualityBadgesSide;
+              : input.posterRatingsLayout === 'top'
+                ? 'bottom'
+                : input.posterRatingsLayout === 'bottom'
+                  ? 'top'
+                  : input.qualityBadgesSide;
       const metrics: BadgeLayoutMetrics = {
         iconSize: input.badgeIconSize,
         fontSize: input.badgeFontSize,
@@ -2786,6 +2935,10 @@ const renderWithSharp = async (
           input.outputHeight - input.badgeBottomOffset - bottomQualityHeight
         );
         composeQualityBadgeRow(input.qualityBadges, bottomY, bottomQualityHeight);
+      } else if (qualityPlacement === 'top') {
+        const topQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        const topY = input.badgeTopOffset;
+        composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight);
       } else {
         const qualityTotalHeight =
           input.qualityBadges.length * qualityBadgeHeight +
@@ -3109,7 +3262,8 @@ export async function GET(
   const streamBadgesCacheKeySeed = shouldApplyStreamBadges
     ? `torrentio:${streamBadgesSeedWindow ?? 0}`
     : 'off';
-  const shouldCacheFinalImage = shouldApplyRatings || shouldApplyStreamBadges;
+  const shouldCacheFinalImage =
+    shouldApplyRatings || shouldApplyStreamBadges || (imageType === 'poster' && posterTextPreference === 'clean');
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
   const renderSeedKey = [
@@ -3145,6 +3299,7 @@ export async function GET(
       let useRawKitsuFallback = false;
       let rawFallbackImageUrl: string | null = null;
       let rawFallbackKitsuRating: string | null = null;
+      let rawFallbackTitle: string | null = null;
       let rawFallbackLogoAspectRatio: number | null = null;
       let mappedImdbId: string | null = null;
 
@@ -3247,6 +3402,7 @@ export async function GET(
           const kitsuFallbackAsset = await fetchKitsuFallbackAsset(mediaId, imageType, phases);
           rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
           rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
+          rawFallbackTitle = kitsuFallbackAsset?.title || null;
           rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
           if (!rawFallbackImageUrl) {
             throw new HttpError('TMDB ID not found for Kitsu ID', 404);
@@ -3276,6 +3432,7 @@ export async function GET(
             const kitsuFallbackAsset = await fetchKitsuFallbackAsset(mediaId, imageType, phases);
             rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
             rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
+            rawFallbackTitle = kitsuFallbackAsset?.title || null;
             rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
             if (!rawFallbackImageUrl) {
               throw new HttpError('Movie/Show not found on TMDB', 404);
@@ -3356,6 +3513,7 @@ export async function GET(
       let outputWidth = 1280;
       let outputHeight = 720;
       let selectedLogoAspectRatio: number | null = null;
+      let selectedPosterLogoPath: string | null = null;
       const requestedExternalRatings = new Set([...selectedRatings]);
       const needsAnimeOnlyRatings = [...requestedExternalRatings].some((provider) =>
         ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
@@ -3370,6 +3528,10 @@ export async function GET(
       const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
       const shouldRenderStreamBadges = shouldApplyStreamBadges && !isAnimeContent;
       const shouldRenderBadges = shouldRenderRatings || shouldRenderStreamBadges;
+      const posterTitleText =
+        imageType === 'poster' && posterTextPreference === 'clean'
+          ? pickPosterTitleFromMedia(media, mediaType, rawFallbackTitle)
+          : null;
       const releaseDateForCache =
         mediaType === 'movie' ? media?.release_date : mediaType === 'tv' ? media?.first_air_date : null;
       const tmdbIdForCache =
@@ -3842,6 +4004,12 @@ export async function GET(
           let posterCollection = input.posters || [];
           const backdropCollection = input.backdrops || [];
           const logoCollection = input.logos || [];
+          const selectedLogo = pickByLanguageWithFallback(
+            logoCollection,
+            requestedImageLang,
+            FALLBACK_IMAGE_LANGUAGE
+          );
+          const logoPath = selectedLogo?.file_path || null;
 
           const localizedPosterPath =
             pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
@@ -3929,7 +4097,11 @@ export async function GET(
               FALLBACK_IMAGE_LANGUAGE,
               originalPosterPath
             );
-            return { imgPath: selectedPoster?.file_path || '', logoAspectRatio: null };
+            return {
+              imgPath: selectedPoster?.file_path || '',
+              logoAspectRatio: null,
+              logoPath,
+            };
           }
 
           if (type === 'backdrop') {
@@ -3940,15 +4112,18 @@ export async function GET(
               FALLBACK_IMAGE_LANGUAGE,
               originalBackdropPath
             );
-            return { imgPath: selectedBackdrop?.file_path || '', logoAspectRatio: null };
+            return {
+              imgPath: selectedBackdrop?.file_path || '',
+              logoAspectRatio: null,
+              logoPath,
+            };
           }
 
-          const bestLogo = pickByLanguageWithFallback(logoCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE);
           const logoAspectRatio =
-            typeof bestLogo?.aspect_ratio === 'number' && bestLogo.aspect_ratio > 0
-              ? bestLogo.aspect_ratio
+            typeof selectedLogo?.aspect_ratio === 'number' && selectedLogo.aspect_ratio > 0
+              ? selectedLogo.aspect_ratio
               : null;
-          return { imgPath: bestLogo?.file_path || '', logoAspectRatio };
+          return { imgPath: logoPath || '', logoAspectRatio, logoPath };
         };
 
         const initialImages = bundledImages || {};
@@ -3961,6 +4136,7 @@ export async function GET(
 
         imgPath = initialSelection.imgPath;
         selectedLogoAspectRatio = initialSelection.logoAspectRatio;
+        selectedPosterLogoPath = initialSelection.logoPath || null;
         if (selectedLogoAspectRatio) {
           outputWidth = Math.max(
             LOGO_MIN_WIDTH,
@@ -3988,6 +4164,7 @@ export async function GET(
             if (fallbackSelection.imgPath) {
               imgPath = fallbackSelection.imgPath;
               selectedLogoAspectRatio = fallbackSelection.logoAspectRatio;
+              selectedPosterLogoPath = fallbackSelection.logoPath || selectedPosterLogoPath;
               if (selectedLogoAspectRatio) {
                 outputWidth = Math.max(
                   LOGO_MIN_WIDTH,
@@ -4005,7 +4182,11 @@ export async function GET(
       if (!imgUrl) {
         imgUrl = buildTmdbImageUrl(imageType, imgPath, outputWidth);
       }
-      if (!shouldRenderBadges) {
+      const posterLogoUrl =
+        imageType === 'poster' && posterTextPreference === 'clean' && selectedPosterLogoPath
+          ? buildTmdbImageUrl('logo', selectedPosterLogoPath, outputWidth)
+          : null;
+      if (!shouldRenderBadges && !posterTitleText && !posterLogoUrl) {
         return getSourceImagePayload(imgUrl);
       }
       if (providerRatingsPromise) {
@@ -4046,7 +4227,7 @@ export async function GET(
           accentColor: meta.accentColor,
         });
       }
-      if (ratingBadges.length === 0 && streamBadges.length === 0) {
+      if (ratingBadges.length === 0 && streamBadges.length === 0 && !posterTitleText && !posterLogoUrl) {
         return getSourceImagePayload(imgUrl);
       }
       const usePosterBadgeLayout = type === 'poster';
@@ -4315,6 +4496,8 @@ export async function GET(
           logoBadgeMaxWidth,
           logoBadgesPerRow,
           posterRowHorizontalInset,
+          posterTitleText,
+          posterLogoUrl,
           badgeIconSize,
           badgeFontSize,
           badgePaddingX,

@@ -155,15 +155,9 @@ export default function Home() {
   const [configCopied, setConfigCopied] = useState(false);
 
   const [copied, setCopied] = useState(false);
-  const shouldShowPosterQualityBadgesSide =
-    posterRatingsLayout === 'top' ||
-    posterRatingsLayout === 'bottom' ||
-    posterRatingsLayout === 'top-bottom';
+  const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
   const shouldShowQualityBadgesSide = previewType === 'poster' && shouldShowPosterQualityBadgesSide;
-  const shouldShowProxyPosterQualityBadgesSide =
-    proxyPosterRatingsLayout === 'top' ||
-    proxyPosterRatingsLayout === 'bottom' ||
-    proxyPosterRatingsLayout === 'top-bottom';
+  const shouldShowProxyPosterQualityBadgesSide = proxyPosterRatingsLayout === 'top-bottom';
   const shouldShowProxyQualityBadgesSide =
     proxyConfigType === 'poster' && shouldShowProxyPosterQualityBadgesSide;
   const qualityBadgeTypeLabel = previewType === 'backdrop' ? 'Backdrop' : 'Poster';
