@@ -1,9 +1,14 @@
+
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 
-COPY package*.json ./
+# Copy package manager files
+COPY package.json ./
+COPY pnpm-lock.yaml ./
 COPY scripts/ ./scripts/
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+# Install pnpm and dependencies
+RUN corepack enable && corepack prepare pnpm@10.32.1 --activate && pnpm install --frozen-lockfile
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app

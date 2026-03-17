@@ -1,5 +1,9 @@
 node_modules
 .next
+data
+pnpm-lock.yaml
+node_modules
+.next
 npm-debug.log
 loadtest
 data
