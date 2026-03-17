@@ -50,6 +50,7 @@ const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const DEFAULT_PROXY_QUALITY_BADGES_STYLE: RatingStyle = DEFAULT_QUALITY_BADGES_STYLE;
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
+const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
   { id: 'on', label: 'On' },
@@ -114,6 +115,22 @@ function SupportPill({ label = 'support me' }: { label?: string }) {
         height={20}
       />
       <span className="site-support-text">{label}</span>
+    </a>
+  );
+}
+
+function UptimePill({ label = 'Stremio Addons Status' }: { label?: string }) {
+  return (
+    <a
+      className="site-status-pill"
+      href={BRAND_UPTIME_URL}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Open Stremio Addons Status page"
+      title="Open Stremio Addons Status page"
+    >
+      <span className="site-status-text">{label}</span>
+      <ExternalLink className="site-status-icon" aria-hidden="true" />
     </a>
   );
 }
@@ -1149,6 +1166,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             <a href="#proxy" className="erdb-nav-link">Addon Proxy</a>
             <a href="#docs" className="erdb-nav-link">API Docs</a>
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-nav-link">github</a>
+            <UptimePill />
             <SupportPill />
           </div>
         </div>
@@ -1167,7 +1185,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </span>
               </h1>
               <p className="erdb-hero-subtitle mt-4 text-lg text-zinc-400 leading-relaxed">
-                Built by IbbyLabs for the same ecosystem as Uptime Tracker.
+                Forked by IbbyLabs for the same ecosystem as Uptime Tracker.
                 Generate dynamic posters, backdrops, and logos with a cleaner config to output workflow.
               </p>
               <div className="erdb-hero-actions flex flex-wrap items-center gap-4">
@@ -2260,10 +2278,25 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         </section>
       </main>
 
+      <section className="max-w-7xl mx-auto px-6 pb-6 md:pb-10" aria-label="Status board information">
+        <div className="rounded-2xl border border-white/10 bg-zinc-950/65 p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1.5">
+            <h3 className="text-sm md:text-base font-semibold text-white">What is Stremio Addons Status?</h3>
+            <p className="text-sm text-zinc-400">
+              It is the IbbyLabs public status board for popular Stremio addons, including current health and incident updates.
+            </p>
+          </div>
+          <div className="shrink-0">
+            <UptimePill label="View Status Board" />
+          </div>
+        </div>
+      </section>
+
       <footer className="erdb-footer py-8">
         <div className="max-w-7xl mx-auto px-6 space-y-4">
           <div className="site-page-footer-top">
             <BrandLockup compact />
+            <UptimePill />
             <SupportPill />
           </div>
           <div className="site-page-footer-links">

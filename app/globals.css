@@ -260,6 +260,53 @@ pre {
 	gap: 0.5rem;
 }
 
+.site-status-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.44rem;
+	padding: 0.46rem 0.78rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--border) 72%, rgba(224, 214, 255, 0.42));
+	background: color-mix(in srgb, var(--card) 88%, rgba(129, 92, 214, 0.22) 12%);
+	color: color-mix(in srgb, var(--brand-ink) 88%, white 12%);
+	text-decoration: none;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	box-shadow: 0 12px 24px -18px rgba(107, 80, 180, 0.95);
+	transition:
+		transform 0.2s ease,
+		border-color 0.2s ease,
+		background-color 0.2s ease,
+		box-shadow 0.2s ease,
+		color 0.2s ease;
+}
+
+.site-status-pill:hover {
+	transform: translateY(-1px);
+	border-color: color-mix(in srgb, var(--glow) 78%, rgba(255, 255, 255, 0.52) 22%);
+	background: color-mix(in srgb, var(--card) 78%, rgba(124, 82, 255, 0.25) 22%);
+	color: #fff;
+	box-shadow: 0 18px 28px -16px rgba(122, 90, 205, 0.95);
+}
+
+.site-status-pill:focus-visible {
+	outline: 2px solid color-mix(in srgb, var(--glow) 70%, white 30%);
+	outline-offset: 2px;
+}
+
+.site-status-icon {
+	width: 0.92rem;
+	height: 0.92rem;
+	stroke-width: 2.1;
+}
+
+.site-status-text {
+	line-height: 1;
+}
+
 .site-support-pill {
 	display: inline-flex;
 	align-items: center;
