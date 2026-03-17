@@ -89,7 +89,7 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
       </span>
       <span className="site-brand-copy">
         <span className="site-brand-eyebrow">IbbyLabs</span>
-        <span className="site-brand-name">ERDB</span>
+        <span className="site-brand-name">Easy Ratings Database</span>
       </span>
     </Link>
   );
@@ -2242,7 +2242,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             <span>Forked by IbbyLabs</span>
           </div>
           <p className="text-sm text-zinc-500 text-center md:text-left">
-            © 2026 ERDB Project. Consistent chrome, same lab.
+            © 2026 Easy Ratings Database Project. Consistent chrome, same lab.
           </p>
         </div>
       </footer>

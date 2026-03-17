@@ -1,5 +1,5 @@
 {
-  "name": "IbbyLabs ERDB",
+  "name": "IbbyLabs Easy Ratings Database",
   "short_name": "ERDB",
   "description": "Stateless ratings image engine for posters, backdrops, logos, and addon integrations.",
   "start_url": "/",

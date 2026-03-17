@@ -3,15 +3,16 @@ import {connection} from 'next/server';
 import './globals.css'; // Global styles
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const fullBrandName = 'IbbyLabs Easy Ratings Database';
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: 'IbbyLabs ERDB | Stateless Ratings Engine',
+  title: `${fullBrandName} | Stateless Ratings Engine`,
   description: 'ERDB generates poster, backdrop, and logo images with dynamic ratings for addons and media tools.',
-  applicationName: 'IbbyLabs ERDB',
+  applicationName: fullBrandName,
   manifest: '/site.webmanifest',
   appleWebApp: {
-    title: 'IbbyLabs ERDB',
+    title: fullBrandName,
     capable: true,
     statusBarStyle: 'black-translucent',
   },
@@ -28,13 +29,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    title: 'IbbyLabs ERDB',
+    title: fullBrandName,
     description: 'Stateless ratings image engine for posters, backdrops, logos, and Stremio addon integrations.',
     images: ['/favicon.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IbbyLabs ERDB',
+    title: fullBrandName,
     description: 'Stateless ratings image engine for posters, backdrops, logos, and Stremio addon integrations.',
     images: ['/favicon.png'],
   },
