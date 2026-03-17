@@ -14,7 +14,8 @@
     "postinstall": "node scripts/postinstall.js",
     "docker:up": "docker compose up --build",
     "docker:up:scale4": "docker compose up -d --build --scale app=4",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "release": "node scripts/release.js"
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
