@@ -70,6 +70,16 @@ type RecentCommit = {
 };
 const COMMIT_FEED_URL = '/commits.json';
 const COMMIT_PAGE_SIZE = 5;
+const API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
+const API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
+
+type ApiKeyConfigStorage = {
+  tmdbKey: string;
+  mdblistKey: string;
+  proxyTmdbKey: string;
+  proxyMdblistKey: string;
+  proxyManifestUrl: string;
+};
 
 function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
@@ -379,6 +389,8 @@ export default function Home() {
   const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(true);
   const [visibleRecentCommitCount, setVisibleRecentCommitCount] = useState(COMMIT_PAGE_SIZE);
   const [nowMs, setNowMs] = useState(Date.now());
+  const [apiKeyConfigStatus, setApiKeyConfigStatus] = useState<'' | 'loaded' | 'saved' | 'cleared' | 'error'>('');
+  const [apiKeyConfigAutoSave, setApiKeyConfigAutoSave] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
@@ -493,6 +505,71 @@ export default function Home() {
       controller.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(API_KEY_CONFIG_STORAGE_KEY);
+      const settingsRaw = window.localStorage.getItem(API_KEY_CONFIG_SETTINGS_STORAGE_KEY);
+      if (settingsRaw) {
+        const settings = JSON.parse(settingsRaw) as { autoSave?: boolean };
+        setApiKeyConfigAutoSave(Boolean(settings.autoSave));
+      }
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw) as Partial<ApiKeyConfigStorage>;
+      setTmdbKey(typeof parsed.tmdbKey === 'string' ? parsed.tmdbKey : '');
+      setMdblistKey(typeof parsed.mdblistKey === 'string' ? parsed.mdblistKey : '');
+      setProxyTmdbKey(typeof parsed.proxyTmdbKey === 'string' ? parsed.proxyTmdbKey : '');
+      setProxyMdblistKey(typeof parsed.proxyMdblistKey === 'string' ? parsed.proxyMdblistKey : '');
+      setProxyManifestUrl(typeof parsed.proxyManifestUrl === 'string' ? parsed.proxyManifestUrl : '');
+      setApiKeyConfigStatus('loaded');
+    } catch {
+      setApiKeyConfigStatus('error');
+    }
+  }, []);
+
+  const persistApiKeyConfig = useCallback((showSavedStatus = true) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const payload: ApiKeyConfigStorage = {
+      tmdbKey: tmdbKey.trim(),
+      mdblistKey: mdblistKey.trim(),
+      proxyTmdbKey: proxyTmdbKey.trim(),
+      proxyMdblistKey: proxyMdblistKey.trim(),
+      proxyManifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
+    };
+
+    try {
+      window.localStorage.setItem(API_KEY_CONFIG_STORAGE_KEY, JSON.stringify(payload));
+      if (showSavedStatus) {
+        setApiKeyConfigStatus('saved');
+      }
+    } catch {
+      setApiKeyConfigStatus('error');
+    }
+  }, [tmdbKey, mdblistKey, proxyTmdbKey, proxyMdblistKey, proxyManifestUrl]);
+
+  useEffect(() => {
+    if (!apiKeyConfigAutoSave) {
+      return;
+    }
+    persistApiKeyConfig(false);
+  }, [
+    apiKeyConfigAutoSave,
+    tmdbKey,
+    mdblistKey,
+    proxyTmdbKey,
+    proxyMdblistKey,
+    proxyManifestUrl,
+    persistApiKeyConfig,
+  ]);
 
   const handleCopyPrompt = useCallback(() => {
     const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
@@ -921,6 +998,44 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     setTimeout(() => setProxyCopied(false), 2000);
   }, [proxyUrl]);
 
+  const handleSaveApiKeyConfig = useCallback(() => {
+    persistApiKeyConfig(true);
+  }, [persistApiKeyConfig]);
+
+  const handleClearApiKeyConfig = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(API_KEY_CONFIG_STORAGE_KEY);
+      setApiKeyConfigStatus('cleared');
+    } catch {
+      setApiKeyConfigStatus('error');
+    }
+  }, []);
+
+  const handleToggleApiKeyConfigAutoSave = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const next = !apiKeyConfigAutoSave;
+    setApiKeyConfigAutoSave(next);
+
+    try {
+      window.localStorage.setItem(
+        API_KEY_CONFIG_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ autoSave: next })
+      );
+      if (next) {
+        persistApiKeyConfig(false);
+      }
+    } catch {
+      setApiKeyConfigStatus('error');
+    }
+  }, [apiKeyConfigAutoSave, persistApiKeyConfig]);
+
   const canGenerateConfig = Boolean(configString);
   const normalizedProxyManifestUrl = normalizeManifestUrl(proxyManifestUrl);
   const canGenerateProxy = Boolean(
@@ -1109,6 +1224,42 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
                       <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveApiKeyConfig}
+                      className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
+                    >
+                      Save API key config
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearApiKeyConfig}
+                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300"
+                    >
+                      Clear saved
+                    </button>
+                    <label className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={apiKeyConfigAutoSave}
+                        onChange={handleToggleApiKeyConfigAutoSave}
+                        className="h-3 w-3 accent-violet-500"
+                      />
+                      <span>Auto save</span>
+                    </label>
+                    {apiKeyConfigStatus ? (
+                      <span className={`text-[10px] ${apiKeyConfigStatus === 'error' ? 'text-rose-400' : 'text-zinc-500'}`}>
+                        {apiKeyConfigStatus === 'loaded'
+                          ? 'Saved API config loaded.'
+                          : apiKeyConfigStatus === 'saved'
+                            ? 'API config saved.'
+                            : apiKeyConfigStatus === 'cleared'
+                              ? 'Saved API config cleared.'
+                              : 'Unable to access local storage.'}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
