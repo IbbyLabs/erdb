@@ -1,7 +1,7 @@
 {
   "name": "erdb",
   "description": "ERDB generates poster, backdrop, and logo images with dynamic ratings on the fly.",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "private": true,
   "repository": {
     "type": "git",
