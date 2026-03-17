@@ -60,6 +60,8 @@ const TMDB_KEY_STORAGE_KEY = 'erdb_tmdb_key';
 const MDBLIST_KEY_STORAGE_KEY = 'erdb_mdblist_key';
 const EXPORT_CONFIG_VERSION = 1;
 const RATING_PROVIDER_IDS = new Set(RATING_PROVIDER_OPTIONS.map((option) => option.id));
+const isRatingProviderId = (value: string): value is RatingPreference =>
+  RATING_PROVIDER_IDS.has(value as RatingPreference);
 
 const isProxyType = (value: unknown): value is ProxyType =>
   PROXY_TYPES.includes(value as ProxyType);
@@ -188,6 +190,7 @@ export default function Home() {
     backdrop: true,
     logo: true,
   });
+  const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
   const [proxyUrl, setProxyUrl] = useState('');
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configString, setConfigString] = useState('');
@@ -575,6 +578,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     config.posterEnabled = proxyEnabledTypes.poster;
     config.backdropEnabled = proxyEnabledTypes.backdrop;
     config.logoEnabled = proxyEnabledTypes.logo;
+    if (proxyTranslateMeta) {
+      config.translateMeta = true;
+    }
 
     if (posterRatingsLayout) {
       config.posterRatingsLayout = posterRatingsLayout;
@@ -614,6 +620,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     posterRatingsMaxPerSide,
     backdropRatingsLayout,
     proxyEnabledTypes,
+    proxyTranslateMeta,
     baseUrl,
   ]);
 
@@ -686,6 +693,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       backdropRatingsLayout,
       proxyManifestUrl,
       proxyEnabledTypes,
+      translateMeta: proxyTranslateMeta,
     };
 
     if (includeKeys) {
@@ -767,7 +775,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       if (!Array.isArray(value)) return null;
       const normalized = value
         .map((item) => (typeof item === 'string' ? item : null))
-        .filter((item): item is RatingPreference => item !== null && RATING_PROVIDER_IDS.has(item));
+        .filter((item): item is RatingPreference => item !== null && isRatingProviderId(item));
       return [...new Set(normalized)];
     };
 
@@ -811,6 +819,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         backdrop: typeof enabled.backdrop === 'boolean' ? enabled.backdrop : current.backdrop,
         logo: typeof enabled.logo === 'boolean' ? enabled.logo : current.logo,
       }));
+    }
+    if (typeof payload.translateMeta === 'boolean') {
+      setProxyTranslateMeta(payload.translateMeta);
     }
 
     setImportStatus('success');
@@ -1246,6 +1257,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       ))}
                     </div>
                     <div className="mt-1 text-[10px] text-zinc-500">Disabled types keep the original artwork.</div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Translate Meta</span>
+                    <label className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyTranslateMeta ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                      <input type="checkbox" checked={proxyTranslateMeta} onChange={() => setProxyTranslateMeta((value) => !value)} className="h-3 w-3 accent-orange-500" />
+                      <span>Translate titles & plots</span>
+                    </label>
+                    <div className="mt-1 text-[10px] text-zinc-500">Uses selected language for titles, plots, and episodes.</div>
                   </div>
                 </div>
 
@@ -1777,13 +1796,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
-
-
-
-
-
-
 
 
 
