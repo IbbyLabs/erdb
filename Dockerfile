@@ -19,6 +19,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+LABEL org.opencontainers.image.title="ERDB"
+LABEL org.opencontainers.image.description="ERDB generates poster, backdrop, and logo images with dynamic ratings on the fly."
+LABEL org.opencontainers.image.source="https://github.com/IbbyLabs/erdb"
+
 RUN apt-get update \
 		&& apt-get install -y --no-install-recommends \
 			fontconfig \

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image as ImageIcon, Star, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
+import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
   stringifyRatingPreferencesAllowEmpty,
@@ -59,6 +59,63 @@ const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }
   { id: 'right', label: 'Right' },
 ];
 
+function BrandLockup({ compact = false }: { compact?: boolean }) {
+  return (
+    <a href="/" className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
+      <span className="site-brand-badge" aria-hidden="true">
+        <Image src="/favicon.png" alt="" className="site-brand-logo" width={38} height={38} priority />
+      </span>
+      <span className="site-brand-copy">
+        <span className="site-brand-eyebrow">IbbyLabs</span>
+        <span className="site-brand-name">ERDB</span>
+      </span>
+    </a>
+  );
+}
+
+function SupportPill({ label = 'support me' }: { label?: string }) {
+  return (
+    <a
+      className="site-support-pill"
+      href={BRAND_SUPPORT_URL}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Optional support on Kofi"
+      title="Optional support on Kofi"
+    >
+      <Image
+        className="site-support-icon"
+        src="/kofi-favicon.png"
+        alt=""
+        aria-hidden="true"
+        width={20}
+        height={20}
+      />
+      <span className="site-support-text">{label}</span>
+    </a>
+  );
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  align = 'left',
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  align?: 'left' | 'center';
+}) {
+  return (
+    <div className={`erdb-section-header${align === 'center' ? ' erdb-section-header-center' : ''}`}>
+      <p className="site-section-eyebrow font-mono">{eyebrow}</p>
+      <h2 className="erdb-section-title text-white">{title}</h2>
+      <p className="erdb-section-copy text-zinc-400">{description}</p>
+    </div>
+  );
+}
+
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
 
 const normalizeManifestUrl = (value: string, allowBareScheme = false) => {
@@ -89,6 +146,7 @@ const encodeBase64Url = (value: string) => {
 };
 
 export default function Home() {
+  const [baseUrl, setBaseUrl] = useState('');
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
@@ -151,6 +209,7 @@ export default function Home() {
   const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
+  const [previewErrored, setPreviewErrored] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
@@ -174,9 +233,12 @@ export default function Home() {
     proxyConfigType === 'backdrop' ? proxyBackdropQualityBadgesStyle : proxyPosterQualityBadgesStyle;
   const setProxyQualityBadgesStyleForType =
     proxyConfigType === 'backdrop' ? setProxyBackdropQualityBadgesStyle : setProxyPosterQualityBadgesStyle;
-  const baseUrl = normalizeBaseUrl(typeof window !== 'undefined' ? window.location.origin : '');
   const effectiveProxyTmdbKey = proxyTmdbKey.trim() || tmdbKey.trim();
   const effectiveProxyMdblistKey = proxyMdblistKey.trim() || mdblistKey.trim();
+
+  useEffect(() => {
+    setBaseUrl(normalizeBaseUrl(window.location.origin));
+  }, []);
 
   useEffect(() => {
     if (tmdbKey && tmdbKey.length > 10) {
@@ -268,6 +330,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   }, []);
 
   const previewUrl = useMemo(() => {
+    const normalizedTmdbKey = tmdbKey.trim();
+    const normalizedMediaId = mediaId.trim();
+    if (!baseUrl || !normalizedTmdbKey || !normalizedMediaId) {
+      return '';
+    }
+
     const ratingPreferencesForType =
       previewType === 'poster'
         ? posterRatingPreferences
@@ -312,9 +380,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     if (mdblistKey) {
       query.set('mdblistKey', mdblistKey);
     }
-    if (tmdbKey) {
-      query.set('tmdbKey', tmdbKey);
-    }
+    query.set('tmdbKey', normalizedTmdbKey);
 
     if (previewType === 'poster' || previewType === 'backdrop') {
       query.set('imageText', imageTextForType);
@@ -328,11 +394,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       query.set('backdropRatingsLayout', backdropRatingsLayout);
     }
 
-    const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
-    if (!origin) {
-      return '';
-    }
-    return `${origin}/${previewType}/${mediaId}.jpg?${query.toString()}`;
+    return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
   }, [
     previewType,
     mediaId,
@@ -358,6 +420,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     mdblistKey,
     tmdbKey,
   ]);
+
+  useEffect(() => {
+    setPreviewErrored(false);
+  }, [previewUrl]);
 
   const configString = useMemo(() => {
     const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
@@ -691,58 +757,105 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   return (
     <div className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
       <nav className="erdb-chrome sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-violet-500 to-indigo-600 flex items-center justify-center">
-              <Star className="w-5 h-5 text-white fill-white" />
-            </div>
-            <span className="font-bold text-white tracking-tight text-lg">ERDB <span className="text-violet-500 text-sm font-medium ml-1">Stateless</span></span>
+        <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <BrandLockup />
+            <span className="erdb-brand-tag">Stateless ratings engine</span>
           </div>
-          <div className="flex items-center gap-4 text-sm font-medium">
-            <a href="#preview" className="hover:text-white transition-colors">Configurator</a>
-            <a href="#proxy" className="hover:text-white transition-colors">Addon Proxy</a>
-            <a href="#docs" className="hover:text-white transition-colors">API Docs</a>
-            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 hover:bg-zinc-800 transition-colors">Hub</a>
-            <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer" className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 hover:bg-zinc-800 transition-colors">Support</a>
+          <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
+            <a href="#preview" className="erdb-nav-link">Configurator</a>
+            <a href="#proxy" className="erdb-nav-link">Addon Proxy</a>
+            <a href="#docs" className="erdb-nav-link">API Docs</a>
+            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-nav-link">github</a>
+            <SupportPill />
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-6 py-20 space-y-24">
-        {/* Hero Section */}
-        <section className="text-center space-y-6 max-w-4xl mx-auto relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-violet-500/10 to-transparent blur-3xl rounded-full -z-10 h-64 pointer-events-none" />
-          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
-            Stunning Ratings.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-500 to-violet-600">
-              Stateless API.
-            </span>
-          </h1>
-          <p className="mt-4 text-lg text-zinc-400 leading-relaxed">
-            Generate dynamic posters and backdrops for your Addons. <br className="hidden md:block" />
-            No accounts, no tokens, just beautiful imagery via query parameters.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <a href="#preview" className="px-8 py-4 rounded-full bg-white text-black font-semibold hover:bg-zinc-200 transition-colors">
-              Open Configurator
-            </a>
-            <a href="#docs" className="px-8 py-4 rounded-full bg-zinc-900 text-white font-semibold border border-white/10 hover:bg-zinc-800 transition-colors">
-              Read API Docs
-            </a>
+      <main className="erdb-main max-w-7xl mx-auto px-6 py-16 md:py-20">
+        <section className="erdb-hero-section relative">
+          <div className="erdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
+          <div className="erdb-hero-grid">
+            <div className="erdb-hero-copy">
+              <p className="site-section-eyebrow font-mono">IbbyLabs image engine</p>
+              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
+                Stunning Ratings.<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-500 to-violet-600">
+                  Stateless API.
+                </span>
+              </h1>
+              <p className="erdb-hero-subtitle mt-4 text-lg text-zinc-400 leading-relaxed">
+                Built by IbbyLabs for the same ecosystem as Uptime Tracker.
+                Generate dynamic posters, backdrops, and logos with a cleaner config to output workflow.
+              </p>
+              <div className="erdb-hero-actions flex flex-wrap items-center gap-4">
+                <a href="#preview" className="erdb-hero-primary">
+                  Open Configurator
+                </a>
+                <a href="#docs" className="erdb-hero-secondary">
+                  Read API Docs
+                </a>
+              </div>
+              <div className="erdb-hero-strip">
+                <div className="erdb-hero-chip">Poster, backdrop, and logo output</div>
+                <div className="erdb-hero-chip">One config string for every integration</div>
+                <div className="erdb-hero-chip">Manifest proxy for Stremio addons</div>
+              </div>
+            </div>
+
+            <aside className="erdb-panel erdb-hero-panel">
+              <p className="erdb-panel-eyebrow font-mono">Workflow</p>
+              <div className="erdb-hero-panel-stack">
+                <div>
+                  <h2 className="erdb-panel-title text-white">From config to artwork without a dashboard</h2>
+                  <p className="erdb-panel-copy text-zinc-400">
+                    Configure once, copy the string, and plug ERDB into direct image routes or a rewritten addon manifest.
+                  </p>
+                </div>
+                <div className="erdb-hero-flow">
+                  <div className="erdb-hero-flow-step">
+                    <span className="erdb-hero-flow-index">1</span>
+                    <div>
+                      <div className="erdb-hero-flow-title">Set providers and layouts</div>
+                      <div className="erdb-hero-flow-copy">Choose per type ratings, text, and badge behavior.</div>
+                    </div>
+                  </div>
+                  <div className="erdb-hero-flow-step">
+                    <span className="erdb-hero-flow-index">2</span>
+                    <div>
+                      <div className="erdb-hero-flow-title">Copy the generated output</div>
+                      <div className="erdb-hero-flow-copy">Use a config string or a manifest URL depending on the integration.</div>
+                    </div>
+                  </div>
+                  <div className="erdb-hero-flow-step">
+                    <span className="erdb-hero-flow-index">3</span>
+                    <div>
+                      <div className="erdb-hero-flow-title">Render artwork on demand</div>
+                      <div className="erdb-hero-flow-copy">Serve branded media images without storing user state server side.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </aside>
           </div>
         </section>
 
-        {/* Live Previewer */}
-        <section id="preview" className="scroll-mt-24">
-          <div className="grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
-            {/* Controls */}
+        <section id="preview" className="erdb-section scroll-mt-24">
+          <SectionHeader
+            eyebrow="Configure"
+            title="Build the exact output you want"
+            description="The configurator is the primary workflow surface. Inputs, generated config, and live artwork preview are grouped more tightly so the path from choice to result reads faster."
+          />
+          <div className="erdb-surface-grid grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
             <div className="space-y-3">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Configurator</h2>
-                <p className="text-sm text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
-              </div>
-
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+              <div className="erdb-panel erdb-panel-form space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+                <div className="erdb-panel-head">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Inputs</p>
+                    <h3 className="erdb-panel-title text-white">Configurator</h3>
+                    <p className="erdb-panel-copy text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
+                  </div>
+                </div>
                 <div>
                   <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -906,13 +1019,18 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <div className="erdb-panel erdb-panel-emphasis rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
+                <div className="erdb-panel-head">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Export</p>
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <Code2 className="w-5 h-5 text-violet-500" /> ERDB Config String
-                </h3>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
-                </p>
+                    </h3>
+                    <p className="mt-2 text-sm text-zinc-400">
+                      Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
+                    </p>
+                  </div>
+                </div>
                 <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4">
                   <div className="font-mono text-xs text-zinc-300 break-all">
                     {configString || 'Add TMDB key and MDBList key to generate the config string.'}
@@ -946,14 +1064,19 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <h3 className="text-xl font-semibold text-white">Preview Output</h3>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Stateless dynamic layout generated via query parameters.
-                </p>
+              <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+                <div className="erdb-panel-head">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Output</p>
+                    <h3 className="text-xl font-semibold text-white">Preview Output</h3>
+                    <p className="mt-2 text-sm text-zinc-400">
+                      Stateless dynamic layout generated via query parameters.
+                    </p>
+                  </div>
+                </div>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[320px] flex items-center justify-center flex-col">
 
-                  {previewUrl ? (
+                  {previewUrl && !previewErrored ? (
                     <div className="z-10 w-full flex flex-col items-center gap-8">
                       <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
                         ? 'aspect-[2/3] w-72'
@@ -968,11 +1091,18 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                           unoptimized
                           fill
                           className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                          onError={() => setPreviewErrored(true)}
                         />
                       </div>
                     </div>
                   ) : (
-                    <div className="text-sm text-zinc-500">No preview available.</div>
+                    <div className="text-sm text-zinc-500 text-center max-w-sm leading-6">
+                      {previewErrored
+                        ? 'Preview could not be rendered with the current media ID or settings.'
+                        : tmdbKey.trim()
+                          ? 'No preview available.'
+                          : 'Add a TMDB key to enable live preview.'}
+                    </div>
                   )}
                 </div>
               </div>
@@ -980,16 +1110,22 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
           </div>
         </section>
 
-        {/* Addon Proxy */}
-        <section id="proxy" className="scroll-mt-24">
-          <div className="grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
+        <section id="proxy" className="erdb-section scroll-mt-24">
+          <SectionHeader
+            eyebrow="Proxy"
+            title="Rewrite an addon manifest with the same visual system"
+            description="The proxy flow now mirrors the configurator structure: setup on the left, generated output and operational notes on the right."
+          />
+          <div className="erdb-surface-grid grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
             <div className="space-y-4">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Addon Proxy</h2>
-                <p className="text-sm text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
-              </div>
-
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+              <div className="erdb-panel erdb-panel-form space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+                <div className="erdb-panel-head">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Inputs</p>
+                    <h3 className="erdb-panel-title text-white">Addon Proxy</h3>
+                    <p className="erdb-panel-copy text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
+                  </div>
+                </div>
                 <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
@@ -1210,11 +1346,16 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <h3 className="text-xl font-semibold text-white">Generated Manifest</h3>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Use this URL in Stremio. It ends with manifest.json and has no query params.
-                </p>
+              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+                <div className="erdb-panel-head">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Export</p>
+                    <h3 className="text-xl font-semibold text-white">Generated Manifest</h3>
+                    <p className="mt-2 text-sm text-zinc-400">
+                      Use this URL in Stremio. It ends with manifest.json and has no query params.
+                    </p>
+                  </div>
+                </div>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4">
                   <div className="font-mono text-xs text-zinc-300 break-all">
                     {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
@@ -1255,7 +1396,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 )}
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-zinc-500">
+              <div className="erdb-panel erdb-panel-note rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-zinc-500">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-violet-500/10">
                     <Zap className="w-4 h-4 text-violet-500" />
@@ -1270,23 +1411,24 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
           </div>
         </section>
 
-        {/* Documentation Section */}
-        <section id="docs" className="scroll-mt-24 pb-20">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl font-bold text-white">Developers</h2>
-              <p className="text-zinc-500">Stateless rendering for any media ID.</p>
-            </div>
+        <section id="docs" className="erdb-section scroll-mt-24 pb-20">
+          <div className="max-w-5xl mx-auto space-y-8">
+            <SectionHeader
+              eyebrow="Developers"
+              title="Reference surfaces with clearer grouping"
+              description="The docs area now follows the same section rhythm as the rest of the page, with feature summaries first and the heavier tables and prompt content grouped underneath."
+              align="center"
+            />
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-violet-500/30 transition-colors">
+            <div className="erdb-doc-grid grid md:grid-cols-2 gap-4">
+              <div className="erdb-feature-card p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-violet-500/30 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
                   <ImageIcon className="w-5 h-5 text-violet-500" />
                 </div>
                 <h4 className="text-lg font-bold text-white">Dynamic Rendering</h4>
                 <p className="text-sm text-zinc-400">No tokens needed. Pass parameters in the query string and let ERDB handle metadata and rendering.</p>
               </div>
-              <div className="p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-blue-500/30 transition-colors">
+              <div className="erdb-feature-card p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-blue-500/30 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                   <Code2 className="w-5 h-5 text-blue-500" />
                 </div>
@@ -1296,7 +1438,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             </div>
 
             <div className="space-y-6">
-              <div className="bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
+              <div className="erdb-panel erdb-doc-card bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Terminal className="w-5 h-5 text-violet-500" /> API Reference
@@ -1422,7 +1564,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
               </div>
 
-              <div className="bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
+              <div className="erdb-panel erdb-doc-card bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Settings2 className="w-5 h-5 text-violet-500" /> Type Configs
@@ -1483,7 +1625,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
               </div>
 
-              <div className="bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
+              <div className="erdb-panel erdb-doc-card bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Hash className="w-5 h-5 text-violet-500" /> ID Formats
@@ -1524,7 +1666,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
               </div>
 
-              <div className="p-6 bg-black border border-white/10 rounded-2xl relative overflow-hidden">
+              <div className="erdb-panel erdb-ai-card p-6 bg-black border border-white/10 rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/20 blur-[80px] pointer-events-none" />
 
                 <div className="mb-6">
@@ -1692,18 +1834,22 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
       <footer className="erdb-footer py-8">
         <div className="max-w-7xl mx-auto px-6 space-y-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-zinc-500">
-              <Star className="w-4 h-4" />
-              <span className="text-sm font-semibold tracking-tight text-white">ERDB Stateless Engine</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">Hub</a>
-              <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">Support</a>
-            </div>
+          <div className="site-page-footer-top">
+            <BrandLockup compact />
+            <SupportPill />
+          </div>
+          <div className="site-page-footer-links">
+            <a href="#preview" className="erdb-footer-link">Configurator</a>
+            <a href="#proxy" className="erdb-footer-link">Addon Proxy</a>
+            <a href="#docs" className="erdb-footer-link">API Docs</a>
+            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">github</a>
+          </div>
+          <div className="site-page-credit">
+            <Image src="/favicon.png" alt="" aria-hidden="true" width={20} height={20} />
+            <span>Forked by IbbyLabs</span>
           </div>
           <p className="text-sm text-zinc-500 text-center md:text-left">
-            © 2026 ERDB Project. Modern imagery for modern addons.
+            © 2026 ERDB Project. Consistent chrome, same lab.
           </p>
         </div>
       </footer>

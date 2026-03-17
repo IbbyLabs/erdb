@@ -1,7 +1,13 @@
 {
-  "name": "ai-studio-applet",
-  "version": "2.1.0",
+  "name": "erdb",
+  "description": "ERDB generates poster, backdrop, and logo images with dynamic ratings on the fly.",
+  "version": "2.2.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IbbyLabs/erdb.git"
+  },
+  "homepage": "https://github.com/IbbyLabs/erdb#readme",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

@@ -20,6 +20,33 @@ cd erdb
 
 The compose file includes a reverse proxy (Caddy) to handle app scaling.
 
+## Releases & Packages
+
+Pushing a version tag that matches `v*` now does two things automatically:
+
+- publishes a GitHub release with generated release notes
+- pushes a multi-arch container image to GHCR as `ghcr.io/ibbylabs/erdb`
+
+Pull examples:
+
+```bash
+docker pull ghcr.io/ibbylabs/erdb:latest
+docker pull ghcr.io/ibbylabs/erdb:v2.1.0
+```
+
+Release flow:
+
+```bash
+npm run release -- patch
+git push --follow-tags
+```
+
+If the GHCR package already existed before it was linked to this repository, open the package in GitHub and:
+
+1. connect it to `IbbyLabs/erdb`
+2. enable permission inheritance from the repository
+3. set visibility to public if you want anonymous pulls
+
 ## Recommended Requirements
 
 For high performance (on-the-fly image rendering), a server with a strong CPU and plenty of RAM is recommended.
