@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
 import {
@@ -61,7 +62,7 @@ const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }
 
 function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
-    <a href="/" className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
+    <Link href="/" className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
       <span className="site-brand-badge" aria-hidden="true">
         <Image src="/favicon.png" alt="" className="site-brand-logo" width={38} height={38} priority />
       </span>
@@ -69,7 +70,7 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
         <span className="site-brand-eyebrow">IbbyLabs</span>
         <span className="site-brand-name">ERDB</span>
       </span>
-    </a>
+    </Link>
   );
 }
 
@@ -146,7 +147,9 @@ const encodeBase64Url = (value: string) => {
 };
 
 export default function Home() {
-  const [baseUrl, setBaseUrl] = useState('');
+  const [baseUrl] = useState(() =>
+    normalizeBaseUrl(typeof window !== 'undefined' ? window.location.origin : '')
+  );
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
@@ -209,7 +212,7 @@ export default function Home() {
   const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
-  const [previewErrored, setPreviewErrored] = useState(false);
+  const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
@@ -235,10 +238,6 @@ export default function Home() {
     proxyConfigType === 'backdrop' ? setProxyBackdropQualityBadgesStyle : setProxyPosterQualityBadgesStyle;
   const effectiveProxyTmdbKey = proxyTmdbKey.trim() || tmdbKey.trim();
   const effectiveProxyMdblistKey = proxyMdblistKey.trim() || mdblistKey.trim();
-
-  useEffect(() => {
-    setBaseUrl(normalizeBaseUrl(window.location.origin));
-  }, []);
 
   useEffect(() => {
     if (tmdbKey && tmdbKey.length > 10) {
@@ -421,9 +420,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     tmdbKey,
   ]);
 
-  useEffect(() => {
-    setPreviewErrored(false);
-  }, [previewUrl]);
+  const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
 
   const configString = useMemo(() => {
     const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
@@ -1091,7 +1088,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                           unoptimized
                           fill
                           className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
-                          onError={() => setPreviewErrored(true)}
+                          onError={() => setPreviewErroredForUrl(previewUrl)}
                         />
                       </div>
                     </div>
