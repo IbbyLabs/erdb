@@ -15,7 +15,7 @@
     "docker:up": "docker compose up --build",
     "docker:up:scale4": "docker compose up -d --build --scale app=4",
     "docker:down": "docker compose down",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
