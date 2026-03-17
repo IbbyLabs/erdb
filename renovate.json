@@ -5,7 +5,6 @@
     ":dependencyDashboard"
   ],
   "enabled": true,
-  "onboarding": true,
   "forkProcessing": "enabled",
   "labels": ["dependencies"],
   "timezone": "Europe/London",
@@ -36,7 +35,6 @@
     },
     {
       "matchUpdateTypes": ["major"],
-      "dependencyDashboardApproval": true,
       "automerge": false,
       "labels": ["dependencies", "major-update"]
     }
