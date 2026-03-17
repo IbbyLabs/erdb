@@ -7,8 +7,8 @@ name: Build and Push Docker
   workflow_dispatch: {}
 
 concurrency:
-  group: docker-publish-${{ github.sha }}
-  cancel-in-progress: true
+  group: build-and-push-docker
+  cancel-in-progress: false
 
 jobs:
   build:
