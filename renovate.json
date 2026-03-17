@@ -4,6 +4,8 @@
     "config:recommended",
     ":dependencyDashboard"
   ],
+  "enabled": true,
+  "onboarding": true,
   "labels": ["dependencies"],
   "timezone": "Europe/London",
   "schedule": ["before 6am on monday"],
