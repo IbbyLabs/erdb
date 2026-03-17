@@ -1,10 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { Image as ImageIcon, Star, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
+  parseRatingPreferencesAllowEmpty,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from '@/lib/ratingPreferences';
@@ -27,16 +28,16 @@ import {
 } from '@/lib/ratingStyle';
 
 const SUPPORTED_LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'pt', label: 'Português', flag: '🇵🇹' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+  { code: 'en', label: 'English', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
+  { code: 'it', label: 'Italiano', flag: '\uD83C\uDDEE\uD83C\uDDF9' },
+  { code: 'es', label: 'Espa\u00f1ol', flag: '\uD83C\uDDEA\uD83C\uDDF8' },
+  { code: 'fr', label: 'Fran\u00e7ais', flag: '\uD83C\uDDEB\uD83C\uDDF7' },
+  { code: 'de', label: 'Deutsch', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
+  { code: 'pt', label: 'Portugu\u00eas', flag: '\uD83C\uDDF5\uD83C\uDDF9' },
+  { code: 'ru', label: '\u0420\u0443\u0441\u0441\u043a\u0438\u0439', flag: '\uD83C\uDDF7\uD83C\uDDFA' },
+  { code: 'ja', label: '\u65e5\u672c\u8a9e', flag: '\uD83C\uDDEF\uD83C\uDDF5' },
+  { code: 'zh', label: '\u4e2d\u6587', flag: '\uD83C\uDDE8\uD83C\uDDF3' },
+  { code: 'tr', label: 'T\u00fcrk\u00e7e', flag: '\uD83C\uDDF9\uD83C\uDDF7' },
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
@@ -46,7 +47,6 @@ type ProxyEnabledTypes = Record<ProxyType, boolean>;
 type StreamBadgesSetting = 'auto' | 'on' | 'off';
 type QualityBadgesSide = 'left' | 'right';
 const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
-const DEFAULT_PROXY_QUALITY_BADGES_STYLE: RatingStyle = DEFAULT_QUALITY_BADGES_STYLE;
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
   { id: 'on', label: 'On' },
@@ -56,6 +56,25 @@ const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
 ];
+const TMDB_KEY_STORAGE_KEY = 'erdb_tmdb_key';
+const MDBLIST_KEY_STORAGE_KEY = 'erdb_mdblist_key';
+const EXPORT_CONFIG_VERSION = 1;
+const RATING_PROVIDER_IDS = new Set(RATING_PROVIDER_OPTIONS.map((option) => option.id));
+
+const isProxyType = (value: unknown): value is ProxyType =>
+  PROXY_TYPES.includes(value as ProxyType);
+const isStreamBadgesSetting = (value: unknown): value is StreamBadgesSetting =>
+  value === 'auto' || value === 'on' || value === 'off';
+const isQualityBadgesSide = (value: unknown): value is QualityBadgesSide =>
+  value === 'left' || value === 'right';
+const isImageText = (value: unknown): value is 'original' | 'clean' | 'alternative' =>
+  value === 'original' || value === 'clean' || value === 'alternative';
+const isRatingStyle = (value: unknown): value is RatingStyle =>
+  RATING_STYLE_OPTIONS.some((option) => option.id === value);
+const isPosterRatingLayout = (value: unknown): value is PosterRatingLayout =>
+  POSTER_RATING_LAYOUT_OPTIONS.some((option) => option.id === value);
+const isBackdropRatingLayout = (value: unknown): value is BackdropRatingLayout =>
+  BACKDROP_RATING_LAYOUT_OPTIONS.some((option) => option.id === value);
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
 
@@ -77,6 +96,33 @@ const normalizeManifestUrl = (value: string, allowBareScheme = false) => {
 
 const isBareHttpUrl = (value: string) => value === 'http://' || value === 'https://';
 
+const safeLocalStorageGet = (key: string) => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeLocalStorageSet = (key: string, value: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // ignore storage failures (private mode, quota, etc.)
+  }
+};
+
+const safeLocalStorageRemove = (key: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // ignore storage failures
+  }
+};
+
 const encodeBase64Url = (value: string) => {
   const bytes = new TextEncoder().encode(value);
   let binary = '';
@@ -84,6 +130,25 @@ const encodeBase64Url = (value: string) => {
     binary += String.fromCharCode(byte);
   }
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const decodeBase64Url = (value: string) => {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+};
+
+const downloadJsonFile = (payload: Record<string, unknown>, filename: string) => {
+  if (typeof window === 'undefined') return;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 };
 
 export default function Home() {
@@ -118,83 +183,62 @@ export default function Home() {
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
-  const [proxyTmdbKey, setProxyTmdbKey] = useState('');
-  const [proxyMdblistKey, setProxyMdblistKey] = useState('');
-  const [proxyPosterRatingPreferences, setProxyPosterRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [proxyBackdropRatingPreferences, setProxyBackdropRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [proxyLogoRatingPreferences, setProxyLogoRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [proxyPosterStreamBadges, setProxyPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
-  const [proxyBackdropStreamBadges, setProxyBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
-  const [proxyQualityBadgesSide, setProxyQualityBadgesSide] = useState<QualityBadgesSide>('left');
-  const [proxyPosterQualityBadgesStyle, setProxyPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_PROXY_QUALITY_BADGES_STYLE);
-  const [proxyBackdropQualityBadgesStyle, setProxyBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_PROXY_QUALITY_BADGES_STYLE);
-  const [proxyLang, setProxyLang] = useState('en');
-  const [proxyConfigType, setProxyConfigType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [proxyEnabledTypes, setProxyEnabledTypes] = useState<ProxyEnabledTypes>({
     poster: true,
     backdrop: true,
     logo: true,
   });
-  const [proxyPosterRatingStyle, setProxyPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
-  const [proxyBackdropRatingStyle, setProxyBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
-  const [proxyLogoRatingStyle, setProxyLogoRatingStyle] = useState<RatingStyle>('plain');
-  const [proxyPosterImageText, setProxyPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [proxyBackdropImageText, setProxyBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [proxyPosterRatingsLayout, setProxyPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
-  const [proxyPosterRatingsMaxPerSide, setProxyPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
-  const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [proxyUrl, setProxyUrl] = useState('');
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configString, setConfigString] = useState('');
   const [configCopied, setConfigCopied] = useState(false);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'with' | 'without'>('idle');
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [importMessage, setImportMessage] = useState('');
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
   const shouldShowQualityBadgesSide = previewType === 'poster' && shouldShowPosterQualityBadgesSide;
-  const shouldShowProxyPosterQualityBadgesSide = proxyPosterRatingsLayout === 'top-bottom';
-  const shouldShowProxyQualityBadgesSide =
-    proxyConfigType === 'poster' && shouldShowProxyPosterQualityBadgesSide;
   const qualityBadgeTypeLabel = previewType === 'backdrop' ? 'Backdrop' : 'Poster';
-  const proxyQualityBadgeTypeLabel = proxyConfigType === 'backdrop' ? 'Backdrop' : 'Poster';
   const activeStreamBadges = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
   const setActiveStreamBadges = previewType === 'backdrop' ? setBackdropStreamBadges : setPosterStreamBadges;
   const activeQualityBadgesStyle =
     previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
   const setActiveQualityBadgesStyle =
     previewType === 'backdrop' ? setBackdropQualityBadgesStyle : setPosterQualityBadgesStyle;
-  const proxyStreamBadgesForType =
-    proxyConfigType === 'backdrop' ? proxyBackdropStreamBadges : proxyPosterStreamBadges;
-  const setProxyStreamBadgesForType =
-    proxyConfigType === 'backdrop' ? setProxyBackdropStreamBadges : setProxyPosterStreamBadges;
-  const proxyQualityBadgesStyleForType =
-    proxyConfigType === 'backdrop' ? proxyBackdropQualityBadgesStyle : proxyPosterQualityBadgesStyle;
-  const setProxyQualityBadgesStyleForType =
-    proxyConfigType === 'backdrop' ? setProxyBackdropQualityBadgesStyle : setProxyPosterQualityBadgesStyle;
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const origin = window.location.origin;
-      setBaseUrl(origin);
+    if (typeof window === 'undefined') return;
+
+    const origin = window.location.origin;
+    setBaseUrl(origin);
+
+    const storedTmdbKey = safeLocalStorageGet(TMDB_KEY_STORAGE_KEY);
+    if (storedTmdbKey) {
+      setTmdbKey(storedTmdbKey);
+    }
+
+    const storedMdblistKey = safeLocalStorageGet(MDBLIST_KEY_STORAGE_KEY);
+    if (storedMdblistKey) {
+      setMdblistKey(storedMdblistKey);
     }
   }, []);
 
   useEffect(() => {
-    if (!proxyTmdbKey && tmdbKey) {
-      setProxyTmdbKey(tmdbKey);
+    if (tmdbKey) {
+      safeLocalStorageSet(TMDB_KEY_STORAGE_KEY, tmdbKey);
+    } else {
+      safeLocalStorageRemove(TMDB_KEY_STORAGE_KEY);
     }
-  }, [tmdbKey, proxyTmdbKey]);
+  }, [tmdbKey]);
 
   useEffect(() => {
-    if (!proxyMdblistKey && mdblistKey) {
-      setProxyMdblistKey(mdblistKey);
+    if (mdblistKey) {
+      safeLocalStorageSet(MDBLIST_KEY_STORAGE_KEY, mdblistKey);
+    } else {
+      safeLocalStorageRemove(MDBLIST_KEY_STORAGE_KEY);
     }
-  }, [mdblistKey, proxyMdblistKey]);
+  }, [mdblistKey]);
 
   useEffect(() => {
     if (tmdbKey && tmdbKey.length > 10) {
@@ -205,7 +249,7 @@ export default function Home() {
             const formatted = data.map((l: any) => ({
               code: l.iso_639_1,
               label: l.english_name || l.name,
-              flag: '🌐'
+              flag: '\uD83C\uDF10'
             })).sort((a, b) => a.label.localeCompare(b.label));
             setSupportedLanguages(formatted);
           }
@@ -479,8 +523,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     }
 
     const manifestUrl = normalizeManifestUrl(proxyManifestUrl);
-    const tmdb = proxyTmdbKey.trim();
-    const mdb = proxyMdblistKey.trim();
+    const tmdb = tmdbKey.trim();
+    const mdb = mdblistKey.trim();
     if (!manifestUrl || isBareHttpUrl(manifestUrl) || !tmdb || !mdb) {
       setProxyUrl('');
       return;
@@ -492,9 +536,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       mdblistKey: mdb,
     };
 
-    const proxyPosterRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyPosterRatingPreferences);
-    const proxyBackdropRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyBackdropRatingPreferences);
-    const proxyLogoRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyLogoRatingPreferences);
+    const proxyPosterRatingsQuery = stringifyRatingPreferencesAllowEmpty(posterRatingPreferences);
+    const proxyBackdropRatingsQuery = stringifyRatingPreferencesAllowEmpty(backdropRatingPreferences);
+    const proxyLogoRatingsQuery = stringifyRatingPreferencesAllowEmpty(logoRatingPreferences);
     const proxyRatingsMatch =
       proxyPosterRatingsQuery === proxyBackdropRatingsQuery && proxyPosterRatingsQuery === proxyLogoRatingsQuery;
     if (proxyRatingsMatch) {
@@ -504,42 +548,42 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       config.backdropRatings = proxyBackdropRatingsQuery;
       config.logoRatings = proxyLogoRatingsQuery;
     }
-    if (proxyLang) {
-      config.lang = proxyLang;
+    if (lang) {
+      config.lang = lang;
     }
-    if (proxyPosterStreamBadges !== 'auto') {
-      config.posterStreamBadges = proxyPosterStreamBadges;
+    if (posterStreamBadges !== 'auto') {
+      config.posterStreamBadges = posterStreamBadges;
     }
-    if (proxyBackdropStreamBadges !== 'auto') {
-      config.backdropStreamBadges = proxyBackdropStreamBadges;
+    if (backdropStreamBadges !== 'auto') {
+      config.backdropStreamBadges = backdropStreamBadges;
     }
-    if (shouldShowProxyPosterQualityBadgesSide && proxyQualityBadgesSide !== 'left') {
-      config.qualityBadgesSide = proxyQualityBadgesSide;
+    if (shouldShowPosterQualityBadgesSide && qualityBadgesSide !== 'left') {
+      config.qualityBadgesSide = qualityBadgesSide;
     }
-    if (proxyPosterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
-      config.posterQualityBadgesStyle = proxyPosterQualityBadgesStyle;
+    if (posterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+      config.posterQualityBadgesStyle = posterQualityBadgesStyle;
     }
-    if (proxyBackdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
-      config.backdropQualityBadgesStyle = proxyBackdropQualityBadgesStyle;
+    if (backdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+      config.backdropQualityBadgesStyle = backdropQualityBadgesStyle;
     }
 
-    config.posterRatingStyle = proxyPosterRatingStyle;
-    config.backdropRatingStyle = proxyBackdropRatingStyle;
-    config.logoRatingStyle = proxyLogoRatingStyle;
-    config.posterImageText = proxyPosterImageText;
-    config.backdropImageText = proxyBackdropImageText;
+    config.posterRatingStyle = posterRatingStyle;
+    config.backdropRatingStyle = backdropRatingStyle;
+    config.logoRatingStyle = logoRatingStyle;
+    config.posterImageText = posterImageText;
+    config.backdropImageText = backdropImageText;
     config.posterEnabled = proxyEnabledTypes.poster;
     config.backdropEnabled = proxyEnabledTypes.backdrop;
     config.logoEnabled = proxyEnabledTypes.logo;
 
-    if (proxyPosterRatingsLayout) {
-      config.posterRatingsLayout = proxyPosterRatingsLayout;
+    if (posterRatingsLayout) {
+      config.posterRatingsLayout = posterRatingsLayout;
     }
-    if (isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && proxyPosterRatingsMaxPerSide !== null) {
-      config.posterRatingsMaxPerSide = String(proxyPosterRatingsMaxPerSide);
+    if (isVerticalPosterRatingLayout(posterRatingsLayout) && posterRatingsMaxPerSide !== null) {
+      config.posterRatingsMaxPerSide = String(posterRatingsMaxPerSide);
     }
-    if (proxyBackdropRatingsLayout) {
-      config.backdropRatingsLayout = proxyBackdropRatingsLayout;
+    if (backdropRatingsLayout) {
+      config.backdropRatingsLayout = backdropRatingsLayout;
     }
 
     if (origin) {
@@ -550,25 +594,25 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     setProxyUrl(`${origin}/proxy/${encoded}/manifest.json`);
   }, [
     proxyManifestUrl,
-    proxyTmdbKey,
-    proxyMdblistKey,
-    proxyPosterRatingPreferences,
-    proxyBackdropRatingPreferences,
-    proxyLogoRatingPreferences,
-    proxyLang,
-    proxyPosterStreamBadges,
-    proxyBackdropStreamBadges,
-    proxyQualityBadgesSide,
-    proxyPosterQualityBadgesStyle,
-    proxyBackdropQualityBadgesStyle,
-    proxyPosterRatingStyle,
-    proxyBackdropRatingStyle,
-    proxyLogoRatingStyle,
-    proxyPosterImageText,
-    proxyBackdropImageText,
-    proxyPosterRatingsLayout,
-    proxyPosterRatingsMaxPerSide,
-    proxyBackdropRatingsLayout,
+    tmdbKey,
+    mdblistKey,
+    posterRatingPreferences,
+    backdropRatingPreferences,
+    logoRatingPreferences,
+    lang,
+    posterStreamBadges,
+    backdropStreamBadges,
+    qualityBadgesSide,
+    posterQualityBadgesStyle,
+    backdropQualityBadgesStyle,
+    posterRatingStyle,
+    backdropRatingStyle,
+    logoRatingStyle,
+    posterImageText,
+    backdropImageText,
+    posterRatingsLayout,
+    posterRatingsMaxPerSide,
+    backdropRatingsLayout,
     proxyEnabledTypes,
     baseUrl,
   ]);
@@ -596,29 +640,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     );
   };
 
-  const updateProxyRatingPreferencesForType = (
-    type: ProxyType,
-    updater: (current: RatingPreference[]) => RatingPreference[]
-  ) => {
-    if (type === 'poster') {
-      setProxyPosterRatingPreferences(updater);
-      return;
-    }
-    if (type === 'backdrop') {
-      setProxyBackdropRatingPreferences(updater);
-      return;
-    }
-    setProxyLogoRatingPreferences(updater);
-  };
-
-  const toggleProxyRatingPreference = (rating: RatingPreference) => {
-    updateProxyRatingPreferencesForType(proxyConfigType, (current) =>
-      current.includes(rating)
-        ? current.filter((item) => item !== rating)
-        : [...current, rating]
-    );
-  };
-
   const toggleProxyEnabledType = (type: ProxyType) => {
     setProxyEnabledTypes((current) => ({
       ...current,
@@ -640,13 +661,198 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     setTimeout(() => setProxyCopied(false), 2000);
   }, [proxyUrl]);
 
+  const handleExportConfig = (includeKeys: boolean) => {
+    const payload: Record<string, unknown> = {
+      version: EXPORT_CONFIG_VERSION,
+      createdAt: new Date().toISOString(),
+      previewType,
+      mediaId,
+      lang,
+      posterImageText,
+      backdropImageText,
+      posterRatingPreferences,
+      backdropRatingPreferences,
+      logoRatingPreferences,
+      posterStreamBadges,
+      backdropStreamBadges,
+      qualityBadgesSide,
+      posterQualityBadgesStyle,
+      backdropQualityBadgesStyle,
+      posterRatingStyle,
+      backdropRatingStyle,
+      logoRatingStyle,
+      posterRatingsLayout,
+      posterRatingsMaxPerSide,
+      backdropRatingsLayout,
+      proxyManifestUrl,
+      proxyEnabledTypes,
+    };
+
+    if (includeKeys) {
+      payload.tmdbKey = tmdbKey;
+      payload.mdblistKey = mdblistKey;
+    }
+
+    const filename = includeKeys ? 'erdb-config-with-keys.json' : 'erdb-config.json';
+    downloadJsonFile(payload, filename);
+    setExportStatus(includeKeys ? 'with' : 'without');
+    setTimeout(() => setExportStatus('idle'), 2000);
+  };
+
+  const applyImportedConfig = (payload: Record<string, unknown>) => {
+    if (typeof payload.tmdbKey === 'string') {
+      setTmdbKey(payload.tmdbKey);
+    }
+    if (typeof payload.mdblistKey === 'string') {
+      setMdblistKey(payload.mdblistKey);
+    }
+    if (typeof payload.mediaId === 'string') {
+      setMediaId(payload.mediaId);
+    }
+    if (typeof payload.lang === 'string') {
+      setLang(payload.lang);
+    }
+    if (typeof payload.previewType === 'string' && isProxyType(payload.previewType)) {
+      setPreviewType(payload.previewType);
+    }
+    if (typeof payload.posterImageText === 'string' && isImageText(payload.posterImageText)) {
+      setPosterImageText(payload.posterImageText);
+    }
+    if (typeof payload.backdropImageText === 'string' && isImageText(payload.backdropImageText)) {
+      setBackdropImageText(payload.backdropImageText);
+    }
+    if (typeof payload.posterStreamBadges === 'string' && isStreamBadgesSetting(payload.posterStreamBadges)) {
+      setPosterStreamBadges(payload.posterStreamBadges);
+    }
+    if (typeof payload.backdropStreamBadges === 'string' && isStreamBadgesSetting(payload.backdropStreamBadges)) {
+      setBackdropStreamBadges(payload.backdropStreamBadges);
+    }
+    if (typeof payload.qualityBadgesSide === 'string' && isQualityBadgesSide(payload.qualityBadgesSide)) {
+      setQualityBadgesSide(payload.qualityBadgesSide);
+    }
+    if (typeof payload.posterQualityBadgesStyle === 'string' && isRatingStyle(payload.posterQualityBadgesStyle)) {
+      setPosterQualityBadgesStyle(payload.posterQualityBadgesStyle);
+    }
+    if (typeof payload.backdropQualityBadgesStyle === 'string' && isRatingStyle(payload.backdropQualityBadgesStyle)) {
+      setBackdropQualityBadgesStyle(payload.backdropQualityBadgesStyle);
+    }
+    if (typeof payload.posterRatingStyle === 'string' && isRatingStyle(payload.posterRatingStyle)) {
+      setPosterRatingStyle(payload.posterRatingStyle);
+    }
+    if (typeof payload.backdropRatingStyle === 'string' && isRatingStyle(payload.backdropRatingStyle)) {
+      setBackdropRatingStyle(payload.backdropRatingStyle);
+    }
+    if (typeof payload.logoRatingStyle === 'string' && isRatingStyle(payload.logoRatingStyle)) {
+      setLogoRatingStyle(payload.logoRatingStyle);
+    }
+    if (typeof payload.posterRatingsLayout === 'string' && isPosterRatingLayout(payload.posterRatingsLayout)) {
+      setPosterRatingsLayout(payload.posterRatingsLayout);
+    }
+    if (typeof payload.backdropRatingsLayout === 'string' && isBackdropRatingLayout(payload.backdropRatingsLayout)) {
+      setBackdropRatingsLayout(payload.backdropRatingsLayout);
+    }
+
+    if (payload.posterRatingsMaxPerSide === null) {
+      setPosterRatingsMaxPerSide(null);
+    } else if (typeof payload.posterRatingsMaxPerSide === 'number' || typeof payload.posterRatingsMaxPerSide === 'string') {
+      const parsed = typeof payload.posterRatingsMaxPerSide === 'number'
+        ? payload.posterRatingsMaxPerSide
+        : parseInt(payload.posterRatingsMaxPerSide, 10);
+      if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 20) {
+        setPosterRatingsMaxPerSide(parsed);
+      }
+    }
+
+    const normalizeRatingArray = (value: unknown) => {
+      if (!Array.isArray(value)) return null;
+      const normalized = value
+        .map((item) => (typeof item === 'string' ? item : null))
+        .filter((item): item is RatingPreference => item !== null && RATING_PROVIDER_IDS.has(item));
+      return [...new Set(normalized)];
+    };
+
+    const resolveRatingPreferences = (arrayValue: unknown, stringValue?: unknown) => {
+      const fromArray = normalizeRatingArray(arrayValue);
+      if (fromArray !== null) return fromArray;
+      if (typeof stringValue === 'string') {
+        return parseRatingPreferencesAllowEmpty(stringValue);
+      }
+      return null;
+    };
+
+    const posterRatings =
+      resolveRatingPreferences(payload.posterRatingPreferences, payload.posterRatings) ??
+      resolveRatingPreferences(null, payload.ratings);
+    if (posterRatings !== null) {
+      setPosterRatingPreferences(posterRatings);
+    }
+
+    const backdropRatings =
+      resolveRatingPreferences(payload.backdropRatingPreferences, payload.backdropRatings) ??
+      resolveRatingPreferences(null, payload.ratings);
+    if (backdropRatings !== null) {
+      setBackdropRatingPreferences(backdropRatings);
+    }
+
+    const logoRatings =
+      resolveRatingPreferences(payload.logoRatingPreferences, payload.logoRatings) ??
+      resolveRatingPreferences(null, payload.ratings);
+    if (logoRatings !== null) {
+      setLogoRatingPreferences(logoRatings);
+    }
+
+    if (typeof payload.proxyManifestUrl === 'string') {
+      setProxyManifestUrl(normalizeManifestUrl(payload.proxyManifestUrl, true));
+    }
+    if (payload.proxyEnabledTypes && typeof payload.proxyEnabledTypes === 'object') {
+      const enabled = payload.proxyEnabledTypes as Record<string, unknown>;
+      setProxyEnabledTypes((current) => ({
+        poster: typeof enabled.poster === 'boolean' ? enabled.poster : current.poster,
+        backdrop: typeof enabled.backdrop === 'boolean' ? enabled.backdrop : current.backdrop,
+        logo: typeof enabled.logo === 'boolean' ? enabled.logo : current.logo,
+      }));
+    }
+
+    setImportStatus('success');
+    setImportMessage('Config loaded.');
+  };
+
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = '';
+    setImportStatus('idle');
+    setImportMessage('');
+
+    let payload: Record<string, unknown> | null = null;
+    try {
+      const raw = (await file.text()).trim();
+      if (raw.startsWith('{')) {
+        payload = JSON.parse(raw);
+      } else if (raw) {
+        const decoded = decodeBase64Url(raw);
+        payload = JSON.parse(decoded);
+      }
+    } catch {
+      payload = null;
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      setImportStatus('error');
+      setImportMessage('Invalid config file.');
+      return;
+    }
+
+    applyImportedConfig(payload);
+  };
+
   const canGenerateConfig = Boolean(configString);
   const normalizedProxyManifestUrl = normalizeManifestUrl(proxyManifestUrl);
   const canGenerateProxy = Boolean(
     normalizedProxyManifestUrl &&
     !isBareHttpUrl(normalizedProxyManifestUrl) &&
-    proxyTmdbKey.trim() &&
-    proxyMdblistKey.trim()
+    tmdbKey.trim() &&
+    mdblistKey.trim()
   );
   const activeRatingStyle =
     previewType === 'poster'
@@ -674,18 +880,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       : previewType === 'backdrop'
         ? backdropRatingPreferences
         : logoRatingPreferences;
-  const proxyProvidersLabel =
-    proxyConfigType === 'poster'
-      ? 'Poster Providers'
-      : proxyConfigType === 'backdrop'
-        ? 'Backdrop Providers'
-        : 'Logo Providers';
-  const proxyRatingPreferencesForType =
-    proxyConfigType === 'poster'
-      ? proxyPosterRatingPreferences
-      : proxyConfigType === 'backdrop'
-        ? proxyBackdropRatingPreferences
-        : proxyLogoRatingPreferences;
 
   const setRatingStyleForType = (value: RatingStyle) => {
     if (previewType === 'poster') {
@@ -726,7 +920,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-6 py-20 space-y-24">
+      <main className="max-w-none mx-auto px-6 py-20 space-y-24">
         {/* Hero Section */}
         <section className="text-center space-y-6 max-w-4xl mx-auto relative">
           <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 to-transparent blur-3xl rounded-full -z-10 h-64 pointer-events-none" />
@@ -752,15 +946,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
         {/* Live Previewer */}
         <section id="preview" className="scroll-mt-24">
-          <div className="grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 items-start">
             {/* Controls */}
             <div className="space-y-3">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Configurator</h2>
-                <p className="text-sm text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
-              </div>
-
               <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Configurator</h2>
+                  <p className="text-sm text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
+                </div>
                 <div>
                   <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -800,7 +993,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
                         <div className="relative">
                           <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-orange-500/50">
-                            {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
+                            {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.label}</option>)}
                           </select>
                           <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
                         </div>
@@ -877,7 +1070,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 {previewType !== 'logo' && (
                   <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
                     <div className="text-[11px] font-semibold text-zinc-400">
-                      Quality Badges · {qualityBadgeTypeLabel}
+                      Quality Badges - {qualityBadgeTypeLabel}
                     </div>
                     <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                     {STREAM_BADGE_OPTIONS.map(option => (
@@ -960,6 +1153,158 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     Add TMDB key and MDBList key to generate a valid config string.
                   </p>
                 )}
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-4 space-y-3">
+                  <div className="text-[11px] font-semibold text-zinc-400">Config Transfer</div>
+                  <p className="text-[11px] text-zinc-500">
+                    Export a shareable config. Choose whether to include API keys.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleExportConfig(true)}
+                      className={`px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-colors ${exportStatus === 'with' ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400'}`}
+                    >
+                      {exportStatus === 'with' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>DOWNLOADED WITH KEYS</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>DOWNLOAD WITH KEYS</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleExportConfig(false)}
+                      className={`px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-colors ${exportStatus === 'without' ? 'bg-green-500 text-white' : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'}`}
+                    >
+                      {exportStatus === 'without' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>DOWNLOADED WITHOUT KEYS</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>DOWNLOAD WITHOUT KEYS</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Import Config File</label>
+                    <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-semibold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors cursor-pointer">
+                      <span>UPLOAD CONFIG</span>
+                      <input
+                        type="file"
+                        accept="application/json,.json,.txt"
+                        onChange={handleImportFile}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {importStatus !== 'idle' && (
+                    <p className={`text-[11px] ${importStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                      {importMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="space-y-3">
+              <div id="proxy" className="scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/60 p-4 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Addon Proxy</h3>
+                  <p className="text-sm text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
+                </div>
+
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-black/40 p-4">
+                  <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
+                  <p className="text-[11px] text-zinc-500">
+                    Use the configurator above for keys, language, ratings, layout, badges, and text.
+                  </p>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
+                    <input
+                      type="url"
+                      value={proxyManifestUrl}
+                      onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
+                      placeholder="https://addon.example.com/manifest.json"
+                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Enabled Types</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PROXY_TYPES.map(type => (
+                        <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                          <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-orange-500" />
+                          <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-1 text-[10px] text-zinc-500">Disabled types keep the original artwork.</div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                  <div className="text-[11px] font-semibold text-zinc-400">Generated Manifest</div>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    Use this URL in Stremio. It ends with manifest.json and has no query params.
+                  </p>
+                  <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4">
+                    <div className="font-mono text-xs text-zinc-300 break-all">
+                      {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={handleCopyProxy}
+                      disabled={!canGenerateProxy}
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateProxy ? (proxyCopied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                    >
+                      {proxyCopied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>COPIED</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clipboard className="w-3.5 h-3.5" />
+                          <span>COPY LINK</span>
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={canGenerateProxy ? proxyUrl : undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 transition-colors ${canGenerateProxy ? 'border border-white/10 bg-zinc-900 text-zinc-200 hover:bg-zinc-800' : 'border border-white/5 bg-zinc-950 text-zinc-600 pointer-events-none'}`}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open
+                    </a>
+                  </div>
+                  {!canGenerateProxy && (
+                    <p className="mt-3 text-[11px] text-zinc-500">
+                      Add manifest URL and set TMDB/MDBList keys in the configurator to generate a valid link.
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-zinc-500">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-500/10">
+                      <Zap className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-zinc-200 font-semibold">Replace enabled types</div>
+                      <div>Proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` for both `catalog` and `meta` responses.</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -992,296 +1337,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   ) : (
                     <div className="text-sm text-zinc-500">No preview available.</div>
                   )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Addon Proxy */}
-        <section id="proxy" className="scroll-mt-24">
-          <div className="grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Addon Proxy</h2>
-                <p className="text-sm text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
-              </div>
-
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
-                <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
-                  <input
-                    type="url"
-                    value={proxyManifestUrl}
-                    onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
-                    placeholder="https://addon.example.com/manifest.json"
-                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
-                    <input
-                      type="password"
-                      value={proxyTmdbKey}
-                      onChange={(e) => setProxyTmdbKey(e.target.value)}
-                      placeholder="v3 Key"
-                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
-                    <input
-                      type="password"
-                      value={proxyMdblistKey}
-                      onChange={(e) => setProxyMdblistKey(e.target.value)}
-                      placeholder="Key"
-                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
-                    />
-                  </div>
-                </div>
-
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Enabled Types</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {PROXY_TYPES.map(type => (
-                        <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                          <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-orange-500" />
-                          <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div className="mt-1 text-[10px] text-zinc-500">Disabled types keep the original artwork.</div>
-                  </div>
-                    <div className="flex flex-wrap gap-4 items-end">
-                      <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
-                        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {PROXY_TYPES.map(type => (
-                            <button key={`proxy-type-${type}`} onClick={() => setProxyConfigType(type)} className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${proxyConfigType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                              {type === 'poster' && <ImageIcon className="w-3.5 h-3.5" />}
-                              {type === 'backdrop' && <MonitorPlay className="w-3.5 h-3.5" />}
-                              {type === 'logo' && <Layers className="w-3.5 h-3.5" />}
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {proxyTmdbKey ? (
-                        <div className="w-32">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
-                          <div className="relative">
-                            <select value={proxyLang} onChange={(e) => setProxyLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-orange-500/50">
-                              {supportedLanguages.map(l => <option key={`proxy-lang-${l.code}`} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
-                            </select>
-                            <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-2 rounded-lg bg-black border border-white/10 text-[10px] text-zinc-500 flex items-center gap-1.5">
-                          <Globe2 className="w-3 h-3 shrink-0" /> Add TMDB key for lang
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
-                      {proxyConfigType === 'poster' && (
-                        <div className="flex flex-wrap gap-4 items-center">
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Ratings Style</span>
-                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {RATING_STYLE_OPTIONS.map(opt => (
-                                <button key={`proxy-poster-style-${opt.id}`} onClick={() => setProxyPosterRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyPosterRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Text</span>
-                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {(['original', 'clean', 'alternative'] as const).map(option => (
-                                <button key={`proxy-poster-text-${option}`} onClick={() => setProxyPosterImageText(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyPosterImageText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {proxyConfigType === 'backdrop' && (
-                        <div className="flex flex-wrap gap-4 items-center">
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Ratings Style</span>
-                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {RATING_STYLE_OPTIONS.map(opt => (
-                                <button key={`proxy-backdrop-style-${opt.id}`} onClick={() => setProxyBackdropRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyBackdropRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Text</span>
-                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {(['original', 'clean', 'alternative'] as const).map(option => (
-                                <button key={`proxy-backdrop-text-${option}`} onClick={() => setProxyBackdropImageText(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyBackdropImageText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {proxyConfigType === 'logo' && (
-                        <div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Logo Ratings Style</span>
-                          <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                            {RATING_STYLE_OPTIONS.map(opt => (
-                              <button key={`proxy-logo-style-${opt.id}`} onClick={() => setProxyLogoRatingStyle(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyLogoRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {(proxyConfigType === 'poster' || proxyConfigType === 'backdrop') && (
-                      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">Layouts</span>
-                        {proxyConfigType === 'poster' && (
-                          <div className="flex flex-wrap gap-4 items-end">
-                            <div>
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
-                              <div className="flex flex-wrap gap-1">
-                                {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                                  <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                                ))}
-                              </div>
-                            </div>
-                            {isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                                <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
-                                <button onClick={() => setProxyPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {proxyConfigType === 'backdrop' && (
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
-                            <div className="flex flex-wrap gap-1">
-                              {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                                <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {proxyConfigType !== 'logo' && (
-                      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
-                          Quality Badges · {proxyQualityBadgeTypeLabel}
-                        </span>
-                        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {STREAM_BADGE_OPTIONS.map(option => (
-                            <button key={`proxy-stream-${option.id}`} onClick={() => setProxyStreamBadgesForType(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyStreamBadgesForType === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
-                          <div className="flex flex-wrap gap-1">
-                            {RATING_STYLE_OPTIONS.map(option => (
-                              <button key={`proxy-quality-style-${option.id}`} onClick={() => setProxyQualityBadgesStyleForType(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyQualityBadgesStyleForType === option.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {shouldShowProxyQualityBadgesSide && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
-                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
-                                <button key={`proxy-quality-side-${option.id}`} onClick={() => setProxyQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${proxyQualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                                  {option.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">{proxyProvidersLabel}</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
-                          <label key={`proxy-${provider.id}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyRatingPreferencesForType.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                            <input type="checkbox" checked={proxyRatingPreferencesForType.includes(provider.id as RatingPreference)} onChange={() => toggleProxyRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
-                            <span>{provider.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <h3 className="text-xl font-semibold text-white">Generated Manifest</h3>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Use this URL in Stremio. It ends with manifest.json and has no query params.
-                </p>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4">
-                  <div className="font-mono text-xs text-zinc-300 break-all">
-                    {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={handleCopyProxy}
-                    disabled={!canGenerateProxy}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateProxy ? (proxyCopied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
-                  >
-                    {proxyCopied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>COPIED</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clipboard className="w-3.5 h-3.5" />
-                        <span>COPY LINK</span>
-                      </>
-                    )}
-                  </button>
-                  <a
-                    href={canGenerateProxy ? proxyUrl : undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 transition-colors ${canGenerateProxy ? 'border border-white/10 bg-zinc-900 text-zinc-200 hover:bg-zinc-800' : 'border border-white/5 bg-zinc-950 text-zinc-600 pointer-events-none'}`}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open
-                  </a>
-                </div>
-                {!canGenerateProxy && (
-                  <p className="mt-3 text-[11px] text-zinc-500">
-                    Add manifest URL, TMDB key and MDBList key to generate a valid link.
-                  </p>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-zinc-500">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-orange-500/10">
-                    <Zap className="w-4 h-4 text-orange-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-zinc-200 font-semibold">Replace enabled types</div>
-                    <div>Proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` for both `catalog` and `meta` responses.</div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1333,12 +1388,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">type <span className="text-zinc-500">(path)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">poster, backdrop, logo</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">-</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">id <span className="text-zinc-500">(path)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">IMDb, TMDB, Kitsu, etc.</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">-</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratings</td>
@@ -1428,12 +1483,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">TMDB v3 API Key</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">-</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">mdblistKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">MDBList.com API Key</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">-</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1491,7 +1546,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">logo</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">none (base params only)</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">-</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1722,19 +1777,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
