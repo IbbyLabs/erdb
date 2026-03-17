@@ -42,6 +42,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'tmdbKey',
   'mdblistKey',
   'erdbBase',
+  'translateMeta',
   'posterEnabled',
   'backdropEnabled',
   'logoEnabled',
@@ -59,6 +60,7 @@ export type ProxyConfig = {
   url: string;
   tmdbKey: string;
   mdblistKey: string;
+  translateMeta?: boolean;
   ratings?: string;
   posterRatings?: string;
   backdropRatings?: string;
@@ -115,6 +117,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
 type ProxyOptionalStringKey = (typeof PROXY_OPTIONAL_STRING_KEYS)[number];
 
 const PROXY_OPTIONAL_BOOLEAN_KEYS = [
+  'translateMeta',
   'posterEnabled',
   'backdropEnabled',
   'logoEnabled',

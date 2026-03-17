@@ -1,5 +1,6 @@
 import type {Metadata, Viewport} from 'next';
 import {connection} from 'next/server';
+import {Space_Grotesk, Unbounded} from 'next/font/google';
 import './globals.css'; // Global styles
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -45,12 +46,26 @@ export const viewport: Viewport = {
   themeColor: '#020108',
 };
 
+const bodyFont = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+});
+
+const displayFont = Unbounded({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
 export default async function RootLayout({children}: {children: React.ReactNode}) {
   await connection();
 
   return (
     <html lang="en">
-      <body suppressHydrationWarning>{children}</body>
+      <body className={`${bodyFont.variable} ${displayFont.variable} antialiased`} suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
