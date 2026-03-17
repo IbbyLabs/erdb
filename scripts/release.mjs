@@ -8,14 +8,28 @@ if (!allowedLevels.has(level)) {
   process.exit(1);
 }
 
-const result = spawnSync(
-  'npm',
-  ['version', level, '-m', 'chore: release %s'],
-  { stdio: 'inherit' }
-);
-
-if (result.error) {
-  throw result.error;
+function run(command, args, { stdio = 'inherit' } = {}) {
+  const result = spawnSync(command, args, { stdio });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+  return result;
 }
 
-process.exit(result.status ?? 1);
+const dirtyCheck = spawnSync('git', ['status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+if (dirtyCheck.error) {
+  throw dirtyCheck.error;
+}
+if (dirtyCheck.status !== 0) {
+  process.exit(dirtyCheck.status ?? 1);
+}
+if (String(dirtyCheck.stdout || '').trim()) {
+  console.error('Release aborted: working tree is not clean. Commit or stash changes first.');
+  process.exit(1);
+}
+
+run('npm', ['version', level, '-m', 'chore: release %s']);
+run('git', ['push', 'origin', 'HEAD', '--follow-tags']);

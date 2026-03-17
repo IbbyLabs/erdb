@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
@@ -59,6 +59,17 @@ const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
 ];
+type RecentCommitType = 'feat' | 'fix' | 'chore' | 'refactor' | 'perf' | 'test' | 'build' | 'ci' | 'style' | 'revert';
+type RecentCommit = {
+  hash: string;
+  shortHash: string;
+  date: string;
+  type: RecentCommitType;
+  title: string;
+  body: string | null;
+};
+const COMMIT_FEED_URL = '/commits.json';
+const COMMIT_PAGE_SIZE = 5;
 
 function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
@@ -146,6 +157,156 @@ const encodeBase64Url = (value: string) => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
+const formatCommitTimestamp = (value: string, nowMs: number) => {
+  const commitMs = Date.parse(value);
+  if (!Number.isFinite(commitMs)) {
+    return '--';
+  }
+  const deltaSeconds = Math.max(0, Math.floor((nowMs - commitMs) / 1000));
+  if (deltaSeconds < 60) {
+    return 'just now';
+  }
+  const deltaMinutes = Math.floor(deltaSeconds / 60);
+  if (deltaMinutes < 60) {
+    return `${deltaMinutes}m ago`;
+  }
+  const deltaHours = Math.floor(deltaMinutes / 60);
+  if (deltaHours < 24) {
+    return `${deltaHours}h ago`;
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(commitMs);
+};
+
+function RecentChanges({
+  commits,
+  visibleCount,
+  onLoadMore,
+  loading,
+  error,
+  nowMs,
+}: {
+  commits: RecentCommit[];
+  visibleCount: number;
+  onLoadMore: (next: number) => void;
+  loading: boolean;
+  error: string;
+  nowMs: number;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const visibleCommits = commits.slice(0, visibleCount);
+  const hasMore = visibleCount < commits.length;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!panelRef.current || panelRef.current.contains(event.target as Node)) {
+        return;
+      }
+      setIsOpen(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="erdb-commit-window-wrap">
+      {isOpen ? <div className="erdb-commit-window-backdrop" aria-hidden="true" /> : null}
+      <button
+        type="button"
+        className="erdb-commit-window-trigger"
+        aria-label="Open recent changes"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        Recent changes
+      </button>
+
+      {isOpen ? (
+        <section
+          ref={panelRef}
+          className="erdb-commit-window"
+          role="dialog"
+          aria-modal="false"
+          aria-label="Recent commits"
+        >
+          <div className="erdb-commit-window-head">
+            <h2>Recent Changes</h2>
+            <div className="erdb-commit-window-actions">
+              <span className="erdb-commit-window-count font-mono">
+                {visibleCommits.length}/{commits.length}
+              </span>
+              <button
+                type="button"
+                className="erdb-commit-window-close"
+                aria-label="Close recent changes"
+                onClick={() => setIsOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="erdb-commit-window-empty font-mono">Loading commits...</p>
+          ) : error ? (
+            <p className="erdb-commit-window-empty font-mono">{error}</p>
+          ) : commits.length === 0 ? (
+            <p className="erdb-commit-window-empty font-mono">No recent commits to show.</p>
+          ) : (
+            <>
+              <ol className="erdb-commit-list">
+                {visibleCommits.map((commit) => (
+                  <li key={commit.hash} className="erdb-commit-item">
+                    <div className="erdb-commit-item-head">
+                      <span className={`erdb-commit-type erdb-commit-type-${commit.type}`}>
+                        {commit.type.toUpperCase()}
+                      </span>
+                      <span className="erdb-commit-hash font-mono">{commit.shortHash}</span>
+                    </div>
+                    <p className="erdb-commit-title">{commit.title}</p>
+                    {commit.body ? <p className="erdb-commit-body">{commit.body}</p> : null}
+                    <p className="erdb-commit-date font-mono">{formatCommitTimestamp(commit.date, nowMs)}</p>
+                  </li>
+                ))}
+              </ol>
+
+              {hasMore ? (
+                <button
+                  type="button"
+                  className="erdb-commit-load-more"
+                  onClick={() => onLoadMore(Math.min(visibleCount + COMMIT_PAGE_SIZE, commits.length))}
+                >
+                  Load 5 more
+                </button>
+              ) : null}
+            </>
+          )}
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 export default function Home() {
   const [baseUrl] = useState(() =>
     normalizeBaseUrl(typeof window !== 'undefined' ? window.location.origin : '')
@@ -213,6 +374,11 @@ export default function Home() {
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
+  const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
+  const [recentCommitsError, setRecentCommitsError] = useState('');
+  const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(true);
+  const [visibleRecentCommitCount, setVisibleRecentCommitCount] = useState(COMMIT_PAGE_SIZE);
+  const [nowMs, setNowMs] = useState(Date.now());
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
@@ -256,6 +422,77 @@ export default function Home() {
         .catch(() => { });
     }
   }, [tmdbKey]);
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setNowMs(Date.now());
+    }, 60_000);
+    return () => {
+      clearInterval(tick);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
+    const loadRecentCommits = async () => {
+      setIsRecentCommitsLoading(true);
+      try {
+        const url = new URL(COMMIT_FEED_URL, window.location.origin);
+        url.searchParams.set('_ts', String(Date.now()));
+        const response = await fetch(url.toString(), {
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`Commit feed unavailable (${response.status})`);
+        }
+        const payload = await response.json();
+        const commits = Array.isArray(payload?.commits)
+          ? payload.commits
+              .filter((entry: any) => entry && typeof entry === 'object')
+              .map((entry: any) => ({
+                hash: String(entry.hash || ''),
+                shortHash: String(entry.shortHash || '').slice(0, 7),
+                date: String(entry.date || ''),
+                type: String(entry.type || 'chore') as RecentCommitType,
+                title: String(entry.title || ''),
+                body: entry.body ? String(entry.body) : null,
+              }))
+              .filter((entry: RecentCommit) => entry.hash && entry.shortHash && entry.title)
+          : [];
+
+        if (!active) {
+          return;
+        }
+        setRecentCommits(commits);
+        setVisibleRecentCommitCount(COMMIT_PAGE_SIZE);
+        setRecentCommitsError('');
+      } catch (error: any) {
+        if (!active || error?.name === 'AbortError') {
+          return;
+        }
+        setRecentCommits([]);
+        setVisibleRecentCommitCount(COMMIT_PAGE_SIZE);
+        setRecentCommitsError('Recent changes are unavailable right now.');
+      } finally {
+        if (active) {
+          setIsRecentCommitsLoading(false);
+        }
+      }
+    };
+
+    loadRecentCommits();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
 
   const handleCopyPrompt = useCallback(() => {
     const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
@@ -798,6 +1035,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 <div className="erdb-hero-chip">One config string for every integration</div>
                 <div className="erdb-hero-chip">Manifest proxy for Stremio addons</div>
               </div>
+              <RecentChanges
+                commits={recentCommits}
+                visibleCount={visibleRecentCommitCount}
+                onLoadMore={setVisibleRecentCommitCount}
+                loading={isRecentCommitsLoading}
+                error={recentCommitsError}
+                nowMs={nowMs}
+              />
             </div>
 
             <aside className="erdb-panel erdb-hero-panel">

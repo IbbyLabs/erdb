@@ -22,7 +22,11 @@
     "docker:up": "docker compose up --build",
     "docker:up:scale4": "docker compose up -d --build --scale app=4",
     "docker:down": "docker compose down",
-    "release": "node scripts/release.mjs"
+    "commits:generate": "node scripts/generate-commits-json.mjs",
+    "release": "node scripts/release.mjs",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

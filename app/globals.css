@@ -486,6 +486,235 @@ pre {
 	letter-spacing: 0.03em;
 }
 
+.erdb-commit-window-wrap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	padding-top: 0.15rem;
+	z-index: 4;
+}
+
+.erdb-commit-window-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.42);
+	backdrop-filter: blur(1px);
+	z-index: 20;
+}
+
+.erdb-commit-window-trigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.2rem;
+	padding: 0.42rem 0.84rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+	background: color-mix(in srgb, var(--card) 86%, transparent);
+	color: color-mix(in srgb, var(--brand-ink) 84%, var(--brand-muted) 16%);
+	text-decoration: none;
+	font-size: 0.76rem;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.erdb-commit-window-trigger:hover {
+	transform: translateY(-1px);
+	border-color: color-mix(in srgb, var(--glow) 78%, var(--border) 22%);
+	background: color-mix(in srgb, var(--card) 82%, rgba(124, 82, 255, 0.18) 18%);
+	color: var(--brand-ink);
+}
+
+.erdb-commit-window-trigger:focus-visible {
+	outline: 2px solid color-mix(in srgb, var(--glow) 74%, white 26%);
+	outline-offset: 2px;
+}
+
+.erdb-commit-window {
+	position: absolute;
+	top: calc(100% + 0.65rem);
+	left: 0;
+	width: min(40rem, calc(100vw - 3rem));
+	max-height: min(72vh, 38rem);
+	overflow: auto;
+	padding: 1rem;
+	border-radius: 1.2rem;
+	border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+	background: linear-gradient(180deg, rgba(14, 8, 29, 0.98), rgba(9, 5, 20, 0.96));
+	box-shadow: 0 35px 80px -45px rgba(0, 0, 0, 0.95);
+	z-index: 30;
+}
+
+.erdb-commit-window-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.8rem;
+	margin-bottom: 0.75rem;
+}
+
+.erdb-commit-window-head h2 {
+	margin: 0;
+	font-size: 1.05rem;
+	color: var(--brand-ink);
+	letter-spacing: 0.01em;
+}
+
+.erdb-commit-window-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+}
+
+.erdb-commit-window-count {
+	font-size: 0.72rem;
+	color: var(--brand-muted);
+	letter-spacing: 0.08em;
+}
+
+.erdb-commit-window-close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.85rem;
+	height: 1.85rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+	background: color-mix(in srgb, var(--card) 84%, transparent);
+	color: var(--brand-ink);
+	font-size: 1.15rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.erdb-commit-window-empty {
+	margin: 0;
+	padding: 0.8rem 0.2rem;
+	font-size: 0.78rem;
+	color: var(--brand-muted);
+	letter-spacing: 0.05em;
+}
+
+.erdb-commit-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 0.7rem;
+}
+
+.erdb-commit-item {
+	padding: 0.8rem 0.85rem;
+	border-radius: 0.95rem;
+	border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+	background: color-mix(in srgb, var(--card) 90%, transparent);
+	display: grid;
+	gap: 0.38rem;
+}
+
+.erdb-commit-item-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.6rem;
+}
+
+.erdb-commit-type {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 1.35rem;
+	padding: 0.2rem 0.48rem;
+	border-radius: 999px;
+	font-size: 0.62rem;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	border: 1px solid transparent;
+}
+
+.erdb-commit-type-feat {
+	background: rgba(51, 153, 109, 0.2);
+	border-color: rgba(77, 221, 162, 0.4);
+	color: #9ef6cd;
+}
+
+.erdb-commit-type-fix,
+.erdb-commit-type-perf {
+	background: rgba(185, 122, 40, 0.2);
+	border-color: rgba(255, 188, 84, 0.45);
+	color: #ffdba2;
+}
+
+.erdb-commit-type-chore,
+.erdb-commit-type-build,
+.erdb-commit-type-ci,
+.erdb-commit-type-style,
+.erdb-commit-type-test,
+.erdb-commit-type-refactor,
+.erdb-commit-type-revert {
+	background: rgba(109, 93, 170, 0.22);
+	border-color: rgba(169, 143, 255, 0.45);
+	color: #d7c9ff;
+}
+
+.erdb-commit-hash {
+	font-size: 0.72rem;
+	color: var(--brand-muted);
+	letter-spacing: 0.04em;
+}
+
+.erdb-commit-title {
+	margin: 0;
+	font-size: 0.87rem;
+	line-height: 1.45;
+	color: var(--brand-ink);
+	font-weight: 600;
+}
+
+.erdb-commit-body {
+	margin: 0;
+	font-size: 0.78rem;
+	line-height: 1.5;
+	color: color-mix(in srgb, var(--brand-ink) 80%, var(--brand-muted) 20%);
+	white-space: pre-wrap;
+}
+
+.erdb-commit-date {
+	margin: 0;
+	font-size: 0.68rem;
+	color: var(--brand-muted);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.erdb-commit-load-more {
+	margin-top: 0.82rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2rem;
+	padding: 0.4rem 0.8rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+	background: color-mix(in srgb, var(--card) 86%, transparent);
+	color: color-mix(in srgb, var(--brand-ink) 84%, var(--brand-muted) 16%);
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.erdb-commit-load-more:hover {
+	border-color: color-mix(in srgb, var(--glow) 78%, var(--border) 22%);
+	background: color-mix(in srgb, var(--card) 82%, rgba(124, 82, 255, 0.18) 18%);
+	color: var(--brand-ink);
+}
+
 .erdb-panel {
 	position: relative;
 	border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);

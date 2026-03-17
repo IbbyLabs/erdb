@@ -1,0 +1,718 @@
+{
+  "generatedAt": "2026-03-17T20:00:28.471Z",
+  "total": 89,
+  "commits": [
+    {
+      "hash": "4327a3fca9b2d9664ba17645fdd1509cb1c54413",
+      "shortHash": "4327a3f",
+      "date": "2026-03-17T19:29:19Z",
+      "type": "fix",
+      "title": "resolve homepage lint regressions",
+      "body": "- replace root anchor usage with Next Link\n\n- remove effect-driven setState patterns flagged by react-hooks/set-state-in-effect\n\n- add lint regression test for app/page.tsx and wire npm test script"
+    },
+    {
+      "hash": "ba7e4ab84b2fa0f8de01ed129d710e85a45491bc",
+      "shortHash": "ba7e4ab",
+      "date": "2026-03-17T19:21:37Z",
+      "type": "feat",
+      "title": "refresh branding, stabilize UI, and improve release pipeline",
+      "body": "- update ERDB page structure and styling with a redesigned hero, section headers, and panel system\n\n- fix layout overflow and preview regressions by tightening responsive shrink behavior and client-side preview URL handling\n\n- remove redundant footer subtitle copy for fork-safe presentation\n\n- add complete favicon/web manifest asset set and align layout metadata/icons\n\n- update Docker publishing workflow and Dockerfile to improve release publishing and cache behavior\n\n- revise README instructions and bump package version to 2.2.0 for this feature release"
+    },
+    {
+      "hash": "1b2f2faa651beae3191ce878eec15ab3be1956bc",
+      "shortHash": "1b2f2fa",
+      "date": "2026-03-17T18:24:13Z",
+      "type": "chore",
+      "title": "release 2.1.0",
+      "body": null
+    },
+    {
+      "hash": "aef4e017cfbb7515b2ec50d05d94a811ca98589a",
+      "shortHash": "aef4e01",
+      "date": "2026-03-17T18:24:02Z",
+      "type": "feat",
+      "title": "align branding and chrome theme",
+      "body": null
+    },
+    {
+      "hash": "a04d47ec62ad0e12d6bfc5110f68a271740babbe",
+      "shortHash": "a04d47e",
+      "date": "2026-03-17T18:06:40Z",
+      "type": "ci",
+      "title": "reduce duplicate docker runs",
+      "body": null
+    },
+    {
+      "hash": "2dfda42f6e17f9bee95eb361e26fa2abbc4c1d6a",
+      "shortHash": "2dfda42",
+      "date": "2026-03-17T17:58:44Z",
+      "type": "chore",
+      "title": "adjust renovate config",
+      "body": null
+    },
+    {
+      "hash": "63128efd8b66d13f75153b30de58091e9c49e651",
+      "shortHash": "63128ef",
+      "date": "2026-03-17T17:53:49Z",
+      "type": "chore",
+      "title": "enable fork processing",
+      "body": null
+    },
+    {
+      "hash": "1380c5e0bfde0f66edc030cd9989116cf36beac0",
+      "shortHash": "1380c5e",
+      "date": "2026-03-17T17:52:06Z",
+      "type": "chore",
+      "title": "enable renovate onboarding",
+      "body": null
+    },
+    {
+      "hash": "7d09080cebaa40edaac462d8cc261b8ff087840e",
+      "shortHash": "7d09080",
+      "date": "2026-03-17T17:39:01Z",
+      "type": "chore",
+      "title": "enable docker layer cache",
+      "body": null
+    },
+    {
+      "hash": "7c1ea2f27608d88f6b3b0e719e65574c7d26d582",
+      "shortHash": "7c1ea2f",
+      "date": "2026-03-17T17:35:52Z",
+      "type": "chore",
+      "title": "add renovate configuration",
+      "body": null
+    },
+    {
+      "hash": "e303e402c741ed7c8f9c34e8c1cd93c209439fbb",
+      "shortHash": "e303e40",
+      "date": "2026-03-17T17:33:31Z",
+      "type": "chore",
+      "title": "release 2.0.0",
+      "body": "- semver correction for breaking proxy security behavior changes\n- marks stricter upstream validation and CORS behavior as major release"
+    },
+    {
+      "hash": "b6ed5aa0ca1b82287af3e87ec2e35097a9cd7bc2",
+      "shortHash": "b6ed5aa",
+      "date": "2026-03-17T17:31:39Z",
+      "type": "chore",
+      "title": "release 1.1.0",
+      "body": "- harden addon proxy URL validation and CORS handling\n- add network safety checks that block private or unsafe upstream targets\n- update Docker image/runtime setup and keep container running as non-root\n- expose new proxy security environment variables in compose and README\n- refresh CI workflow updates included since last release\n- remove unused @google/genai dependency and refresh lockfile metadata"
+    },
+    {
+      "hash": "5b00fe42a9d82544b9563d9c7dc545f328759e1a",
+      "shortHash": "5b00fe4",
+      "date": "2026-03-17T17:07:56Z",
+      "type": "chore",
+      "title": "adjust docker base image",
+      "body": null
+    },
+    {
+      "hash": "4a2e0ff2408f7758948c784ec14383cc102e8136",
+      "shortHash": "4a2e0ff",
+      "date": "2026-03-17T17:06:32Z",
+      "type": "chore",
+      "title": "update proxy and docker setup",
+      "body": null
+    },
+    {
+      "hash": "a082d32fd18a8ee88a982b4e403135c2ee801312",
+      "shortHash": "a082d32",
+      "date": "2026-03-17T15:46:17Z",
+      "type": "ci",
+      "title": "update sync schedule to uk time",
+      "body": null
+    },
+    {
+      "hash": "27b023a9d0f1459e667aeb74444e388f585e203e",
+      "shortHash": "27b023a",
+      "date": "2026-03-17T15:45:30Z",
+      "type": "ci",
+      "title": "add upstream sync workflow",
+      "body": null
+    },
+    {
+      "hash": "8f75fec46775abc4a9213e27ee64561f74315ab6",
+      "shortHash": "8f75fec",
+      "date": "2026-03-17T15:44:52Z",
+      "type": "chore",
+      "title": "release 1.0.4",
+      "body": null
+    },
+    {
+      "hash": "9bd43a15c0e257ed2a75b1e234d1cff737330b70",
+      "shortHash": "9bd43a1",
+      "date": "2026-03-17T15:43:32Z",
+      "type": "chore",
+      "title": "Bump renderer cache; set ratings to bottom",
+      "body": "Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster-backdrop-logo-v27' to 'poster-backdrop-logo-v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left-right' layouts now map to 'bottom', standardizing quality-badge positioning. (app/[type]/[id]/route.tsx)"
+    },
+    {
+      "hash": "49d9935a0612f1c60aaf1c03cdf2b4e0b206bb56",
+      "shortHash": "49d9935",
+      "date": "2026-03-17T13:44:43Z",
+      "type": "chore",
+      "title": "release 1.0.3",
+      "body": null
+    },
+    {
+      "hash": "10c39f3c1fe74bcb1445819118f78f5e44958c11",
+      "shortHash": "10c39f3",
+      "date": "2026-03-17T13:44:42Z",
+      "type": "fix",
+      "title": "lint cleanup",
+      "body": null
+    },
+    {
+      "hash": "c70598f31f2ce41a3440ce42fbbcb7c140156c8f",
+      "shortHash": "c70598f",
+      "date": "2026-03-17T13:37:26Z",
+      "type": "chore",
+      "title": "release 1.0.2",
+      "body": null
+    },
+    {
+      "hash": "a4c7c1d79856cd19e647731b4a26e4bff2c37c79",
+      "shortHash": "a4c7c1d",
+      "date": "2026-03-17T13:37:25Z",
+      "type": "feat",
+      "title": "split ci and publish",
+      "body": null
+    },
+    {
+      "hash": "cdd8302aae81aa8c9993bcb0a0096f6e2eda284f",
+      "shortHash": "cdd8302",
+      "date": "2026-03-17T13:29:44Z",
+      "type": "chore",
+      "title": "release 1.0.1",
+      "body": null
+    },
+    {
+      "hash": "14e82385446087b57fb59cb3ac7e2ff1947d24e6",
+      "shortHash": "14e8238",
+      "date": "2026-03-17T13:29:42Z",
+      "type": "chore",
+      "title": "adjust release script",
+      "body": null
+    },
+    {
+      "hash": "fb5cf446b77604a95211fae09de663c5b0c6ac7b",
+      "shortHash": "fb5cf44",
+      "date": "2026-03-17T13:26:16Z",
+      "type": "chore",
+      "title": "release 1.0.0",
+      "body": null
+    },
+    {
+      "hash": "79b569cd10c3e9dd26215afe3cb76a435ab9e49f",
+      "shortHash": "79b569c",
+      "date": "2026-03-17T13:25:31Z",
+      "type": "chore",
+      "title": "release 0.2.0",
+      "body": null
+    },
+    {
+      "hash": "c1ac8b3700dd94bc2b5aae23f6b666feeb57c359",
+      "shortHash": "c1ac8b3",
+      "date": "2026-03-17T13:25:29Z",
+      "type": "feat",
+      "title": "add docker publish workflow",
+      "body": null
+    },
+    {
+      "hash": "f8f826439b29f7d9f17ed7da05c169b2f602bc44",
+      "shortHash": "f8f8264",
+      "date": "2026-03-17T14:14:56+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "42457146e8c30060ea5d49ccfa18775488848472",
+      "shortHash": "4245714",
+      "date": "2026-03-17T14:08:34+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "2789c1cd5506ea686ac210d076a5e08998834032",
+      "shortHash": "2789c1c",
+      "date": "2026-03-17T07:02:28+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "3340655040803c393610bdda2d1fc63a35975dea",
+      "shortHash": "3340655",
+      "date": "2026-03-17T06:58:27+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "ea5d5fbd8ec7492e688ee41bf00faf546c3d2145",
+      "shortHash": "ea5d5fb",
+      "date": "2026-03-17T06:57:17+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "051677f1f7eda893ad33d27d614be6f4c6f618e8",
+      "shortHash": "051677f",
+      "date": "2026-03-17T06:53:00+01:00",
+      "type": "chore",
+      "title": "Render poster title/logo overlays & bump cache",
+      "body": "Bump image renderer cache version to v25 and add support for rendering a centered poster title SVG or TMDB logo overlay for \"clean\" poster mode. Introduces pickPosterTitleFromMedia and passes posterTitleText/posterLogoUrl through the rendering pipeline (including selection of TMDB logoPath), includes kitsu fallback title in fallback asset results, and adds buildPosterTitleSvg + helper to generate optimized SVG title images. Rendering logic now composes a poster title/logo overlay above bottom badges, handles logo resizing, and updates badge placement/quality badge positioning to accommodate the overlay. Also updates caching logic to consider clean poster text as a reason to cache the final image and tightens UI preview logic (only 'top-bottom' now shows poster quality badges side) in app/page.tsx."
+    },
+    {
+      "hash": "8839ed6f7c316ccaa7bd26a0d2cf80ac749ebda2",
+      "shortHash": "8839ed6",
+      "date": "2026-03-17T06:15:21+01:00",
+      "type": "chore",
+      "title": "Handle square style stroke width in badge",
+      "body": "Update buildQualityBadgeSvg in app/[type]/[id]/route.tsx to add a specific strokeWidth case for style === 'square' (Math.max(1, Math.round(h * 0.05))). Previously the ternary only handled 'glass' and a default; this change ensures square badges use a slightly smaller stroke. Also split the expression across multiple lines for readability."
+    },
+    {
+      "hash": "154693ba6cbd673efac1aa9ec34eaffb95d9f963",
+      "shortHash": "154693b",
+      "date": "2026-03-17T06:13:15+01:00",
+      "type": "chore",
+      "title": "Add Torrentio stream quality badges & rendering",
+      "body": "Introduce stream/quality badges sourced from Torrentio and per-type quality/rating controls. README: add new query/config params (streamBadges, posterStreamBadges, backdropStreamBadges, qualityBadgesSide, qualityBadgesStyle, poster/backdropQualityBadgesStyle and per-type ratings overrides) and update URL-build documentation. route.tsx: bump final image renderer cache version to v20; add Torrentio integration (fetchTorrentioBadges) with caching, dedupe in-flight requests and TTL; new types (StreamBadgeKey, BadgeKey, StreamQualityFlags) and helpers to normalize settings and parse/merge stream flags from filenames. Add STREAM_BADGE_META, generation of quality badge SVGs (buildQualityBadgeSvg) and logic to include qualityBadges in the rendering pipeline for poster and backdrop (columns/rows, positioning, style). Update badge/build/render logic to accept quality badges and adjust provider icon mapping key type and some square-style rendering details. Also add small fixes: support data: URIs for provider icons, add stream timing to server timing header, and adjust final image cache seed to account for stream badge state. Other file updates reflect README and UI/config changes."
+    },
+    {
+      "hash": "b1f2c45c66f3beb2a175fdbb3f9bf4127e1e2181",
+      "shortHash": "b1f2c45",
+      "date": "2026-03-16T23:36:04+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "ade27ed8732a12f061bc3a7448951a8a6c6a4d14",
+      "shortHash": "ade27ed",
+      "date": "2026-03-16T23:34:59+01:00",
+      "type": "chore",
+      "title": "Update README to remove Dockerfile.hf note",
+      "body": "Removed note about using Dockerfile.hf for Hugging Face Spaces."
+    },
+    {
+      "hash": "d69d2ab70d848faea7612fca8d60319a64873f68",
+      "shortHash": "d69d2ab",
+      "date": "2026-03-16T23:34:30+01:00",
+      "type": "chore",
+      "title": "Fix typo in HuggingFace Guide section",
+      "body": null
+    },
+    {
+      "hash": "c47148bb550905ae1c2f548b0183ca0fcc71409d",
+      "shortHash": "c47148b",
+      "date": "2026-03-16T23:34:10+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "b239b2bdfc7788041d46ff14c754fb86a33344f7",
+      "shortHash": "b239b2b",
+      "date": "2026-03-16T23:33:47+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "f76b650c55de420ebeca6eb84c90115d9da477a2",
+      "shortHash": "f76b650",
+      "date": "2026-03-16T10:34:21+01:00",
+      "type": "chore",
+      "title": "Update Dockerfile",
+      "body": null
+    },
+    {
+      "hash": "ed612212c1c63ab729e48d6b8cd5a480ef5dfdd4",
+      "shortHash": "ed61221",
+      "date": "2026-03-16T10:28:22+01:00",
+      "type": "chore",
+      "title": "Update Dockerfile.hf",
+      "body": null
+    },
+    {
+      "hash": "f3e31001ab6fcb8457f51c4809ebee6ce103a224",
+      "shortHash": "f3e3100",
+      "date": "2026-03-16T10:15:26+01:00",
+      "type": "chore",
+      "title": "Update Dockerfile.hf",
+      "body": null
+    },
+    {
+      "hash": "9d5ea2249bca728ceab807f2b7d947dd6687e268",
+      "shortHash": "9d5ea22",
+      "date": "2026-03-16T09:31:56+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "c79fcd9739d551ec28e9ec2285e8d415049c3862",
+      "shortHash": "c79fcd9",
+      "date": "2026-03-16T09:27:52+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "43e80c3502349efed1553fc5b503e6faca5338e2",
+      "shortHash": "43e80c3",
+      "date": "2026-03-16T09:13:18+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "51c0a40fa1c7fd1b709a3280d687cbc0794e07ca",
+      "shortHash": "51c0a40",
+      "date": "2026-03-16T09:06:49+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "68d2c5dd18cfdce0de229bede0004505fdac1717",
+      "shortHash": "68d2c5d",
+      "date": "2026-03-16T08:59:18+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "03af7450d10d750e35c8f9b11ce647ac5197f3f5",
+      "shortHash": "03af745",
+      "date": "2026-03-16T08:50:28+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "e33e8630323c1d190eb8d04e55951cabc03eb9e0",
+      "shortHash": "e33e863",
+      "date": "2026-03-16T08:44:55+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "9c7acfd567ac0b6d682834eb04eac5b86524e12d",
+      "shortHash": "9c7acfd",
+      "date": "2026-03-16T08:10:48+01:00",
+      "type": "chore",
+      "title": "Update route.ts",
+      "body": null
+    },
+    {
+      "hash": "e4262e804542cb740c8ea47789327b2c8f81768e",
+      "shortHash": "e4262e8",
+      "date": "2026-03-15T19:14:24+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "cb51c67bfb569e79ad2beaf38b12418beb6f9ded",
+      "shortHash": "cb51c67",
+      "date": "2026-03-15T18:09:13+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "291974e17a2b6bb65a086a43f2d924c0124dd252",
+      "shortHash": "291974e",
+      "date": "2026-03-15T18:06:48+01:00",
+      "type": "chore",
+      "title": "Delete for unsupported addons.mp4",
+      "body": null
+    },
+    {
+      "hash": "bbf9565764e3e525cc2b3617083593d2c68ff2d1",
+      "shortHash": "bbf9565",
+      "date": "2026-03-15T18:06:40+01:00",
+      "type": "chore",
+      "title": "Delete for supported addons.mp4",
+      "body": null
+    },
+    {
+      "hash": "93885fdfb98efa216c7d51621f5b7a966b0536a6",
+      "shortHash": "93885fd",
+      "date": "2026-03-15T18:06:20+01:00",
+      "type": "chore",
+      "title": "Add files via upload",
+      "body": null
+    },
+    {
+      "hash": "2688a72db69521c2d3c4e6c697a65769ba287dc9",
+      "shortHash": "2688a72",
+      "date": "2026-03-14T02:53:11+01:00",
+      "type": "chore",
+      "title": "Merge pull request #3 from qwertyuiop8899/patch-1",
+      "body": null
+    },
+    {
+      "hash": "a7aead2767d9fa415b0c5d9f0d790fc915b37818",
+      "shortHash": "a7aead2",
+      "date": "2026-03-13T21:43:01+01:00",
+      "type": "chore",
+      "title": "Update Dockerfile",
+      "body": null
+    },
+    {
+      "hash": "a4ba38c599f50c2dec82148479a582cce510ef2c",
+      "shortHash": "a4ba38c",
+      "date": "2026-03-13T21:09:58+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "1d1b1e877ff045f68a1ae3121871ba9001d1ca55",
+      "shortHash": "1d1b1e8",
+      "date": "2026-03-13T21:00:22+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "fa63fe62209d35caaecd7f7bca1a90e8624defe5",
+      "shortHash": "fa63fe6",
+      "date": "2026-03-13T18:14:07+01:00",
+      "type": "chore",
+      "title": "Update addonProxy.ts",
+      "body": null
+    },
+    {
+      "hash": "c52628aba19181583aa4086b6ad84d2ec7168428",
+      "shortHash": "c52628a",
+      "date": "2026-03-13T17:41:01+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "ae84d80f5b22a2d836dc5084a042a1e19c52a20b",
+      "shortHash": "ae84d80",
+      "date": "2026-03-13T17:37:33+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "85d938ca6e10a7482d42c50b0fe0e24e706255d4",
+      "shortHash": "85d938c",
+      "date": "2026-03-13T09:40:19+01:00",
+      "type": "chore",
+      "title": "HuggingFace Dockerfile",
+      "body": null
+    },
+    {
+      "hash": "63bd0f5ee4b6fb5b8b37ef69d6a70b39750de854",
+      "shortHash": "63bd0f5",
+      "date": "2026-03-13T09:35:26+01:00",
+      "type": "chore",
+      "title": "Update Dockerfile",
+      "body": null
+    },
+    {
+      "hash": "84008ea91c6afac24439f61d6250cceee32cc041",
+      "shortHash": "84008ea",
+      "date": "2026-03-13T09:33:35+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "e3d43066ef6aa353c574b366d825e4fdea116267",
+      "shortHash": "e3d4306",
+      "date": "2026-03-13T09:07:15+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "724a1e966a04bfe1bca25e854e5536f059614e5d",
+      "shortHash": "724a1e9",
+      "date": "2026-03-12T05:48:43+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "fa680c48afef531fc02b826c95a2393bf1694bca",
+      "shortHash": "fa680c4",
+      "date": "2026-03-12T05:46:49+01:00",
+      "type": "chore",
+      "title": "proxy any addon",
+      "body": null
+    },
+    {
+      "hash": "dd52a5ee643219aa3b66b2387d64282d4126f537",
+      "shortHash": "dd52a5e",
+      "date": "2026-03-12T04:48:32+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "90bb391fd9509333d57e6d4a73a51b5897910ede",
+      "shortHash": "90bb391",
+      "date": "2026-03-12T04:34:47+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "abb37a45a933dbab05696f65d0a051201fb15d09",
+      "shortHash": "abb37a4",
+      "date": "2026-03-12T04:34:14+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "3ae181cdc32310165c707f775991566f2efc5dba",
+      "shortHash": "3ae181c",
+      "date": "2026-03-12T04:26:41+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "6a98ab1f57dc3e9d0a1583638827cc50ff853697",
+      "shortHash": "6a98ab1",
+      "date": "2026-03-12T04:16:57+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "1c4ca7437ed10f1bbe33ba866fa0844c22c21ae0",
+      "shortHash": "1c4ca74",
+      "date": "2026-03-12T04:13:08+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "fe832a5211657f7fa18815ab0fde3593e52257af",
+      "shortHash": "fe832a5",
+      "date": "2026-03-12T04:12:04+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "34741e76ba12ef4415a0b74642771823bbaa84a6",
+      "shortHash": "34741e7",
+      "date": "2026-03-12T04:05:26+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "3632ac79d36d92cfaf4f05058d98363acd052c1c",
+      "shortHash": "3632ac7",
+      "date": "2026-03-12T04:00:47+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "b36b4cdbaacc2c1dc928aca8dfe57526f1a38ba4",
+      "shortHash": "b36b4cd",
+      "date": "2026-03-12T03:59:04+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "80617d33525d97c991b11c3e58f9ff1438d2f42a",
+      "shortHash": "80617d3",
+      "date": "2026-03-12T03:57:18+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "e84fddb40e0f84e9d5ba39aa7431b8a3bb093c16",
+      "shortHash": "e84fddb",
+      "date": "2026-03-12T03:52:35+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "bc93059a37235f39e683bf740bac9cbdcf64f359",
+      "shortHash": "bc93059",
+      "date": "2026-03-12T03:47:12+01:00",
+      "type": "chore",
+      "title": "Update docker-compose.yml",
+      "body": null
+    },
+    {
+      "hash": "98b660588e9995276c9175e985ac784fd4996e09",
+      "shortHash": "98b6605",
+      "date": "2026-03-12T03:42:41+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "9a8098d23c08103a261ee98559fb7167e8b54d1d",
+      "shortHash": "9a8098d",
+      "date": "2026-03-12T03:38:44+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "e5bc6f968f2675546d273fa2fa0c4032b8410505",
+      "shortHash": "e5bc6f9",
+      "date": "2026-03-12T03:35:19+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "d49d4cfbd245d38b797273048649746490cb331e",
+      "shortHash": "d49d4cf",
+      "date": "2026-03-12T03:34:44+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "3bce9eea3ce2a818b1f7c88868a82d5e6f34a28a",
+      "shortHash": "3bce9ee",
+      "date": "2026-03-12T03:34:12+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "53c660919c9bd633e188134c075bb11d85d4bbe2",
+      "shortHash": "53c6609",
+      "date": "2026-03-12T03:33:05+01:00",
+      "type": "chore",
+      "title": "Update README.md",
+      "body": null
+    },
+    {
+      "hash": "c690a44ac2258228b3c4d8a1dc7f2b053cd2d8be",
+      "shortHash": "c690a44",
+      "date": "2026-03-12T03:32:02+01:00",
+      "type": "chore",
+      "title": "Initial commit",
+      "body": null
+    }
+  ]
+}
