@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Star, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
@@ -113,8 +113,6 @@ export default function Home() {
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
-  const [previewUrl, setPreviewUrl] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
@@ -149,9 +147,7 @@ export default function Home() {
   const [proxyPosterRatingsLayout, setProxyPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [proxyPosterRatingsMaxPerSide, setProxyPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
-  const [proxyUrl, setProxyUrl] = useState('');
   const [proxyCopied, setProxyCopied] = useState(false);
-  const [configString, setConfigString] = useState('');
   const [configCopied, setConfigCopied] = useState(false);
 
   const [copied, setCopied] = useState(false);
@@ -176,25 +172,9 @@ export default function Home() {
     proxyConfigType === 'backdrop' ? proxyBackdropQualityBadgesStyle : proxyPosterQualityBadgesStyle;
   const setProxyQualityBadgesStyleForType =
     proxyConfigType === 'backdrop' ? setProxyBackdropQualityBadgesStyle : setProxyPosterQualityBadgesStyle;
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const origin = window.location.origin;
-      setBaseUrl(origin);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!proxyTmdbKey && tmdbKey) {
-      setProxyTmdbKey(tmdbKey);
-    }
-  }, [tmdbKey, proxyTmdbKey]);
-
-  useEffect(() => {
-    if (!proxyMdblistKey && mdblistKey) {
-      setProxyMdblistKey(mdblistKey);
-    }
-  }, [mdblistKey, proxyMdblistKey]);
+  const baseUrl = normalizeBaseUrl(typeof window !== 'undefined' ? window.location.origin : '');
+  const effectiveProxyTmdbKey = proxyTmdbKey.trim() || tmdbKey.trim();
+  const effectiveProxyMdblistKey = proxyMdblistKey.trim() || mdblistKey.trim();
 
   useEffect(() => {
     if (tmdbKey && tmdbKey.length > 10) {
@@ -285,7 +265,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     setTimeout(() => setCopied(false), 2000);
   }, []);
 
-  useEffect(() => {
+  const previewUrl = useMemo(() => {
     const ratingPreferencesForType =
       previewType === 'poster'
         ? posterRatingPreferences
@@ -348,10 +328,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
     const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
     if (!origin) {
-      setPreviewUrl('');
-      return;
+      return '';
     }
-    setPreviewUrl(`${origin}/${previewType}/${mediaId}.jpg?${query.toString()}`);
+    return `${origin}/${previewType}/${mediaId}.jpg?${query.toString()}`;
   }, [
     previewType,
     mediaId,
@@ -373,17 +352,17 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     backdropRatingStyle,
     logoRatingStyle,
     baseUrl,
+    shouldShowQualityBadgesSide,
     mdblistKey,
     tmdbKey,
   ]);
 
-  useEffect(() => {
+  const configString = useMemo(() => {
     const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
     const tmdb = tmdbKey.trim();
     const mdb = mdblistKey.trim();
     if (!origin || !tmdb || !mdb) {
-      setConfigString('');
-      return;
+      return '';
     }
 
     const config: Record<string, string | number> = {
@@ -447,7 +426,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       config.backdropRatingsLayout = backdropRatingsLayout;
     }
 
-    setConfigString(encodeBase64Url(JSON.stringify(config)));
+    return encodeBase64Url(JSON.stringify(config));
   }, [
     baseUrl,
     tmdbKey,
@@ -469,21 +448,20 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     backdropRatingsLayout,
+    shouldShowPosterQualityBadgesSide,
   ]);
 
-  useEffect(() => {
+  const proxyUrl = useMemo(() => {
     const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
     if (!origin) {
-      setProxyUrl('');
-      return;
+      return '';
     }
 
     const manifestUrl = normalizeManifestUrl(proxyManifestUrl);
-    const tmdb = proxyTmdbKey.trim();
-    const mdb = proxyMdblistKey.trim();
+    const tmdb = effectiveProxyTmdbKey;
+    const mdb = effectiveProxyMdblistKey;
     if (!manifestUrl || isBareHttpUrl(manifestUrl) || !tmdb || !mdb) {
-      setProxyUrl('');
-      return;
+      return '';
     }
 
     const config: Record<string, string | boolean> = {
@@ -547,11 +525,11 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     }
 
     const encoded = encodeBase64Url(JSON.stringify(config));
-    setProxyUrl(`${origin}/proxy/${encoded}/manifest.json`);
+    return `${origin}/proxy/${encoded}/manifest.json`;
   }, [
     proxyManifestUrl,
-    proxyTmdbKey,
-    proxyMdblistKey,
+    effectiveProxyTmdbKey,
+    effectiveProxyMdblistKey,
     proxyPosterRatingPreferences,
     proxyBackdropRatingPreferences,
     proxyLogoRatingPreferences,
@@ -571,6 +549,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     proxyBackdropRatingsLayout,
     proxyEnabledTypes,
     baseUrl,
+    shouldShowProxyPosterQualityBadgesSide,
   ]);
 
   const updateRatingPreferencesForType = (
@@ -1694,10 +1673,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Live Examples</h4>
                 <pre className="text-xs font-mono text-zinc-400 leading-6 space-y-1.5">
-                  <div className="text-zinc-600 font-bold">// Movie Poster (IMDb)</div>
+                  <div className="text-zinc-600 font-bold">Movie Poster (IMDb)</div>
                   <div className="text-orange-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
-                  <div className="text-zinc-600 font-bold mt-4">// Backdrop (TMDB)</div>
+                  <div className="text-zinc-600 font-bold mt-4">Backdrop (TMDB)</div>
                   <div className="text-orange-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=right-vertical`}</div>
 
                 </pre>
