@@ -26,7 +26,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data && chown -R node:node /app
+USER node
 VOLUME ["/app/data"]
 
 EXPOSE 3000

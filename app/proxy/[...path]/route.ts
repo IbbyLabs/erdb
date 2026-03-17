@@ -9,30 +9,78 @@ import {
   parseAddonBaseUrl,
   type ProxyConfig,
 } from '@/lib/addonProxy';
+import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': '*',
+const getAllowedCorsOrigins = () => {
+  const raw = process.env.ERDB_PROXY_ALLOWED_ORIGINS;
+  if (!raw || !raw.trim()) return [];
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+};
+
+const buildCorsHeaders = (request: NextRequest) => {
+  const requestOrigin = request.headers.get('origin');
+  const allowedOrigins = getAllowedCorsOrigins();
+
+  let allowOrigin = request.nextUrl.origin;
+  if (allowedOrigins.includes('*')) {
+    allowOrigin = '*';
+  } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    allowOrigin = requestOrigin;
+  }
+
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    Vary: 'Origin',
+  };
+};
+
+const parseForwardedProto = (value: string | null) => {
+  const candidate = (value || '').split(',')[0]?.trim().toLowerCase();
+  if (candidate === 'http' || candidate === 'https') return candidate;
+  return null;
+};
+
+const parseForwardedHost = (value: string | null) => {
+  const candidate = (value || '').split(',')[0]?.trim();
+  if (!candidate) return null;
+  try {
+    const parsed = new URL(`http://${candidate}`);
+    return parsed.host;
+  } catch {
+    return null;
+  }
 };
 
 const getPublicRequestUrl = (request: NextRequest) => {
-  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host');
-  if (!forwardedHost) return request.nextUrl;
-  const protoHeader = request.headers.get('x-forwarded-proto');
-  const proto = (protoHeader?.split(',')[0].trim() || request.nextUrl.protocol.replace(':', '')).toLowerCase();
-  const host = forwardedHost.split(',')[0].trim();
+  const trustForwarded = process.env.ERDB_TRUST_PROXY_HEADERS === 'true';
+  const hostHeader = trustForwarded
+    ? request.headers.get('x-forwarded-host') || request.headers.get('host')
+    : request.headers.get('host');
+  const host = parseForwardedHost(hostHeader);
+  if (!host) return request.nextUrl;
+
+  const proto = trustForwarded
+    ? parseForwardedProto(request.headers.get('x-forwarded-proto')) || request.nextUrl.protocol.replace(':', '')
+    : request.nextUrl.protocol.replace(':', '');
+
+  if (proto !== 'http' && proto !== 'https') return request.nextUrl;
+
   const url = new URL(request.nextUrl.toString());
   url.protocol = `${proto}:`;
   url.host = host;
   return url;
 };
 
-const buildError = (message: string, status = 400) =>
-  NextResponse.json({ error: message }, { status, headers: corsHeaders });
+const buildError = (request: NextRequest, message: string, status = 400) =>
+  NextResponse.json({ error: message }, { status, headers: buildCorsHeaders(request) });
 
 const isTypeEnabled = (config: ProxyConfig, type: 'poster' | 'backdrop' | 'logo') => {
   if (type === 'poster') return config.posterEnabled !== false;
@@ -40,8 +88,8 @@ const isTypeEnabled = (config: ProxyConfig, type: 'poster' | 'backdrop' | 'logo'
   return config.logoEnabled !== false;
 };
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: buildCorsHeaders(request) });
 }
 
 const rewriteMetaImages = (
@@ -105,9 +153,9 @@ export async function GET(
 
   if (hasQueryConfig && !queryConfig) {
     if (!searchParams.get('url')) {
-      return buildError('Missing "url" query parameter.');
+      return buildError(request, 'Missing "url" query parameter.');
     }
-    return buildError('Missing "tmdbKey" or "mdblistKey" query parameter.');
+    return buildError(request, 'Missing "tmdbKey" or "mdblistKey" query parameter.');
   }
 
   let config: ProxyConfig | null = queryConfig;
@@ -116,18 +164,25 @@ export async function GET(
 
   if (!config) {
     if (pathSegments.length < 2) {
-      return buildError('Missing proxy config in path.');
+      return buildError(request, 'Missing proxy config in path.');
     }
     configSeed = pathSegments[0];
     config = decodeProxyConfig(configSeed);
     if (!config) {
-      return buildError('Invalid proxy config in path.');
+      return buildError(request, 'Invalid proxy config in path.');
     }
     resourceSegments = pathSegments.slice(1);
   }
 
   if (resourceSegments.length === 0) {
-    return buildError('Missing addon resource path.');
+    return buildError(request, 'Missing addon resource path.');
+  }
+
+  let safeManifestUrl: URL;
+  try {
+    safeManifestUrl = await assertSafeUpstreamUrl(config.url);
+  } catch (error) {
+    return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
   }
 
   const publicRequestUrl = getPublicRequestUrl(request);
@@ -135,20 +190,20 @@ export async function GET(
   if (!hasQueryConfig && resourceSegments.length === 1 && resourceSegments[0] === 'manifest.json') {
     let manifestResponse: Response;
     try {
-      manifestResponse = await fetch(config.url, { cache: 'no-store' });
+      manifestResponse = await fetch(safeManifestUrl.toString(), { cache: 'no-store', redirect: 'error' });
     } catch (error) {
-      return buildError('Unable to reach the source manifest.', 502);
+      return buildError(request, 'Unable to reach the source manifest.', 502);
     }
 
     if (!manifestResponse.ok) {
-      return buildError(`Source manifest returned ${manifestResponse.status}.`, 502);
+      return buildError(request, `Source manifest returned ${manifestResponse.status}.`, 502);
     }
 
     let manifest: Record<string, unknown>;
     try {
       manifest = (await manifestResponse.json()) as Record<string, unknown>;
     } catch (error) {
-      return buildError('Source manifest is not valid JSON.', 502);
+      return buildError(request, 'Source manifest is not valid JSON.', 502);
     }
 
     const proxyId = buildProxyId(config.url, configSeed);
@@ -163,14 +218,14 @@ export async function GET(
       description: `${originalDescription} (proxied via ERDB)`,
     };
 
-    return NextResponse.json(proxyManifest, { status: 200, headers: corsHeaders });
+    return NextResponse.json(proxyManifest, { status: 200, headers: buildCorsHeaders(request) });
   }
 
   let originBase: string;
   try {
-    originBase = parseAddonBaseUrl(config.url);
+    originBase = parseAddonBaseUrl(safeManifestUrl.toString());
   } catch (error) {
-    return buildError('Invalid source manifest URL.', 400);
+    return buildError(request, 'Invalid source manifest URL.', 400);
   }
 
   const resource = resourceSegments[0] || '';
@@ -189,9 +244,9 @@ export async function GET(
 
   let upstreamResponse: Response;
   try {
-    upstreamResponse = await fetch(forwardUrl.toString(), { cache: 'no-store' });
+    upstreamResponse = await fetch(forwardUrl.toString(), { cache: 'no-store', redirect: 'error' });
   } catch (error) {
-    return buildError('Unable to reach the source addon.', 502);
+    return buildError(request, 'Unable to reach the source addon.', 502);
   }
 
   if (!upstreamResponse.ok) {
@@ -209,9 +264,11 @@ export async function GET(
     const headers = new Headers(upstreamResponse.headers);
     headers.delete('content-encoding');
     headers.delete('content-length');
+    const corsHeaders = buildCorsHeaders(request);
     headers.set('Access-Control-Allow-Origin', corsHeaders['Access-Control-Allow-Origin']);
     headers.set('Access-Control-Allow-Methods', corsHeaders['Access-Control-Allow-Methods']);
     headers.set('Access-Control-Allow-Headers', corsHeaders['Access-Control-Allow-Headers']);
+    headers.set('Vary', corsHeaders.Vary);
     return new NextResponse(passthroughBody, {
       status: upstreamResponse.status,
       headers,
@@ -226,9 +283,11 @@ export async function GET(
     const headers = new Headers(upstreamResponse.headers);
     headers.delete('content-encoding');
     headers.delete('content-length');
+    const corsHeaders = buildCorsHeaders(request);
     headers.set('Access-Control-Allow-Origin', corsHeaders['Access-Control-Allow-Origin']);
     headers.set('Access-Control-Allow-Methods', corsHeaders['Access-Control-Allow-Methods']);
     headers.set('Access-Control-Allow-Headers', corsHeaders['Access-Control-Allow-Headers']);
+    headers.set('Vary', corsHeaders.Vary);
     return new NextResponse(passthroughBody, {
       status: upstreamResponse.status,
       headers,
@@ -245,5 +304,5 @@ export async function GET(
     payload.meta = rewriteMetaImages(payload.meta as Record<string, unknown>, publicRequestUrl, config);
   }
 
-  return NextResponse.json(payload, { status: 200, headers: corsHeaders });
+  return NextResponse.json(payload, { status: 200, headers: buildCorsHeaders(request) });
 }

@@ -1,20 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildProxyId } from '@/lib/addonProxy';
+import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': '*',
+const getAllowedCorsOrigins = () => {
+  const raw = process.env.ERDB_PROXY_ALLOWED_ORIGINS;
+  if (!raw || !raw.trim()) return [];
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
 };
 
-const buildError = (message: string, status = 400) =>
-  NextResponse.json({ error: message }, { status, headers: corsHeaders });
+const buildCorsHeaders = (request: NextRequest) => {
+  const requestOrigin = request.headers.get('origin');
+  const allowedOrigins = getAllowedCorsOrigins();
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
+  let allowOrigin = request.nextUrl.origin;
+  if (allowedOrigins.includes('*')) {
+    allowOrigin = '*';
+  } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    allowOrigin = requestOrigin;
+  }
+
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    Vary: 'Origin',
+  };
+};
+
+const buildError = (request: NextRequest, message: string, status = 400) =>
+  NextResponse.json({ error: message }, { status, headers: buildCorsHeaders(request) });
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: buildCorsHeaders(request) });
 }
 
 export async function GET(request: NextRequest) {
@@ -24,28 +47,35 @@ export async function GET(request: NextRequest) {
   const mdblistKey = searchParams.get('mdblistKey');
 
   if (!sourceUrl) {
-    return buildError('Missing "url" query parameter.');
+    return buildError(request, 'Missing "url" query parameter.');
   }
   if (!tmdbKey || !mdblistKey) {
-    return buildError('Missing "tmdbKey" or "mdblistKey" query parameter.');
+    return buildError(request, 'Missing "tmdbKey" or "mdblistKey" query parameter.');
+  }
+
+  let safeSourceUrl: URL;
+  try {
+    safeSourceUrl = await assertSafeUpstreamUrl(sourceUrl);
+  } catch (error) {
+    return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
   }
 
   let manifestResponse: Response;
   try {
-    manifestResponse = await fetch(sourceUrl, { cache: 'no-store' });
+    manifestResponse = await fetch(safeSourceUrl.toString(), { cache: 'no-store', redirect: 'error' });
   } catch (error) {
-    return buildError('Unable to reach the source manifest.', 502);
+    return buildError(request, 'Unable to reach the source manifest.', 502);
   }
 
   if (!manifestResponse.ok) {
-    return buildError(`Source manifest returned ${manifestResponse.status}.`, 502);
+    return buildError(request, `Source manifest returned ${manifestResponse.status}.`, 502);
   }
 
   let manifest: Record<string, unknown>;
   try {
     manifest = (await manifestResponse.json()) as Record<string, unknown>;
   } catch (error) {
-    return buildError('Source manifest is not valid JSON.', 502);
+    return buildError(request, 'Source manifest is not valid JSON.', 502);
   }
 
   const proxyId = buildProxyId(sourceUrl);
@@ -60,5 +90,5 @@ export async function GET(request: NextRequest) {
     description: `${originalDescription} (proxied via ERDB)`,
   };
 
-  return NextResponse.json(proxyManifest, { status: 200, headers: corsHeaders });
+  return NextResponse.json(proxyManifest, { status: 200, headers: buildCorsHeaders(request) });
 }

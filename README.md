@@ -238,6 +238,11 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` and `mdblistKey` are required.
 
+### Proxy Security Environment Variables
+- `ERDB_TRUST_PROXY_HEADERS` (default `false`): trust `x-forwarded-host` and `x-forwarded-proto` when ERDB is behind a trusted reverse proxy.
+- `ERDB_PROXY_ALLOWED_ORIGINS` (default empty): comma-separated CORS allowlist for proxy routes.
+- If `ERDB_PROXY_ALLOWED_ORIGINS` is empty, CORS falls back to the request origin of your ERDB host.
+
 https://github.com/user-attachments/assets/cb70624f-75c8-49da-96fc-b7f6e177df98
 
 https://github.com/user-attachments/assets/b041ae36-c2d1-44ee-9daa-c92f72409a8b

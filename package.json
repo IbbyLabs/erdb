@@ -18,7 +18,6 @@
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
-    "@google/genai": "^1.17.0",
     "@hookform/resolvers": "^5.2.1",
     "autoprefixer": "^10.4.21",
     "better-sqlite3": "^12.6.2",
