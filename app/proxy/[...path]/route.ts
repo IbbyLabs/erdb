@@ -451,8 +451,13 @@ export async function GET(
   }
 
   if (resource === 'catalog' && Array.isArray(payload.metas)) {
-    payload.metas = payload.metas.map((meta) =>
+    const metasWithImages = payload.metas.map((meta) =>
       rewriteMetaImages(meta as Record<string, unknown>, publicRequestUrl, config),
+    );
+    payload.metas = await mapWithConcurrency(
+      metasWithImages as Array<Record<string, unknown>>,
+      6,
+      async (meta) => translateMetaPayload(meta, publicRequestUrl, config),
     );
   }
 
