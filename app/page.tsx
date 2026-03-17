@@ -1262,7 +1262,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Translate Meta</span>
                     <label className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyTranslateMeta ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
                       <input type="checkbox" checked={proxyTranslateMeta} onChange={() => setProxyTranslateMeta((value) => !value)} className="h-3 w-3 accent-orange-500" />
-                      <span>Translate titles & plots</span>
+                      <span>Translate Addon Content</span>
                     </label>
                     <div className="mt-1 text-[10px] text-zinc-500">Uses selected language for titles, plots, and episodes.</div>
                   </div>
@@ -1796,7 +1796,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
 
 
 
