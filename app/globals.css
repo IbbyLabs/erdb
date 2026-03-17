@@ -368,7 +368,7 @@ pre {
 
 .erdb-hero-section {
 	position: relative;
-	overflow: hidden;
+	overflow: visible;
 	padding: clamp(1.8rem, 4vw, 2.7rem);
 	border-radius: 2rem;
 	border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
@@ -952,6 +952,13 @@ pre {
 }
 
 @media (max-width: 720px) {
+	.erdb-commit-window {
+		left: 50%;
+		transform: translateX(-50%);
+		width: min(40rem, calc(100vw - 1rem));
+		max-width: calc(100vw - 1rem);
+	}
+
 	.erdb-main {
 		gap: 4.25rem;
 	}

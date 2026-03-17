@@ -384,6 +384,7 @@ export default function Home() {
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
+  const [previewErrorDetails, setPreviewErrorDetails] = useState('');
   const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
   const [recentCommitsError, setRecentCommitsError] = useState('');
   const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(true);
@@ -735,6 +736,38 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
+
+  const handlePreviewImageError = useCallback(async (url: string) => {
+    setPreviewErroredForUrl(url);
+
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      const body = (await response.text()).trim().replace(/\s+/g, ' ').slice(0, 180);
+
+      if (response.ok) {
+        setPreviewErrorDetails('Preview request succeeded but the image could not be displayed.');
+        return;
+      }
+
+      if (response.status === 400 && body.toLowerCase().includes('tmdb')) {
+        setPreviewErrorDetails('TMDB key is missing. Add your TMDB v3 key in Inputs.');
+        return;
+      }
+
+      if (response.status >= 500) {
+        setPreviewErrorDetails('TMDB key may be invalid or blocked. Verify the key and try again.');
+        return;
+      }
+
+      setPreviewErrorDetails(body ? `API ${response.status}: ${body}` : `API ${response.status}: request failed.`);
+    } catch {
+      setPreviewErrorDetails('Could not reach the preview endpoint. Check network and base URL.');
+    }
+  }, []);
+
+  useEffect(() => {
+    setPreviewErrorDetails('');
+  }, [previewUrl]);
 
   const configString = useMemo(() => {
     const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
@@ -1484,14 +1517,16 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                           unoptimized
                           fill
                           className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
-                          onError={() => setPreviewErroredForUrl(previewUrl)}
+                          onError={() => {
+                            void handlePreviewImageError(previewUrl);
+                          }}
                         />
                       </div>
                     </div>
                   ) : (
                     <div className="text-sm text-zinc-500 text-center max-w-sm leading-6">
                       {previewErrored
-                        ? 'Preview could not be rendered with the current media ID or settings.'
+                        ? previewErrorDetails || 'Preview could not be rendered with the current media ID or settings.'
                         : tmdbKey.trim()
                           ? 'No preview available.'
                           : 'Add a TMDB key to enable live preview.'}
