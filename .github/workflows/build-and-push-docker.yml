@@ -6,6 +6,10 @@ name: Build and Push Docker
       - "v*"
   workflow_dispatch: {}
 
+concurrency:
+  group: docker-publish-${{ github.sha }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
