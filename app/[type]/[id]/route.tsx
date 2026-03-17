@@ -97,7 +97,7 @@ const parseNonNegativeInt = (value?: string | null, max = Number.MAX_SAFE_INTEGE
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.min(max, Math.floor(parsed));
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v27';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v32';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -2949,9 +2949,9 @@ const renderWithSharp = async (
     if (input.imageType === 'poster' && input.qualityBadges.length > 0) {
       const qualityPlacement =
         input.posterRatingsLayout === 'left'
-          ? 'right'
+          ? 'bottom'
           : input.posterRatingsLayout === 'right'
-            ? 'left'
+            ? 'bottom'
             : input.posterRatingsLayout === 'left-right'
               ? 'bottom'
               : input.posterRatingsLayout === 'top'
