@@ -1,1 +1,149 @@
 @import "tailwindcss";
+
+@font-face {
+	font-family: "Space Grotesk";
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url("/fonts/space-grotesk-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Space Grotesk";
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url("/fonts/space-grotesk-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/ibm-plex-mono-400-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/ibm-plex-mono-400-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/ibm-plex-mono-500-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/ibm-plex-mono-500-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+	--brand-ink: #efe9ff;
+	--brand-muted: #9880c0;
+	--brand-bg-start: #020108;
+	--brand-bg-mid: #06030f;
+	--brand-bg-end: #030109;
+	--card: rgba(20, 10, 40, 0.95);
+	--border: rgba(100, 70, 160, 0.5);
+	--shadow-soft: 0 30px 80px -50px rgba(8, 4, 18, 0.9);
+	--glow: rgba(100, 70, 160, 0.6);
+}
+
+html,
+body {
+	min-height: 100%;
+}
+
+body {
+	color: var(--brand-ink);
+	font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+	background-attachment: fixed;
+	background-image:
+		radial-gradient(circle at 85% 15%, rgba(50, 30, 90, 0.5) 0%, rgba(50, 30, 90, 0.22) 20%, transparent 44%),
+		linear-gradient(160deg, var(--brand-bg-start) 0%, var(--brand-bg-mid) 50%, var(--brand-bg-end) 100%);
+}
+
+.font-mono,
+code,
+pre {
+	font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.erdb-page {
+	position: relative;
+	overflow: clip;
+}
+
+.erdb-chrome {
+	border-bottom: 1px solid var(--border);
+	background: color-mix(in srgb, var(--card) 78%, rgba(2, 1, 8, 0.6) 22%);
+	box-shadow: var(--shadow-soft);
+	backdrop-filter: blur(12px);
+}
+
+.erdb-page .bg-zinc-900\/50,
+.erdb-page .bg-zinc-900\/60,
+.erdb-page .bg-zinc-900\/40,
+.erdb-page .bg-black\/60,
+.erdb-page .bg-black\/70 {
+	background: var(--card);
+	border-color: var(--border);
+	box-shadow: var(--shadow-soft);
+}
+
+.erdb-page .border-white\/10 {
+	border-color: var(--border);
+}
+
+.erdb-page .hover\:border-violet-500\/30:hover {
+	border-color: color-mix(in srgb, var(--glow) 70%, var(--border) 30%);
+}
+
+.erdb-footer {
+	margin-top: 2.4rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+	background: transparent;
+}
+
+.erdb-footer-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.2rem;
+	padding: 0.42rem 0.84rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+	background: color-mix(in srgb, var(--card) 86%, transparent);
+	color: color-mix(in srgb, var(--brand-ink) 84%, var(--brand-muted) 16%);
+	text-decoration: none;
+	font-size: 0.76rem;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.erdb-footer-link:hover {
+	transform: translateY(-1px);
+	border-color: color-mix(in srgb, var(--glow) 78%, var(--border) 22%);
+	background: color-mix(in srgb, var(--card) 82%, rgba(124, 82, 255, 0.18) 18%);
+	color: var(--brand-ink);
+}

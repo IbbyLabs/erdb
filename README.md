@@ -7,7 +7,7 @@ ERDB generates poster/backdrop/logo images with dynamic ratings on-the-fly.
 ## Install From GitHub
 
 ```bash
-git clone https://github.com/realbestia1/erdb
+git clone https://github.com/IbbyLabs/erdb
 cd erdb
 ```
 
@@ -48,7 +48,7 @@ ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
 ## HuggingFace Guide (NOT RECOMMENDED)
 
 (to avoid bans on HuggingFace)
-1. Go to the ERDB GitHub repo: https://github.com/realbestia1/erdb
+1. Go to the ERDB GitHub repo: https://github.com/IbbyLabs/erdb
 2. Click the "Fork" button in the top-right corner
 3. Choose any name for the fork (do not use "erdb")
 
@@ -64,12 +64,12 @@ ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
 Now click "Create the Dockerfile" (near the bottom of the page).
 
 Copy and paste the content of `Dockerfile.hf` into the editor that opens,
-replacing "realbestia1" with your GitHub username.
+replacing "IbbyLabs" with your GitHub username.
 
 Line to change:
 
 ```text
-RUN git clone https://github.com/realbestia1/erdb.git .
+RUN git clone https://github.com/IbbyLabs/erdb.git .
 ```
 
 After the edit, click "Commit new file to main".

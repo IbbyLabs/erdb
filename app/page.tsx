@@ -47,6 +47,8 @@ type StreamBadgesSetting = 'auto' | 'on' | 'off';
 type QualityBadgesSide = 'left' | 'right';
 const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const DEFAULT_PROXY_QUALITY_BADGES_STYLE: RatingStyle = DEFAULT_QUALITY_BADGES_STYLE;
+const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
+const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
   { id: 'on', label: 'On' },
@@ -687,20 +689,21 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-zinc-300 selection:bg-orange-500/30">
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/50 backdrop-blur-md">
+    <div className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
+      <nav className="erdb-chrome sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-violet-500 to-indigo-600 flex items-center justify-center">
               <Star className="w-5 h-5 text-white fill-white" />
             </div>
-            <span className="font-bold text-white tracking-tight text-lg">ERDB <span className="text-orange-500 text-sm font-medium ml-1">Stateless</span></span>
+            <span className="font-bold text-white tracking-tight text-lg">ERDB <span className="text-violet-500 text-sm font-medium ml-1">Stateless</span></span>
           </div>
           <div className="flex items-center gap-4 text-sm font-medium">
             <a href="#preview" className="hover:text-white transition-colors">Configurator</a>
             <a href="#proxy" className="hover:text-white transition-colors">Addon Proxy</a>
             <a href="#docs" className="hover:text-white transition-colors">API Docs</a>
-            <a href="https://github.com/realbestia1/erdb" className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 hover:bg-zinc-800 transition-colors">GitHub</a>
+            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 hover:bg-zinc-800 transition-colors">Hub</a>
+            <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer" className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 hover:bg-zinc-800 transition-colors">Support</a>
           </div>
         </div>
       </nav>
@@ -708,10 +711,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       <main className="max-w-7xl mx-auto px-6 py-20 space-y-24">
         {/* Hero Section */}
         <section className="text-center space-y-6 max-w-4xl mx-auto relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 to-transparent blur-3xl rounded-full -z-10 h-64 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-violet-500/10 to-transparent blur-3xl rounded-full -z-10 h-64 pointer-events-none" />
           <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
             Stunning Ratings.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-500 to-orange-600">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-500 to-violet-600">
               Stateless API.
             </span>
           </h1>
@@ -745,11 +748,11 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
-                      <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                      <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
-                      <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                      <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
                   </div>
                 </div>
@@ -772,13 +775,13 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     </div>
                     <div className="flex-1 min-w-[140px]">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Media ID</span>
-                      <input type="text" value={mediaId} onChange={(e) => setMediaId(e.target.value)} placeholder="tt0133093" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                      <input type="text" value={mediaId} onChange={(e) => setMediaId(e.target.value)} placeholder="tt0133093" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
                     {tmdbKey ? (
                       <div className="w-32">
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
                         <div className="relative">
-                          <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-orange-500/50">
+                          <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-violet-500/50">
                             {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
                           </select>
                           <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
@@ -825,14 +828,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                           <div>
                             <div className="flex flex-wrap gap-1">
                               {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                                <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${posterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                                <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${posterRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                               ))}
                             </div>
                           </div>
                           {isVerticalPosterRatingLayout(posterRatingsLayout) && (
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
+                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                               <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                             </div>
                           )}
@@ -845,7 +848,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop Layout</div>
                         <div className="flex flex-wrap gap-1">
                           {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                            <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                            <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                           ))}
                         </div>
                       </div>
@@ -869,7 +872,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
                       <div className="flex flex-wrap gap-1">
                       {RATING_STYLE_OPTIONS.map(option => (
-                        <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                        <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
                           {option.label}
                         </button>
                       ))}
@@ -894,8 +897,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">{providersLabel}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
-                      <label key={provider.id} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${activeRatingPreferences.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                        <input type="checkbox" checked={activeRatingPreferences.includes(provider.id as RatingPreference)} onChange={() => toggleRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
+                      <label key={provider.id} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${activeRatingPreferences.includes(provider.id as RatingPreference) ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                        <input type="checkbox" checked={activeRatingPreferences.includes(provider.id as RatingPreference)} onChange={() => toggleRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-violet-500" />
                         <span>{provider.label}</span>
                       </label>
                     ))}
@@ -905,7 +908,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
               <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-orange-500" /> ERDB Config String
+                  <Code2 className="w-5 h-5 text-violet-500" /> ERDB Config String
                 </h3>
                 <p className="mt-2 text-sm text-zinc-400">
                   Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
@@ -919,7 +922,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <button
                     onClick={handleCopyConfig}
                     disabled={!canGenerateConfig}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateConfig ? (configCopied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateConfig ? (configCopied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
                   >
                     {configCopied ? (
                       <>
@@ -995,7 +998,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     value={proxyManifestUrl}
                     onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
                     placeholder="https://addon.example.com/manifest.json"
-                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
+                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
                   />
                 </div>
 
@@ -1007,7 +1010,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       value={proxyTmdbKey}
                       onChange={(e) => setProxyTmdbKey(e.target.value)}
                       placeholder="v3 Key"
-                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
+                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
                     />
                   </div>
                   <div>
@@ -1017,7 +1020,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       value={proxyMdblistKey}
                       onChange={(e) => setProxyMdblistKey(e.target.value)}
                       placeholder="Key"
-                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
+                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
                     />
                   </div>
                 </div>
@@ -1026,8 +1029,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1.5">Enabled Types</span>
                     <div className="flex flex-wrap gap-1.5">
                       {PROXY_TYPES.map(type => (
-                        <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                          <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-orange-500" />
+                        <label key={`proxy-enabled-${type}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyEnabledTypes[type] ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                          <input type="checkbox" checked={proxyEnabledTypes[type]} onChange={() => toggleProxyEnabledType(type)} className="h-3 w-3 accent-violet-500" />
                           <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
                         </label>
                       ))}
@@ -1052,7 +1055,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <div className="w-32">
                           <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
                           <div className="relative">
-                            <select value={proxyLang} onChange={(e) => setProxyLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-orange-500/50">
+                            <select value={proxyLang} onChange={(e) => setProxyLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-violet-500/50">
                               {supportedLanguages.map(l => <option key={`proxy-lang-${l.code}`} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
                             </select>
                             <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
@@ -1129,14 +1132,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Poster Layout</span>
                               <div className="flex flex-wrap gap-1">
                                 {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                                  <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                                  <button key={`proxy-poster-layout-${opt.id}`} onClick={() => setProxyPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyPosterRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                                 ))}
                               </div>
                             </div>
                             {isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && (
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                                <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-orange-500/50 outline-none" />
+                                <input type="number" value={proxyPosterRatingsMaxPerSide ?? ''} onChange={(e) => setProxyPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                                 <button onClick={() => setProxyPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                               </div>
                             )}
@@ -1148,7 +1151,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Backdrop Layout</span>
                             <div className="flex flex-wrap gap-1">
                               {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                                <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                                <button key={`proxy-backdrop-layout-${opt.id}`} onClick={() => setProxyBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyBackdropRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                               ))}
                             </div>
                           </div>
@@ -1171,7 +1174,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                           <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
                           <div className="flex flex-wrap gap-1">
                             {RATING_STYLE_OPTIONS.map(option => (
-                              <button key={`proxy-quality-style-${option.id}`} onClick={() => setProxyQualityBadgesStyleForType(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyQualityBadgesStyleForType === option.id ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                              <button key={`proxy-quality-style-${option.id}`} onClick={() => setProxyQualityBadgesStyleForType(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${proxyQualityBadgesStyleForType === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
                                 {option.label}
                               </button>
                             ))}
@@ -1196,8 +1199,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">{proxyProvidersLabel}</span>
                       <div className="flex flex-wrap gap-1.5">
                         {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
-                          <label key={`proxy-${provider.id}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyRatingPreferencesForType.includes(provider.id as RatingPreference) ? 'border-orange-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                            <input type="checkbox" checked={proxyRatingPreferencesForType.includes(provider.id as RatingPreference)} onChange={() => toggleProxyRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-orange-500" />
+                          <label key={`proxy-${provider.id}`} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyRatingPreferencesForType.includes(provider.id as RatingPreference) ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={proxyRatingPreferencesForType.includes(provider.id as RatingPreference)} onChange={() => toggleProxyRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-violet-500" />
                             <span>{provider.label}</span>
                           </label>
                         ))}
@@ -1221,7 +1224,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <button
                     onClick={handleCopyProxy}
                     disabled={!canGenerateProxy}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateProxy ? (proxyCopied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateProxy ? (proxyCopied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
                   >
                     {proxyCopied ? (
                       <>
@@ -1254,8 +1257,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
               <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-zinc-500">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-orange-500/10">
-                    <Zap className="w-4 h-4 text-orange-500" />
+                  <div className="p-2 rounded-lg bg-violet-500/10">
+                    <Zap className="w-4 h-4 text-violet-500" />
                   </div>
                   <div className="space-y-1">
                     <div className="text-zinc-200 font-semibold">Replace enabled types</div>
@@ -1276,9 +1279,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-orange-500/30 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                  <ImageIcon className="w-5 h-5 text-orange-500" />
+              <div className="p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-violet-500/30 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                  <ImageIcon className="w-5 h-5 text-violet-500" />
                 </div>
                 <h4 className="text-lg font-bold text-white">Dynamic Rendering</h4>
                 <p className="text-sm text-zinc-400">No tokens needed. Pass parameters in the query string and let ERDB handle metadata and rendering.</p>
@@ -1296,7 +1299,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
               <div className="bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Terminal className="w-5 h-5 text-orange-500" /> API Reference
+                    <Terminal className="w-5 h-5 text-violet-500" /> API Reference
                   </h3>
                 </div>
                 <div className="p-0 overflow-x-auto">
@@ -1310,107 +1313,107 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     </thead>
                     <tbody className="divide-y divide-white/5">
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">type <span className="text-zinc-500">(path)</span></td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">type <span className="text-zinc-500">(path)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">poster, backdrop, logo</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">id <span className="text-zinc-500">(path)</span></td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">id <span className="text-zinc-500">(path)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">IMDb, TMDB, Kitsu, etc.</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratings</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratings</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatings</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatings</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropRatings</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatings</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (backdrop only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">logoRatings</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatings</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (logo only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">lang</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">lang</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{SUPPORTED_LANGUAGES.map(l => l.code).join(', ')}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">en</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">streamBadges</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">streamBadges</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterStreamBadges</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterStreamBadges</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropStreamBadges</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropStreamBadges</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (backdrop only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesSide</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesSide</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">left, right (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">left</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesStyle</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterQualityBadgesStyle</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgesStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropQualityBadgesStyle</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadgesStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (backdrop only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratingStyle</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass (poster/backdrop), plain (logo)</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">imageText</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">imageText</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">original, clean, alternative</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">original (poster), clean (backdrop)</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatingsLayout</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsLayout</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">top, bottom, left, right, top-bottom, left-right</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">top-bottom</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatingsMaxPerSide</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsMaxPerSide</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">1-20</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropRatingsLayout</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingsLayout</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">center, right, right-vertical</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">center</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">TMDB v3 API Key</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">mdblistKey <span className="font-bold">(req)</span></td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">mdblistKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">MDBList.com API Key</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
                       </tr>
@@ -1422,7 +1425,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
               <div className="bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Settings2 className="w-5 h-5 text-orange-500" /> Type Configs
+                    <Settings2 className="w-5 h-5 text-violet-500" /> Type Configs
                   </h3>
                 </div>
                 <div className="p-0 overflow-x-auto">
@@ -1436,7 +1439,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     </thead>
                     <tbody className="divide-y divide-white/5">
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">poster</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">poster</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
@@ -1453,7 +1456,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         </td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdrop</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdrop</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
@@ -1468,7 +1471,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         </td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-orange-400 text-xs">logo</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">logo</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">none (base params only)</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">—</td>
                       </tr>
@@ -1483,7 +1486,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
               <div className="bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Hash className="w-5 h-5 text-orange-500" /> ID Formats
+                    <Hash className="w-5 h-5 text-violet-500" /> ID Formats
                   </h3>
                 </div>
                 <div className="p-0 overflow-x-auto">
@@ -1499,22 +1502,22 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">IMDb</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">tt + numbers</td>
-                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">tt0133093</td>
+                        <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">tt0133093</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">TMDB</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">tmdb:id or tmdb:movie:id or tmdb:tv:id</td>
-                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">tmdb:movie:603, tmdb:tv:1399</td>
+                        <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">tmdb:movie:603, tmdb:tv:1399</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">Kitsu</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">kitsu:id</td>
-                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">kitsu:1</td>
+                        <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">kitsu:1</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">Anime</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">provider:id</td>
-                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">anilist:123, mal:456</td>
+                        <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">anilist:123, mal:456</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1522,60 +1525,60 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
               </div>
 
               <div className="p-6 bg-black border border-white/10 rounded-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/20 blur-[80px] pointer-events-none" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/20 blur-[80px] pointer-events-none" />
 
                 <div className="mb-6">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Base Structure</h4>
                   <div className="p-4 bg-zinc-900/60 border border-white/5 rounded-xl font-mono text-xs overflow-x-auto whitespace-nowrap pb-2">
                     <span className="text-zinc-500">{baseUrl || 'http://localhost:3000'}</span>
                     <span className="text-white">/</span>
-                    <span className="text-orange-500 font-bold">{'{type}'}</span>
+                    <span className="text-violet-500 font-bold">{'{type}'}</span>
                     <span className="text-white">/</span>
-                    <span className="text-orange-500 font-bold">{'{id}'}</span>
+                    <span className="text-violet-500 font-bold">{'{id}'}</span>
                     <span className="text-white">.jpg?</span>
-                    <span className="text-orange-400 font-bold">ratings</span>=<span className="text-zinc-400 font-bold">{'{ratings}'}</span>
+                    <span className="text-violet-400 font-bold">ratings</span>=<span className="text-zinc-400 font-bold">{'{ratings}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">lang</span>=<span className="text-zinc-400 font-bold">{'{lang}'}</span>
+                    <span className="text-violet-400 font-bold">lang</span>=<span className="text-zinc-400 font-bold">{'{lang}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">ratingStyle</span>=<span className="text-zinc-400 font-bold">{'{style}'}</span>
+                    <span className="text-violet-400 font-bold">ratingStyle</span>=<span className="text-zinc-400 font-bold">{'{style}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">imageText</span>=<span className="text-zinc-400 font-bold">{'{text}'}</span>
+                    <span className="text-violet-400 font-bold">imageText</span>=<span className="text-zinc-400 font-bold">{'{text}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">posterRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{layout}'}</span>
+                    <span className="text-violet-400 font-bold">posterRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{layout}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">posterRatingsMaxPerSide</span>=<span className="text-zinc-400 font-bold">{'{max}'}</span>
+                    <span className="text-violet-400 font-bold">posterRatingsMaxPerSide</span>=<span className="text-zinc-400 font-bold">{'{max}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">backdropRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{bLayout}'}</span>
+                    <span className="text-violet-400 font-bold">backdropRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{bLayout}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">tmdbKey</span>=<span className="text-zinc-400 font-bold">{'{tmdbKey}'}</span>
+                    <span className="text-violet-400 font-bold">tmdbKey</span>=<span className="text-zinc-400 font-bold">{'{tmdbKey}'}</span>
                     <span className="text-white">&</span>
-                    <span className="text-orange-400 font-bold">mdblistKey</span>=<span className="text-zinc-400 font-bold">{'{mdbKey}'}</span>
+                    <span className="text-violet-400 font-bold">mdblistKey</span>=<span className="text-zinc-400 font-bold">{'{mdbKey}'}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
                     <div className="flex gap-2">
-                      <span className="text-orange-500 font-bold shrink-0">lang (optional):</span>
+                      <span className="text-violet-500 font-bold shrink-0">lang (optional):</span>
                       <span className="text-zinc-400">All TMDB ISO 639-1 codes are supported (en, it, fr, es, de, etc.). Default: en.</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="text-orange-500 font-bold shrink-0">id (required):</span>
+                      <span className="text-violet-500 font-bold shrink-0">id (required):</span>
                       <span className="text-zinc-400">IMDb ID (tt...), TMDB ID (tmdb:...), or Kitsu ID (kitsu:...).</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="text-orange-500 font-bold shrink-0">tmdbKey (required):</span>
+                      <span className="text-violet-500 font-bold shrink-0">tmdbKey (required):</span>
                       <span className="text-zinc-400">Your TMDB v3 API Key.</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="text-orange-500 font-bold shrink-0">mdblistKey (required):</span>
+                      <span className="text-violet-500 font-bold shrink-0">mdblistKey (required):</span>
                       <span className="text-zinc-400">Your MDBList API Key.</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mb-10 bg-orange-500/5 border border-orange-500/10 rounded-2xl md:rounded-3xl p-5 md:p-8">
+                <div className="mb-10 bg-violet-500/5 border border-violet-500/10 rounded-2xl md:rounded-3xl p-5 md:p-8">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-500/20 rounded-2xl">
-                        <Bot className="w-6 h-6 text-orange-500" />
+                      <div className="p-3 bg-violet-500/20 rounded-2xl">
+                        <Bot className="w-6 h-6 text-violet-500" />
                       </div>
                       <div>
                         <h4 className="text-lg font-bold text-white">AI Developer Prompt</h4>
@@ -1585,7 +1588,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     <div className="flex items-center gap-3">
                       <button
                         onClick={handleCopyPrompt}
-                        className={`mt-4 px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${copied ? 'bg-green-500 text-white' : 'bg-orange-500 text-black hover:bg-orange-400'}`}
+                        className={`mt-4 px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${copied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400'}`}
                       >
                         {copied ? (
                           <>
@@ -1674,10 +1677,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Live Examples</h4>
                 <pre className="text-xs font-mono text-zinc-400 leading-6 space-y-1.5">
                   <div className="text-zinc-600 font-bold">Movie Poster (IMDb)</div>
-                  <div className="text-orange-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
+                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
                   <div className="text-zinc-600 font-bold mt-4">Backdrop (TMDB)</div>
-                  <div className="text-orange-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=right-vertical`}</div>
+                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=right-vertical`}</div>
 
                 </pre>
               </div>
@@ -1687,13 +1690,19 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         </section>
       </main>
 
-      <footer className="border-t border-white/5 py-8 bg-black">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-zinc-500">
-            <Star className="w-4 h-4" />
-            <span className="text-sm font-semibold tracking-tight text-white">ERDB Stateless Engine</span>
+      <footer className="erdb-footer py-8">
+        <div className="max-w-7xl mx-auto px-6 space-y-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-zinc-500">
+              <Star className="w-4 h-4" />
+              <span className="text-sm font-semibold tracking-tight text-white">ERDB Stateless Engine</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">Hub</a>
+              <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">Support</a>
+            </div>
           </div>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 text-center md:text-left">
             © 2026 ERDB Project. Modern imagery for modern addons.
           </p>
         </div>
