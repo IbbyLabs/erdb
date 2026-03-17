@@ -2080,7 +2080,11 @@ const buildQualityBadgeSvg = (
   const h = Math.max(32, Math.round(height * 0.9));
   const radius = style === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
   const strokeWidth =
-    style === 'glass' ? Math.max(1, Math.round(h * 0.04)) : Math.max(2, Math.round(h * 0.08));
+    style === 'glass'
+      ? Math.max(1, Math.round(h * 0.04))
+      : style === 'square'
+        ? Math.max(1, Math.round(h * 0.05))
+        : Math.max(2, Math.round(h * 0.08));
   const innerPadding = Math.max(10, Math.round(h * 0.16));
   const fontFamily = `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
   const baseRect = (width: number, stroke: string, fill: string, extra = '') =>
