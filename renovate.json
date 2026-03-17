@@ -6,6 +6,7 @@
   ],
   "enabled": true,
   "onboarding": true,
+  "forkProcessing": "enabled",
   "labels": ["dependencies"],
   "timezone": "Europe/London",
   "schedule": ["before 6am on monday"],
