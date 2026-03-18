@@ -28,8 +28,6 @@ import {
 } from '@/lib/ratingStyle';
 import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
-// Removed mdblistRequestLogs import
-
 import {
   buildObjectStorageImageKey,
   buildObjectStorageSourceImageKey,
@@ -271,8 +269,6 @@ const getCacheTtlMsFromCacheControl = (value: string | null | undefined, fallbac
 };
 
 
-
-// pruneCache and setCacheEntry removed as we now use metadataCache and objectStorage
 
 const withDedupe = async <T,>(
   inFlightMap: Map<string, Promise<T>>,
@@ -863,7 +859,6 @@ const fetchMdbListRatings = async ({
 
       return collectMDBListRatings(response.data);
     } catch {
-      // Try the next key before giving up on MDBList entirely.
     }
   }
 
@@ -1216,7 +1211,6 @@ const fetchJsonCached = async (
             durationMs: Date.now() - fetchStartedAt,
           });
         } catch {
-          // Ignore observer failures for monitoring hooks.
         }
       }
       throw error;
@@ -1245,7 +1239,6 @@ const fetchJsonCached = async (
           durationMs: Date.now() - fetchStartedAt,
         });
       } catch {
-        // Ignore observer failures for monitoring hooks.
       }
     }
     const failureTtlMs = Math.min(ttlMs, 2 * 60 * 1000);
@@ -1497,7 +1490,6 @@ const writeProviderIconToStorage = async (iconUrl: string, buffer: Buffer) => {
       cacheControl: buildSourceImageFallbackCacheControl(PROVIDER_ICON_CACHE_TTL_MS),
     });
   } catch {
-    // Ignore icon cache write failures.
   }
 };
 
@@ -1550,8 +1542,6 @@ const getSourceImagePayload = async (
     return fetchSourceImageUncached(normalizedImgUrl, fallbackTtlMs);
   }
 
-  // Local image cache removed in favor of objectStorage
-
   const sourceHash = sha1Hex(normalizedImgUrl);
   const sourceObjectStorageKey = `source/${sourceHash}`;
   const objectStorageEnabled = isObjectStorageConfigured();
@@ -1580,13 +1570,10 @@ const getSourceImagePayload = async (
         return sharedPayload;
       }
     } catch {
-      // Ignore distributed cache read failures and continue with fetch path.
     }
   }
 
   return withDedupe(sourceImageInFlight, normalizedImgUrl, async () => {
-    // Local warming removed
-
     if (objectStorageEnabled) {
       try {
         const sharedPayload = await readSharedSourcePayload();
@@ -1594,7 +1581,6 @@ const getSourceImagePayload = async (
           return sharedPayload;
         }
       } catch {
-        // Ignore distributed cache read failures inside in-flight dedupe path.
       }
     }
 
@@ -1605,7 +1591,6 @@ const getSourceImagePayload = async (
       try {
         await putCachedImageToObjectStorage(sourceObjectStorageKey, payload);
       } catch {
-        // Ignore distributed cache persistence failures for source images.
       }
     }
 
@@ -1993,7 +1978,6 @@ const fitPosterBadgeMetricsToWidth = (
       metrics.gap = Math.max(minMetrics.gap, Math.floor(metrics.gap * ratio));
     }
 
-    // When the ratio stalls near the minimums, force a small extra shrink.
     if (widestRow > maxRowWidth) {
       if (metrics.paddingX > minMetrics.paddingX) metrics.paddingX -= 1;
       else if (metrics.gap > minMetrics.gap) metrics.gap -= 1;
@@ -3164,7 +3148,6 @@ export async function GET(
   const outputFormat = pickOutputFormat(imageType, request.headers.get('accept'));
   const cleanId = id.replace('.jpg', '');
 
-  // Extract configuration from query parameters
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
   const globalRatings = request.nextUrl.searchParams.get('ratings');
   const posterRatings = request.nextUrl.searchParams.get('posterRatings') ?? globalRatings;
@@ -3320,7 +3303,7 @@ export async function GET(
     ratingStyle,
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
-    'v1', // Static version since we no longer have tokenConfigVersion
+    'v1',
   ].join('|');
   const objectStorageEnabled = isObjectStorageConfigured();
 
@@ -3356,7 +3339,6 @@ export async function GET(
             mediaType = explicitTmdbMediaType;
           }
         } else {
-          // Try to fetch as movie
           const movieResponse = await fetchJsonCached(
             `tmdb:movie:${mediaId}`,
             `https://api.themoviedb.org/3/movie/${mediaId}?api_key=${tmdbKey}`,
@@ -3368,7 +3350,6 @@ export async function GET(
             media = movieResponse.data;
             mediaType = 'movie';
           } else {
-            // Try as TV
             const tvResponse = await fetchJsonCached(
               `tmdb:tv:${mediaId}`,
               `https://api.themoviedb.org/3/tv/${mediaId}?api_key=${tmdbKey}`,
@@ -3421,7 +3402,6 @@ export async function GET(
           tmdbId = mappingData.mappings.ids.tmdb;
         }
 
-        // For season-level Kitsu IDs (no explicit season), infer season from ep=1 mapping.
         if (mappingSubtype !== 'movie' && !season) {
           const seasonProbeResponse = await fetchJsonCached(
             `kitsu:mapping:${mediaId}:1`,
@@ -3521,7 +3501,6 @@ export async function GET(
           }
         }
       } else {
-        // 1. Find TMDB ID from IMDb ID
         const findResponse = await fetchJsonCached(
           `tmdb:find:${mediaId}`,
           `https://api.themoviedb.org/3/find/${mediaId}?api_key=${tmdbKey}&external_source=imdb_id`,
@@ -3818,7 +3797,6 @@ export async function GET(
                     }
                   }
                 } catch {
-                  // Ignore MDBList failures.
                 }
                 return mdbRatings;
               };
@@ -3858,7 +3836,6 @@ export async function GET(
                     renderedRatingTtlByProvider.set('kitsu', kitsuCacheTtlMs);
                   }
                 } catch {
-                  // Ignore
                 }
                 return combinedRatings.get('kitsu') || null;
               };
@@ -3939,11 +3916,9 @@ export async function GET(
                   }
                 }
               } catch {
-                // Ignore
               }
             }
 
-            // IMDb HTML scraping removed: only dataset or MDBList can supply IMDb ratings.
             if (needsImdbRating && imdbId && !combinedRatings.has('imdb')) {
               const datasetRating = getImdbRatingFromDataset(imdbId);
               if (datasetRating) {
@@ -3970,7 +3945,6 @@ export async function GET(
                   renderedRatingTtlByProvider.set('kitsu', kitsuCacheTtlMs);
                 }
               } catch {
-                // Ignore
               }
             }
 
@@ -4065,7 +4039,6 @@ export async function GET(
             media?.backdrop_path ||
             backdropCollection[0]?.file_path;
 
-          // Kitsu IDs usually represent a specific anime season: prefer season posters over unified show posters.
           if (isKitsu && season && !episode && type === 'poster') {
             const seasonImagesQuery = input.seasonIncludeImageLanguage
               ? `&include_image_language=${input.seasonIncludeImageLanguage}`
@@ -4203,7 +4176,6 @@ export async function GET(
           );
         }
 
-        // If the filtered languages returned nothing, retry with all languages and pick the first available.
         if (!imgPath && !imgUrl) {
           const fallbackImagesResponse = await fetchJsonCached(
             `tmdb:${mediaType}:${media.id}:images:all`,
@@ -4584,7 +4556,6 @@ export async function GET(
         try {
           await putCachedImageToObjectStorage(finalObjectStorageKey, renderedPayload);
         } catch {
-          // Ignore distributed cache persistence failures.
         }
       }
       return renderedPayload;

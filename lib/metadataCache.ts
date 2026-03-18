@@ -36,8 +36,7 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
     VALUES (?, ?, ?, ?)
   `).run(key, stringValue, expiresAt, now);
 
-    // Optional: minor pruning during set to keep DB clean
-    if (Math.random() < 0.05) { // 5% chance to prune expired on set
+    if (Math.random() < 0.05) {
         pruneExpiredMetadata();
     }
 };

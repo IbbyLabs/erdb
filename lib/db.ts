@@ -59,7 +59,7 @@ export const ensureDbInitialized = () => {
 export const dbQuery = async <T = any>(text: string, values: any[] = []) => {
   ensureDbInitialized();
   const db = getDb();
-  // Support both pg-style $1 and sqlite-style ?
+
   const stmt = db.prepare(text.replace(/\$(\d+)/g, '?'));
   if (text.trim().toUpperCase().startsWith('SELECT')) {
     const rows = stmt.all(...values) as T[];

@@ -96,7 +96,6 @@ const downloadToFile = async (url: string, destination: string) => {
     try {
       if (existsSync(tmpPath)) unlinkSync(tmpPath);
     } catch {
-      // Ignore tmp cleanup failures.
     }
     throw error;
   }

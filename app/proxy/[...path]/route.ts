@@ -445,8 +445,6 @@ export async function GET(
 
   const resource = resourceSegments[0] || '';
   const forwardUrl = new URL(originBase);
-  // Preserve Stremio "extra" path segments like `search=...` and `skip=...`.
-  // Encoding each segment would turn `=` into `%3D`, breaking upstream parsing.
   forwardUrl.pathname = `${forwardUrl.pathname.replace(/\/$/, '')}/${resourceSegments.join('/')}`;
 
   const forwardParams = new URLSearchParams();

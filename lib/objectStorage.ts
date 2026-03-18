@@ -10,12 +10,11 @@ type ObjectStorageResult = {
   cacheControl: string;
 };
 
-// Ensure cache directory exists
 mkdirSync(CACHE_DIR, { recursive: true });
 
 const getFilePath = (key: string) => join(CACHE_DIR, key.replace(/\//g, '_'));
 
-export const isObjectStorageConfigured = () => true; // Always "configured" as local files
+export const isObjectStorageConfigured = () => true;
 
 export const buildObjectStorageImageKey = (cacheHash: string, ext = 'png') => `final/${cacheHash}.${ext}`;
 export const buildObjectStorageSourceImageKey = (id: string, variant: string) => `source/${id.replace(/[^a-zA-Z0-9]/g, '_')}_${variant}.png`;
@@ -51,7 +50,6 @@ export const putCachedImageToObjectStorage = async (
   const metadataPath = `${filePath}.json`;
 
   try {
-    // Ensure parent directories exist
     const dir = join(filePath, '..');
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });

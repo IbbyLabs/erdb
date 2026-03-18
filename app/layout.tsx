@@ -1,7 +1,7 @@
 import type {Metadata, Viewport} from 'next';
 import {connection} from 'next/server';
 import {Space_Grotesk, Unbounded} from 'next/font/google';
-import './globals.css'; // Global styles
+import './globals.css';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const fullBrandName = 'IbbyLabs Easy Ratings Database';
