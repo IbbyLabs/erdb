@@ -20,11 +20,6 @@ import {
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from './ratingPreferences.ts';
-
-export const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
-
-export type ProxyType = (typeof PROXY_TYPES)[number];
-export type ProxyEnabledTypes = Record<ProxyType, boolean>;
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type ImageTextPreference = 'original' | 'clean' | 'alternative';
@@ -56,7 +51,6 @@ export type SavedUiConfig = {
   settings: SharedErdbSettings;
   proxy: {
     manifestUrl: string;
-    enabledTypes: ProxyEnabledTypes;
   };
 };
 
@@ -64,12 +58,6 @@ const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist
 const IMAGE_TEXT_PREFERENCE_SET = new Set<ImageTextPreference>(['original', 'clean', 'alternative']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
-
-export const createDefaultProxyEnabledTypes = (): ProxyEnabledTypes => ({
-  poster: true,
-  backdrop: true,
-  logo: true,
-});
 
 export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   tmdbKey: '',
@@ -98,7 +86,6 @@ export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
   settings: createDefaultSharedErdbSettings(),
   proxy: {
     manifestUrl: '',
-    enabledTypes: createDefaultProxyEnabledTypes(),
   },
 });
 
@@ -255,20 +242,6 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
   };
 };
 
-export const normalizeProxyEnabledTypes = (value: unknown): ProxyEnabledTypes => {
-  const defaults = createDefaultProxyEnabledTypes();
-  if (!value || typeof value !== 'object') {
-    return defaults;
-  }
-
-  const candidate = value as Partial<Record<ProxyType, unknown>>;
-  return {
-    poster: typeof candidate.poster === 'boolean' ? candidate.poster : defaults.poster,
-    backdrop: typeof candidate.backdrop === 'boolean' ? candidate.backdrop : defaults.backdrop,
-    logo: typeof candidate.logo === 'boolean' ? candidate.logo : defaults.logo,
-  };
-};
-
 export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
   const defaults = createDefaultSavedUiConfig();
   if (!value || typeof value !== 'object') {
@@ -279,7 +252,6 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
     settings?: unknown;
     proxy?: {
       manifestUrl?: unknown;
-      enabledTypes?: unknown;
     };
   };
 
@@ -291,7 +263,6 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
         typeof candidate.proxy?.manifestUrl === 'string'
           ? normalizeManifestUrl(candidate.proxy.manifestUrl, true)
           : defaults.proxy.manifestUrl,
-      enabledTypes: normalizeProxyEnabledTypes(candidate.proxy?.enabledTypes),
     },
   };
 };
@@ -395,7 +366,6 @@ export const buildProxyPayload = (
   baseUrl: string,
   manifestUrl: string,
   settings: SharedErdbSettings,
-  enabledTypes: ProxyEnabledTypes,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
   const normalizedManifestUrl = normalizeManifestUrl(manifestUrl);
@@ -407,9 +377,6 @@ export const buildProxyPayload = (
   return {
     url: normalizedManifestUrl,
     ...sharedPayload,
-    posterEnabled: enabledTypes.poster,
-    backdropEnabled: enabledTypes.backdrop,
-    logoEnabled: enabledTypes.logo,
     erdbBase: origin,
   };
 };
@@ -418,10 +385,9 @@ export const buildProxyUrl = (
   baseUrl: string,
   manifestUrl: string,
   settings: SharedErdbSettings,
-  enabledTypes: ProxyEnabledTypes,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const payload = buildProxyPayload(baseUrl, manifestUrl, settings, enabledTypes);
+  const payload = buildProxyPayload(baseUrl, manifestUrl, settings);
   if (!origin || !payload) {
     return '';
   }

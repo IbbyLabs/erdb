@@ -36,11 +36,6 @@ const buildSampleSettings = () =>
     },
     proxy: {
       manifestUrl: 'stremio://addon.example.com/manifest.json',
-      enabledTypes: {
-        poster: true,
-        backdrop: false,
-        logo: true,
-      },
     },
   });
 
@@ -75,12 +70,28 @@ test('workspace serialization round-trips shared settings and proxy state', () =
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+});
+
+test('workspace normalization ignores legacy proxy enabled flags', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
       enabledTypes: {
-        poster: true,
+        poster: false,
         backdrop: false,
-        logo: true,
+        logo: false,
       },
     },
+  });
+
+  assert.deepEqual(config.proxy, {
+    manifestUrl: 'https://addon.example.com/manifest.json',
   });
 });
 
@@ -114,12 +125,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropRatingsLayout: 'right-vertical',
   });
 
-  const proxyUrl = buildProxyUrl(
-    baseUrl,
-    config.proxy.manifestUrl,
-    config.settings,
-    config.proxy.enabledTypes,
-  );
+  const proxyUrl = buildProxyUrl(baseUrl, config.proxy.manifestUrl, config.settings);
   assert.match(proxyUrl, /^https:\/\/erdb\.example\.com\/proxy\/.+\/manifest\.json$/);
 
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
@@ -147,9 +153,6 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     posterRatingsLayout: 'top-bottom',
     backdropRatingsLayout: 'right-vertical',
     erdbBase: 'https://erdb.example.com',
-    posterEnabled: true,
-    backdropEnabled: false,
-    logoEnabled: true,
   });
 });
 
@@ -157,7 +160,7 @@ test('proxy manifest generation stops when required inputs are missing', () => {
   const config = buildSampleSettings();
 
   assert.equal(
-    buildProxyUrl('https://erdb.example.com', '', config.settings, config.proxy.enabledTypes),
+    buildProxyUrl('https://erdb.example.com', '', config.settings),
     '',
   );
 
@@ -169,7 +172,6 @@ test('proxy manifest generation stops when required inputs are missing', () => {
         ...config.settings,
         tmdbKey: '',
       },
-      config.proxy.enabledTypes,
     ),
     '',
   );
