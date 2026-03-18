@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
@@ -16,7 +16,6 @@ import {
 } from '@/lib/backdropRatingLayout';
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
-  DEFAULT_POSTER_RATING_LAYOUT,
   POSTER_RATING_LAYOUT_OPTIONS,
   isVerticalPosterRatingLayout,
   type PosterRatingLayout,
@@ -26,6 +25,22 @@ import {
   RATING_STYLE_OPTIONS,
   type RatingStyle,
 } from '@/lib/ratingStyle';
+import {
+  PROXY_TYPES,
+  buildConfigString,
+  buildProxyUrl,
+  createDefaultProxyEnabledTypes,
+  normalizeSavedUiConfig,
+  parseSavedUiConfig,
+  serializeSavedUiConfig,
+  normalizeBaseUrl,
+  normalizeManifestUrl,
+  type ProxyEnabledTypes,
+  type ProxyType,
+  type QualityBadgesSide,
+  type SavedUiConfig,
+  type StreamBadgesSetting,
+} from '@/lib/uiConfig';
 
 const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -41,13 +56,7 @@ const SUPPORTED_LANGUAGES = [
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
-const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
-type ProxyType = (typeof PROXY_TYPES)[number];
-type ProxyEnabledTypes = Record<ProxyType, boolean>;
-type StreamBadgesSetting = 'auto' | 'on' | 'off';
-type QualityBadgesSide = 'left' | 'right';
 const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
-const DEFAULT_PROXY_QUALITY_BADGES_STYLE: RatingStyle = DEFAULT_QUALITY_BADGES_STYLE;
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
@@ -71,15 +80,17 @@ type RecentCommit = {
 };
 const COMMIT_FEED_URL = '/commits.json';
 const COMMIT_PAGE_SIZE = 5;
-const API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
-const API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
+const UI_CONFIG_STORAGE_KEY = 'erdb.uiConfig.v1';
+const UI_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.uiConfig.settings.v1';
+const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
+const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
 
-type ApiKeyConfigStorage = {
-  tmdbKey: string;
-  mdblistKey: string;
-  proxyTmdbKey: string;
-  proxyMdblistKey: string;
-  proxyManifestUrl: string;
+type LegacyApiKeyConfigStorage = {
+  tmdbKey?: string;
+  mdblistKey?: string;
+  proxyTmdbKey?: string;
+  proxyMdblistKey?: string;
+  proxyManifestUrl?: string;
 };
 
 function BrandLockup({ compact = false }: { compact?: boolean }) {
@@ -154,35 +165,6 @@ function SectionHeader({
     </div>
   );
 }
-
-const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
-
-const normalizeManifestUrl = (value: string, allowBareScheme = false) => {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  const lower = trimmed.toLowerCase();
-  if (!lower.startsWith('stremio://')) {
-    return trimmed;
-  }
-
-  const withoutScheme = trimmed.slice('stremio://'.length);
-  if (!withoutScheme) return allowBareScheme ? 'https://' : '';
-  if (/^https?:\/\//i.test(withoutScheme)) {
-    return withoutScheme;
-  }
-  return `https://${withoutScheme}`;
-};
-
-const isBareHttpUrl = (value: string) => value === 'http://' || value === 'https://';
-
-const encodeBase64Url = (value: string) => {
-  const bytes = new TextEncoder().encode(value);
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-};
 
 const formatCommitTimestamp = (value: string, nowMs: number) => {
   const commitMs = Date.parse(value);
@@ -367,37 +349,10 @@ export default function Home() {
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
-  const [proxyTmdbKey, setProxyTmdbKey] = useState('');
-  const [proxyMdblistKey, setProxyMdblistKey] = useState('');
-  const [proxyPosterRatingPreferences, setProxyPosterRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [proxyBackdropRatingPreferences, setProxyBackdropRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [proxyLogoRatingPreferences, setProxyLogoRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [proxyPosterStreamBadges, setProxyPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
-  const [proxyBackdropStreamBadges, setProxyBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
-  const [proxyQualityBadgesSide, setProxyQualityBadgesSide] = useState<QualityBadgesSide>('left');
-  const [proxyPosterQualityBadgesStyle, setProxyPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_PROXY_QUALITY_BADGES_STYLE);
-  const [proxyBackdropQualityBadgesStyle, setProxyBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_PROXY_QUALITY_BADGES_STYLE);
-  const [proxyLang, setProxyLang] = useState('en');
   const [proxyConfigType, setProxyConfigType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
-  const [proxyEnabledTypes, setProxyEnabledTypes] = useState<ProxyEnabledTypes>({
-    poster: true,
-    backdrop: true,
-    logo: true,
-  });
-  const [proxyPosterRatingStyle, setProxyPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
-  const [proxyBackdropRatingStyle, setProxyBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
-  const [proxyLogoRatingStyle, setProxyLogoRatingStyle] = useState<RatingStyle>('plain');
-  const [proxyPosterImageText, setProxyPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [proxyBackdropImageText, setProxyBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [proxyPosterRatingsLayout, setProxyPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
-  const [proxyPosterRatingsMaxPerSide, setProxyPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
-  const [proxyBackdropRatingsLayout, setProxyBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
+  const [proxyEnabledTypes, setProxyEnabledTypes] = useState<ProxyEnabledTypes>(() =>
+    createDefaultProxyEnabledTypes()
+  );
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
@@ -407,10 +362,32 @@ export default function Home() {
   const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(true);
   const [visibleRecentCommitCount, setVisibleRecentCommitCount] = useState(COMMIT_PAGE_SIZE);
   const [nowMs, setNowMs] = useState(Date.now());
-  const [apiKeyConfigStatus, setApiKeyConfigStatus] = useState<'' | 'loaded' | 'saved' | 'cleared' | 'error'>('');
-  const [apiKeyConfigAutoSave, setApiKeyConfigAutoSave] = useState(false);
+  const [savedConfigStatus, setSavedConfigStatus] = useState<
+    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'error' | 'invalid'
+  >('');
+  const [configAutoSave, setConfigAutoSave] = useState(false);
+  const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
 
   const [copied, setCopied] = useState(false);
+  const proxyTmdbKey = tmdbKey;
+  const proxyMdblistKey = mdblistKey;
+  const proxyPosterRatingPreferences = posterRatingPreferences;
+  const proxyBackdropRatingPreferences = backdropRatingPreferences;
+  const proxyLogoRatingPreferences = logoRatingPreferences;
+  const proxyPosterStreamBadges = posterStreamBadges;
+  const proxyBackdropStreamBadges = backdropStreamBadges;
+  const proxyQualityBadgesSide = qualityBadgesSide;
+  const proxyPosterQualityBadgesStyle = posterQualityBadgesStyle;
+  const proxyBackdropQualityBadgesStyle = backdropQualityBadgesStyle;
+  const proxyLang = lang;
+  const proxyPosterRatingStyle = posterRatingStyle;
+  const proxyBackdropRatingStyle = backdropRatingStyle;
+  const proxyLogoRatingStyle = logoRatingStyle;
+  const proxyPosterImageText = posterImageText;
+  const proxyBackdropImageText = backdropImageText;
+  const proxyPosterRatingsLayout = posterRatingsLayout;
+  const proxyPosterRatingsMaxPerSide = posterRatingsMaxPerSide;
+  const proxyBackdropRatingsLayout = backdropRatingsLayout;
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
   const shouldShowQualityBadgesSide = previewType === 'poster' && shouldShowPosterQualityBadgesSide;
   const shouldShowProxyPosterQualityBadgesSide = proxyPosterRatingsLayout === 'top-bottom';
@@ -427,13 +404,23 @@ export default function Home() {
   const proxyStreamBadgesForType =
     proxyConfigType === 'backdrop' ? proxyBackdropStreamBadges : proxyPosterStreamBadges;
   const setProxyStreamBadgesForType =
-    proxyConfigType === 'backdrop' ? setProxyBackdropStreamBadges : setProxyPosterStreamBadges;
+    proxyConfigType === 'backdrop' ? setBackdropStreamBadges : setPosterStreamBadges;
   const proxyQualityBadgesStyleForType =
     proxyConfigType === 'backdrop' ? proxyBackdropQualityBadgesStyle : proxyPosterQualityBadgesStyle;
   const setProxyQualityBadgesStyleForType =
-    proxyConfigType === 'backdrop' ? setProxyBackdropQualityBadgesStyle : setProxyPosterQualityBadgesStyle;
-  const effectiveProxyTmdbKey = proxyTmdbKey.trim() || tmdbKey.trim();
-  const effectiveProxyMdblistKey = proxyMdblistKey.trim() || mdblistKey.trim();
+    proxyConfigType === 'backdrop' ? setBackdropQualityBadgesStyle : setPosterQualityBadgesStyle;
+  const setProxyTmdbKey = setTmdbKey;
+  const setProxyMdblistKey = setMdblistKey;
+  const setProxyLang = setLang;
+  const setProxyPosterRatingStyle = setPosterRatingStyle;
+  const setProxyBackdropRatingStyle = setBackdropRatingStyle;
+  const setProxyLogoRatingStyle = setLogoRatingStyle;
+  const setProxyPosterImageText = setPosterImageText;
+  const setProxyBackdropImageText = setBackdropImageText;
+  const setProxyPosterRatingsLayout = setPosterRatingsLayout;
+  const setProxyPosterRatingsMaxPerSide = setPosterRatingsMaxPerSide;
+  const setProxyBackdropRatingsLayout = setBackdropRatingsLayout;
+  const setProxyQualityBadgesSide = setQualityBadgesSide;
 
   useEffect(() => {
     if (tmdbKey && tmdbKey.length > 10) {
@@ -524,70 +511,171 @@ export default function Home() {
     };
   }, []);
 
+  const applySavedUiConfig = useCallback(
+    (config: SavedUiConfig, status: 'loaded' | 'imported' = 'loaded') => {
+      const normalized = normalizeSavedUiConfig(config);
+
+      setTmdbKey(normalized.settings.tmdbKey);
+      setMdblistKey(normalized.settings.mdblistKey);
+      setLang(normalized.settings.lang);
+      setPosterImageText(normalized.settings.posterImageText);
+      setBackdropImageText(normalized.settings.backdropImageText);
+      setPosterRatingPreferences(normalized.settings.posterRatingPreferences);
+      setBackdropRatingPreferences(normalized.settings.backdropRatingPreferences);
+      setLogoRatingPreferences(normalized.settings.logoRatingPreferences);
+      setPosterStreamBadges(normalized.settings.posterStreamBadges);
+      setBackdropStreamBadges(normalized.settings.backdropStreamBadges);
+      setQualityBadgesSide(normalized.settings.qualityBadgesSide);
+      setPosterQualityBadgesStyle(normalized.settings.posterQualityBadgesStyle);
+      setBackdropQualityBadgesStyle(normalized.settings.backdropQualityBadgesStyle);
+      setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
+      setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
+      setPosterRatingStyle(normalized.settings.posterRatingStyle);
+      setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
+      setLogoRatingStyle(normalized.settings.logoRatingStyle);
+      setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
+      setProxyManifestUrl(normalized.proxy.manifestUrl);
+      setProxyEnabledTypes(normalized.proxy.enabledTypes);
+      setSavedConfigStatus(status);
+    },
+    []
+  );
+
+  const buildCurrentUiConfig = useCallback(
+    (): SavedUiConfig => ({
+      version: 1,
+      settings: {
+        tmdbKey: tmdbKey.trim(),
+        mdblistKey: mdblistKey.trim(),
+        lang,
+        posterImageText,
+        backdropImageText,
+        posterRatingPreferences,
+        backdropRatingPreferences,
+        logoRatingPreferences,
+        posterStreamBadges,
+        backdropStreamBadges,
+        qualityBadgesSide,
+        posterQualityBadgesStyle,
+        backdropQualityBadgesStyle,
+        posterRatingsLayout,
+        backdropRatingsLayout,
+        posterRatingStyle,
+        backdropRatingStyle,
+        logoRatingStyle,
+        posterRatingsMaxPerSide,
+      },
+      proxy: {
+        manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
+        enabledTypes: proxyEnabledTypes,
+      },
+    }),
+    [
+      tmdbKey,
+      mdblistKey,
+      lang,
+      posterImageText,
+      backdropImageText,
+      posterRatingPreferences,
+      backdropRatingPreferences,
+      logoRatingPreferences,
+      posterStreamBadges,
+      backdropStreamBadges,
+      qualityBadgesSide,
+      posterQualityBadgesStyle,
+      backdropQualityBadgesStyle,
+      posterRatingsLayout,
+      backdropRatingsLayout,
+      posterRatingStyle,
+      backdropRatingStyle,
+      logoRatingStyle,
+      posterRatingsMaxPerSide,
+      proxyManifestUrl,
+      proxyEnabledTypes,
+    ]
+  );
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
     try {
-      const raw = window.localStorage.getItem(API_KEY_CONFIG_STORAGE_KEY);
-      const settingsRaw = window.localStorage.getItem(API_KEY_CONFIG_SETTINGS_STORAGE_KEY);
+      const settingsRaw =
+        window.localStorage.getItem(UI_CONFIG_SETTINGS_STORAGE_KEY) ||
+        window.localStorage.getItem(LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY);
       if (settingsRaw) {
         const settings = JSON.parse(settingsRaw) as { autoSave?: boolean };
-        setApiKeyConfigAutoSave(Boolean(settings.autoSave));
+        setConfigAutoSave(Boolean(settings.autoSave));
       }
-      if (!raw) {
+
+      const raw = window.localStorage.getItem(UI_CONFIG_STORAGE_KEY);
+      if (raw) {
+        const parsed = parseSavedUiConfig(raw);
+        if (!parsed) {
+          setSavedConfigStatus('error');
+          return;
+        }
+        applySavedUiConfig(parsed, 'loaded');
         return;
       }
-      const parsed = JSON.parse(raw) as Partial<ApiKeyConfigStorage>;
-      setTmdbKey(typeof parsed.tmdbKey === 'string' ? parsed.tmdbKey : '');
-      setMdblistKey(typeof parsed.mdblistKey === 'string' ? parsed.mdblistKey : '');
-      setProxyTmdbKey(typeof parsed.proxyTmdbKey === 'string' ? parsed.proxyTmdbKey : '');
-      setProxyMdblistKey(typeof parsed.proxyMdblistKey === 'string' ? parsed.proxyMdblistKey : '');
-      setProxyManifestUrl(typeof parsed.proxyManifestUrl === 'string' ? parsed.proxyManifestUrl : '');
-      setApiKeyConfigStatus('loaded');
-    } catch {
-      setApiKeyConfigStatus('error');
-    }
-  }, []);
 
-  const persistApiKeyConfig = useCallback((showSavedStatus = true) => {
+      const legacyRaw = window.localStorage.getItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
+      if (!legacyRaw) {
+        return;
+      }
+
+      const legacy = JSON.parse(legacyRaw) as LegacyApiKeyConfigStorage;
+      applySavedUiConfig(
+        normalizeSavedUiConfig({
+          version: 1,
+          settings: {
+            tmdbKey:
+              typeof legacy.tmdbKey === 'string' && legacy.tmdbKey.trim()
+                ? legacy.tmdbKey
+                : typeof legacy.proxyTmdbKey === 'string'
+                  ? legacy.proxyTmdbKey
+                  : '',
+            mdblistKey:
+              typeof legacy.mdblistKey === 'string' && legacy.mdblistKey.trim()
+                ? legacy.mdblistKey
+                : typeof legacy.proxyMdblistKey === 'string'
+                  ? legacy.proxyMdblistKey
+                  : '',
+          },
+          proxy: {
+            manifestUrl:
+              typeof legacy.proxyManifestUrl === 'string' ? legacy.proxyManifestUrl : '',
+          },
+        }),
+        'loaded'
+      );
+    } catch {
+      setSavedConfigStatus('error');
+    }
+  }, [applySavedUiConfig]);
+
+  const persistUiConfig = useCallback((showSavedStatus = true) => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    const payload: ApiKeyConfigStorage = {
-      tmdbKey: tmdbKey.trim(),
-      mdblistKey: mdblistKey.trim(),
-      proxyTmdbKey: proxyTmdbKey.trim(),
-      proxyMdblistKey: proxyMdblistKey.trim(),
-      proxyManifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
-    };
-
     try {
-      window.localStorage.setItem(API_KEY_CONFIG_STORAGE_KEY, JSON.stringify(payload));
+      window.localStorage.setItem(UI_CONFIG_STORAGE_KEY, serializeSavedUiConfig(buildCurrentUiConfig()));
       if (showSavedStatus) {
-        setApiKeyConfigStatus('saved');
+        setSavedConfigStatus('saved');
       }
     } catch {
-      setApiKeyConfigStatus('error');
+      setSavedConfigStatus('error');
     }
-  }, [tmdbKey, mdblistKey, proxyTmdbKey, proxyMdblistKey, proxyManifestUrl]);
+  }, [buildCurrentUiConfig]);
 
   useEffect(() => {
-    if (!apiKeyConfigAutoSave) {
+    if (!configAutoSave) {
       return;
     }
-    persistApiKeyConfig(false);
-  }, [
-    apiKeyConfigAutoSave,
-    tmdbKey,
-    mdblistKey,
-    proxyTmdbKey,
-    proxyMdblistKey,
-    proxyManifestUrl,
-    persistApiKeyConfig,
-  ]);
+    persistUiConfig(false);
+  }, [configAutoSave, buildCurrentUiConfig, persistUiConfig]);
 
   const handleCopyPrompt = useCallback(() => {
     const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
@@ -806,200 +894,23 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     setPreviewErrorDetails('');
   }, [previewUrl]);
 
-  const configString = useMemo(() => {
-    const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
-    const tmdb = tmdbKey.trim();
-    const mdb = mdblistKey.trim();
-    if (!origin || !tmdb || !mdb) {
-      return '';
-    }
+  const currentUiConfig = useMemo(() => buildCurrentUiConfig(), [buildCurrentUiConfig]);
 
-    const config: Record<string, string | number> = {
-      baseUrl: origin,
-      tmdbKey: tmdb,
-      mdblistKey: mdb,
-    };
+  const configString = useMemo(
+    () => buildConfigString(baseUrl, currentUiConfig.settings),
+    [baseUrl, currentUiConfig]
+  );
 
-    const posterRatingsQuery = stringifyRatingPreferencesAllowEmpty(posterRatingPreferences);
-    const backdropRatingsQuery = stringifyRatingPreferencesAllowEmpty(backdropRatingPreferences);
-    const logoRatingsQuery = stringifyRatingPreferencesAllowEmpty(logoRatingPreferences);
-    const ratingsMatch =
-      posterRatingsQuery === backdropRatingsQuery && posterRatingsQuery === logoRatingsQuery;
-    if (ratingsMatch) {
-      config.ratings = posterRatingsQuery;
-    } else {
-      config.posterRatings = posterRatingsQuery;
-      config.backdropRatings = backdropRatingsQuery;
-      config.logoRatings = logoRatingsQuery;
-    }
-    if (lang) {
-      config.lang = lang;
-    }
-    if (posterStreamBadges !== 'auto') {
-      config.posterStreamBadges = posterStreamBadges;
-    }
-    if (backdropStreamBadges !== 'auto') {
-      config.backdropStreamBadges = backdropStreamBadges;
-    }
-    if (shouldShowPosterQualityBadgesSide && qualityBadgesSide !== 'left') {
-      config.qualityBadgesSide = qualityBadgesSide;
-    }
-    if (posterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
-      config.posterQualityBadgesStyle = posterQualityBadgesStyle;
-    }
-    if (backdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
-      config.backdropQualityBadgesStyle = backdropQualityBadgesStyle;
-    }
-    if (posterRatingStyle) {
-      config.posterRatingStyle = posterRatingStyle;
-    }
-    if (backdropRatingStyle) {
-      config.backdropRatingStyle = backdropRatingStyle;
-    }
-    if (logoRatingStyle) {
-      config.logoRatingStyle = logoRatingStyle;
-    }
-    if (posterImageText) {
-      config.posterImageText = posterImageText;
-    }
-    if (backdropImageText) {
-      config.backdropImageText = backdropImageText;
-    }
-    if (posterRatingsLayout) {
-      config.posterRatingsLayout = posterRatingsLayout;
-    }
-    if (isVerticalPosterRatingLayout(posterRatingsLayout) && posterRatingsMaxPerSide !== null) {
-      config.posterRatingsMaxPerSide = posterRatingsMaxPerSide;
-    }
-    if (backdropRatingsLayout) {
-      config.backdropRatingsLayout = backdropRatingsLayout;
-    }
-
-    return encodeBase64Url(JSON.stringify(config));
-  }, [
-    baseUrl,
-    tmdbKey,
-    mdblistKey,
-    posterRatingPreferences,
-    backdropRatingPreferences,
-    logoRatingPreferences,
-    posterStreamBadges,
-    backdropStreamBadges,
-    qualityBadgesSide,
-    posterQualityBadgesStyle,
-    backdropQualityBadgesStyle,
-    lang,
-    posterRatingStyle,
-    backdropRatingStyle,
-    logoRatingStyle,
-    posterImageText,
-    backdropImageText,
-    posterRatingsLayout,
-    posterRatingsMaxPerSide,
-    backdropRatingsLayout,
-    shouldShowPosterQualityBadgesSide,
-  ]);
-
-  const proxyUrl = useMemo(() => {
-    const origin = normalizeBaseUrl(baseUrl || (typeof window !== 'undefined' ? window.location.origin : ''));
-    if (!origin) {
-      return '';
-    }
-
-    const manifestUrl = normalizeManifestUrl(proxyManifestUrl);
-    const tmdb = effectiveProxyTmdbKey;
-    const mdb = effectiveProxyMdblistKey;
-    if (!manifestUrl || isBareHttpUrl(manifestUrl) || !tmdb || !mdb) {
-      return '';
-    }
-
-    const config: Record<string, string | boolean> = {
-      url: manifestUrl,
-      tmdbKey: tmdb,
-      mdblistKey: mdb,
-    };
-
-    const proxyPosterRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyPosterRatingPreferences);
-    const proxyBackdropRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyBackdropRatingPreferences);
-    const proxyLogoRatingsQuery = stringifyRatingPreferencesAllowEmpty(proxyLogoRatingPreferences);
-    const proxyRatingsMatch =
-      proxyPosterRatingsQuery === proxyBackdropRatingsQuery && proxyPosterRatingsQuery === proxyLogoRatingsQuery;
-    if (proxyRatingsMatch) {
-      config.ratings = proxyPosterRatingsQuery;
-    } else {
-      config.posterRatings = proxyPosterRatingsQuery;
-      config.backdropRatings = proxyBackdropRatingsQuery;
-      config.logoRatings = proxyLogoRatingsQuery;
-    }
-    if (proxyLang) {
-      config.lang = proxyLang;
-    }
-    if (proxyPosterStreamBadges !== 'auto') {
-      config.posterStreamBadges = proxyPosterStreamBadges;
-    }
-    if (proxyBackdropStreamBadges !== 'auto') {
-      config.backdropStreamBadges = proxyBackdropStreamBadges;
-    }
-    if (shouldShowProxyPosterQualityBadgesSide && proxyQualityBadgesSide !== 'left') {
-      config.qualityBadgesSide = proxyQualityBadgesSide;
-    }
-    if (proxyPosterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
-      config.posterQualityBadgesStyle = proxyPosterQualityBadgesStyle;
-    }
-    if (proxyBackdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
-      config.backdropQualityBadgesStyle = proxyBackdropQualityBadgesStyle;
-    }
-
-    config.posterRatingStyle = proxyPosterRatingStyle;
-    config.backdropRatingStyle = proxyBackdropRatingStyle;
-    config.logoRatingStyle = proxyLogoRatingStyle;
-    config.posterImageText = proxyPosterImageText;
-    config.backdropImageText = proxyBackdropImageText;
-    config.posterEnabled = proxyEnabledTypes.poster;
-    config.backdropEnabled = proxyEnabledTypes.backdrop;
-    config.logoEnabled = proxyEnabledTypes.logo;
-
-    if (proxyPosterRatingsLayout) {
-      config.posterRatingsLayout = proxyPosterRatingsLayout;
-    }
-    if (isVerticalPosterRatingLayout(proxyPosterRatingsLayout) && proxyPosterRatingsMaxPerSide !== null) {
-      config.posterRatingsMaxPerSide = String(proxyPosterRatingsMaxPerSide);
-    }
-    if (proxyBackdropRatingsLayout) {
-      config.backdropRatingsLayout = proxyBackdropRatingsLayout;
-    }
-
-    if (origin) {
-      config.erdbBase = origin;
-    }
-
-    const encoded = encodeBase64Url(JSON.stringify(config));
-    return `${origin}/proxy/${encoded}/manifest.json`;
-  }, [
-    proxyManifestUrl,
-    effectiveProxyTmdbKey,
-    effectiveProxyMdblistKey,
-    proxyPosterRatingPreferences,
-    proxyBackdropRatingPreferences,
-    proxyLogoRatingPreferences,
-    proxyLang,
-    proxyPosterStreamBadges,
-    proxyBackdropStreamBadges,
-    proxyQualityBadgesSide,
-    proxyPosterQualityBadgesStyle,
-    proxyBackdropQualityBadgesStyle,
-    proxyPosterRatingStyle,
-    proxyBackdropRatingStyle,
-    proxyLogoRatingStyle,
-    proxyPosterImageText,
-    proxyBackdropImageText,
-    proxyPosterRatingsLayout,
-    proxyPosterRatingsMaxPerSide,
-    proxyBackdropRatingsLayout,
-    proxyEnabledTypes,
-    baseUrl,
-    shouldShowProxyPosterQualityBadgesSide,
-  ]);
+  const proxyUrl = useMemo(
+    () =>
+      buildProxyUrl(
+        baseUrl,
+        currentUiConfig.proxy.manifestUrl,
+        currentUiConfig.settings,
+        currentUiConfig.proxy.enabledTypes,
+      ),
+    [baseUrl, currentUiConfig]
+  );
 
   const updateRatingPreferencesForType = (
     type: 'poster' | 'backdrop' | 'logo',
@@ -1028,15 +939,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     type: ProxyType,
     updater: (current: RatingPreference[]) => RatingPreference[]
   ) => {
-    if (type === 'poster') {
-      setProxyPosterRatingPreferences(updater);
-      return;
-    }
-    if (type === 'backdrop') {
-      setProxyBackdropRatingPreferences(updater);
-      return;
-    }
-    setProxyLogoRatingPreferences(updater);
+    updateRatingPreferencesForType(type, updater);
   };
 
   const toggleProxyRatingPreference = (rating: RatingPreference) => {
@@ -1068,52 +971,88 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     setTimeout(() => setProxyCopied(false), 2000);
   }, [proxyUrl]);
 
-  const handleSaveApiKeyConfig = useCallback(() => {
-    persistApiKeyConfig(true);
-  }, [persistApiKeyConfig]);
+  const handleSaveWorkspaceConfig = useCallback(() => {
+    persistUiConfig(true);
+  }, [persistUiConfig]);
 
-  const handleClearApiKeyConfig = useCallback(() => {
+  const handleClearSavedWorkspace = useCallback(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
     try {
-      window.localStorage.removeItem(API_KEY_CONFIG_STORAGE_KEY);
-      setApiKeyConfigStatus('cleared');
+      window.localStorage.removeItem(UI_CONFIG_STORAGE_KEY);
+      window.localStorage.removeItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
+      setSavedConfigStatus('cleared');
     } catch {
-      setApiKeyConfigStatus('error');
+      setSavedConfigStatus('error');
     }
   }, []);
 
-  const handleToggleApiKeyConfigAutoSave = useCallback(() => {
+  const handleToggleConfigAutoSave = useCallback(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    const next = !apiKeyConfigAutoSave;
-    setApiKeyConfigAutoSave(next);
+    const next = !configAutoSave;
+    setConfigAutoSave(next);
 
     try {
       window.localStorage.setItem(
-        API_KEY_CONFIG_SETTINGS_STORAGE_KEY,
+        UI_CONFIG_SETTINGS_STORAGE_KEY,
         JSON.stringify({ autoSave: next })
       );
       if (next) {
-        persistApiKeyConfig(false);
+        persistUiConfig(false);
       }
     } catch {
-      setApiKeyConfigStatus('error');
+      setSavedConfigStatus('error');
     }
-  }, [apiKeyConfigAutoSave, persistApiKeyConfig]);
+  }, [configAutoSave, persistUiConfig]);
+
+  const handleDownloadWorkspace = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const payload = serializeSavedUiConfig(currentUiConfig);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `erdb-workspace-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    window.URL.revokeObjectURL(downloadUrl);
+  }, [currentUiConfig]);
+
+  const handlePromptWorkspaceImport = useCallback(() => {
+    workspaceImportInputRef.current?.click();
+  }, []);
+
+  const handleImportWorkspace = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) {
+        return;
+      }
+
+      try {
+        const parsed = parseSavedUiConfig(await file.text());
+        if (!parsed) {
+          setSavedConfigStatus('invalid');
+          return;
+        }
+        applySavedUiConfig(parsed, 'imported');
+      } catch {
+        setSavedConfigStatus('invalid');
+      }
+    },
+    [applySavedUiConfig]
+  );
 
   const canGenerateConfig = Boolean(configString);
-  const normalizedProxyManifestUrl = normalizeManifestUrl(proxyManifestUrl);
-  const canGenerateProxy = Boolean(
-    normalizedProxyManifestUrl &&
-    !isBareHttpUrl(normalizedProxyManifestUrl) &&
-    proxyTmdbKey.trim() &&
-    proxyMdblistKey.trim()
-  );
+  const canGenerateProxy = Boolean(proxyUrl);
   const activeRatingStyle =
     previewType === 'poster'
       ? posterRatingStyle
@@ -1281,7 +1220,74 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Inputs</p>
                     <h3 className="erdb-panel-title text-white">Configurator</h3>
-                    <p className="erdb-panel-copy text-zinc-400">Adjust parameters to generate the config string and update the live preview.</p>
+                    <p className="erdb-panel-copy text-zinc-400">Adjust parameters once. The config string, live preview, and addon proxy export all reuse this same ERDB setup.</p>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-semibold text-zinc-400 mb-2">Workspace</div>
+                  <p className="mb-2 text-[11px] text-zinc-500">
+                    Save the shared ERDB settings plus proxy manifest setup to this browser, or export them as a JSON file.
+                  </p>
+                  <input
+                    ref={workspaceImportInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    className="hidden"
+                    onChange={handleImportWorkspace}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveWorkspaceConfig}
+                      className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
+                    >
+                      Save workspace
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadWorkspace}
+                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+                    >
+                      Download JSON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePromptWorkspaceImport}
+                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+                    >
+                      Import JSON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearSavedWorkspace}
+                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300"
+                    >
+                      Clear saved
+                    </button>
+                    <label className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={configAutoSave}
+                        onChange={handleToggleConfigAutoSave}
+                        className="h-3 w-3 accent-violet-500"
+                      />
+                      <span>Auto save</span>
+                    </label>
+                    {savedConfigStatus ? (
+                      <span className={`text-[10px] ${savedConfigStatus === 'error' || savedConfigStatus === 'invalid' ? 'text-rose-400' : 'text-zinc-500'}`}>
+                        {savedConfigStatus === 'loaded'
+                          ? 'Saved workspace loaded.'
+                          : savedConfigStatus === 'saved'
+                            ? 'Workspace saved.'
+                            : savedConfigStatus === 'cleared'
+                              ? 'Saved workspace cleared.'
+                              : savedConfigStatus === 'imported'
+                                ? 'Workspace imported.'
+                                : savedConfigStatus === 'invalid'
+                                  ? 'Invalid workspace file.'
+                                  : 'Unable to access local storage.'}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <div>
@@ -1295,42 +1301,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
                       <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleSaveApiKeyConfig}
-                      className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
-                    >
-                      Save API key config
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClearApiKeyConfig}
-                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300"
-                    >
-                      Clear saved
-                    </button>
-                    <label className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300">
-                      <input
-                        type="checkbox"
-                        checked={apiKeyConfigAutoSave}
-                        onChange={handleToggleApiKeyConfigAutoSave}
-                        className="h-3 w-3 accent-violet-500"
-                      />
-                      <span>Auto save</span>
-                    </label>
-                    {apiKeyConfigStatus ? (
-                      <span className={`text-[10px] ${apiKeyConfigStatus === 'error' ? 'text-rose-400' : 'text-zinc-500'}`}>
-                        {apiKeyConfigStatus === 'loaded'
-                          ? 'Saved API config loaded.'
-                          : apiKeyConfigStatus === 'saved'
-                            ? 'API config saved.'
-                            : apiKeyConfigStatus === 'cleared'
-                              ? 'Saved API config cleared.'
-                              : 'Unable to access local storage.'}
-                      </span>
-                    ) : null}
                   </div>
                 </div>
 
@@ -1580,7 +1550,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
           <SectionHeader
             eyebrow="Proxy"
             title="Rewrite an addon manifest with the same visual system"
-            description="The proxy flow now mirrors the configurator structure: setup on the left, generated output and operational notes on the right."
+            description="This proxy builder now runs on the exact same ERDB settings as the configurator, so you only add the source manifest and choose which artwork types to rewrite."
           />
           <div className="erdb-surface-grid grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
             <div className="space-y-4">
@@ -1589,10 +1559,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Inputs</p>
                     <h3 className="erdb-panel-title text-white">Addon Proxy</h3>
-                    <p className="erdb-panel-copy text-zinc-400">Paste a Stremio addon manifest to generate a new manifest and choose which image types to replace.</p>
+                    <p className="erdb-panel-copy text-zinc-400">These controls stay linked to the configurator above. Change shared ERDB options in either place and both exports stay in sync.</p>
                   </div>
                 </div>
-                <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
+                <div className="text-[11px] font-semibold text-zinc-400">Proxy source</div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
                   <input
@@ -2337,18 +2307,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -13,7 +13,7 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "node .next/standalone/server.js",
-    "test": "node --test tests/**/*.test.mjs",
+    "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
     "lint": "eslint .",
     "clean": "next clean",
     "imdb:import": "node scripts/imdb-import.js",
