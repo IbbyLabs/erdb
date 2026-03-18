@@ -1,0 +1,11 @@
+chore(audit): repo-wide performance and security fixes
+
+- fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate-limit bans
+- feat(cache): implement TTL-based map for TMDB fetch caching to prevent permanent memory leaks
+- fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources
+- feat(cache): integrate disk-level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks
+- feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows
+- security(cors): correct proxy manifest and proxy endpoints to default to Access-Control-Allow-Origin: * rather than aggressively reflecting arbitrary origin headers
+- fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage
+- ci(tests): add test suite execution explicitly to GitHub Actions pipeline
+- docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm
