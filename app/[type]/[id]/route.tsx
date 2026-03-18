@@ -143,8 +143,8 @@ const TORRENTIO_CACHE_TTL_MS = parseCacheTtlMs(
   10 * 60 * 1000,
   7 * 24 * 60 * 60 * 1000
 );
-const TORRENTIO_BASE_URL = 'https://torrentio.strem.fun';
-const TORRENTIO_LANGUAGE = 'italian';
+const TORRENTIO_BASE_URL = process.env.ERDB_TORRENTIO_BASE_URL || 'https://torrentio.strem.fun';
+const TORRENTIO_LANGUAGE = 'english';
 const PROVIDER_ICON_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_PROVIDER_ICON_CACHE_TTL_MS,
   7 * 24 * 60 * 60 * 1000,
