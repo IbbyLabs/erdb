@@ -18,15 +18,15 @@ const buildCorsHeaders = (request: NextRequest) => {
   const requestOrigin = request.headers.get('origin');
   const allowedOrigins = getAllowedCorsOrigins();
 
-  let allowOrigin = request.nextUrl.origin;
-  if (allowedOrigins.length === 0) {
-    allowOrigin = requestOrigin || request.nextUrl.origin;
-  } else if (allowedOrigins.includes('*')) {
-    allowOrigin = '*';
-  } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-    allowOrigin = requestOrigin;
-  } else {
-    allowOrigin = allowedOrigins[0]!;
+  let allowOrigin = '*';
+  if (allowedOrigins.length > 0) {
+    if (allowedOrigins.includes('*')) {
+      allowOrigin = '*';
+    } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+      allowOrigin = requestOrigin;
+    } else {
+      allowOrigin = allowedOrigins[0]!;
+    }
   }
 
   return {

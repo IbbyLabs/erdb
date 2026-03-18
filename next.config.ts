@@ -9,6 +9,10 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()',
   },
+  {
+    key: 'Content-Security-Policy',
+    value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: ws: wss:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+  },
 ];
 
 const nextConfig: NextConfig = {

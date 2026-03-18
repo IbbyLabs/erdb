@@ -1434,21 +1434,23 @@ const configureSharp = (sharp: any) => {
   if (sharpConfigured || !sharp) return;
   sharpConfigured = true;
 
-  const concurrency = parseNonNegativeInt(process.env.ERDB_SHARP_CONCURRENCY, 64);
-  if (concurrency && concurrency > 0) {
+  const concurrency = parseNonNegativeInt(process.env.ERDB_SHARP_CONCURRENCY);
+  if (concurrency !== null && concurrency > 0) {
     sharp.concurrency(concurrency);
+  } else {
+    // If not configured, we cap the default libvips concurrency to prevent large RAM usage on multi-core VMs.
+    sharp.concurrency(2);
   }
 
   const cacheOptions: { memory?: number; files?: number; items?: number } = {};
-  const memory = parseNonNegativeInt(process.env.ERDB_SHARP_CACHE_MEMORY_MB, 8192);
-  const files = parseNonNegativeInt(process.env.ERDB_SHARP_CACHE_FILES, 20000);
-  const items = parseNonNegativeInt(process.env.ERDB_SHARP_CACHE_ITEMS, 2000);
-  if (memory !== null) cacheOptions.memory = memory;
-  if (files !== null) cacheOptions.files = files;
-  if (items !== null) cacheOptions.items = items;
-  if (Object.keys(cacheOptions).length > 0) {
-    sharp.cache(cacheOptions);
-  }
+  const memory = parseNonNegativeInt(process.env.ERDB_SHARP_CACHE_MEMORY_MB);
+  const files = parseNonNegativeInt(process.env.ERDB_SHARP_CACHE_FILES);
+  const items = parseNonNegativeInt(process.env.ERDB_SHARP_CACHE_ITEMS);
+  cacheOptions.memory = memory !== null ? memory : 128;
+  cacheOptions.files = files !== null ? files : 200;
+  cacheOptions.items = items !== null ? items : 100;
+
+  sharp.cache(cacheOptions);
 };
 const getSharpFactory = async () => {
   if (!sharpFactoryPromise) {
@@ -1868,9 +1870,9 @@ const getBadgeTextRightInset = (
   const trailingPercentInset =
     normalized.endsWith('%')
       ? Math.max(
-          compactText ? 6 : 5,
-          Math.round(fontSize * (compactText ? 0.18 : 0.14))
-        )
+        compactText ? 6 : 5,
+        Math.round(fontSize * (compactText ? 0.18 : 0.14))
+      )
       : 0;
   return baseInset + trailingPercentInset;
 };
@@ -2697,16 +2699,16 @@ const renderWithSharp = async (
       if (input.imageType !== 'poster') return;
       const overlay = posterLogoSpec
         ? {
-            buffer: posterLogoSpec.buffer,
-            width: posterLogoSpec.width,
-            height: posterLogoSpec.height,
-          }
+          buffer: posterLogoSpec.buffer,
+          width: posterLogoSpec.width,
+          height: posterLogoSpec.height,
+        }
         : posterTitleSpec
           ? {
-              buffer: Buffer.from(posterTitleSpec.svg),
-              width: posterTitleSpec.width,
-              height: posterTitleSpec.height,
-            }
+            buffer: Buffer.from(posterTitleSpec.svg),
+            width: posterTitleSpec.width,
+            height: posterTitleSpec.height,
+          }
           : null;
       if (!overlay) return;
       const overlayGap = Math.max(8, Math.round(input.badgeGap * 0.9));
@@ -3196,18 +3198,18 @@ export async function GET(
         : globalStreamBadgesSetting;
   const qualityBadgesSide = normalizeQualityBadgesSide(
     request.nextUrl.searchParams.get('qualityBadgesSide') ||
-      request.nextUrl.searchParams.get('qualityBadgesPosition')
+    request.nextUrl.searchParams.get('qualityBadgesPosition')
   );
   const globalQualityBadgesStyle = normalizeQualityBadgesStyle(
     request.nextUrl.searchParams.get('qualityBadgesStyle')
   );
   const posterQualityBadgesStyle = normalizeQualityBadgesStyle(
     request.nextUrl.searchParams.get('posterQualityBadgesStyle') ||
-      request.nextUrl.searchParams.get('qualityBadgesStyle')
+    request.nextUrl.searchParams.get('qualityBadgesStyle')
   );
   const backdropQualityBadgesStyle = normalizeQualityBadgesStyle(
     request.nextUrl.searchParams.get('backdropQualityBadgesStyle') ||
-      request.nextUrl.searchParams.get('qualityBadgesStyle')
+    request.nextUrl.searchParams.get('qualityBadgesStyle')
   );
   const qualityBadgesStyle =
     imageType === 'poster'
@@ -3970,8 +3972,8 @@ export async function GET(
               }
             }
 
-              return combinedRatings;
-            })()
+            return combinedRatings;
+          })()
           : null;
       const streamBadgesPromise =
         shouldRenderStreamBadges && !useRawKitsuFallback && (mediaType === 'movie' || mediaType === 'tv')

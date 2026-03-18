@@ -27,15 +27,15 @@ const buildCorsHeaders = (request: NextRequest) => {
   const requestOrigin = request.headers.get('origin');
   const allowedOrigins = getAllowedCorsOrigins();
 
-  let allowOrigin = request.nextUrl.origin;
-  if (allowedOrigins.length === 0) {
-    allowOrigin = requestOrigin || request.nextUrl.origin;
-  } else if (allowedOrigins.includes('*')) {
-    allowOrigin = '*';
-  } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-    allowOrigin = requestOrigin;
-  } else {
-    allowOrigin = allowedOrigins[0]!;
+  let allowOrigin = '*';
+  if (allowedOrigins.length > 0) {
+    if (allowedOrigins.includes('*')) {
+      allowOrigin = '*';
+    } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+      allowOrigin = requestOrigin;
+    } else {
+      allowOrigin = allowedOrigins[0]!;
+    }
   }
 
   return {
@@ -64,22 +64,47 @@ const parseForwardedHost = (value: string | null) => {
 };
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const tmdbFetchCache = new Map<string, Promise<any>>();
+type CacheEntry<T> = { value: T; expiresAt: number };
+const tmdbFetchCache = new Map<string, CacheEntry<Promise<any>>>();
+const TMDB_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const TMDB_FAILED_TTL_MS = 2 * 60 * 1000;
+
+const pruneTmdbCache = () => {
+  const now = Date.now();
+  for (const [key, entry] of tmdbFetchCache.entries()) {
+    if (entry.expiresAt <= now) tmdbFetchCache.delete(key);
+  }
+};
 
 const fetchTmdbJson = async (url: string) => {
+  const now = Date.now();
   const cached = tmdbFetchCache.get(url);
-  if (cached) return cached;
-  const promise = fetch(url, { cache: 'no-store' })
-    .then(async (response) => {
-      if (!response.ok) return null;
-      try {
-        return await response.json();
-      } catch {
-        return null;
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+
+  if (tmdbFetchCache.size > 2000) pruneTmdbCache();
+
+  const entry: CacheEntry<Promise<any>> = { value: Promise.resolve(null), expiresAt: now + TMDB_CACHE_TTL_MS };
+  tmdbFetchCache.set(url, entry);
+
+  const promise = (async () => {
+    let result = null;
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        result = await response.json();
       }
-    })
-    .catch(() => null);
-  tmdbFetchCache.set(url, promise);
+    } catch {
+      // fallback
+    }
+
+    const ttl = result ? TMDB_CACHE_TTL_MS : TMDB_FAILED_TTL_MS;
+    entry.expiresAt = Date.now() + ttl;
+    return result;
+  })();
+
+  entry.value = promise;
   return promise;
 };
 
@@ -246,22 +271,35 @@ const translateMetaPayload = async (
 
   if (tmdbRef.type === 'tv' && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
     const videos = nextMeta.videos as Array<Record<string, unknown>>;
-    const translatedVideos = await mapWithConcurrency(videos, 6, async (video) => {
+    const seasonValues = new Set<number>();
+    for (const video of videos) {
+      const seasonValue = typeof video.season === 'number' ? video.season : parseInt(String(video.season || ''), 10);
+      if (Number.isFinite(seasonValue)) seasonValues.add(seasonValue);
+    }
+
+    const seasonDataMap = new Map<number, any>();
+    await mapWithConcurrency(Array.from(seasonValues), 6, async (seasonValue) => {
+      const seasonUrl = new URL(`${TMDB_BASE_URL}/tv/${tmdbRef.id}/season/${seasonValue}`);
+      seasonUrl.searchParams.set('api_key', config.tmdbKey);
+      seasonUrl.searchParams.set('language', lang);
+      const seasonData = await fetchTmdbJson(seasonUrl.toString());
+      if (seasonData && typeof seasonData === 'object') {
+        seasonDataMap.set(seasonValue, seasonData);
+      }
+    });
+
+    const translatedVideos = videos.map((video) => {
       const seasonValue = typeof video.season === 'number' ? video.season : parseInt(String(video.season || ''), 10);
       const episodeValue = typeof video.episode === 'number' ? video.episode : parseInt(String(video.episode || ''), 10);
       if (!Number.isFinite(seasonValue) || !Number.isFinite(episodeValue)) {
         return video;
       }
 
-      const episodeUrl = new URL(
-        `${TMDB_BASE_URL}/tv/${tmdbRef.id}/season/${seasonValue}/episode/${episodeValue}`,
-      );
-      episodeUrl.searchParams.set('api_key', config.tmdbKey);
-      episodeUrl.searchParams.set('language', lang);
-      const episodeData = await fetchTmdbJson(episodeUrl.toString());
-      if (!episodeData || typeof episodeData !== 'object') {
-        return video;
-      }
+      const seasonData = seasonDataMap.get(seasonValue);
+      const episodesArray = Array.isArray(seasonData?.episodes) ? seasonData.episodes : [];
+      const episodeData = episodesArray.find((ep: any) => Number(ep.episode_number) === episodeValue);
+
+      if (!episodeData) return video;
 
       const episodeTitle = typeof episodeData.name === 'string' ? episodeData.name : null;
       const episodeOverview = typeof episodeData.overview === 'string' ? episodeData.overview : null;

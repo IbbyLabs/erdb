@@ -16,6 +16,18 @@ cd erdb
 3. Start the app: `npm run start`
 4. App available at `http://localhost:3000`
 
+## Stateless Architecture & API Keys (BYOK)
+
+ERDB is designed with a **Bring Your Own Key (BYOK)** stateless architecture. 
+This means that the ERDB server itself does not permanently store or centrally manage your TMDB or MDBList API keys. Instead:
+
+1. Keys are saved locally in your browser's `localStorage` when using the configurator UI.
+2. Keys are embedded directly into your generated URLs (`tmdbKey=...&mdblistKey=...`) and Addon proxy Base64 configurations.
+3. The server solely reads these keys from incoming requests to fetch upstream metadata on-the-fly.
+
+This intentional design allows you to host public ERDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
+
+
 ## Scalability & Docker
 
 The compose file includes a reverse proxy (Caddy) to handle app scaling.

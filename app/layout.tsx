@@ -1,6 +1,5 @@
-import type {Metadata, Viewport} from 'next';
-import {connection} from 'next/server';
-import {Space_Grotesk, Unbounded} from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Space_Grotesk, Unbounded } from 'next/font/google';
 import './globals.css';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -19,13 +18,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      {url: '/favicon.svg', type: 'image/svg+xml'},
-      {url: '/favicon.ico'},
-      {url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png'},
-      {url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png'},
-      {url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png'},
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
     ],
-    apple: [{url: '/apple-touch-icon.png', sizes: '180x180'}],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
     shortcut: ['/favicon.ico'],
   },
   openGraph: {
@@ -58,9 +57,7 @@ const displayFont = Unbounded({
   display: 'swap',
 });
 
-export default async function RootLayout({children}: {children: React.ReactNode}) {
-  await connection();
-
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${bodyFont.variable} ${displayFont.variable} antialiased`} suppressHydrationWarning>

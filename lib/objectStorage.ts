@@ -67,4 +67,51 @@ export const putCachedImageToObjectStorage = async (
   } catch (error) {
     console.error(`Error writing cached image ${key}:`, error);
   }
+
+  if (Math.random() < 0.02) {
+    pruneOldestImageCache(5000);
+  }
+};
+
+let imagePruningInFlight = false;
+
+const pruneOldestImageCache = async (maxFiles: number) => {
+  if (imagePruningInFlight) return;
+  imagePruningInFlight = true;
+  try {
+    const { readdirSync, statSync, unlinkSync } = await import('node:fs');
+    if (!existsSync(CACHE_DIR)) return;
+
+    const entries = readdirSync(CACHE_DIR, { withFileTypes: true });
+    const files = entries
+      .filter((e) => e.isFile() && !e.name.endsWith('.json'))
+      .map((e) => {
+        const p = join(CACHE_DIR, e.name);
+        try {
+          return { name: e.name, path: p, mtimeMs: statSync(p).mtimeMs };
+        } catch {
+          return null;
+        }
+      })
+      .filter((f): f is { name: string; path: string; mtimeMs: number } => Boolean(f));
+
+    if (files.length <= maxFiles) return;
+
+    files.sort((a, b) => a.mtimeMs - b.mtimeMs);
+    const toDelete = files.slice(0, files.length - maxFiles);
+
+    for (const f of toDelete) {
+      try {
+        unlinkSync(f.path);
+        const metaPath = `${f.path}.json`;
+        if (existsSync(metaPath)) unlinkSync(metaPath);
+      } catch {
+        // ignore deletion errors
+      }
+    }
+  } catch (error) {
+    console.error('Error during image cache pruning:', error);
+  } finally {
+    imagePruningInFlight = false;
+  }
 };
