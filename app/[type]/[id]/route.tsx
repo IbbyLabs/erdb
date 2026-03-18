@@ -46,6 +46,7 @@ type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
 type StreamBadgeKey = '4k' | 'hdr' | 'dolbyvision' | 'dolbyatmos' | 'remux';
 type BadgeKey = RatingPreference | StreamBadgeKey;
 type QualityBadgesSide = 'left' | 'right';
+type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 type StreamQualityFlags = {
   has4k: boolean;
   hasHdr: boolean;
@@ -427,6 +428,32 @@ const normalizeQualityBadgesSide = (value?: string | null): QualityBadgesSide =>
   const normalized = (value || '').trim().toLowerCase();
   if (['right', 'r', 'end'].includes(normalized)) return 'right';
   return 'left';
+};
+const normalizePosterQualityBadgesPosition = (value?: string | null): PosterQualityBadgesPosition => {
+  const normalized = (value || '').trim().toLowerCase();
+  if (!normalized || normalized === 'auto' || normalized === 'default') return 'auto';
+  if (['right', 'r', 'end'].includes(normalized)) return 'right';
+  if (['left', 'l', 'start'].includes(normalized)) return 'left';
+  return 'auto';
+};
+const resolvePosterQualityBadgePlacement = (
+  layout: PosterRatingLayout,
+  qualityBadgesSide: QualityBadgesSide,
+  posterQualityBadgesPosition: PosterQualityBadgesPosition
+): 'top' | 'bottom' | QualityBadgesSide => {
+  if (layout === 'left' || layout === 'right' || layout === 'left-right') {
+    return 'bottom';
+  }
+  if (layout === 'top-bottom') {
+    return qualityBadgesSide;
+  }
+  if (layout === 'top') {
+    return posterQualityBadgesPosition === 'auto' ? 'bottom' : posterQualityBadgesPosition;
+  }
+  if (layout === 'bottom') {
+    return posterQualityBadgesPosition === 'auto' ? 'top' : posterQualityBadgesPosition;
+  }
+  return qualityBadgesSide;
 };
 
 const normalizeQualityBadgesStyle = (value?: string | null): RatingStyle => {
@@ -1401,6 +1428,7 @@ type FastRenderInput = {
   badges: RatingBadge[];
   qualityBadges: RatingBadge[];
   qualityBadgesSide: QualityBadgesSide;
+  posterQualityBadgesPosition: PosterQualityBadgesPosition;
   qualityBadgesStyle: RatingStyle;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
@@ -2433,15 +2461,23 @@ const renderWithSharp = async (
       input.posterRatingsLayout !== 'left' &&
       input.posterRatingsLayout !== 'right' &&
       input.posterRatingsLayout !== 'left-right';
+    const posterQualityBadgePlacement =
+      input.imageType === 'poster'
+        ? resolvePosterQualityBadgePlacement(
+            input.posterRatingsLayout,
+            input.qualityBadgesSide,
+            input.posterQualityBadgesPosition
+          )
+        : null;
+    const posterQualityBadgeSidePlacement =
+      posterQualityBadgePlacement === 'left' || posterQualityBadgePlacement === 'right'
+        ? posterQualityBadgePlacement
+        : null;
     const posterRowRegionWidth = Math.max(0, input.outputWidth - input.posterRowHorizontalInset * 2);
     const alignPosterRowWithQuality =
-      input.imageType === 'poster' &&
-      input.qualityBadges.length > 0 &&
-      (input.posterRatingsLayout === 'top' ||
-        input.posterRatingsLayout === 'bottom' ||
-        input.posterRatingsLayout === 'top-bottom');
+      input.imageType === 'poster' && input.qualityBadges.length > 0 && posterQualityBadgeSidePlacement !== null;
     const posterRowAlign: 'left' | 'center' | 'right' = alignPosterRowWithQuality
-      ? input.qualityBadgesSide === 'right'
+      ? posterQualityBadgeSidePlacement === 'right'
         ? 'right'
         : 'left'
       : 'center';
@@ -3018,18 +3054,11 @@ const renderWithSharp = async (
     }
 
     if (input.imageType === 'poster' && input.qualityBadges.length > 0) {
-      const qualityPlacement =
-        input.posterRatingsLayout === 'left'
-          ? 'bottom'
-          : input.posterRatingsLayout === 'right'
-            ? 'bottom'
-            : input.posterRatingsLayout === 'left-right'
-              ? 'bottom'
-              : input.posterRatingsLayout === 'top'
-                ? 'bottom'
-                : input.posterRatingsLayout === 'bottom'
-                  ? 'top'
-                  : input.qualityBadgesSide;
+      const qualityPlacement = resolvePosterQualityBadgePlacement(
+        input.posterRatingsLayout,
+        input.qualityBadgesSide,
+        input.posterQualityBadgesPosition
+      );
       const metrics: BadgeLayoutMetrics = {
         iconSize: input.badgeIconSize,
         fontSize: input.badgeFontSize,
@@ -3264,6 +3293,9 @@ export async function GET(
     request.nextUrl.searchParams.get('qualityBadgesSide') ||
       request.nextUrl.searchParams.get('qualityBadgesPosition')
   );
+  const posterQualityBadgesPosition = normalizePosterQualityBadgesPosition(
+    request.nextUrl.searchParams.get('posterQualityBadgesPosition')
+  );
   const globalQualityBadgesStyle = normalizeQualityBadgesStyle(
     request.nextUrl.searchParams.get('qualityBadgesStyle')
   );
@@ -3386,6 +3418,9 @@ export async function GET(
     imageType === 'poster' ? posterRatingsLayout : '-',
     imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
     imageType === 'poster' ? qualityBadgesSide : '-',
+    imageType === 'poster' && (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom')
+      ? posterQualityBadgesPosition
+      : '-',
     imageType !== 'logo' ? qualityBadgesStyle : '-',
     imageType === 'backdrop' ? backdropRatingsLayout : '-',
     ratingStyle,
@@ -3685,6 +3720,9 @@ export async function GET(
         imageType === 'poster' ? posterRatingsLayout : '-',
         imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
         imageType === 'poster' ? qualityBadgesSide : '-',
+        imageType === 'poster' && (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom')
+          ? posterQualityBadgesPosition
+          : '-',
         imageType !== 'logo' ? qualityBadgesStyle : '-',
         imageType === 'backdrop' ? backdropRatingsLayout : '-',
         ratingStyle,
@@ -4651,6 +4689,7 @@ export async function GET(
           badges: badgesForIcons,
           qualityBadges,
           qualityBadgesSide,
+          posterQualityBadgesPosition,
           qualityBadgesStyle,
           posterRatingsLayout,
           posterRatingsMaxPerSide,

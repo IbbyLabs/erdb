@@ -106,7 +106,8 @@ Main endpoint:
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
 | `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
-| `qualityBadgesSide` | Quality badges side (poster only) | `left`, `right` | `left` |
+| `qualityBadgesSide` | Quality badges side (`top-bottom` poster layout) | `left`, `right` | `left` |
+| `posterQualityBadgesPosition` | Quality badges position (`top`/`bottom` poster layouts) | `auto`, `left`, `right` | `auto` |
 | `qualityBadgesStyle` | Quality badges style (global fallback) | `glass`, `square`, `plain` | `glass` |
 | `posterQualityBadgesStyle` | Poster quality badges style | `glass`, `square`, `plain` | `glass` |
 | `backdropQualityBadgesStyle` | Backdrop quality badges style | `glass`, `square`, `plain` | `glass` |
@@ -139,7 +140,7 @@ To integrate ERDB into your addon:
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call ERDB for that type).
 4. **Decode**: decode `erdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: `{baseUrl}/{type}/{id}.jpg?tmdbKey=...&mdblistKey=...&ratings=...&posterRatings=...&backdropRatings=...&logoRatings=...&lang=...&streamBadges=...&posterStreamBadges=...&backdropStreamBadges=...&qualityBadgesSide=...&qualityBadgesStyle=...&posterQualityBadgesStyle=...&backdropQualityBadgesStyle=...&ratingStyle=...&imageText=...` using the per-type config fields:
+5. **URL build**: `{baseUrl}/{type}/{id}.jpg?tmdbKey=...&mdblistKey=...&ratings=...&posterRatings=...&backdropRatings=...&logoRatings=...&lang=...&streamBadges=...&posterStreamBadges=...&backdropStreamBadges=...&qualityBadgesSide=...&posterQualityBadgesPosition=...&qualityBadgesStyle=...&posterQualityBadgesStyle=...&backdropQualityBadgesStyle=...&ratingStyle=...&imageText=...` using the per-type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
    - `logo`: `logoRatingStyle` (omit `imageText`)
@@ -180,7 +181,8 @@ lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, e
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster only)                                            | left
+qualityBadgesSide       | left, right (poster top-bottom only)                                 | left
+posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
@@ -209,7 +211,7 @@ Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}
+${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}
 
 Omit imageText when type=logo.
 
