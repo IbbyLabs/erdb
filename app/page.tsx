@@ -963,9 +963,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     tmdbKey.trim() &&
     mdblistKey.trim()
   );
+  const proxyDisplayValue = proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`;
   const displayedConfigString =
     canGenerateConfig && !showConfigString ? maskSensitiveText(configString) : configString;
-  const displayedProxyUrl = proxyUrl && !showProxyUrl ? maskSensitiveText(proxyUrl) : proxyUrl;
+  const displayedProxyUrl = showProxyUrl ? proxyDisplayValue : maskSensitiveText(proxyDisplayValue);
   const activeRatingStyle =
     previewType === 'poster'
       ? posterRatingStyle
@@ -1497,8 +1498,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     <button
                       type="button"
                       onClick={() => setShowProxyUrl((value) => !value)}
-                      disabled={!proxyUrl}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors ${proxyUrl ? 'border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]' : 'border border-white/5 bg-[#080b10] text-slate-600 cursor-not-allowed'}`}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]"
                     >
                       {showProxyUrl ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       <span>{showProxyUrl ? 'HIDE' : 'SHOW'}</span>
@@ -1508,8 +1508,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     Use this URL in Stremio. It ends with manifest.json and has no query params.
                   </p>
                   <div className="mt-3 rounded-2xl border border-white/10 bg-[#080b10]/90 p-4">
-                    <div className={`font-mono text-xs text-slate-300 break-all ${proxyUrl && !showProxyUrl ? 'select-none' : ''}`}>
-                      {displayedProxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
+                    <div className={`font-mono text-xs text-slate-300 break-all ${!showProxyUrl ? 'select-none' : ''}`}>
+                      {displayedProxyUrl}
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
