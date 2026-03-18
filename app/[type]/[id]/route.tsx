@@ -144,7 +144,6 @@ const TORRENTIO_CACHE_TTL_MS = parseCacheTtlMs(
   7 * 24 * 60 * 60 * 1000
 );
 const TORRENTIO_BASE_URL = process.env.ERDB_TORRENTIO_BASE_URL || 'https://torrentio.strem.fun';
-const TORRENTIO_LANGUAGE = 'english';
 const PROVIDER_ICON_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_PROVIDER_ICON_CACHE_TTL_MS,
   7 * 24 * 60 * 60 * 1000,
@@ -542,7 +541,7 @@ const buildStreamBadgesFromFlags = (flags: StreamQualityFlags): RatingBadge[] =>
 };
 
 const buildTorrentioUrl = (type: 'movie' | 'series', id: string) =>
-  `${TORRENTIO_BASE_URL}/language=${TORRENTIO_LANGUAGE}/stream/${type}/${encodeURIComponent(id)}.json`;
+  `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(id)}.json`;
 
 const fetchTorrentioBadges = async (input: {
   type: 'movie' | 'series';
@@ -554,7 +553,7 @@ const fetchTorrentioBadges = async (input: {
   if (!trimmedId) {
     return { badges: [], cacheTtlMs: TORRENTIO_CACHE_TTL_MS };
   }
-  const cacheKey = `torrentio:${input.type}:${trimmedId}:lang:${TORRENTIO_LANGUAGE}`;
+  const cacheKey = `torrentio:${input.type}:${trimmedId}`;
   const ttlMs =
     typeof input.cacheTtlMs === 'number' && Number.isFinite(input.cacheTtlMs) && input.cacheTtlMs > 0
       ? input.cacheTtlMs
