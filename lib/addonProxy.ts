@@ -5,6 +5,7 @@ const ERDB_OPTIONAL_PARAMS = [
   'lang',
   'streamBadges',
   'qualityBadgesSide',
+  'posterQualityBadgesPosition',
   'qualityBadgesStyle',
   'posterRatingsLayout',
   'posterRatingsMaxPerSide',
@@ -70,6 +71,7 @@ export type ProxyConfig = {
   posterStreamBadges?: string;
   backdropStreamBadges?: string;
   qualityBadgesSide?: string;
+  posterQualityBadgesPosition?: string;
   qualityBadgesStyle?: string;
   posterQualityBadgesStyle?: string;
   backdropQualityBadgesStyle?: string;
@@ -99,6 +101,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'posterStreamBadges',
   'backdropStreamBadges',
   'qualityBadgesSide',
+  'posterQualityBadgesPosition',
   'qualityBadgesStyle',
   'posterQualityBadgesStyle',
   'backdropQualityBadgesStyle',
