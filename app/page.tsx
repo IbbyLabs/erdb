@@ -1114,14 +1114,32 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         </section>
 
         <section id="preview" className="erdb-section scroll-mt-24">
-          <SectionHeader
-            eyebrow="Configure"
-            title="Build the exact output you want"
-            description="The configurator is the primary workflow surface. Inputs, generated config, and live artwork preview are grouped more tightly so the path from choice to result reads faster."
-          />
-          <div className="erdb-surface-grid grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
-            <div className="space-y-3">
-              <div className="erdb-panel erdb-panel-form space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+          <div className="rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.08),_transparent_34%),linear-gradient(180deg,rgba(24,24,27,0.94),rgba(9,9,11,0.98))] p-5 md:p-6 xl:p-8">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              <SectionHeader
+                eyebrow="Workspace"
+                title="Configurator & Proxy"
+                description="Tune layout, ratings, badges, and language once, then export a shareable config string or generate a proxy manifest from the same state."
+              />
+              <div className="flex flex-wrap gap-2 xl:max-w-md xl:justify-end">
+                {[
+                  'Shared workspace',
+                  'Live preview',
+                  'Config string export',
+                  'Proxy manifest export',
+                ].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-white/10 bg-zinc-950/80 px-3 py-1 text-[11px] font-medium text-zinc-300"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="mt-6 erdb-surface-grid grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)_minmax(0,0.84fr)] items-start">
+            <div className="space-y-5">
+              <div className="erdb-panel erdb-panel-form space-y-3 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Inputs</p>
@@ -1359,7 +1377,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
               </div>
 
-              <div className="erdb-panel erdb-panel-emphasis rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
+              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Export</p>
@@ -1414,8 +1432,21 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     </p>
                   </div>
                 </div>
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  {(['poster', 'backdrop', 'logo'] as const).map((type) => (
+                    <span
+                      key={`preview-pill-${type}`}
+                      className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
+                        previewType === type
+                          ? 'border-violet-500/60 bg-zinc-800 text-white'
+                          : 'border-white/10 bg-zinc-950 text-zinc-400'
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </span>
+                  ))}
+                </div>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[320px] flex items-center justify-center flex-col">
-
                   {previewUrl && !previewErrored ? (
                     <div className="z-10 w-full flex flex-col items-center gap-8">
                       <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
@@ -1449,117 +1480,99 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section id="proxy" className="erdb-section scroll-mt-24">
-          <SectionHeader
-            eyebrow="Proxy"
-            title="Rewrite an addon manifest with the same visual system"
-            description="Paste an upstream manifest URL here and the proxy uses the configurator values above as its only ERDB source of truth."
-          />
-          <div className="erdb-surface-grid grid xl:grid-cols-[1fr_1fr] gap-8 items-start">
-            <div className="space-y-4">
-              <div className="erdb-panel erdb-panel-form space-y-3 rounded-2xl border border-white/10 bg-zinc-900/50 p-4">
+            <div id="proxy" className="scroll-mt-24">
+              <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
                 <div className="erdb-panel-head">
                   <div>
-                    <p className="erdb-panel-eyebrow font-mono">Inputs</p>
+                    <p className="erdb-panel-eyebrow font-mono">Proxy</p>
                     <h3 className="erdb-panel-title text-white">Addon Proxy</h3>
                     <p className="erdb-panel-copy text-zinc-400">
-                      The proxy only needs the addon manifest URL. API keys, language, providers, layouts, badge rules, and poster/backdrop/logo styling all come from the configurator above.
+                      Paste a Stremio addon manifest here. The proxy uses the configurator values from this workspace as its only ERDB source of truth.
                     </p>
                   </div>
                 </div>
-                <div className="text-[11px] font-semibold text-zinc-400">Proxy source</div>
-                <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
-                  <input
-                    type="url"
-                    value={proxyManifestUrl}
-                    onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
-                    placeholder="https://addon.example.com/manifest.json"
-                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
-                  />
-                </div>
-                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                    Shared ERDB settings
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4 space-y-3">
+                  <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
+                  <p className="text-[11px] leading-5 text-zinc-500">
+                    Use the configurator for keys, language, ratings, layout, badges, and text.
                   </p>
-                  <p className="text-sm leading-6 text-zinc-300">
-                    This proxy link always inherits the configurator values above for API keys, language, providers, layouts, badges, and poster/backdrop/logo styling.
-                  </p>
-                  <p className="text-[11px] text-zinc-500">
-                    Update those values once in the configurator and both exports stay aligned automatically.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <div className="erdb-panel-head">
                   <div>
-                    <p className="erdb-panel-eyebrow font-mono">Export</p>
-                    <h3 className="text-xl font-semibold text-white">Generated Manifest</h3>
-                    <p className="mt-2 text-sm text-zinc-400">
-                      Use this URL in Stremio. It ends with manifest.json and has no query params.
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>
+                    <input
+                      type="url"
+                      value={proxyManifestUrl}
+                      onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
+                      placeholder="https://addon.example.com/manifest.json"
+                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                  <div className="erdb-panel-head">
+                    <div>
+                      <p className="erdb-panel-eyebrow font-mono">Export</p>
+                      <h3 className="text-xl font-semibold text-white">Generated Manifest</h3>
+                      <p className="mt-2 text-sm text-zinc-400">
+                        Use this URL in Stremio. It ends with manifest.json and has no query params.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/70 p-4">
+                    <div className="font-mono text-xs text-zinc-300 break-all">
+                      {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={handleCopyProxy}
+                      disabled={!canGenerateProxy}
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateProxy ? (proxyCopied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                    >
+                      {proxyCopied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>COPIED</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clipboard className="w-3.5 h-3.5" />
+                          <span>COPY LINK</span>
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={canGenerateProxy ? proxyUrl : undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 transition-colors ${canGenerateProxy ? 'border border-white/10 bg-zinc-900 text-zinc-200 hover:bg-zinc-800' : 'border border-white/5 bg-zinc-950 text-zinc-600 pointer-events-none'}`}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open
+                    </a>
+                  </div>
+                  {!canGenerateProxy && (
+                    <p className="mt-3 text-[11px] text-zinc-500">
+                      Add manifest URL, TMDB key and MDBList key to generate a valid link.
                     </p>
-                  </div>
+                  )}
                 </div>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4">
-                  <div className="font-mono text-xs text-zinc-300 break-all">
-                    {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={handleCopyProxy}
-                    disabled={!canGenerateProxy}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateProxy ? (proxyCopied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
-                  >
-                    {proxyCopied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>COPIED</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clipboard className="w-3.5 h-3.5" />
-                        <span>COPY LINK</span>
-                      </>
-                    )}
-                  </button>
-                  <a
-                    href={canGenerateProxy ? proxyUrl : undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 transition-colors ${canGenerateProxy ? 'border border-white/10 bg-zinc-900 text-zinc-200 hover:bg-zinc-800' : 'border border-white/5 bg-zinc-950 text-zinc-600 pointer-events-none'}`}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open
-                  </a>
-                </div>
-                {!canGenerateProxy && (
-                  <p className="mt-3 text-[11px] text-zinc-500">
-                    Add manifest URL, TMDB key and MDBList key to generate a valid link.
-                  </p>
-                )}
-              </div>
-
-              <div className="erdb-panel erdb-panel-note rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-zinc-500">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-violet-500/10">
-                    <Zap className="w-4 h-4 text-violet-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-zinc-200 font-semibold">Rewrite all addon artwork</div>
-                    <div>Proxy rewrites `meta.poster`, `meta.background`, and `meta.logo` for both `catalog` and `meta` responses using the configurator state above.</div>
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4 text-xs text-zinc-500">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-violet-500/10">
+                      <Zap className="w-4 h-4 text-violet-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-zinc-200 font-semibold">Rewrite all addon artwork</div>
+                      <div>Proxy rewrites `meta.poster`, `meta.background`, and `meta.logo` for both `catalog` and `meta` responses using the configurator state above.</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         <section id="docs" className="erdb-section scroll-mt-24 pb-20">
           <div className="max-w-5xl mx-auto space-y-8">
@@ -2021,11 +2034,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
-
-
-
-
 
 
 
