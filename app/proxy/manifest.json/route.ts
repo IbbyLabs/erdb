@@ -25,6 +25,8 @@ const buildCorsHeaders = (request: NextRequest) => {
     allowOrigin = '*';
   } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
     allowOrigin = requestOrigin;
+  } else {
+    allowOrigin = allowedOrigins[0]!;
   }
 
   return {
