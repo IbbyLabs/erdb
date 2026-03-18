@@ -284,6 +284,26 @@ const withDedupe = async <T,>(
   return promise;
 };
 
+const createConcurrencyLimit = (concurrency: number) => {
+  let active = 0;
+  const queue: Array<() => void> = [];
+  return async <T,>(fn: () => Promise<T>): Promise<T> => {
+    if (active >= concurrency) {
+      await new Promise<void>((resolve) => queue.push(resolve));
+    }
+    active++;
+    try {
+      return await fn();
+    } finally {
+      active--;
+      const next = queue.shift();
+      if (next) next();
+    }
+  };
+};
+
+const torrentioConcurrencyLimit = createConcurrencyLimit(3);
+
 const measurePhase = async <T,>(phases: PhaseDurations, phase: keyof PhaseDurations, fn: () => Promise<T>) => {
   const start = performance.now();
   try {
@@ -553,7 +573,18 @@ const fetchTorrentioBadges = async (input: {
     let response: Response | null = null;
     try {
       response = await measurePhase(input.phases, 'stream', () =>
-        fetch(buildTorrentioUrl(input.type, trimmedId), { cache: 'no-store' })
+        torrentioConcurrencyLimit(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          try {
+            return await fetch(buildTorrentioUrl(input.type, trimmedId), {
+              cache: 'no-store',
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        })
       );
     } catch {
       const failureTtl = Math.min(ttlMs, 2 * 60 * 1000);
@@ -3998,13 +4029,14 @@ export async function GET(
                 : isTmdb && mediaId
                   ? String(mediaId)
                   : null;
-            const torrentioId = imdbId || (tmdbId ? `tmdb:${tmdbId}` : null);
-            if (!torrentioId) {
+            const baseTorrentioId = imdbId || (tmdbId ? `tmdb:${tmdbId}` : null);
+            if (!baseTorrentioId) {
               return { badges: [], cacheTtlMs: TORRENTIO_CACHE_TTL_MS };
             }
             const torrentioType = mediaType === 'movie' ? 'movie' : 'series';
+            const torrentioId = torrentioType === 'series' ? `${baseTorrentioId}:1:1` : baseTorrentioId;
             const torrentioCacheTtlMs = getRatingCacheTtlMs({
-              id: torrentioId,
+              id: baseTorrentioId,
               mediaType: mediaType as 'movie' | 'tv',
               releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
               defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
