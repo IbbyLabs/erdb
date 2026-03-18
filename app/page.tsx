@@ -126,15 +126,15 @@ function SupportPill({ label = 'support me' }: { label?: string }) {
   );
 }
 
-function UptimePill({ label = 'Stremio Addons Status' }: { label?: string }) {
+function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: string }) {
   return (
     <a
       className="site-status-pill"
       href={BRAND_UPTIME_URL}
       target="_blank"
       rel="noreferrer"
-      aria-label="Open Stremio Addons Status page"
-      title="Open Stremio Addons Status page"
+      aria-label="Open IbbyLabs Uptime Tracker page"
+      title="Open IbbyLabs Uptime Tracker page"
     >
       <span className="site-status-text">{label}</span>
       <ExternalLink className="site-status-icon" aria-hidden="true" />
@@ -1998,13 +1998,13 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       <section className="max-w-7xl mx-auto px-6 pb-6 md:pb-10" aria-label="Status board information">
         <div className="rounded-2xl border border-white/10 bg-zinc-950/65 p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
-            <h3 className="text-sm md:text-base font-semibold text-white">What is Stremio Addons Status?</h3>
+            <h3 className="text-sm md:text-base font-semibold text-white">What is IbbyLabs Uptime Tracker?</h3>
             <p className="text-sm text-zinc-400">
               It is the IbbyLabs public status board for popular Stremio addons, including current health and incident updates.
             </p>
           </div>
           <div className="shrink-0">
-            <UptimePill label="View Status Board" />
+            <UptimePill label="View the tracker" />
           </div>
         </div>
       </section>
