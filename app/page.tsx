@@ -10,7 +10,7 @@ import {
   useSyncExternalStore,
   type ChangeEvent,
 } from 'react';
-import { Image as ImageIcon, Star, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
+import { Image as ImageIcon, Star, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
   parseRatingPreferencesAllowEmpty,
@@ -181,6 +181,8 @@ const downloadJsonFile = (payload: Record<string, unknown>, filename: string) =>
   URL.revokeObjectURL(url);
 };
 
+const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
+
 export default function Home() {
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
@@ -221,6 +223,8 @@ export default function Home() {
   const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
+  const [showConfigString, setShowConfigString] = useState(false);
+  const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [exportStatus, setExportStatus] = useState<'idle' | 'with' | 'without'>('idle');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [importMessage, setImportMessage] = useState('');
@@ -699,6 +703,18 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     baseUrl,
   ]);
 
+  useEffect(() => {
+    if (!configString) {
+      setShowConfigString(false);
+    }
+  }, [configString]);
+
+  useEffect(() => {
+    if (!proxyUrl) {
+      setShowProxyUrl(false);
+    }
+  }, [proxyUrl]);
+
   const updateRatingPreferencesForType = (
     type: 'poster' | 'backdrop' | 'logo',
     updater: (current: RatingPreference[]) => RatingPreference[]
@@ -947,6 +963,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     tmdbKey.trim() &&
     mdblistKey.trim()
   );
+  const displayedConfigString =
+    canGenerateConfig && !showConfigString ? maskSensitiveText(configString) : configString;
+  const displayedProxyUrl = proxyUrl && !showProxyUrl ? maskSensitiveText(proxyUrl) : proxyUrl;
   const activeRatingStyle =
     previewType === 'poster'
       ? posterRatingStyle
@@ -1378,15 +1397,26 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
               </div>
 
               <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl shadow-[0_25px_70px_-70px_rgba(0,0,0,0.8)]">
-                <h3 className="text-lg font-[var(--font-display)] text-white flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-orange-500" /> ERDB Config String
-                </h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-[var(--font-display)] text-white flex items-center gap-2">
+                    <Code2 className="w-5 h-5 text-orange-500" /> ERDB Config String
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfigString((value) => !value)}
+                    disabled={!canGenerateConfig}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors ${canGenerateConfig ? 'border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]' : 'border border-white/5 bg-[#080b10] text-slate-600 cursor-not-allowed'}`}
+                  >
+                    {showConfigString ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showConfigString ? 'HIDE' : 'SHOW'}</span>
+                  </button>
+                </div>
                 <p className="mt-2 text-sm text-slate-400">
                   Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
                 </p>
                 <div className="mt-3 rounded-2xl border border-white/10 bg-[#080b10]/90 p-3 max-h-28 overflow-auto scrollbar-hidden">
-                  <div className="font-mono text-xs text-slate-300 break-all whitespace-pre-wrap pr-2">
-                    {configString || 'Add TMDB key and MDBList key to generate the config string.'}
+                  <div className={`font-mono text-xs text-slate-300 break-all whitespace-pre-wrap pr-2 ${canGenerateConfig && !showConfigString ? 'select-none' : ''}`}>
+                    {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1462,13 +1492,24 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-[#0b0f15]/80 p-3">
-                  <div className="text-[11px] font-semibold text-slate-400">Generated Manifest</div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-[11px] font-semibold text-slate-400">Generated Manifest</div>
+                    <button
+                      type="button"
+                      onClick={() => setShowProxyUrl((value) => !value)}
+                      disabled={!proxyUrl}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors ${proxyUrl ? 'border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]' : 'border border-white/5 bg-[#080b10] text-slate-600 cursor-not-allowed'}`}
+                    >
+                      {showProxyUrl ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showProxyUrl ? 'HIDE' : 'SHOW'}</span>
+                    </button>
+                  </div>
                   <p className="mt-2 text-sm text-slate-400">
                     Use this URL in Stremio. It ends with manifest.json and has no query params.
                   </p>
                   <div className="mt-3 rounded-2xl border border-white/10 bg-[#080b10]/90 p-4">
-                    <div className="font-mono text-xs text-slate-300 break-all">
-                      {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
+                    <div className={`font-mono text-xs text-slate-300 break-all ${proxyUrl && !showProxyUrl ? 'select-none' : ''}`}>
+                      {displayedProxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
