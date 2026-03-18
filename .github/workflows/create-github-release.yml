@@ -1,10 +1,10 @@
 name: Create GitHub Release
 
 "on":
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch: {}
+  workflow_run:
+    workflows: ["Build and Push Docker"]
+    types:
+      - completed
 
 concurrency:
   group: create-github-release
@@ -13,6 +13,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v') }}
     permissions:
       contents: write
 
@@ -20,5 +21,6 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.workflow_run.head_branch }}
           generate_release_notes: true
           make_latest: true
