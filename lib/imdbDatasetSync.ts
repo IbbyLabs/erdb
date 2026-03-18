@@ -173,7 +173,7 @@ const importRatings = async (filePath: string, batchSize: number, progressEvery:
       total += batch.length;
       batch = [];
       if (progressEvery > 0 && LOG_ENABLED && total % progressEvery === 0) {
-        console.log(`IMDb ratings imported: ${total.toLocaleString('en-US')}`);
+        console.log(`IMDb ratings imported: ${total.toLocaleString('en-GB')}`);
       }
     }
   }

@@ -29,15 +29,15 @@ import {
 
 const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'pt', label: 'Português', flag: '🇵🇹' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+  { code: 'it', label: 'Italian', flag: '🇮🇹' },
+  { code: 'es', label: 'Spanish', flag: '🇪🇸' },
+  { code: 'fr', label: 'French', flag: '🇫🇷' },
+  { code: 'de', label: 'German', flag: '🇩🇪' },
+  { code: 'pt', label: 'Portuguese', flag: '🇵🇹' },
+  { code: 'ru', label: 'Russian', flag: '🇷🇺' },
+  { code: 'ja', label: 'Japanese', flag: '🇯🇵' },
+  { code: 'zh', label: 'Chinese', flag: '🇨🇳' },
+  { code: 'tr', label: 'Turkish', flag: '🇹🇷' },
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];

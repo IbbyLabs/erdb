@@ -144,7 +144,7 @@ const importRatings = async () => {
       total += batch.length;
       batch = [];
       if (total % progressEvery === 0) {
-        console.log(`Ratings imported: ${total.toLocaleString('en-US')}`);
+        console.log(`Ratings imported: ${total.toLocaleString('en-GB')}`);
       }
     }
   }
@@ -152,7 +152,7 @@ const importRatings = async () => {
     insertBatch(batch);
     total += batch.length;
   }
-  console.log(`Ratings imported: ${total.toLocaleString('en-US')}`);
+  console.log(`Ratings imported: ${total.toLocaleString('en-GB')}`);
   setImportMarker('imdb:dataset:imported:ratings', Date.now());
 };
 

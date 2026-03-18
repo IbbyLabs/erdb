@@ -122,7 +122,7 @@ Main endpoint:
 `GET /{type}/{id}.jpg?ratings={providers}&lang={lang}&ratingStyle={style}...`
 
 ### Examples
-- **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=it`
+- **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en`
 - **Minimal backdrop**: `/backdrop/tmdb:603.jpg?ratings=mdblist&style=plain`
 
 ### Supported Query Parameters
@@ -270,7 +270,7 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 ### Proxy Security Environment Variables
 - `ERDB_TRUST_PROXY_HEADERS` (default `false`): trust `x-forwarded-host` and `x-forwarded-proto` when ERDB is behind a trusted reverse proxy.
 - `ERDB_PROXY_ALLOWED_ORIGINS` (default empty): comma-separated CORS allowlist for proxy routes.
-- If `ERDB_PROXY_ALLOWED_ORIGINS` is empty, CORS falls back to the request origin of your ERDB host.
+- If `ERDB_PROXY_ALLOWED_ORIGINS` is empty, CORS reflects the incoming `Origin` header (or falls back to your ERDB host origin when no `Origin` header is present).
 
 https://github.com/user-attachments/assets/cb70624f-75c8-49da-96fc-b7f6e177df98
 
