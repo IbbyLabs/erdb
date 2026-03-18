@@ -1228,6 +1228,28 @@ const fetchJsonCached = async (
       status: response.status,
       data,
     };
+
+    const tmdbHost = (() => {
+      try {
+        return new URL(url).hostname === 'api.themoviedb.org';
+      } catch {
+        return false;
+      }
+    })();
+
+    if (!response.ok && tmdbHost && response.status === 401) {
+      const statusMessage =
+        typeof data?.status_message === 'string' ? data.status_message.toLowerCase() : '';
+      if (statusMessage.includes('invalid') || statusMessage.includes('api key') || statusMessage.includes('unauthorized')) {
+        throw new HttpError('TMDB API key is invalid or unauthorized', 401);
+      }
+      throw new HttpError('TMDB request is unauthorized', 401);
+    }
+
+    if (!response.ok && tmdbHost && response.status === 429) {
+      throw new HttpError('TMDB rate limit reached. Try again later.', 429);
+    }
+
     if (observer?.onNetworkResponse) {
       try {
         await observer.onNetworkResponse({
@@ -4576,6 +4598,15 @@ export async function GET(
       console.error('[ERDB] render failed', e);
     }
     const message = typeof e?.message === 'string' ? e.message : 'Unknown error';
+    const normalizedMessage = message.toLowerCase();
+    if (
+      normalizedMessage.includes('fetch failed') ||
+      normalizedMessage.includes('enotfound') ||
+      normalizedMessage.includes('econnreset') ||
+      normalizedMessage.includes('etimedout')
+    ) {
+      return respond('Upstream request failed. Check server outbound network and DNS to TMDB/MDBList.', 502);
+    }
     const stack = process.env.NODE_ENV !== 'production' && typeof e?.stack === 'string' ? `\n${e.stack}` : '';
     return respond(`Error: ${message}${stack}`, 500);
   }

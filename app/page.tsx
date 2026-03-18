@@ -771,8 +771,28 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         return;
       }
 
+      if (response.status === 401 && body.toLowerCase().includes('tmdb')) {
+        setPreviewErrorDetails('TMDB key is invalid or unauthorized. Verify the key and try again.');
+        return;
+      }
+
+      if (response.status === 429 && body.toLowerCase().includes('tmdb')) {
+        setPreviewErrorDetails('TMDB rate limit reached. Wait a moment and try again.');
+        return;
+      }
+
       if (response.status >= 500) {
-        setPreviewErrorDetails('TMDB key may be invalid or blocked. Verify the key and try again.');
+        const lowerBody = body.toLowerCase();
+        if (
+          lowerBody.includes('upstream request failed') ||
+          lowerBody.includes('fetch failed') ||
+          lowerBody.includes('network') ||
+          lowerBody.includes('dns')
+        ) {
+          setPreviewErrorDetails('Server could not reach TMDB/MDBList. Check VPS outbound network and DNS.');
+          return;
+        }
+        setPreviewErrorDetails(body ? `API ${response.status}: ${body}` : `API ${response.status}: request failed.`);
         return;
       }
 
