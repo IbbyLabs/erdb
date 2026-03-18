@@ -63,7 +63,7 @@ export const getPosterRatingLayoutMaxBadges = (
   const parsedMaxPerSide = typeof maxPerSide === 'number' ? maxPerSide : Number.NaN;
   if (!Number.isFinite(parsedMaxPerSide)) return null;
   const normalizedMaxPerSide = Math.max(1, Math.trunc(parsedMaxPerSide));
-  return layout === 'left-right' ? normalizedMaxPerSide * 2 : normalizedMaxPerSide;
+  return layout === 'left-right' ? normalizedMaxPerSide * 2 + 1 : normalizedMaxPerSide;
 };
 
 export const describePosterRatingLayoutLimit = (
@@ -75,6 +75,6 @@ export const describePosterRatingLayoutLimit = (
 
   const normalizedMaxPerSide = normalizePosterRatingsMaxPerSide(maxPerSide);
   if (normalizedMaxPerSide === null) return 'all that fit inside the poster';
-  if (layout === 'left-right') return `up to ${normalizedMaxPerSide} per side`;
+  if (layout === 'left-right') return `up to ${normalizedMaxPerSide} per side, plus 1 top-center`;
   return `up to ${normalizedMaxPerSide} on the selected side`;
 };
