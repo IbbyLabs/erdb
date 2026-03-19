@@ -51,8 +51,7 @@ docker pull ghcr.io/ibbylabs/erdb:v2.1.0
 Release flow:
 
 ```bash
-npm run release -- patch
-git push --follow-tags
+npm run release:patch
 ```
 
 If the GHCR package already existed before it was linked to this repository, open the package in GitHub and:
@@ -279,10 +278,47 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` and `mdblistKey` are required.
 
-### Proxy Security Environment Variables
-- `ERDB_TRUST_PROXY_HEADERS` (default `false`): trust `x-forwarded-host` and `x-forwarded-proto` when ERDB is behind a trusted reverse proxy.
-- `ERDB_PROXY_ALLOWED_ORIGINS` (default empty): comma-separated CORS allowlist for proxy routes.
-- If `ERDB_PROXY_ALLOWED_ORIGINS` is empty, CORS reflects the incoming `Origin` header (or falls back to your ERDB host origin when no `Origin` header is present).
+## Environment Variables
+
+Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
+
+### Proxy & Security
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ERDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
+| `ERDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma-separated CORS allowlist. Empty = reflect incoming `Origin` header |
+
+### Cache TTLs
+
+| Variable | Default | Min | Max | Description |
+|----------|---------|-----|-----|-------------|
+| `ERDB_TMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | TMDB metadata |
+| `ERDB_MDBLIST_CACHE_TTL_MS` | 3 days | 10 min | 30 days | MDBList ratings |
+| `ERDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
+| `ERDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
+| `ERDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
+| `ERDB_IMDB_DATASET_CACHE_TTL_MS` | 7 days | 1 hour | 365 days | Local IMDb dataset |
+| `ERDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Extended cache for old media |
+| `ERDB_MDBLIST_OLD_MOVIE_AGE_DAYS` | 365 | 30 | 3,650 | Age threshold for "old media" logic |
+| `ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS` | 1 day | 30 sec | 7 days | Cooldown after MDBList rate limit |
+
+### Torrentio
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ERDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL |
+
+> **Note:** Torrentio requests use `HTTP_PROXY` / `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set.
+
+### Sharp Rendering (advanced)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ERDB_SHARP_CONCURRENCY` | Sharp default | Max Sharp threads |
+| `ERDB_SHARP_CACHE_MEMORY_MB` | Sharp default | Memory (MB) for Sharp internal cache |
+| `ERDB_SHARP_CACHE_ITEMS` | Sharp default | Max cached items |
+| `ERDB_SHARP_CACHE_FILES` | Sharp default | Max cached files/handles |
 
 https://github.com/user-attachments/assets/cb70624f-75c8-49da-96fc-b7f6e177df98
 
