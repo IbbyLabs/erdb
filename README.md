@@ -123,6 +123,8 @@ Main endpoint:
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1-20) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` | `center` |
 
+All rendered ratings are normalized to a `0-10` display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
+
 ### Supported ID Formats
 
 ERDB supports multiple formats to identify media:

@@ -335,6 +335,7 @@ const PERCENTAGE_RATING_PROVIDERS = new Set<RatingPreference>([
   'kitsu',
 ]);
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
+const ANIME_PRIORITY_RATING_PROVIDERS: RatingPreference[] = ['myanimelist', 'anilist', 'kitsu'];
 const SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, string>> = {
   tmdb: '/10',
   imdb: '/10',
@@ -607,23 +608,51 @@ const fetchTorrentioBadges = async (input: {
 };
 
 const formatRatingNumber = (value: number) => {
-  const rounded = value.toFixed(1);
-  return rounded.endsWith('.0') ? rounded.slice(0, -2) : rounded;
+  return value.toFixed(1);
 };
 
-const formatDisplayRatingValue = (provider: RatingPreference, baseValue: string) => {
+const formatDisplayRatingValue = (
+  provider: RatingPreference,
+  baseValue: string,
+  imageType?: 'poster' | 'backdrop' | 'logo'
+) => {
   if (baseValue === 'N/A') return baseValue;
 
   if (PERCENTAGE_RATING_PROVIDERS.has(provider)) {
+    if (imageType === 'poster' || imageType === 'backdrop' || imageType === 'logo') {
+      const numericValue = Number(baseValue.replace('%', '').replace(',', '.').trim());
+      if (!Number.isNaN(numericValue) && Number.isFinite(numericValue)) {
+        return formatRatingNumber(numericValue / 10);
+      }
+    }
     return baseValue.endsWith('%') ? baseValue : `${baseValue}%`;
   }
 
   const suffix = SCALE_SUFFIX_RATING_PROVIDERS[provider];
+  if (imageType === 'poster' || imageType === 'backdrop' || imageType === 'logo') {
+    const numericValue = Number(baseValue.replace(',', '.').trim());
+    if (!Number.isNaN(numericValue) && Number.isFinite(numericValue)) {
+      if (suffix === '/10') return formatRatingNumber(numericValue);
+      if (suffix === '/5') return formatRatingNumber(numericValue * 2);
+      if (suffix === '/4') return formatRatingNumber(numericValue * 2.5);
+    }
+  }
   if (suffix && !baseValue.includes('/') && !baseValue.endsWith('%')) {
     return `${baseValue}${suffix}`;
   }
 
   return baseValue;
+};
+
+const prioritizeAnimeRatingPreferences = (
+  preferences: RatingPreference[],
+  prioritizeAnimeRatings: boolean
+) => {
+  if (!prioritizeAnimeRatings) return preferences;
+
+  const prioritized = ANIME_PRIORITY_RATING_PROVIDERS.filter((provider) => preferences.includes(provider));
+  const remaining = preferences.filter((provider) => !ANIME_PRIORITY_RATING_PROVIDERS.includes(provider));
+  return [...prioritized, ...remaining];
 };
 
 const shouldRenderRatingValue = (value: string | null | undefined) => {
@@ -1447,6 +1476,7 @@ type FastRenderInput = {
   bottomBadges: RatingBadge[];
   leftBadges: RatingBadge[];
   rightBadges: RatingBadge[];
+  backdropRows?: RatingBadge[][];
   cacheControl: string;
 };
 
@@ -1892,14 +1922,14 @@ const getBadgeTextRightInset = (
 ) => {
   const normalized = value.trim();
   const baseInset = Math.max(
-    compactText ? 2 : 4,
-    Math.round(fontSize * (compactText ? 0.12 : 0.16)) + Math.round(paddingX * 0.24)
+    compactText ? 7 : 12,
+    Math.round(fontSize * (compactText ? 0.28 : 0.38)) + Math.round(paddingX * 0.75)
   );
   const trailingPercentInset =
     normalized.endsWith('%')
       ? Math.max(
-          compactText ? 6 : 5,
-          Math.round(fontSize * (compactText ? 0.18 : 0.14))
+          compactText ? 9 : 12,
+          Math.round(fontSize * (compactText ? 0.3 : 0.28))
         )
       : 0;
   return baseInset + trailingPercentInset;
@@ -1933,7 +1963,12 @@ const estimateBadgeTextWidth = (
     )
   );
   const structureWidth = Math.round(normalized.length * fontSize * (compactText ? 0.38 : 0.44));
+  const isShortDecimalValue = /^\d+(?:[.,]\d)?$/.test(normalized) && !normalized.includes('/');
+  const shortDecimalMinWidth = isShortDecimalValue
+    ? Math.round(fontSize * (compactText ? 1.52 : 1.68))
+    : 0;
   return Math.max(
+    shortDecimalMinWidth,
     Math.round(fontSize * (compactText ? 0.92 : 1.00)),
     Math.round(measuredTextWidth + safetyRightPadding),
     structureWidth
@@ -1949,10 +1984,11 @@ const estimateBadgeWidth = (
   compactText = false
 ) => {
   const textWidth = estimateBadgeTextWidth(value, fontSize, compactText);
-  const rightInset = getBadgeTextRightInset(value, fontSize, paddingX, compactText);
+  const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
+  const innerGap = outerPadding;
   return Math.max(
-    iconSize + paddingX + gap + textWidth + rightInset,
-    iconSize + paddingX + gap + rightInset + Math.round(fontSize * (compactText ? 1.12 : 1.25))
+    outerPadding + iconSize + innerGap + textWidth + outerPadding,
+    outerPadding + iconSize + innerGap + outerPadding + Math.round(fontSize * (compactText ? 1.12 : 1.25))
   );
 };
 const getMinimumCompressedBadgeWidth = (
@@ -1963,10 +1999,10 @@ const getMinimumCompressedBadgeWidth = (
   gap: number,
   compactText = false
 ) =>
+  Math.max(6, Math.round(paddingX * 0.7)) +
   iconSize +
-  paddingX +
-  gap +
-  getBadgeTextRightInset(value, fontSize, paddingX, compactText) +
+  Math.max(6, Math.round(paddingX * 0.7)) +
+  Math.max(6, Math.round(paddingX * 0.7)) +
   Math.round(fontSize * (compactText ? 0.82 : 0.92));
 
 const measureBadgeRowWidth = (
@@ -2358,13 +2394,16 @@ const buildBadgeSvg = ({
 }) => {
   const radius = getBadgeOuterRadius(height, ratingStyle);
   const iconRadius = getBadgeIconRadius(iconSize, ratingStyle);
-  const iconCx = paddingX + Math.round(iconSize / 2);
+  const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
+  const innerGap = outerPadding;
+  const iconX = outerPadding;
+  const iconCx = iconX + Math.round(iconSize / 2);
   const iconCy = Math.round(height / 2);
   const iconFontSize = Math.max(12, Math.round(iconSize * 0.42));
-  const valueX = paddingX + iconSize + gap;
+  const valueX = iconX + iconSize + innerGap;
   const valueY = Math.round(height / 2 + fontSize * 0.36);
   const valueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
-  const valueRightInset = getBadgeTextRightInset(value, fontSize, paddingX, compactText);
+  const valueRightInset = outerPadding;
   const valueAvailableWidth = Math.max(0, width - valueX - valueRightInset);
   const valueTextLength =
     compactText && valueTextWidth > valueAvailableWidth
@@ -2374,7 +2413,6 @@ const buildBadgeSvg = ({
     ? `'Noto Sans','DejaVu Sans','Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
     : `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
   const valueLetterSpacing = compactText ? ' letter-spacing="-0.04em"' : '';
-  const iconX = paddingX;
   const iconY = Math.round((height - iconSize) / 2);
   const iconShape =
     ratingStyle === 'plain'
@@ -2414,13 +2452,15 @@ const buildBadgeSvg = ({
       ? ''
       : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}">${escapeXml(monogram)}</text>${iconBorder}`;
   const valueFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
+  const valueNumericStyle =
+    ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${textShadowFilter}
 ${outerRect}
 ${iconShape}
 ${iconImage}
 ${monogramText}
-<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}>${escapeXml(value)}</text>
+<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
 };
 
@@ -2974,19 +3014,17 @@ const renderWithSharp = async (
           composeBadgeColumn(input.rightBadges, 'right', maxBadgeWidth);
         } else {
           const backdropRegion = getBackdropBadgeRegion(input.outputWidth, input.backdropRatingsLayout);
+          const backdropRows =
+            input.backdropRows && input.backdropRows.length > 0
+              ? input.backdropRows
+              : [input.topBadges, input.bottomBadges].filter((row) => row.length > 0);
           let rowY = input.badgeTopOffset;
-          if (input.topBadges.length > 0) {
-            composeBadgeRow(input.topBadges, rowY, {
+          for (const row of backdropRows) {
+            composeBadgeRow(row, rowY, {
               regionLeft: backdropRegion.left,
               regionWidth: backdropRegion.width,
             });
             rowY += badgeHeight + input.badgeGap;
-          }
-          if (input.bottomBadges.length > 0) {
-            composeBadgeRow(input.bottomBadges, rowY, {
-              regionLeft: backdropRegion.left,
-              regionWidth: backdropRegion.width,
-            });
           }
         }
       } else if (input.imageType === 'poster') {
@@ -3157,7 +3195,9 @@ const renderWithSharp = async (
           const ratingRows =
             input.backdropRatingsLayout === 'right-vertical'
               ? 0
-              : (input.topBadges.length > 0 ? 1 : 0) + (input.bottomBadges.length > 0 ? 1 : 0);
+              : input.backdropRows && input.backdropRows.length > 0
+                ? input.backdropRows.length
+                : (input.topBadges.length > 0 ? 1 : 0) + (input.bottomBadges.length > 0 ? 1 : 0);
           const singleStartY =
             input.backdropRatingsLayout === 'center' && ratingRows > 0
               ? startY + ratingRows * (badgeHeight + input.badgeGap)
@@ -3189,15 +3229,14 @@ const renderWithSharp = async (
               input.backdropRatingsLayout
             );
             const effectiveMaxWidth = Math.max(0, backdropRegion.width - 24);
-            const topRowWidth = Math.min(
-              measureBadgeRowWidth(input.topBadges, metrics),
-              effectiveMaxWidth
-            );
-            const bottomRowWidth = Math.min(
-              measureBadgeRowWidth(input.bottomBadges, metrics),
-              effectiveMaxWidth
-            );
-            const ratingBlockWidth = Math.max(topRowWidth, bottomRowWidth);
+            const backdropRows =
+              input.backdropRows && input.backdropRows.length > 0
+                ? input.backdropRows
+                : [input.topBadges, input.bottomBadges].filter((row) => row.length > 0);
+            const ratingBlockWidth = backdropRows.reduce((maxWidth, row) => {
+              const rowWidth = Math.min(measureBadgeRowWidth(row, metrics), effectiveMaxWidth);
+              return Math.max(maxWidth, rowWidth);
+            }, 0);
             const ratingCenterX = backdropRegion.left + backdropRegion.width / 2;
             const ratingLeft = ratingCenterX - ratingBlockWidth / 2;
             const ratingRight = ratingCenterX + ratingBlockWidth / 2;
@@ -4025,12 +4064,16 @@ export async function GET(
                 return combinedRatings.get(provider) || null;
               };
 
+              const orderedEffectiveRatingPreferences = prioritizeAnimeRatingPreferences(
+                effectiveRatingPreferences,
+                allowAnimeOnlyRatings
+              );
               let renderableCount = 0;
-              for (const provider of effectiveRatingPreferences) {
+              for (const provider of orderedEffectiveRatingPreferences) {
                 if (renderableCount >= shortCircuitLimit) break;
                 const baseValue = await resolveProvider(provider);
                 if (!shouldRenderRatingValue(baseValue)) continue;
-                const formattedValue = formatDisplayRatingValue(provider, baseValue as string);
+                const formattedValue = formatDisplayRatingValue(provider, baseValue as string, imageType);
                 if (!shouldRenderRatingValue(formattedValue)) continue;
                 renderableCount += 1;
               }
@@ -4405,16 +4448,19 @@ export async function GET(
       const ratingBadges: RatingBadge[] = [];
       const renderableRatingPreferences = useRawKitsuFallback
         ? (shouldRenderRawKitsuFallbackRating ? (['kitsu'] as RatingPreference[]) : [])
-        : effectiveRatingPreferences.filter(
-          (provider) => allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
-        );
+        : prioritizeAnimeRatingPreferences(
+            effectiveRatingPreferences.filter(
+              (provider) => allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
+            ),
+            allowAnimeOnlyRatings
+          );
       for (const provider of renderableRatingPreferences) {
         const meta = RATING_PROVIDER_META.get(provider);
         if (!meta) continue;
 
         const baseValue = provider === 'tmdb' ? tmdbRating : providerRatings.get(provider) || null;
         if (!shouldRenderRatingValue(baseValue)) continue;
-        const value = formatDisplayRatingValue(provider, baseValue as string);
+        const value = formatDisplayRatingValue(provider, baseValue as string, imageType);
         if (!shouldRenderRatingValue(value)) continue;
 
         const iconUrl = meta.iconUrl;
@@ -4444,7 +4490,11 @@ export async function GET(
         : null;
       let cappedRatingBadges = usePosterBadgeLayout
         ? (typeof posterRatingLimit === 'number' ? ratingBadges.slice(0, posterRatingLimit) : [...ratingBadges])
-        : ratingBadges.slice(0, 6);
+        : useBackdropBadgeLayout
+          ? [...ratingBadges]
+          : ratingBadges.slice(0, 6);
+      const backdropRows =
+        useBackdropBadgeLayout && !useBackdropRightVerticalLayout ? chunkBy(cappedRatingBadges, 3) : [];
       let posterBadgeGroups = splitPosterBadgesByLayout(
         cappedRatingBadges,
         posterRatingsLayout,
@@ -4454,12 +4504,12 @@ export async function GET(
         ? posterBadgeGroups.topBadges
         : useBackdropRightVerticalLayout
           ? []
-          : cappedRatingBadges.slice(0, 3);
+          : (backdropRows[0] || []);
       let bottomRatingBadges = usePosterBadgeLayout
         ? posterBadgeGroups.bottomBadges
         : useBackdropRightVerticalLayout
           ? []
-          : cappedRatingBadges.slice(3, 6);
+          : (backdropRows[1] || []);
       let leftRatingBadges = usePosterBadgeLayout ? posterBadgeGroups.leftBadges : [];
       let rightRatingBadges = usePosterBadgeLayout
         ? posterBadgeGroups.rightBadges
@@ -4487,11 +4537,11 @@ export async function GET(
         badgeBottomOffset = 20;
       } else if (usePosterBadgeLayout) {
         if (usePosterRowLayoutLarge) {
-          badgeIconSize = 40;
-          badgeFontSize = 30;
-          badgePaddingY = 6;
-          badgePaddingX = 10;
-          badgeGap = 7;
+          badgeIconSize = 46;
+          badgeFontSize = 35;
+          badgePaddingY = 8;
+          badgePaddingX = 13;
+          badgeGap = 9;
         } else {
           badgeIconSize = 42;
           badgeFontSize = 32;
@@ -4730,6 +4780,7 @@ export async function GET(
           bottomBadges: bottomRatingBadges,
           leftBadges: leftRatingBadges,
           rightBadges: rightRatingBadges,
+          backdropRows,
           cacheControl: responseCacheControl,
         },
         phases

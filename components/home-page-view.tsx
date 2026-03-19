@@ -585,7 +585,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
               <div className="flex-1 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl shadow-[0_30px_80px_-70px_rgba(0,0,0,0.85)] w-full">
                 <h3 className="text-lg font-[var(--font-display)] text-white">Preview Output</h3>
                 <p className="mt-1 text-xs text-slate-400">
-                  Stateless dynamic layout generated via query parameters.
+                  All ratings are normalized to a 0-10 scale.
                 </p>
                 <div className="mt-4 rounded-2xl border border-white/10 bg-[#080b10]/90 p-3 min-h-[260px] flex items-center justify-center flex-col">
 
