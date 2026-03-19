@@ -3207,6 +3207,7 @@ export async function GET(
   if (!ALLOWED_IMAGE_TYPES.has(type)) {
     return respond('Invalid image type', 400);
   }
+  console.warn(`[ERDB] image request: /${type}/${id} streamBadges=${request.nextUrl.searchParams.get('posterStreamBadges') ?? request.nextUrl.searchParams.get('streamBadges') ?? 'none'}`);
   scheduleImdbDatasetSync();
   const imageType = type as 'poster' | 'backdrop' | 'logo';
   const outputFormat = pickOutputFormat(imageType, request.headers.get('accept'));
