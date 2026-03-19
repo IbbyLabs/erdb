@@ -1440,7 +1440,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4">
+                <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4 overflow-hidden">
                   <div className={`font-mono text-xs text-zinc-300 break-all${!showConfigString && configString ? ' select-none' : ''}`}>
                     {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
                   </div>
@@ -1564,7 +1564,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       value={proxyManifestUrl}
                       onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
                       placeholder="https://addon.example.com/manifest.json"
-                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
+                      className="w-full min-w-0 bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
                     />
                   </div>
                 </div>
@@ -1578,7 +1578,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/70 p-4">
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/70 p-4 overflow-hidden">
                     <div className={`font-mono text-xs text-zinc-300 break-all${!showProxyUrl && proxyUrl ? ' select-none' : ''}`}>
                       {displayedProxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
                     </div>
@@ -1903,7 +1903,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
                 <div className="mb-6">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Base Structure</h4>
-                  <div className="p-4 bg-zinc-900/60 border border-white/5 rounded-xl font-mono text-xs overflow-x-auto whitespace-nowrap pb-2">
+                  <div className="p-4 bg-zinc-900/60 border border-white/5 rounded-xl font-mono text-xs overflow-x-auto overflow-y-hidden whitespace-nowrap pb-2">
                     <span className="text-zinc-500">{baseUrl || 'http://localhost:3000'}</span>
                     <span className="text-white">/</span>
                     <span className="text-violet-500 font-bold">{'{type}'}</span>
