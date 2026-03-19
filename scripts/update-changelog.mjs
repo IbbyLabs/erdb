@@ -5,7 +5,7 @@ import path from 'node:path';
 const pkgPath = path.resolve('package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const newVersion = `v${pkg.version}`;
-const today = new Date().toISOString().split('T')[0];
+const today = new Date().toLocaleDateString('en-GB');
 
 function lastTag() {
   try {
