@@ -1153,7 +1153,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         </section>
 
         <section id="preview" className="erdb-section scroll-mt-24">
-          <div className="rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.08),_transparent_34%),linear-gradient(180deg,rgba(24,24,27,0.94),rgba(9,9,11,0.98))] p-5 md:p-6 xl:p-8">
+          <div className="rounded-[32px] border border-violet-500/15 bg-[radial-gradient(ellipse_at_top,_rgba(139,92,246,0.12),_transparent_60%),linear-gradient(180deg,rgba(30,22,42,0.95),rgba(14,10,22,0.98))] p-5 md:p-6 xl:p-8">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <SectionHeader
                 eyebrow="Workspace"
@@ -1466,7 +1466,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <button
                     onClick={() => setShowConfigString((prev) => !prev)}
                     disabled={!canGenerateConfig}
-                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateConfig ? 'bg-zinc-800 text-zinc-300 hover:text-white' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateConfig ? 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 hover:text-white border border-violet-500/30' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'}`}
                     aria-label={showConfigString ? 'Hide config string' : 'Show config string'}
                   >
                     {showConfigString ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -1604,7 +1604,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     <button
                       onClick={() => setShowProxyUrl((prev) => !prev)}
                       disabled={!canGenerateProxy}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateProxy ? 'bg-zinc-800 text-zinc-300 hover:text-white' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateProxy ? 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 hover:text-white border border-violet-500/30' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'}`}
                       aria-label={showProxyUrl ? 'Hide proxy URL' : 'Show proxy URL'}
                     >
                       {showProxyUrl ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
