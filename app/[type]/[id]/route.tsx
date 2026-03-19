@@ -570,13 +570,14 @@ const fetchTorrentioBadges = async (input: {
     }
 
     let response: Response | null = null;
+    const torrentioUrl = buildTorrentioUrl(input.type, trimmedId);
     try {
       response = await measurePhase(input.phases, 'stream', () =>
         torrentioConcurrencyLimit(async () => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 4000);
           try {
-            return await fetch(buildTorrentioUrl(input.type, trimmedId), {
+            return await fetch(torrentioUrl, {
               cache: 'no-store',
               signal: controller.signal,
             });
@@ -585,10 +586,15 @@ const fetchTorrentioBadges = async (input: {
           }
         })
       );
-    } catch {
+    } catch (err) {
+      console.warn(`[ERDB] Torrentio fetch failed for ${torrentioUrl}:`, err instanceof Error ? err.message : err);
       const failureTtl = Math.min(ttlMs, 2 * 60 * 1000);
       setMetadata(cacheKey, { flags: createEmptyStreamFlags() }, failureTtl);
       return { badges: [], cacheTtlMs: failureTtl };
+    }
+
+    if (!response.ok) {
+      console.warn(`[ERDB] Torrentio returned ${response.status} for ${torrentioUrl}`);
     }
 
     let payload: any = null;
@@ -598,7 +604,11 @@ const fetchTorrentioBadges = async (input: {
       payload = null;
     }
 
-    const flags = collectStreamFlags(extractTorrentioFilenames(payload));
+    const filenames = extractTorrentioFilenames(payload);
+    const flags = collectStreamFlags(filenames);
+    if (filenames.length === 0) {
+      console.warn(`[ERDB] Torrentio returned 0 streams for ${torrentioUrl}`);
+    }
     const targetTtl = response.ok ? ttlMs : Math.min(ttlMs, 2 * 60 * 1000);
     setMetadata(cacheKey, { flags }, targetTtl);
     return { badges: buildStreamBadgesFromFlags(flags), cacheTtlMs: targetTtl };
