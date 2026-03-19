@@ -59,6 +59,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterStreamBadges: 'on',
       backdropStreamBadges: 'off',
       qualityBadgesSide: 'right',
+      posterQualityBadgesPosition: 'auto',
       posterQualityBadgesStyle: 'square',
       backdropQualityBadgesStyle: 'plain',
       posterRatingsLayout: 'top-bottom',
