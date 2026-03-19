@@ -38,7 +38,6 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
 
     if (Math.random() < 0.05) {
         pruneExpiredMetadata();
-        pruneOldestMetadata(2000);
     }
 };
 
