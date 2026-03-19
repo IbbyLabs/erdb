@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import {
   ALL_RATING_PREFERENCES,
@@ -144,6 +145,8 @@ const TORRENTIO_CACHE_TTL_MS = parseCacheTtlMs(
   7 * 24 * 60 * 60 * 1000
 );
 const TORRENTIO_BASE_URL = process.env.ERDB_TORRENTIO_BASE_URL || 'https://torrentio.strem.fun';
+const TORRENTIO_PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy || null;
+const torrentioDispatcher = TORRENTIO_PROXY_URL ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
 const PROVIDER_ICON_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_PROVIDER_ICON_CACHE_TTL_MS,
   7 * 24 * 60 * 60 * 1000,
@@ -577,13 +580,13 @@ const fetchTorrentioBadges = async (input: {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 4000);
           try {
-            return await fetch(torrentioUrl, {
-              cache: 'no-store',
+            return await undiciFetch(torrentioUrl, {
               signal: controller.signal,
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
               },
-            });
+              ...(torrentioDispatcher ? { dispatcher: torrentioDispatcher } : {}),
+            }) as unknown as Response;
           } finally {
             clearTimeout(timeoutId);
           }
