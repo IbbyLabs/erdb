@@ -11,6 +11,7 @@
   "homepage": "https://github.com/IbbyLabs/erdb#readme",
   "scripts": {
     "dev": "next dev -p 3000",
+    "version": "node scripts/update-changelog.mjs && git add CHANGELOG.md",
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
