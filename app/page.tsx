@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check } from 'lucide-react';
+import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
   stringifyRatingPreferencesAllowEmpty,
@@ -57,6 +57,7 @@ const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
+const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
   { id: 'on', label: 'On' },
@@ -355,6 +356,8 @@ export default function Home() {
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
+  const [showConfigString, setShowConfigString] = useState(false);
+  const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
   const [previewErrorDetails, setPreviewErrorDetails] = useState('');
   const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
@@ -872,6 +875,21 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     () => buildProxyUrl(baseUrl, currentUiConfig.proxy.manifestUrl, currentUiConfig.settings),
     [baseUrl, currentUiConfig]
   );
+
+  useEffect(() => {
+    if (!configString) setShowConfigString(false);
+  }, [configString]);
+
+  useEffect(() => {
+    if (!proxyUrl) setShowProxyUrl(false);
+  }, [proxyUrl]);
+
+  const displayedConfigString = configString
+    ? (showConfigString ? configString : maskSensitiveText(configString))
+    : '';
+  const displayedProxyUrl = proxyUrl
+    ? (showProxyUrl ? proxyUrl : maskSensitiveText(proxyUrl))
+    : '';
 
   const updateRatingPreferencesForType = (
     type: 'poster' | 'backdrop' | 'logo',
@@ -1423,8 +1441,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   </div>
                 </div>
                 <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4">
-                  <div className="font-mono text-xs text-zinc-300 break-all">
-                    {configString || 'Add TMDB key and MDBList key to generate the config string.'}
+                  <div className={`font-mono text-xs text-zinc-300 break-all${!showConfigString && configString ? ' select-none' : ''}`}>
+                    {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1444,6 +1462,15 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <span>COPY STRING</span>
                       </>
                     )}
+                  </button>
+                  <button
+                    onClick={() => setShowConfigString((prev) => !prev)}
+                    disabled={!canGenerateConfig}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateConfig ? 'bg-zinc-800 text-zinc-300 hover:text-white' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                    aria-label={showConfigString ? 'Hide config string' : 'Show config string'}
+                  >
+                    {showConfigString ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showConfigString ? 'HIDE' : 'SHOW'}</span>
                   </button>
                 </div>
                 {!canGenerateConfig && (
@@ -1552,8 +1579,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                     </div>
                   </div>
                   <div className="mt-4 rounded-2xl border border-white/10 bg-black/70 p-4">
-                    <div className="font-mono text-xs text-zinc-300 break-all">
-                      {proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
+                    <div className={`font-mono text-xs text-zinc-300 break-all${!showProxyUrl && proxyUrl ? ' select-none' : ''}`}>
+                      {displayedProxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`}
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -1573,6 +1600,15 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                           <span>COPY LINK</span>
                         </>
                       )}
+                    </button>
+                    <button
+                      onClick={() => setShowProxyUrl((prev) => !prev)}
+                      disabled={!canGenerateProxy}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateProxy ? 'bg-zinc-800 text-zinc-300 hover:text-white' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                      aria-label={showProxyUrl ? 'Hide proxy URL' : 'Show proxy URL'}
+                    >
+                      {showProxyUrl ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showProxyUrl ? 'HIDE' : 'SHOW'}</span>
                     </button>
                     <a
                       href={canGenerateProxy ? proxyUrl : undefined}
