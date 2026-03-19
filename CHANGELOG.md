@@ -1,3 +1,9 @@
+## [v2.16.1] - 19/03/2026
+
+### Other Changes
+- chore: remove all comments and boilerplate markers
+- chore: refine changelog generation logic
+
 ## [v2.16.0] - 19/03/2026
 
 ### Other Changes
