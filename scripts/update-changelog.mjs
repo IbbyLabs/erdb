@@ -45,22 +45,28 @@ if (commits.length === 0) {
 const groups = {
   feat: [],
   fix: [],
-  chore: [],
-  refactor: [],
   docs: [],
+  refactor: [],
+  perf: [],
+  chore: [],
   other: []
 };
 
 for (const commit of commits) {
-  // Typical commit: hash message
   const message = commit.split(' ').slice(1).join(' ');
   const lower = message.toLowerCase();
   
+  // Filter out redundant release commits and synchronization chores
+  if (lower.startsWith('chore: release') || lower.includes('synchronize with upstream')) {
+    continue;
+  }
+
   if (lower.startsWith('feat')) groups.feat.push(message);
   else if (lower.startsWith('fix')) groups.fix.push(message);
-  else if (lower.startsWith('chore')) groups.chore.push(message);
-  else if (lower.startsWith('refactor')) groups.refactor.push(message);
   else if (lower.startsWith('docs')) groups.docs.push(message);
+  else if (lower.startsWith('refactor')) groups.refactor.push(message);
+  else if (lower.startsWith('perf')) groups.perf.push(message);
+  else if (lower.startsWith('chore')) groups.chore.push(message);
   else groups.other.push(message);
 }
 
@@ -75,8 +81,11 @@ if (groups.fix.length) {
 if (groups.docs.length) {
   newEntry += `### Documentation\n${groups.docs.map(m => `- ${m}`).join('\n')}\n\n`;
 }
+if (groups.perf.length) {
+  newEntry += `### Performance\n${groups.perf.map(m => `- ${m}`).join('\n')}\n\n`;
+}
 
-const otherChanges = [...groups.other, ...groups.chore, ...groups.refactor];
+const otherChanges = [...groups.other, ...groups.refactor, ...groups.chore];
 if (otherChanges.length) {
   newEntry += `### Other Changes\n${otherChanges.map(m => `- ${m}`).join('\n')}\n\n`;
 }
