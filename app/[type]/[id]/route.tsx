@@ -608,7 +608,8 @@ const fetchTorrentioBadges = async (input: {
 };
 
 const formatRatingNumber = (value: number) => {
-  return value.toFixed(1);
+  const rounded = value.toFixed(1);
+  return rounded === '10.0' ? '10' : rounded;
 };
 
 const formatDisplayRatingValue = (
