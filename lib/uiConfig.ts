@@ -19,6 +19,7 @@ import {
   normalizeRatingPreference,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
+  ALL_RATING_PREFERENCES,
 } from './ratingPreferences.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
@@ -56,7 +57,7 @@ export type SavedUiConfig = {
   };
 };
 
-const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
+const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
 const IMAGE_TEXT_PREFERENCE_SET = new Set<ImageTextPreference>(['original', 'clean', 'alternative']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);

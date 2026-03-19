@@ -52,7 +52,9 @@ const SUPPORTED_LANGUAGES = [
   { code: 'tr', label: 'Turkish', flag: '🇹🇷' },
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
-const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
+const DEFAULT_RATING_PREFERENCES: RatingPreference[] = RATING_PROVIDER_OPTIONS.map(
+  (provider) => provider.id
+);
 const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
 type ProxyType = (typeof PROXY_TYPES)[number];
 type ProxyEnabledTypes = Record<ProxyType, boolean>;
