@@ -29,7 +29,6 @@ function getCommitsSince(tag) {
 
 const prevTag = lastTag();
 
-// If the version hasn't changed or already exists in the changelog, skip (manual check)
 const existingChangelog = fs.readFileSync('CHANGELOG.md', 'utf8');
 if (existingChangelog.includes(`## [${newVersion}]`)) {
   console.log(`Changelog already contains entry for ${newVersion}. Skipping.`);
@@ -56,7 +55,6 @@ for (const commit of commits) {
   const message = commit.split(' ').slice(1).join(' ');
   const lower = message.toLowerCase();
   
-  // Filter out redundant release commits and synchronization chores
   if (lower.startsWith('chore: release') || lower.includes('synchronize with upstream')) {
     continue;
   }

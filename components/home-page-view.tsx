@@ -259,7 +259,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
         </nav>
 
         <main className="mx-auto w-full max-w-none px-6 py-16 space-y-16">
-          {/* Hero Section */}
+          
           <section className="relative grid gap-8 lg:grid-cols-[1fr_0.8fr] items-center max-w-6xl mx-auto">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[10px] uppercase tracking-[0.35em] text-slate-300">
@@ -335,7 +335,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
             </div>
           </section>
 
-        {/* Live Previewer */}
+        
         <section id="preview" className="scroll-mt-16 space-y-8">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
@@ -353,7 +353,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr] gap-4 items-stretch">
-            {/* Controls */}
+            
             <div className="min-w-0 w-full flex flex-col h-full gap-3">
               <div className="flex-1 space-y-3 rounded-[22px] border border-white/10 bg-white/[0.04] p-3 backdrop-blur-xl shadow-[0_30px_80px_-70px_rgba(0,0,0,0.85)]">
                 <div>
@@ -780,7 +780,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
           </div>
         </section>
 
-        {/* Documentation Section */}
+        
         <section id="docs" className="scroll-mt-16 pb-20">
           <div className="max-w-4xl mx-auto space-y-8">
             <div className="text-center space-y-2">
@@ -1192,10 +1192,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Live Examples</h4>
                 <pre className="text-xs font-mono text-slate-400 leading-6 space-y-1.5">
-                  <div className="text-slate-600 font-bold">{'// Movie Poster (IMDb)'}</div>
+                  <div className="text-slate-600 font-bold">{'Movie Poster (IMDb)'}</div>
                   <div className="text-orange-200/70 truncate bg-white/[0.04] p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
-                  <div className="text-slate-600 font-bold mt-4">{'// Backdrop (TMDB)'}</div>
+                  <div className="text-slate-600 font-bold mt-4">{'Backdrop (TMDB)'}</div>
                   <div className="text-orange-200/70 truncate bg-white/[0.04] p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=right-vertical`}</div>
 
                 </pre>

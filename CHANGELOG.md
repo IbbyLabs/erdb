@@ -1,7 +1,3 @@
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
 ## [v2.16.0] - 19/03/2026
 
 ### Other Changes

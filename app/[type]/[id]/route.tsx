@@ -1543,7 +1543,7 @@ const configureSharp = (sharp: any) => {
   if (concurrency !== null && concurrency > 0) {
     sharp.concurrency(concurrency);
   } else {
-    // If not configured, we cap the default libvips concurrency to prevent large RAM usage on multi-core VMs.
+    
     sharp.concurrency(2);
   }
 
