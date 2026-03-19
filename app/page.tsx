@@ -34,6 +34,7 @@ import {
   normalizeBaseUrl,
   normalizeManifestUrl,
   type QualityBadgesSide,
+  type PosterQualityBadgesPosition,
   type SavedUiConfig,
   type StreamBadgesSetting,
 } from '@/lib/uiConfig';
@@ -62,6 +63,11 @@ const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = 
   { id: 'off', label: 'Off' },
 ];
 const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }> = [
+  { id: 'left', label: 'Left' },
+  { id: 'right', label: 'Right' },
+];
+const QUALITY_BADGE_POSITION_OPTIONS: Array<{ id: PosterQualityBadgesPosition; label: string }> = [
+  { id: 'auto', label: 'Auto' },
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
 ];
@@ -333,6 +339,8 @@ export default function Home() {
   const [posterStreamBadges, setPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [backdropStreamBadges, setBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
+  const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] =
+    useState<PosterQualityBadgesPosition>('auto');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
@@ -362,7 +370,11 @@ export default function Home() {
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
+  const shouldShowPosterQualityBadgesPosition =
+    posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom';
   const shouldShowQualityBadgesSide = previewType === 'poster' && shouldShowPosterQualityBadgesSide;
+  const shouldShowQualityBadgesPosition =
+    previewType === 'poster' && shouldShowPosterQualityBadgesPosition;
   const qualityBadgeTypeLabel = previewType === 'backdrop' ? 'Backdrop' : 'Poster';
   const activeStreamBadges = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
   const setActiveStreamBadges = previewType === 'backdrop' ? setBackdropStreamBadges : setPosterStreamBadges;
@@ -475,6 +487,7 @@ export default function Home() {
       setPosterStreamBadges(normalized.settings.posterStreamBadges);
       setBackdropStreamBadges(normalized.settings.backdropStreamBadges);
       setQualityBadgesSide(normalized.settings.qualityBadgesSide);
+      setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
       setPosterQualityBadgesStyle(normalized.settings.posterQualityBadgesStyle);
       setBackdropQualityBadgesStyle(normalized.settings.backdropQualityBadgesStyle);
       setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
@@ -504,6 +517,7 @@ export default function Home() {
         posterStreamBadges,
         backdropStreamBadges,
         qualityBadgesSide,
+        posterQualityBadgesPosition,
         posterQualityBadgesStyle,
         backdropQualityBadgesStyle,
         posterRatingsLayout,
@@ -529,6 +543,7 @@ export default function Home() {
       posterStreamBadges,
       backdropStreamBadges,
       qualityBadgesSide,
+      posterQualityBadgesPosition,
       posterQualityBadgesStyle,
       backdropQualityBadgesStyle,
       posterRatingsLayout,
@@ -655,7 +670,8 @@ lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, e
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster only)                                            | left
+qualityBadgesSide       | left, right (poster top-bottom only)                                 | left
+posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
@@ -683,7 +699,7 @@ Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
 
 Omit imageText when type=logo.
 
@@ -735,6 +751,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     if (shouldShowQualityBadgesSide && qualityBadgesSide !== 'left') {
       query.set('qualityBadgesSide', qualityBadgesSide);
     }
+    if (shouldShowQualityBadgesPosition && posterQualityBadgesPosition !== 'auto') {
+      query.set('posterQualityBadgesPosition', posterQualityBadgesPosition);
+    }
     if (previewType !== 'logo' && qualityBadgesStyleForType !== DEFAULT_QUALITY_BADGES_STYLE) {
       query.set(
         previewType === 'backdrop' ? 'backdropQualityBadgesStyle' : 'posterQualityBadgesStyle',
@@ -775,6 +794,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     posterRatingsMaxPerSide,
     backdropRatingsLayout,
     qualityBadgesSide,
+    posterQualityBadgesPosition,
     posterQualityBadgesStyle,
     backdropQualityBadgesStyle,
     posterRatingStyle,
@@ -782,6 +802,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     logoRatingStyle,
     baseUrl,
     shouldShowQualityBadgesSide,
+    shouldShowQualityBadgesPosition,
     mdblistKey,
     tmdbKey,
   ]);
@@ -1355,6 +1376,18 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                           {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
                             <button key={option.id} onClick={() => setQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${qualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {shouldShowQualityBadgesPosition && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Position</span>
+                        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                          {QUALITY_BADGE_POSITION_OPTIONS.map(option => (
+                            <button key={option.id} onClick={() => setPosterQualityBadgesPosition(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${posterQualityBadgesPosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
                               {option.label}
                             </button>
                           ))}
@@ -1942,7 +1975,8 @@ lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, e
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster only)                                            | left
+qualityBadgesSide       | left, right (poster top-bottom only)                                 | left
+posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
@@ -1972,7 +2006,7 @@ Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
 
 Omit imageText when type=logo.
 

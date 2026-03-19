@@ -22,6 +22,7 @@ import {
 } from './ratingPreferences.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
+export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type ImageTextPreference = 'original' | 'clean' | 'alternative';
 
 export type SharedErdbSettings = {
@@ -36,6 +37,7 @@ export type SharedErdbSettings = {
   posterStreamBadges: StreamBadgesSetting;
   backdropStreamBadges: StreamBadgesSetting;
   qualityBadgesSide: QualityBadgesSide;
+  posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterQualityBadgesStyle: RatingStyle;
   backdropQualityBadgesStyle: RatingStyle;
   posterRatingsLayout: PosterRatingLayout;
@@ -58,6 +60,7 @@ const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist
 const IMAGE_TEXT_PREFERENCE_SET = new Set<ImageTextPreference>(['original', 'clean', 'alternative']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
+const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
 
 export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   tmdbKey: '',
@@ -71,6 +74,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterStreamBadges: 'auto',
   backdropStreamBadges: 'auto',
   qualityBadgesSide: 'left',
+  posterQualityBadgesPosition: 'auto',
   posterQualityBadgesStyle: DEFAULT_RATING_STYLE,
   backdropQualityBadgesStyle: DEFAULT_RATING_STYLE,
   posterRatingsLayout: 'bottom',
@@ -165,6 +169,16 @@ const normalizeQualityBadgesSide = (
     : fallback;
 };
 
+const normalizePosterQualityBadgesPosition = (
+  value: unknown,
+  fallback: PosterQualityBadgesPosition,
+): PosterQualityBadgesPosition => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return POSTER_QUALITY_BADGES_POSITION_SET.has(normalized as PosterQualityBadgesPosition)
+    ? (normalized as PosterQualityBadgesPosition)
+    : fallback;
+};
+
 const normalizeRatingPreferencesList = (
   value: unknown,
   fallback: RatingPreference[],
@@ -221,6 +235,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     qualityBadgesSide: normalizeQualityBadgesSide(
       candidate.qualityBadgesSide,
       defaults.qualityBadgesSide,
+    ),
+    posterQualityBadgesPosition: normalizePosterQualityBadgesPosition(
+      candidate.posterQualityBadgesPosition,
+      defaults.posterQualityBadgesPosition,
     ),
     posterQualityBadgesStyle: normalizeRatingStyle(candidate.posterQualityBadgesStyle as string | null | undefined),
     backdropQualityBadgesStyle: normalizeRatingStyle(
@@ -314,6 +332,12 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   }
   if (settings.posterRatingsLayout === 'top-bottom' && settings.qualityBadgesSide !== 'left') {
     payload.qualityBadgesSide = settings.qualityBadgesSide;
+  }
+  if (
+    (settings.posterRatingsLayout === 'top' || settings.posterRatingsLayout === 'bottom') &&
+    settings.posterQualityBadgesPosition !== 'auto'
+  ) {
+    payload.posterQualityBadgesPosition = settings.posterQualityBadgesPosition;
   }
   if (settings.posterQualityBadgesStyle !== DEFAULT_RATING_STYLE) {
     payload.posterQualityBadgesStyle = settings.posterQualityBadgesStyle;
