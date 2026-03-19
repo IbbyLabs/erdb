@@ -703,18 +703,6 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     baseUrl,
   ]);
 
-  useEffect(() => {
-    if (!configString) {
-      setShowConfigString(false);
-    }
-  }, [configString]);
-
-  useEffect(() => {
-    if (!proxyUrl) {
-      setShowProxyUrl(false);
-    }
-  }, [proxyUrl]);
-
   const updateRatingPreferencesForType = (
     type: 'poster' | 'backdrop' | 'logo',
     updater: (current: RatingPreference[]) => RatingPreference[]
@@ -963,10 +951,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     tmdbKey.trim() &&
     mdblistKey.trim()
   );
+  const isConfigStringVisible = canGenerateConfig && showConfigString;
+  const isProxyUrlVisible = Boolean(proxyUrl) && showProxyUrl;
   const proxyDisplayValue = proxyUrl || `${baseUrl || 'https://erdb.example.com'}/proxy/{config}/manifest.json`;
   const displayedConfigString =
-    canGenerateConfig && !showConfigString ? maskSensitiveText(configString) : configString;
-  const displayedProxyUrl = showProxyUrl ? proxyDisplayValue : maskSensitiveText(proxyDisplayValue);
+    canGenerateConfig && !isConfigStringVisible ? maskSensitiveText(configString) : configString;
+  const displayedProxyUrl = isProxyUrlVisible ? proxyDisplayValue : maskSensitiveText(proxyDisplayValue);
   const activeRatingStyle =
     previewType === 'poster'
       ? posterRatingStyle
@@ -1404,19 +1394,22 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   </h3>
                   <button
                     type="button"
-                    onClick={() => setShowConfigString((value) => !value)}
+                    onClick={() => {
+                      if (!canGenerateConfig) return;
+                      setShowConfigString((value) => !value);
+                    }}
                     disabled={!canGenerateConfig}
                     className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors ${canGenerateConfig ? 'border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]' : 'border border-white/5 bg-[#080b10] text-slate-600 cursor-not-allowed'}`}
                   >
-                    {showConfigString ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showConfigString ? 'HIDE' : 'SHOW'}</span>
+                    {isConfigStringVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{isConfigStringVisible ? 'HIDE' : 'SHOW'}</span>
                   </button>
                 </div>
                 <p className="mt-2 text-sm text-slate-400">
                   Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
                 </p>
                 <div className="mt-3 rounded-2xl border border-white/10 bg-[#080b10]/90 p-3 max-h-28 overflow-auto scrollbar-hidden">
-                  <div className={`font-mono text-xs text-slate-300 break-all whitespace-pre-wrap pr-2 ${canGenerateConfig && !showConfigString ? 'select-none' : ''}`}>
+                  <div className={`font-mono text-xs text-slate-300 break-all whitespace-pre-wrap pr-2 ${canGenerateConfig && !isConfigStringVisible ? 'select-none' : ''}`}>
                     {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
                   </div>
                 </div>
@@ -1500,15 +1493,15 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       onClick={() => setShowProxyUrl((value) => !value)}
                       className="px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]"
                     >
-                      {showProxyUrl ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      <span>{showProxyUrl ? 'HIDE' : 'SHOW'}</span>
+                      {isProxyUrlVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{isProxyUrlVisible ? 'HIDE' : 'SHOW'}</span>
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-slate-400">
                     Use this URL in Stremio. It ends with manifest.json and has no query params.
                   </p>
                   <div className="mt-3 rounded-2xl border border-white/10 bg-[#080b10]/90 p-4">
-                    <div className={`font-mono text-xs text-slate-300 break-all ${!showProxyUrl ? 'select-none' : ''}`}>
+                    <div className={`font-mono text-xs text-slate-300 break-all ${!isProxyUrlVisible ? 'select-none' : ''}`}>
                       {displayedProxyUrl}
                     </div>
                   </div>
