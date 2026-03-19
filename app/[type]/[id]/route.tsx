@@ -3130,20 +3130,22 @@ const renderWithSharp = async (
       if (usableQualityBadges.length > 0) {
         const leftColumn: RatingBadge[] = [];
         const rightColumn: RatingBadge[] = [];
-        for (const badge of usableQualityBadges) {
-          if (leftColumn.length < 2) {
-            leftColumn.push(badge);
-          } else if (rightColumn.length < 2) {
-            rightColumn.push(badge);
-          } else if (leftColumn.length <= rightColumn.length) {
-            leftColumn.push(badge);
-          } else {
-            rightColumn.push(badge);
+        if (input.backdropRatingsLayout === 'center' && usableQualityBadges.length === 2) {
+          leftColumn.push(usableQualityBadges[0]);
+          rightColumn.push(usableQualityBadges[1]);
+        } else {
+          for (const badge of usableQualityBadges) {
+            if (leftColumn.length < 2) {
+              leftColumn.push(badge);
+            } else if (rightColumn.length < 2) {
+              rightColumn.push(badge);
+            } else if (leftColumn.length <= rightColumn.length) {
+              leftColumn.push(badge);
+            } else {
+              rightColumn.push(badge);
+            }
           }
         }
-        const columnHeight = (column: RatingBadge[]) =>
-          column.length * qualityHeight + Math.max(0, column.length - 1) * input.badgeGap;
-        const maxColumnHeight = Math.max(columnHeight(leftColumn), columnHeight(rightColumn));
         const ratingsOnRight =
           input.backdropRatingsLayout === 'right' || input.backdropRatingsLayout === 'right-vertical';
         const startY = input.badgeTopOffset;
@@ -3152,9 +3154,17 @@ const renderWithSharp = async (
         if (rightColumn.length === 0) {
           const centerX = input.outputWidth / 2;
           const singleX = Math.round(centerX - uniformBadgeWidth / 2);
+          const ratingRows =
+            input.backdropRatingsLayout === 'right-vertical'
+              ? 0
+              : (input.topBadges.length > 0 ? 1 : 0) + (input.bottomBadges.length > 0 ? 1 : 0);
+          const singleStartY =
+            input.backdropRatingsLayout === 'center' && ratingRows > 0
+              ? startY + ratingRows * (badgeHeight + input.badgeGap)
+              : startY;
           renderQualityBadgeColumnAt(
             leftColumn,
-            startY,
+            singleStartY,
             singleX,
             qualityHeight,
             uniformBadgeWidth
