@@ -53,6 +53,9 @@ const SUPPORTED_LANGUAGES = [
 ];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
+const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
+type ProxyType = (typeof PROXY_TYPES)[number];
+type ProxyEnabledTypes = Record<ProxyType, boolean>;
 const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
