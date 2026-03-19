@@ -1032,6 +1032,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     derived: {
       baseUrl,
       previewUrl,
+      proxyUrl,
       canGenerateConfig,
       canGenerateProxy,
       isConfigStringVisible,

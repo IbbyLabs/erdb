@@ -77,6 +77,7 @@ type HomePageViewState = {
 type HomePageViewDerived = {
   baseUrl: string;
   previewUrl: string;
+  proxyUrl: string;
   canGenerateConfig: boolean;
   canGenerateProxy: boolean;
   isConfigStringVisible: boolean;
@@ -134,6 +135,7 @@ export type HomePageViewProps = {
   actions: HomePageViewActions;
 };
 
+const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
 const PROXY_TYPES: PreviewType[] = ['poster', 'backdrop', 'logo'];
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
@@ -180,6 +182,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
   const {
     baseUrl,
     previewUrl,
+    proxyUrl,
     canGenerateConfig,
     canGenerateProxy,
     isConfigStringVisible,
@@ -617,10 +620,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                   </h3>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!canGenerateConfig) return;
-                      setShowConfigString((value) => !value);
-                    }}
+                    onClick={toggleConfigStringVisibility}
                     disabled={!canGenerateConfig}
                     className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors ${canGenerateConfig ? 'border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]' : 'border border-white/5 bg-[#080b10] text-slate-600 cursor-not-allowed'}`}
                   >
@@ -681,7 +681,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     <input
                       type="url"
                       value={proxyManifestUrl}
-                      onChange={(e) => setProxyManifestUrl(normalizeManifestUrl(e.target.value, true))}
+                      onChange={(e) => updateProxyManifestUrl(e.target.value)}
                       placeholder="https://addon.example.com/manifest.json"
                       className="w-full bg-[#080b10] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none"
                     />
@@ -701,7 +701,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                   <div>
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 block mb-1.5">Translate Meta</span>
                     <label className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${proxyTranslateMeta ? 'border-orange-500/60 bg-[#141b26] text-white' : 'border-white/10 bg-[#0b0f15] text-slate-400 hover:text-white'}`}>
-                      <input type="checkbox" checked={proxyTranslateMeta} onChange={() => setProxyTranslateMeta((value) => !value)} className="h-3 w-3 accent-orange-500" />
+                      <input type="checkbox" checked={proxyTranslateMeta} onChange={toggleProxyTranslateMeta} className="h-3 w-3 accent-orange-500" />
                       <span>Translate Addon Content</span>
                     </label>
                     <div className="mt-1 text-[10px] text-slate-500">Uses selected language for titles, plots, and episodes.</div>
@@ -713,7 +713,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     <div className="text-[11px] font-semibold text-slate-400">Generated Manifest</div>
                     <button
                       type="button"
-                      onClick={() => setShowProxyUrl((value) => !value)}
+                      onClick={toggleProxyUrlVisibility}
                       className="px-3 py-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]"
                     >
                       {isProxyUrlVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -747,7 +747,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       )}
                     </button>
                     <a
-                      href={canGenerateProxy ? proxyUrl : undefined}
+                        href={canGenerateProxy ? proxyUrl : undefined}
                       target="_blank"
                       rel="noreferrer"
                       className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 transition-colors ${canGenerateProxy ? 'border border-white/10 bg-[#0b0f15] text-slate-200 hover:bg-[#141b26]' : 'border border-white/5 bg-[#080b10] text-slate-600 pointer-events-none'}`}
@@ -854,7 +854,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">lang</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">{SUPPORTED_LANGUAGES.map(l => l.code).join(', ')}</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">{supportedLanguages.map((language) => language.code).join(', ')}</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">en</td>
                       </tr>
                       <tr>
