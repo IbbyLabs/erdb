@@ -1,7 +1,927 @@
 {
-  "generatedAt": "2026-03-17T20:00:28.471Z",
-  "total": 89,
+  "generatedAt": "2026-03-20T01:02:00.023Z",
+  "total": 120,
   "commits": [
+    {
+      "hash": "6fcb988a1c8dee9d2c8071a8e60aa9e89e3b7bd2",
+      "shortHash": "6fcb988",
+      "date": "2026-03-20T00:54:40Z",
+      "type": "chore",
+      "title": "merge upstream/main (ours)",
+      "body": null
+    },
+    {
+      "hash": "fcd806816ebf72b3e424628d9b5cb6adc56f8ecc",
+      "shortHash": "fcd8068",
+      "date": "2026-03-20T01:50:29+01:00",
+      "type": "chore",
+      "title": "Delete .github/workflows directory",
+      "body": null
+    },
+    {
+      "hash": "0134e41a13ec59b8754bf7f85ef9fc284a5a5ebd",
+      "shortHash": "0134e41",
+      "date": "2026-03-20T01:41:03+01:00",
+      "type": "chore",
+      "title": "Update docker-build.yml",
+      "body": null
+    },
+    {
+      "hash": "fe384a7b8a4e0f98f6a94fc675de5109a81bf6dc",
+      "shortHash": "fe384a7",
+      "date": "2026-03-20T01:31:33+01:00",
+      "type": "chore",
+      "title": "Delete release.yml",
+      "body": null
+    },
+    {
+      "hash": "606ac044214e891cb9b86269fca4e58c93f4c6b1",
+      "shortHash": "606ac04",
+      "date": "2026-03-20T01:27:01+01:00",
+      "type": "chore",
+      "title": "Update release.yml",
+      "body": null
+    },
+    {
+      "hash": "7b2489b0811dd47b4f0cc4cc3b9fe32777863673",
+      "shortHash": "7b2489b",
+      "date": "2026-03-20T00:20:30Z",
+      "type": "chore",
+      "title": "merge upstream/main (ours)",
+      "body": null
+    },
+    {
+      "hash": "4c6d80eb82922c2f556705dfec9a94877ae755a1",
+      "shortHash": "4c6d80e",
+      "date": "2026-03-20T01:16:45+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "164a4a257a8f1ec42934e05fe45b9c5b052b8e01",
+      "shortHash": "164a4a2",
+      "date": "2026-03-19T21:48:47Z",
+      "type": "chore",
+      "title": "release 2.16.1",
+      "body": null
+    },
+    {
+      "hash": "ce6b2dc84b2b2e7699700f359964b9606786374e",
+      "shortHash": "ce6b2dc",
+      "date": "2026-03-19T21:48:01Z",
+      "type": "chore",
+      "title": "remove all comments and boilerplate markers",
+      "body": "- Stripped code comments from update-changelog.mjs and core route file.\n- Removed boilerplate header from CHANGELOG.md.\n- Cleaned up JSX comments and example markers in home-page-view.tsx."
+    },
+    {
+      "hash": "f883434afae2d6d40469f4a134b8447b945a4e28",
+      "shortHash": "f883434",
+      "date": "2026-03-19T21:46:03Z",
+      "type": "chore",
+      "title": "refine changelog generation logic",
+      "body": "- Filtered out redundant 'chore: release' and synchronization commits.\n- Added a dedicated 'Documentation' section for 'docs:' commits.\n- Improved commit grouping and section headings for better readability."
+    },
+    {
+      "hash": "97bb620b394cd26ec1e9a96173242d3b2222746b",
+      "shortHash": "97bb620",
+      "date": "2026-03-19T21:42:40Z",
+      "type": "chore",
+      "title": "release 2.16.0",
+      "body": null
+    },
+    {
+      "hash": "0b74a9c59fd6798ede6e5bf756bb9bde05bbe4d2",
+      "shortHash": "0b74a9c",
+      "date": "2026-03-19T21:41:43Z",
+      "type": "chore",
+      "title": "normalize date formats to UK standard (DD/MM/YYYY)",
+      "body": "- Updated CHANGELOG.md history with UK date format.\n- Modified update-changelog.mjs to generate UK format dates for new entries."
+    },
+    {
+      "hash": "f19a3972efe507cb1cbd2c10b47b059f9b2fc328",
+      "shortHash": "f19a397",
+      "date": "2026-03-19T21:39:00Z",
+      "type": "chore",
+      "title": "add automated changelog management",
+      "body": "- Generated initial CHANGELOG.md from git history.\n- Added scripts/update-changelog.mjs for automated updates.\n- Integrated changelog updates into npm version lifecycle."
+    },
+    {
+      "hash": "d520e69a4b28f02f7b61c6909450929c00699184",
+      "shortHash": "d520e69",
+      "date": "2026-03-19T21:34:25Z",
+      "type": "chore",
+      "title": "release 2.15.0",
+      "body": null
+    },
+    {
+      "hash": "588039151e2faea26410f961004752d5ae1b75f8",
+      "shortHash": "5880391",
+      "date": "2026-03-19T21:33:08Z",
+      "type": "chore",
+      "title": "synchronize with upstream/main to clear behind status",
+      "body": null
+    },
+    {
+      "hash": "18cc07d5c0a3954dd6698410b14387251370c74a",
+      "shortHash": "18cc07d",
+      "date": "2026-03-19T21:33:08Z",
+      "type": "feat",
+      "title": "implement select-all as default for rating preferences",
+      "body": null
+    },
+    {
+      "hash": "036e3e7e6de7f118093815fae6472afe0fb2bb1e",
+      "shortHash": "036e3e7",
+      "date": "2026-03-19T21:33:03Z",
+      "type": "fix",
+      "title": "display 10.0 as 10 for cleaner visuals",
+      "body": "Rounding values of 10.0 to 10 to ensure a consistent look across providers when they reach the maximum normalized rating."
+    },
+    {
+      "hash": "826fdb9d24176eed47e5f5244e20afa4a144cc0f",
+      "shortHash": "826fdb9",
+      "date": "2026-03-19T21:32:59Z",
+      "type": "feat",
+      "title": "normalize ratings to 0-10 scale and optimize backdrop layout for multi-row",
+      "body": "This update standardizes ratings across poster, backdrop, and logo outputs by converting all providers to a 0-10 visual scale. It also improves backdrop rating rendering with dynamic multi-row layouts and prioritizes anime-specific providers."
+    },
+    {
+      "hash": "26c01e9646aaa2ef3bdabd258b8a665401a0783a",
+      "shortHash": "26c01e9",
+      "date": "2026-03-19T22:07:23+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "533961ab5db7e0cef78452d8d60f2a3c4980ab62",
+      "shortHash": "533961a",
+      "date": "2026-03-19T21:52:00+01:00",
+      "type": "chore",
+      "title": "Normalize ratings to a 0-10 scale and improve anime/backdrop badge behavior",
+      "body": "This update standardizes displayed ratings across poster, backdrop, and logo outputs by converting all providers to a 0-10 visual scale. It also improves backdrop rating rendering with dynamic multi-row layouts and prioritizes anime-specific providers like MyAnimeList, AniList, and Kitsu when anime metadata is detected."
+    },
+    {
+      "hash": "5ba092f39863824e4387b6ba98ad5d385f5643f8",
+      "shortHash": "5ba092f",
+      "date": "2026-03-19T19:01:47Z",
+      "type": "chore",
+      "title": "release 2.14.3",
+      "body": null
+    },
+    {
+      "hash": "461e92e78d85b41b44debde63ccf64f26c23ba40",
+      "shortHash": "461e92e",
+      "date": "2026-03-19T19:00:54Z",
+      "type": "chore",
+      "title": "merge upstream/main (ours)",
+      "body": null
+    },
+    {
+      "hash": "a2b102b6fc179c333419d9a90b330a86e3f13940",
+      "shortHash": "a2b102b",
+      "date": "2026-03-19T19:00:15Z",
+      "type": "fix",
+      "title": "improve badge layout spacing and column limits",
+      "body": "- Capped quality badges strictly at 2 items per column (left/right) to prevent vertical overflow.\n\n- Dynamically adjust vertical start offset when backdrop ratings layout is 'center' matching top/bottom badges, preventing overlap with rating badges."
+    },
+    {
+      "hash": "664646419d093e9d1a3f24d1afb9e2111d357e63",
+      "shortHash": "6646464",
+      "date": "2026-03-19T15:56:40+01:00",
+      "type": "chore",
+      "title": "Update route.tsx",
+      "body": null
+    },
+    {
+      "hash": "3da0df75eb5ecab2d93d72be3d35a0926a9d886b",
+      "shortHash": "3da0df7",
+      "date": "2026-03-19T04:56:54Z",
+      "type": "chore",
+      "title": "release 2.14.2",
+      "body": null
+    },
+    {
+      "hash": "614bfe766f987d293a65c40487c01345fd011856",
+      "shortHash": "614bfe7",
+      "date": "2026-03-19T04:54:43Z",
+      "type": "fix",
+      "title": "prevent long strings from overflowing containers on mobile",
+      "body": "- Add `overflow-hidden` to the config string and generated manifest wrapper divs to ensure long `break-all` text respects the `rounded-2xl` border on narrow viewports\n\n- Add `min-w-0` to the manifest URL input field so it can shrink below its intrinsic width in the flex/grid layout\n\n- Add `overflow-y-hidden` to the base structure code block container to prevent vertical bleed while retaining `overflow-x-auto`"
+    },
+    {
+      "hash": "8e99b690ffc205bde1969dcf235d9efabcde77f0",
+      "shortHash": "8e99b69",
+      "date": "2026-03-19T04:00:28Z",
+      "type": "ci",
+      "title": "upgrade build-push-action to v6 and enable provenance",
+      "body": "Upgrade docker/build-push-action from v5 to v6 and explicitly enable\nprovenance attestation for supply chain security. The signed build\nattestation is added as metadata to the image layer — no change to the\nimage contents or runtime behaviour."
+    },
+    {
+      "hash": "b904f70a4581d509cc47c19914defbc071e23afa",
+      "shortHash": "b904f70",
+      "date": "2026-03-19T03:55:47Z",
+      "type": "chore",
+      "title": "release 2.14.1",
+      "body": null
+    },
+    {
+      "hash": "f7a11a362df5d41ee2a62fbc370886255ef3ea1c",
+      "shortHash": "f7a11a3",
+      "date": "2026-03-19T03:53:08Z",
+      "type": "test",
+      "title": "add posterQualityBadgesPosition to workspace round-trip assertion",
+      "body": "Include the new posterQualityBadgesPosition default ('auto') in the\nexpected settings for the workspace serialization round-trip test."
+    },
+    {
+      "hash": "688f3985bae55f770290666fadc656547b1733fd",
+      "shortHash": "688f398",
+      "date": "2026-03-19T03:49:32Z",
+      "type": "chore",
+      "title": "release 2.14.0",
+      "body": null
+    },
+    {
+      "hash": "eb706d127a3bfeb24a77b96e8c9e9475a6187459",
+      "shortHash": "eb706d1",
+      "date": "2026-03-19T03:46:55Z",
+      "type": "style",
+      "title": "apply violet theme to configurator card and toggle buttons",
+      "body": "Update the Configurator & Proxy wrapper card background from plain\ngrey-zinc gradient to violet-tinted dark (rgba(30,22,42) base) with\nan extended violet radial glow (60% ellipse spread) and a\nborder-violet-500/15 border.\n\nUpdate SHOW/HIDE toggle buttons from flat bg-zinc-800 to\nbg-violet-500/20 with violet-300 text and violet-500/30 border,\nmatching the purple accent theme used throughout the page."
+    },
+    {
+      "hash": "1e348048cc23dc0506e4abc97c3bcda150113d20",
+      "shortHash": "1e34804",
+      "date": "2026-03-19T03:40:57Z",
+      "type": "chore",
+      "title": "merge upstream/main.",
+      "body": "Cherry picked three features (3 badge top row, posterQualityBadgesPosition,\nshow/hide toggles) and adopted the metadata cache improvement. Remaining upstream\nchanges were evaluated and skipped."
+    },
+    {
+      "hash": "4091a9e284d16315f327d79d3f045c0f3483f643",
+      "shortHash": "4091a9e",
+      "date": "2026-03-19T03:37:13Z",
+      "type": "perf",
+      "title": "remove metadata cache hard row cap",
+      "body": "Remove the pruneOldestMetadata(2000) call from setMetadata. TTL-based\nexpiration via pruneExpiredMetadata already handles cleanup naturally,\nand the aggressive 2,000-row hard cap could evict still-valid cached\nratings, forcing unnecessary re-fetches. SQLite handles tens of\nthousands of rows without issue."
+    },
+    {
+      "hash": "852028fb1c75c7565a1746b65d92eea5907f87e3",
+      "shortHash": "852028f",
+      "date": "2026-03-19T03:31:40Z",
+      "type": "feat",
+      "title": "add show/hide toggles for config string and proxy URL",
+      "body": "Add ability to toggle visibility of the ERDB config string and\ngenerated proxy URL to prevent accidental exposure during\nscreen-sharing or streaming.\n\n- Import `Eye` and `EyeOff` icons from lucide-react\n- Add `maskSensitiveText` helper that replaces visible characters\n  with asterisks\n- Add `showConfigString` and `showProxyUrl` state with `useEffect`\n  hooks to auto-hide when the underlying values are cleared\n- Compute `displayedConfigString` and `displayedProxyUrl` using\n  masked values when hidden\n- Add toggle buttons next to copy buttons in both the config string\n  and proxy URL sections\n- Apply `select-none` CSS class when masked to prevent clipboard\n  selection of asterisks"
+    },
+    {
+      "hash": "e451a056b1916e702c6fdf12ff3fa0681732acea",
+      "shortHash": "e451a05",
+      "date": "2026-03-19T03:31:40Z",
+      "type": "feat",
+      "title": "add posterQualityBadgesPosition setting",
+      "body": "Introduce `posterQualityBadgesPosition` to control quality-badge\nplacement for poster `top`/`bottom` layouts. Accepted values:\n`auto` (default), `left`, `right`.\n\nServer (`route.tsx`):\n- Add `PosterQualityBadgesPosition` type and `normalizePosterQualityBadgesPosition`\n- Add `resolvePosterQualityBadgePlacement` resolver that determines\n  placement based on layout, qualityBadgesSide, and the new setting\n- Replace hardcoded placement logic in `renderWithSharp` with the\n  resolver function\n- Parse `posterQualityBadgesPosition` from URL search params\n- Include in both render-seed and final-image cache keys\n\nClient (`page.tsx`):\n- Add state, derived visibility booleans, and a Position toggle UI\n  (auto/left/right) shown only for `top` or `bottom` poster layouts\n- Include in preview URL, config export, proxy URL, and AI prompt\n\nConfig (`uiConfig.ts`):\n- Add type, default (`auto`), normalizer, and include in\n  `SharedErdbSettings`, `normalizeSharedErdbSettings`, and\n  `buildSharedPayload`"
+    },
+    {
+      "hash": "ad4dee2125b37beefb2ce16ce7b7434f7b0eaf49",
+      "shortHash": "ad4dee2",
+      "date": "2026-03-19T03:31:40Z",
+      "type": "feat",
+      "title": "add posterQualityBadgesPosition to addon proxy config",
+      "body": "Register `posterQualityBadgesPosition` across the proxy layer:\n\n- Add to `ERDB_OPTIONAL_PARAMS` array\n- Include in the `ProxyConfig` type definition\n- Add to `PROXY_OPTIONAL_STRING_KEYS` for optional string handling\n\nThis ensures the poster quality badge position setting is recognized,\ntyped, and treated as an optional string key for proxy URL generation."
+    },
+    {
+      "hash": "d97c22335e5b20188e627fb14d29d65dbcbd7650",
+      "shortHash": "d97c223",
+      "date": "2026-03-19T03:31:40Z",
+      "type": "feat",
+      "title": "handle 3-badge top row in left-right poster layout",
+      "body": "Add support for an extra centered top badge when using the left-right\nposter ratings layout with an odd number of badges.\n\n- `splitPosterBadgesByLayout` now surfaces a single top badge when\n  the total is odd, with remaining badges split evenly across left\n  and right columns\n- `getMaxBadgeColumnCount` and `fitPosterBadgeMetricsToHeight` gain\n  a `reservedTopRows` parameter so column heights correctly subtract\n  the reserved top-row space\n- `renderWithSharp` gains `splitAcrossHalves` and `spreadAcrossThirds`\n  composition flags for the row renderer\n- `getPosterRatingLayoutMaxBadges` for `left-right` now returns\n  `n*2 + 1` and `describePosterRatingLayoutLimit` includes the\n  top-center badge in the human-readable description"
+    },
+    {
+      "hash": "a44e2a980044a3ecdb00f48a2c87b81e8a26b131",
+      "shortHash": "a44e2a9",
+      "date": "2026-03-19T03:43:04+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "49350b08ddb607e246914b179cc861325e0e1dcd",
+      "shortHash": "49350b0",
+      "date": "2026-03-19T03:40:12+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "0ccbbfbc7496008f02a8df3130ff4029c1b38c25",
+      "shortHash": "0ccbbfb",
+      "date": "2026-03-19T03:13:26+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "7d4d2190819cc890a230fba92ee3ff40994b8b6a",
+      "shortHash": "7d4d219",
+      "date": "2026-03-19T01:19:02Z",
+      "type": "chore",
+      "title": "release 2.13.8",
+      "body": null
+    },
+    {
+      "hash": "a252f7fbc556c4fd369149ce3403887f21ed0687",
+      "shortHash": "a252f7f",
+      "date": "2026-03-19T01:19:01Z",
+      "type": "chore",
+      "title": "add comprehensive env vars reference and fix stale docs",
+      "body": "- .env.example: add all env vars with defaults, min/max, and sections\n  (proxy/security, cache TTLs, Torrentio, IMDb, Sharp rendering)\n- README: add Environment Variables section with tables for all settings\n- README: fix release command (npm run release:patch, not npm run release -- patch)\n- Add missing env vars: ERDB_TORRENTIO_CACHE_TTL_MS, ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS,\n  ERDB_TRUST_PROXY_HEADERS, ERDB_PROXY_ALLOWED_ORIGINS"
+    },
+    {
+      "hash": "2d5b29968e2d3e52cfceda0399a263715c735072",
+      "shortHash": "2d5b299",
+      "date": "2026-03-19T00:36:44Z",
+      "type": "chore",
+      "title": "release 2.13.7",
+      "body": null
+    },
+    {
+      "hash": "2b7af704e916cf3700f73c2f399f2f2ac1535c2b",
+      "shortHash": "2b7af70",
+      "date": "2026-03-19T00:36:22Z",
+      "type": "fix",
+      "title": "sync pnpm lockfile for undici dependency",
+      "body": null
+    },
+    {
+      "hash": "cbd79577fe439ee79ec1ba62663de558980a31b0",
+      "shortHash": "cbd7957",
+      "date": "2026-03-19T00:34:20Z",
+      "type": "chore",
+      "title": "release 2.13.6",
+      "body": null
+    },
+    {
+      "hash": "63ddd28dd9e6c107ba402166ca8dd242669572d2",
+      "shortHash": "63ddd28",
+      "date": "2026-03-19T00:34:19Z",
+      "type": "feat",
+      "title": "route Torrentio requests through HTTP_PROXY/HTTPS_PROXY",
+      "body": "Node.js native fetch does not respect HTTP_PROXY/HTTPS_PROXY env vars.\nThis adds undici's ProxyAgent to route Torrentio stream badge requests\nthrough the configured proxy (e.g. gluetun VPN container).\n\nAlso includes the User-Agent fix from v2.13.5 to bypass Cloudflare\nbot protection on Torrentio."
+    },
+    {
+      "hash": "59a7e5d4f781b029025417c97ebda91b2ac2265b",
+      "shortHash": "59a7e5d",
+      "date": "2026-03-19T00:31:23Z",
+      "type": "chore",
+      "title": "release 2.13.5",
+      "body": null
+    },
+    {
+      "hash": "56af6f8b51cbaf4c7921078c11f1f94cbcb06d88",
+      "shortHash": "56af6f8",
+      "date": "2026-03-19T00:31:21Z",
+      "type": "fix",
+      "title": "add User-Agent header to Torrentio fetch to bypass 403",
+      "body": "Torrentio/Cloudflare returns 403 for requests without a browser-like\nUser-Agent header. This caused all stream quality badges (4K, HDR, DV,\nAtmos) to silently fail in production. Adding a Chrome User-Agent to\nthe fetch request resolves the issue."
+    },
+    {
+      "hash": "15536a87baa05bf35b97404251efe830b3fd2495",
+      "shortHash": "15536a8",
+      "date": "2026-03-19T00:28:52Z",
+      "type": "chore",
+      "title": "release 2.13.4",
+      "body": null
+    },
+    {
+      "hash": "e7651945f815b613af99b9d6bbaab3703f45d8eb",
+      "shortHash": "e765194",
+      "date": "2026-03-19T00:28:51Z",
+      "type": "chore",
+      "title": "add per-request log to verify deployed code version",
+      "body": "Logs every image request with type, id, and streamBadges param\nto confirm the deployed Docker image contains the latest code."
+    },
+    {
+      "hash": "d2bb456fec16654ec02f58e2ca9a32dc4488a04c",
+      "shortHash": "d2bb456",
+      "date": "2026-03-19T00:06:20Z",
+      "type": "chore",
+      "title": "release 2.13.3",
+      "body": null
+    },
+    {
+      "hash": "1d91c82d52cb0a6b532843e5519530cac8f143e8",
+      "shortHash": "1d91c82",
+      "date": "2026-03-19T00:06:19Z",
+      "type": "chore",
+      "title": "add diagnostic logging for Torrentio fetch failures",
+      "body": "Logs warnings when Torrentio fetch throws (network/timeout), returns\nnon-200, or has zero streams. This helps diagnose why stream quality\nbadges are not appearing in production."
+    },
+    {
+      "hash": "85e90ef2c2f7f4808ba2cda72c39c7cc07ab1961",
+      "shortHash": "85e90ef",
+      "date": "2026-03-19T00:36:42+01:00",
+      "type": "chore",
+      "title": ".",
+      "body": null
+    },
+    {
+      "hash": "3c2f6f98150421b51cb39296730a03230611b75a",
+      "shortHash": "3c2f6f9",
+      "date": "2026-03-18T23:19:12Z",
+      "type": "chore",
+      "title": "release 2.13.2",
+      "body": null
+    },
+    {
+      "hash": "76cde91dce0e3b975bd56f34ca390531318cb915",
+      "shortHash": "76cde91",
+      "date": "2026-03-18T23:19:11Z",
+      "type": "fix",
+      "title": "strip internal port from public-facing image URLs",
+      "body": "When ERDB runs behind a reverse proxy (ERDB_TRUST_PROXY_HEADERS=true),\nthe internal port (e.g. :3000) was leaking into generated image URLs.\nThis made all poster, backdrop, and logo URLs unreachable through the\nreverse proxy, causing blank posters and missing badges in Stremio.\n\nNow strips the port from generated URLs when behind a trusted proxy,\nso URLs use the reverse proxy's default port instead."
+    },
+    {
+      "hash": "77310dd5dc846b97fa91daf2cf37c411c38ba3bb",
+      "shortHash": "77310dd",
+      "date": "2026-03-18T23:13:44Z",
+      "type": "chore",
+      "title": "release 2.13.1",
+      "body": null
+    },
+    {
+      "hash": "faade1d50a2b1f85c5ce92cce559c91ecc64594f",
+      "shortHash": "faade1d",
+      "date": "2026-03-18T23:13:42Z",
+      "type": "fix",
+      "title": "remove torrentio language filter for badge detection",
+      "body": "The `language=italian` filter in the Torrentio stream URL caused empty\nresults for all non-Italian content, preventing quality badges (4K, HDR,\nDolby Vision, etc.) from appearing on most titles.\n\nSince badge detection only needs to know WHETHER quality streams exist\n(not their language), the language filter is now removed entirely.\nThis ensures Torrentio returns all available streams for accurate\nbadge generation regardless of content language.\n\nAlso adds ERDB_TORRENTIO_BASE_URL env var for custom Torrentio instances."
+    },
+    {
+      "hash": "657f8d60cdf2a264adde86508ebc0da0675757fb",
+      "shortHash": "657f8d6",
+      "date": "2026-03-19T00:11:50+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "b3027f336a7ec7025a31e55a31c5e989f0df40b9",
+      "shortHash": "b3027f3",
+      "date": "2026-03-19T00:08:22+01:00",
+      "type": "chore",
+      "title": "Add show/hide toggles for config and proxy",
+      "body": "Add ability to toggle visibility of the ERDB config string and generated proxy URL. Import Eye and EyeOff icons, add maskSensitiveText helper, and new state (showConfigString, showProxyUrl) with effects to reset when their values are cleared. Compute displayedConfigString/displayedProxyUrl to show masked values when hidden and update UI: add toggle buttons, adjust text styling to prevent selection when masked, and disable toggles when no value is available."
+    },
+    {
+      "hash": "40683e13581c7919a7f92222edc4ca092aadcbd7",
+      "shortHash": "40683e1",
+      "date": "2026-03-18T23:57:04+01:00",
+      "type": "chore",
+      "title": "Add posterQualityBadgesPosition option",
+      "body": "Introduce posterQualityBadgesPosition across the codebase: add to ERDB_OPTIONAL_PARAMS, include in the ProxyConfig type, and add to PROXY_OPTIONAL_STRING_KEYS. This ensures the poster quality badge position setting is recognized, typed, and treated as an optional string key for proxy handling."
+    },
+    {
+      "hash": "7fcc55bf9b5c373a8af53544c85d9bed0d04b6f9",
+      "shortHash": "7fcc55b",
+      "date": "2026-03-18T23:53:29+01:00",
+      "type": "chore",
+      "title": "Add posterQualityBadgesPosition support",
+      "body": "Introduce a new posterQualityBadgesPosition setting to control quality-badge placement for poster top/bottom layouts. README updated with docs and URL parameter. Server: add types, normalization, resolver and use the new value in rendering logic and URL parsing so badge placement is computed correctly. Client: add UI control, state, validation and include the setting in preview, exported config and proxy manifest URLs; refactor preview/config/proxy generation to use useMemo and a client-origin helper, and use requestAnimationFrame when loading stored keys for smoother startup."
+    },
+    {
+      "hash": "93200ab97493eeba402cfe36b345efa2eca7044c",
+      "shortHash": "93200ab",
+      "date": "2026-03-18T22:37:34Z",
+      "type": "chore",
+      "title": "release 2.13.0",
+      "body": null
+    },
+    {
+      "hash": "486446f73f10bdf7ee795323dcc056d0e1ae39e3",
+      "shortHash": "486446f",
+      "date": "2026-03-18T22:36:47Z",
+      "type": "chore",
+      "title": "release 2.12.0",
+      "body": null
+    },
+    {
+      "hash": "6d76f603cd48120c38b0a2686af3cae43c55dfe7",
+      "shortHash": "6d76f60",
+      "date": "2026-03-18T22:36:46Z",
+      "type": "feat",
+      "title": "added an override for badges",
+      "body": null
+    },
+    {
+      "hash": "ffc7966cc223cad91109a34572920764adda813f",
+      "shortHash": "ffc7966",
+      "date": "2026-03-18T22:24:28Z",
+      "type": "chore",
+      "title": "release 2.11.2",
+      "body": null
+    },
+    {
+      "hash": "301af7276fb7531b9cfe203a968e08e5bd12c236",
+      "shortHash": "301af72",
+      "date": "2026-03-18T22:24:27Z",
+      "type": "fix",
+      "title": "resolve stremio badge inconsistency by adding Torrentio concurrency limiter and fixing series streams",
+      "body": "- Adds a global `torrentioConcurrencyLimit` queue to `route.tsx` (limit: 3) to prevent aggressive rate-limiting from Torrentio when Stremio requests 20+ catalog posters concurrently.\n- Modifies the Torrentio stream request for series to properly append `:1:1` (S01E01), allowing Torrentio to successfully fetch stream badges rather than returning empty streams.\n\nThese changes resolve an issue where stream badges would intermittently fail on Stremio catalogs due to connection drops and lack of episodic context for TV show requests."
+    },
+    {
+      "hash": "a13ce21fd82ecac9f583f318f153026910b3719d",
+      "shortHash": "a13ce21",
+      "date": "2026-03-18T23:15:11+01:00",
+      "type": "chore",
+      "title": "Handle 3-badge top row in left-right layout",
+      "body": "Add support for an extra centered top badge when using the left-right poster ratings layout. Reserved top rows are now accounted for in sizing (getMaxBadgeColumnCount, fitPosterBadgeMetricsToHeight) so column heights subtract the reserved top-row space. splitPosterBadgesByLayout now surfaces a single top badge when the total is odd, and renderWithSharp gains helpers and options to correctly compose a three-badge top row and to align side columns (composeEdgeAlignedPosterBadge, updated composeBadgeColumn, splitAcrossHalves/spreadAcrossThirds flags). The GET flow is updated to compute fitted columns, reservedTopRows and effective per-side limits when the extra top badge is present. Also update posterRatingLayout helpers to include the additional top-center badge in counts and human-readable descriptions."
+    },
+    {
+      "hash": "bf3576ee1196ce482c9061f3bdcfd26f3dcaf331",
+      "shortHash": "bf3576e",
+      "date": "2026-03-18T20:35:16Z",
+      "type": "ci",
+      "title": "fix release workflow dependency",
+      "body": null
+    },
+    {
+      "hash": "4ac13d51e44d0e8a133704815aa65c65e5e70bcd",
+      "shortHash": "4ac13d5",
+      "date": "2026-03-18T20:07:55Z",
+      "type": "chore",
+      "title": "release 2.11.1",
+      "body": null
+    },
+    {
+      "hash": "240f29dfe7983fbfa896f2474e69d1210913eb3c",
+      "shortHash": "240f29d",
+      "date": "2026-03-18T20:07:55Z",
+      "type": "fix",
+      "title": "remove lingering edge middleware to resolve CSP hydration block",
+      "body": null
+    },
+    {
+      "hash": "7609a04b235222ffbcca7d8161a660366468a0e8",
+      "shortHash": "7609a04",
+      "date": "2026-03-18T19:41:31Z",
+      "type": "chore",
+      "title": "remove temporary commit file",
+      "body": null
+    },
+    {
+      "hash": "2c8c128ff6506eed06bfd4c7a5d59f19d02dd735",
+      "shortHash": "2c8c128",
+      "date": "2026-03-18T19:40:19Z",
+      "type": "chore",
+      "title": "release 2.11.0",
+      "body": null
+    },
+    {
+      "hash": "1b3ac53614974c8a3723d903ae5f7e64170ca28b",
+      "shortHash": "1b3ac53",
+      "date": "2026-03-18T19:40:19Z",
+      "type": "chore",
+      "title": "repo-wide performance and security fixes",
+      "body": "- fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate-limit bans\n- feat(cache): implement TTL-based map for TMDB fetch caching to prevent permanent memory leaks\n- fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n- feat(cache): integrate disk-level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n- feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n- security(cors): correct proxy manifest and proxy endpoints to default to Access-Control-Allow-Origin: * rather than aggressively reflecting arbitrary origin headers\n- fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n- ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n- docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
+    },
+    {
+      "hash": "cf842a204e330ca79ff611dd1457afd10d06d162",
+      "shortHash": "cf842a2",
+      "date": "2026-03-18T19:39:53Z",
+      "type": "chore",
+      "title": "repo-wide performance and security fixes",
+      "body": "- fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate-limit bans\n- feat(cache): implement TTL-based map for TMDB fetch caching to prevent permanent memory leaks\n- fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n- feat(cache): integrate disk-level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n- feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n- security(cors): correct proxy manifest and proxy endpoints to default to Access-Control-Allow-Origin: * rather than aggressively reflecting arbitrary origin headers\n- fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n- ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n- docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
+    },
+    {
+      "hash": "0af59561f8066e85b958711a263fdc1bbcfd408f",
+      "shortHash": "0af5956",
+      "date": "2026-03-18T18:05:38Z",
+      "type": "chore",
+      "title": "release 2.10.2",
+      "body": null
+    },
+    {
+      "hash": "db6a3289cc54818ceaf9ca20548ac28023faa9f4",
+      "shortHash": "db6a328",
+      "date": "2026-03-18T18:05:02Z",
+      "type": "chore",
+      "title": "tightened some wording",
+      "body": null
+    },
+    {
+      "hash": "014c18d0a14e957af7e76f67446d8501eb419733",
+      "shortHash": "014c18d",
+      "date": "2026-03-18T17:39:37Z",
+      "type": "chore",
+      "title": "release 2.10.1",
+      "body": null
+    },
+    {
+      "hash": "3023fd895961eefe5d2c3bad98f261d1cdc82a28",
+      "shortHash": "3023fd8",
+      "date": "2026-03-18T17:37:31Z",
+      "type": "feat",
+      "title": "tighten the merged configurator workspace layout",
+      "body": "Restructure the primary workspace surface into a denser desktop composition so the configurator, live preview, config-string export, and thin proxy panel read as one all-in-one flow instead of two spaced-out sections.\n\nKeep the merged proxy behavior intact by preserving the manifest-only proxy input while moving the preview stack back into the center column and reducing visual dead space across the workspace container, card chrome, and header treatment.\n\nRetain the existing persistence and export wiring so the new layout remains compatible with the shared workspace model, copied config strings, and generated proxy manifests."
+    },
+    {
+      "hash": "e906470af1a58f9daebc9b1b8ad4fad9381475bc",
+      "shortHash": "e906470",
+      "date": "2026-03-18T17:21:41Z",
+      "type": "chore",
+      "title": "release 2.10.0",
+      "body": null
+    },
+    {
+      "hash": "70f70e85c03296979ce45a368e2de492ebdd9898",
+      "shortHash": "70f70e8",
+      "date": "2026-03-18T17:21:32Z",
+      "type": "feat",
+      "title": "collapse proxy configuration into the shared configurator flow",
+      "body": "Remove the duplicate proxy-side ERDB controls so the addon proxy only accepts an upstream manifest URL and consumes the configurator state above as its single source of truth.\n\nDrop proxy enabled-type state from the saved workspace model and proxy URL builder, while continuing to normalize older saved payloads that still include legacy enabled flags.\n\nUpdate browser-facing copy to make the merged workflow explicit and extend regression coverage for workspace serialization plus proxy payload generation under the new contract."
+    },
+    {
+      "hash": "21b8c5c4688f4d4285d64ff7475edb249d56bb8e",
+      "shortHash": "21b8c5c",
+      "date": "2026-03-18T17:05:00Z",
+      "type": "chore",
+      "title": "release 2.9.0",
+      "body": null
+    },
+    {
+      "hash": "7f3b4e51e4f9ceca31ef372b52651b7febf2518f",
+      "shortHash": "7f3b4e5",
+      "date": "2026-03-18T17:04:47Z",
+      "type": "feat",
+      "title": "unify configurator and addon proxy workflows",
+      "body": "- remove the duplicated proxy-side ERDB settings state and drive both exports from one shared configuration model\n\n- add full workspace save and JSON download/import support with migration from the legacy API-key-only local storage format\n\n- extract shared UI config helpers for serialization, proxy payload generation, and browser-safe base64url encoding\n\n- add regression tests for workspace round-tripping and shared config/proxy manifest generation\n\n- validate with npm run lint, npm test, npm run build, browser verification of shared-state persistence and JSON download, and live proxy checks against Cinemeta meta rewriting"
+    },
+    {
+      "hash": "4b1127aa836161c591ef0f6f4fba3b6f3b8714df",
+      "shortHash": "4b1127a",
+      "date": "2026-03-18T06:28:52Z",
+      "type": "chore",
+      "title": "release 2.8.1",
+      "body": null
+    },
+    {
+      "hash": "0c0271779ef1fd56c012ff28005fd3daee257c90",
+      "shortHash": "0c02717",
+      "date": "2026-03-18T06:28:47Z",
+      "type": "fix",
+      "title": "use configured CORS fallback origin in proxy routes",
+      "body": "When ERDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access-Control-Allow-Origin and caused client-side failures.\n\nUpdate both proxy route handlers to keep wildcard support, preserve valid Origin echoing, and otherwise fall back to the first configured allowed origin whenever the allowlist is non-empty but the request origin is missing or not permitted."
+    },
+    {
+      "hash": "13e0bb9ce2fa4378123052df8084e74b522b2420",
+      "shortHash": "13e0bb9",
+      "date": "2026-03-18T05:15:19Z",
+      "type": "chore",
+      "title": "release 2.8.0",
+      "body": null
+    },
+    {
+      "hash": "31a81095ceedafbfc8a86ae4fe8b2070d3603b72",
+      "shortHash": "31a8109",
+      "date": "2026-03-18T05:03:27Z",
+      "type": "chore",
+      "title": "detail post-v2.7.2 updates",
+      "body": "Changes since v2.7.2:\n\n- docs: update README example language to en and clarify proxy CORS fallback behavior\n\n- ui: normalize supported language labels on the home page to English display names\n\n- proxy: adjust CORS logic in both proxy routes to reflect incoming Origin when allowlist is empty\n\n- imdb: switch import progress number formatting from en-US to en-GB in sync/import scripts\n\n- git: keep local planning notes local by ignoring future stuff.md"
+    },
+    {
+      "hash": "dec4bb9c6dc1723cef13f9545dde9086863b1587",
+      "shortHash": "dec4bb9",
+      "date": "2026-03-18T02:10:42Z",
+      "type": "chore",
+      "title": "release 2.7.2",
+      "body": null
+    },
+    {
+      "hash": "b6b7e41ea43463b7fce420639fb25429bead4e01",
+      "shortHash": "b6b7e41",
+      "date": "2026-03-18T02:10:32Z",
+      "type": "fix",
+      "title": "improve upstream TMDB error classification",
+      "body": null
+    },
+    {
+      "hash": "57a34986f029cae6021de65e4c78eef63ad4c84d",
+      "shortHash": "57a3498",
+      "date": "2026-03-18T00:35:39Z",
+      "type": "chore",
+      "title": "release 2.7.1",
+      "body": null
+    },
+    {
+      "hash": "caa44424aab1a73f93ea33f0f60e907278dfc1cd",
+      "shortHash": "caa4442",
+      "date": "2026-03-18T00:20:22Z",
+      "type": "chore",
+      "title": "cleanup",
+      "body": null
+    },
+    {
+      "hash": "424f816449006661aa016dd0046455645f61dafe",
+      "shortHash": "424f816",
+      "date": "2026-03-17T23:31:05Z",
+      "type": "chore",
+      "title": "release 2.7.0",
+      "body": null
+    },
+    {
+      "hash": "3f27bf49ba5673d5d57e8d1004ae4398b0bc2231",
+      "shortHash": "3f27bf4",
+      "date": "2026-03-17T23:16:39Z",
+      "type": "chore",
+      "title": "Merge remote-tracking branch 'upstream/main'",
+      "body": "# Conflicts:\n#\tapp/globals.css\n#\tapp/page.tsx"
+    },
+    {
+      "hash": "e7030847ecc8ea1a8fe493f652858f9e3ef116f3",
+      "shortHash": "e703084",
+      "date": "2026-03-17T23:06:12Z",
+      "type": "chore",
+      "title": "release 2.6.0",
+      "body": null
+    },
+    {
+      "hash": "2a56a82f89956e6bd48d60116596513d7cf45bb6",
+      "shortHash": "2a56a82",
+      "date": "2026-03-17T23:05:59Z",
+      "type": "feat",
+      "title": "surface uptime tracker across landing page",
+      "body": "Changes since last release (v2.5.0):\n\n- add a dedicated status pill component that links to the IbbyLabs uptime tracker\n\n- wire uptime links into top navigation and footer for faster status access\n\n- add a status-board explainer section near the page end with a clear CTA\n\n- introduce focused status pill styles with hover and focus-visible states\n\n- update hero copy to clarify project positioning in the same ecosystem"
+    },
+    {
+      "hash": "e7d96c61907c37e82b7d466eb1b665bedf4155a7",
+      "shortHash": "e7d96c6",
+      "date": "2026-03-17T23:54:12+01:00",
+      "type": "chore",
+      "title": "Redesign homepage UI; add fonts & smooth scroll",
+      "body": "Revamp homepage layout and styling, add Google fonts, and implement smooth anchor scrolling. Changes include:\n\n- globals.css: add .scrollbar-hidden utility to hide scrollbars.\n- layout.tsx: import Space_Grotesk and Unbounded Google fonts, expose CSS variables and apply them to <body> (antialiased).\n- page.tsx: import useRef and create navRef; add scrollToHash, handleAnchorClick, and hashchange listener to enable offset-aware smooth scrolling to in-page anchors.\n- Major UI overhaul of the nav, hero, configurator, preview output, and proxy sections: new layout, responsive grid, background radial gradients, updated colors, spacing, and component structure.\n- Move/export/import controls into the configurator header; make config/proxy output areas scrollable (uses scrollbar-hidden), update button/input styles and state-driven visuals.\n\nOverall this commit modernizes the visual design, improves UX for anchor navigation, and centralizes font usage for consistent typography."
+    },
+    {
+      "hash": "10990586e8086e940db8afe4ae1c35c8c7f34fc0",
+      "shortHash": "1099058",
+      "date": "2026-03-17T23:04:42+01:00",
+      "type": "chore",
+      "title": "Update page.tsx",
+      "body": null
+    },
+    {
+      "hash": "be2c397ba845259314c10ac4dfb808fb0d781ae5",
+      "shortHash": "be2c397",
+      "date": "2026-03-17T22:58:08+01:00",
+      "type": "chore",
+      "title": "Translate catalog metas concurrently",
+      "body": "For 'catalog' resources, first apply rewriteMetaImages to each meta, then run translateMetaPayload in parallel using mapWithConcurrency with a concurrency of 6 and assign the results back to payload.metas. This parallelizes translation work for improved performance while preserving the image-rewrite step."
+    },
+    {
+      "hash": "2097296239a6cf1708265a6bea98bdb6b3c5a3a1",
+      "shortHash": "2097296",
+      "date": "2026-03-17T22:51:46+01:00",
+      "type": "chore",
+      "title": "Add translateMeta option and TMDB translation",
+      "body": "Introduce a translateMeta proxy option that lets the proxy fetch localized titles/plots from TMDB. UI: add checkbox, state, import/export support, and include translateMeta in generated config. Types: expose translateMeta in ProxyConfig and reserved params. Proxy: implement TMDB helpers (cached fetch, ERDB→TMDB resolution), text translation helpers, concurrent episode translation, and translateMetaPayload which is applied after image rewrites. Misc: small utility refactor for rating provider id checks."
+    },
+    {
+      "hash": "4d1c9bbb78c6a62cc60adf2f2cf2139a61dc10a7",
+      "shortHash": "4d1c9bb",
+      "date": "2026-03-17T22:46:29+01:00",
+      "type": "chore",
+      "title": "Add config export/import and refactor proxy UI",
+      "body": "Introduce config export/import (including optional API keys) and file import handling, with base64url encode/decode and JSON download helpers. Consolidate and persist TMDB/MDBList keys using safe localStorage helpers, remove duplicated proxy-specific state in favor of the primary configurator state, and update proxy manifest generation to use the consolidated values. Add runtime validation/normalization helpers (type guards, URL normalization), adjust supported language entries to use escaped unicode flags/labels, and reorganize UI layout (grid changes, new Config Transfer section, simplified Addon Proxy panel) and copy/update behavior for proxy links."
+    },
+    {
+      "hash": "61eeba767110f56076d89972f29bc2504773bc74",
+      "shortHash": "61eeba7",
+      "date": "2026-03-17T21:34:04Z",
+      "type": "chore",
+      "title": "release 2.5.0",
+      "body": null
+    },
+    {
+      "hash": "58b335bd43d776912971f1ac7d0161de2f37efe6",
+      "shortHash": "58b335b",
+      "date": "2026-03-17T21:32:37Z",
+      "type": "chore",
+      "title": "Create LICENSE",
+      "body": null
+    },
+    {
+      "hash": "4fe9808a451ad5a0ed270aa61c0ef995f5d90243",
+      "shortHash": "4fe9808",
+      "date": "2026-03-17T21:32:22Z",
+      "type": "feat",
+      "title": "improve preview error feedback and hero layout",
+      "body": "Add detailed preview error diagnostics for image load failures, including TMDB key hints and API/network messaging. Update hero overflow and mobile commit window sizing to prevent clipping and improve small-screen layout."
+    },
+    {
+      "hash": "fa9885d49e7e4846982eadca9e4688c7558863b2",
+      "shortHash": "fa9885d",
+      "date": "2026-03-17T21:07:20Z",
+      "type": "chore",
+      "title": "disable next telemetry in docker, pin node to 22",
+      "body": null
+    },
+    {
+      "hash": "1839409aa67a477dd8d88ea3079aab1e031661a1",
+      "shortHash": "1839409",
+      "date": "2026-03-17T20:57:41Z",
+      "type": "chore",
+      "title": "release 2.4.4",
+      "body": null
+    },
+    {
+      "hash": "bb290a47f950fb18e6631acc32720e4694f3bad9",
+      "shortHash": "bb290a4",
+      "date": "2026-03-17T20:57:29Z",
+      "type": "fix",
+      "title": "complete pnpm migration",
+      "body": null
+    },
+    {
+      "hash": "f0d5d2638c4ed34c1d0e8462daa6bb0c4308e275",
+      "shortHash": "f0d5d26",
+      "date": "2026-03-17T20:49:21Z",
+      "type": "build",
+      "title": "switch to pnpm, enable corepack, optimize Docker and workflows for speed",
+      "body": null
+    },
+    {
+      "hash": "5727613824f8446a5b8195b86dae19c27bcf31e9",
+      "shortHash": "5727613",
+      "date": "2026-03-17T21:38:58+01:00",
+      "type": "chore",
+      "title": "Create LICENSE",
+      "body": null
+    },
+    {
+      "hash": "e559c0d518e604fcb764a01d4898145d06330596",
+      "shortHash": "e559c0d",
+      "date": "2026-03-17T20:32:57Z",
+      "type": "chore",
+      "title": "release 2.4.2",
+      "body": null
+    },
+    {
+      "hash": "e76d9176dbd9c6745dbf77286e9d4717ae531511",
+      "shortHash": "e76d917",
+      "date": "2026-03-17T20:32:50Z",
+      "type": "fix",
+      "title": "expand selected labels",
+      "body": null
+    },
+    {
+      "hash": "495c84bb6dc4da22c4810b9d01c04bfc6b825e83",
+      "shortHash": "495c84b",
+      "date": "2026-03-17T20:26:10Z",
+      "type": "chore",
+      "title": "release 2.4.1",
+      "body": null
+    },
+    {
+      "hash": "203801988a15ed4affea39d6aa3cc6f4cc4c3a5e",
+      "shortHash": "2038019",
+      "date": "2026-03-17T20:25:55Z",
+      "type": "ci",
+      "title": "queue docker workflow",
+      "body": null
+    },
+    {
+      "hash": "21dbbfd4ff9f047e2254bc3050065f939414b8ae",
+      "shortHash": "21dbbfd",
+      "date": "2026-03-17T20:19:43Z",
+      "type": "chore",
+      "title": "release 2.4.0",
+      "body": null
+    },
+    {
+      "hash": "0086bbcd8aff2569985415632c136979f2818c5d",
+      "shortHash": "0086bbc",
+      "date": "2026-03-17T20:19:26Z",
+      "type": "feat",
+      "title": "save api key config",
+      "body": null
+    },
+    {
+      "hash": "24ef22caf66ceb3b31b361c980af0ec41ee91a2e",
+      "shortHash": "24ef22c",
+      "date": "2026-03-17T20:08:23Z",
+      "type": "chore",
+      "title": "release 2.3.0",
+      "body": null
+    },
+    {
+      "hash": "c6dc9b40796687a14399077a5806afe4dad27544",
+      "shortHash": "c6dc9b4",
+      "date": "2026-03-17T20:07:57Z",
+      "type": "feat",
+      "title": "add recent changes feed and restore automated release flow",
+      "body": "- add a Recent changes panel on the homepage with commit type badges, relative timestamps, and incremental loading\n\n- mirror uptime-status commit feed behavior by loading /commits.json and adding robust client-side handling for loading and empty/error states\n\n- add a git-log export utility (scripts/generate-commits-json.mjs) and package script to regenerate public/commits.json\n\n- harden commit subject parsing to accept both colon-with-space and colon-without-space conventional commit forms\n\n- update release automation to require a clean tree and push commit+tag automatically after npm version so chore release commits are restored\n\n- include styling and integration updates needed for the new recent changes workflow surface"
+    },
     {
       "hash": "4327a3fca9b2d9664ba17645fdd1509cb1c54413",
       "shortHash": "4327a3f",
@@ -40,678 +960,6 @@
       "date": "2026-03-17T18:06:40Z",
       "type": "ci",
       "title": "reduce duplicate docker runs",
-      "body": null
-    },
-    {
-      "hash": "2dfda42f6e17f9bee95eb361e26fa2abbc4c1d6a",
-      "shortHash": "2dfda42",
-      "date": "2026-03-17T17:58:44Z",
-      "type": "chore",
-      "title": "adjust renovate config",
-      "body": null
-    },
-    {
-      "hash": "63128efd8b66d13f75153b30de58091e9c49e651",
-      "shortHash": "63128ef",
-      "date": "2026-03-17T17:53:49Z",
-      "type": "chore",
-      "title": "enable fork processing",
-      "body": null
-    },
-    {
-      "hash": "1380c5e0bfde0f66edc030cd9989116cf36beac0",
-      "shortHash": "1380c5e",
-      "date": "2026-03-17T17:52:06Z",
-      "type": "chore",
-      "title": "enable renovate onboarding",
-      "body": null
-    },
-    {
-      "hash": "7d09080cebaa40edaac462d8cc261b8ff087840e",
-      "shortHash": "7d09080",
-      "date": "2026-03-17T17:39:01Z",
-      "type": "chore",
-      "title": "enable docker layer cache",
-      "body": null
-    },
-    {
-      "hash": "7c1ea2f27608d88f6b3b0e719e65574c7d26d582",
-      "shortHash": "7c1ea2f",
-      "date": "2026-03-17T17:35:52Z",
-      "type": "chore",
-      "title": "add renovate configuration",
-      "body": null
-    },
-    {
-      "hash": "e303e402c741ed7c8f9c34e8c1cd93c209439fbb",
-      "shortHash": "e303e40",
-      "date": "2026-03-17T17:33:31Z",
-      "type": "chore",
-      "title": "release 2.0.0",
-      "body": "- semver correction for breaking proxy security behavior changes\n- marks stricter upstream validation and CORS behavior as major release"
-    },
-    {
-      "hash": "b6ed5aa0ca1b82287af3e87ec2e35097a9cd7bc2",
-      "shortHash": "b6ed5aa",
-      "date": "2026-03-17T17:31:39Z",
-      "type": "chore",
-      "title": "release 1.1.0",
-      "body": "- harden addon proxy URL validation and CORS handling\n- add network safety checks that block private or unsafe upstream targets\n- update Docker image/runtime setup and keep container running as non-root\n- expose new proxy security environment variables in compose and README\n- refresh CI workflow updates included since last release\n- remove unused @google/genai dependency and refresh lockfile metadata"
-    },
-    {
-      "hash": "5b00fe42a9d82544b9563d9c7dc545f328759e1a",
-      "shortHash": "5b00fe4",
-      "date": "2026-03-17T17:07:56Z",
-      "type": "chore",
-      "title": "adjust docker base image",
-      "body": null
-    },
-    {
-      "hash": "4a2e0ff2408f7758948c784ec14383cc102e8136",
-      "shortHash": "4a2e0ff",
-      "date": "2026-03-17T17:06:32Z",
-      "type": "chore",
-      "title": "update proxy and docker setup",
-      "body": null
-    },
-    {
-      "hash": "a082d32fd18a8ee88a982b4e403135c2ee801312",
-      "shortHash": "a082d32",
-      "date": "2026-03-17T15:46:17Z",
-      "type": "ci",
-      "title": "update sync schedule to uk time",
-      "body": null
-    },
-    {
-      "hash": "27b023a9d0f1459e667aeb74444e388f585e203e",
-      "shortHash": "27b023a",
-      "date": "2026-03-17T15:45:30Z",
-      "type": "ci",
-      "title": "add upstream sync workflow",
-      "body": null
-    },
-    {
-      "hash": "8f75fec46775abc4a9213e27ee64561f74315ab6",
-      "shortHash": "8f75fec",
-      "date": "2026-03-17T15:44:52Z",
-      "type": "chore",
-      "title": "release 1.0.4",
-      "body": null
-    },
-    {
-      "hash": "9bd43a15c0e257ed2a75b1e234d1cff737330b70",
-      "shortHash": "9bd43a1",
-      "date": "2026-03-17T15:43:32Z",
-      "type": "chore",
-      "title": "Bump renderer cache; set ratings to bottom",
-      "body": "Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster-backdrop-logo-v27' to 'poster-backdrop-logo-v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left-right' layouts now map to 'bottom', standardizing quality-badge positioning. (app/[type]/[id]/route.tsx)"
-    },
-    {
-      "hash": "49d9935a0612f1c60aaf1c03cdf2b4e0b206bb56",
-      "shortHash": "49d9935",
-      "date": "2026-03-17T13:44:43Z",
-      "type": "chore",
-      "title": "release 1.0.3",
-      "body": null
-    },
-    {
-      "hash": "10c39f3c1fe74bcb1445819118f78f5e44958c11",
-      "shortHash": "10c39f3",
-      "date": "2026-03-17T13:44:42Z",
-      "type": "fix",
-      "title": "lint cleanup",
-      "body": null
-    },
-    {
-      "hash": "c70598f31f2ce41a3440ce42fbbcb7c140156c8f",
-      "shortHash": "c70598f",
-      "date": "2026-03-17T13:37:26Z",
-      "type": "chore",
-      "title": "release 1.0.2",
-      "body": null
-    },
-    {
-      "hash": "a4c7c1d79856cd19e647731b4a26e4bff2c37c79",
-      "shortHash": "a4c7c1d",
-      "date": "2026-03-17T13:37:25Z",
-      "type": "feat",
-      "title": "split ci and publish",
-      "body": null
-    },
-    {
-      "hash": "cdd8302aae81aa8c9993bcb0a0096f6e2eda284f",
-      "shortHash": "cdd8302",
-      "date": "2026-03-17T13:29:44Z",
-      "type": "chore",
-      "title": "release 1.0.1",
-      "body": null
-    },
-    {
-      "hash": "14e82385446087b57fb59cb3ac7e2ff1947d24e6",
-      "shortHash": "14e8238",
-      "date": "2026-03-17T13:29:42Z",
-      "type": "chore",
-      "title": "adjust release script",
-      "body": null
-    },
-    {
-      "hash": "fb5cf446b77604a95211fae09de663c5b0c6ac7b",
-      "shortHash": "fb5cf44",
-      "date": "2026-03-17T13:26:16Z",
-      "type": "chore",
-      "title": "release 1.0.0",
-      "body": null
-    },
-    {
-      "hash": "79b569cd10c3e9dd26215afe3cb76a435ab9e49f",
-      "shortHash": "79b569c",
-      "date": "2026-03-17T13:25:31Z",
-      "type": "chore",
-      "title": "release 0.2.0",
-      "body": null
-    },
-    {
-      "hash": "c1ac8b3700dd94bc2b5aae23f6b666feeb57c359",
-      "shortHash": "c1ac8b3",
-      "date": "2026-03-17T13:25:29Z",
-      "type": "feat",
-      "title": "add docker publish workflow",
-      "body": null
-    },
-    {
-      "hash": "f8f826439b29f7d9f17ed7da05c169b2f602bc44",
-      "shortHash": "f8f8264",
-      "date": "2026-03-17T14:14:56+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "42457146e8c30060ea5d49ccfa18775488848472",
-      "shortHash": "4245714",
-      "date": "2026-03-17T14:08:34+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "2789c1cd5506ea686ac210d076a5e08998834032",
-      "shortHash": "2789c1c",
-      "date": "2026-03-17T07:02:28+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
-      "body": null
-    },
-    {
-      "hash": "3340655040803c393610bdda2d1fc63a35975dea",
-      "shortHash": "3340655",
-      "date": "2026-03-17T06:58:27+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "ea5d5fbd8ec7492e688ee41bf00faf546c3d2145",
-      "shortHash": "ea5d5fb",
-      "date": "2026-03-17T06:57:17+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "051677f1f7eda893ad33d27d614be6f4c6f618e8",
-      "shortHash": "051677f",
-      "date": "2026-03-17T06:53:00+01:00",
-      "type": "chore",
-      "title": "Render poster title/logo overlays & bump cache",
-      "body": "Bump image renderer cache version to v25 and add support for rendering a centered poster title SVG or TMDB logo overlay for \"clean\" poster mode. Introduces pickPosterTitleFromMedia and passes posterTitleText/posterLogoUrl through the rendering pipeline (including selection of TMDB logoPath), includes kitsu fallback title in fallback asset results, and adds buildPosterTitleSvg + helper to generate optimized SVG title images. Rendering logic now composes a poster title/logo overlay above bottom badges, handles logo resizing, and updates badge placement/quality badge positioning to accommodate the overlay. Also updates caching logic to consider clean poster text as a reason to cache the final image and tightens UI preview logic (only 'top-bottom' now shows poster quality badges side) in app/page.tsx."
-    },
-    {
-      "hash": "8839ed6f7c316ccaa7bd26a0d2cf80ac749ebda2",
-      "shortHash": "8839ed6",
-      "date": "2026-03-17T06:15:21+01:00",
-      "type": "chore",
-      "title": "Handle square style stroke width in badge",
-      "body": "Update buildQualityBadgeSvg in app/[type]/[id]/route.tsx to add a specific strokeWidth case for style === 'square' (Math.max(1, Math.round(h * 0.05))). Previously the ternary only handled 'glass' and a default; this change ensures square badges use a slightly smaller stroke. Also split the expression across multiple lines for readability."
-    },
-    {
-      "hash": "154693ba6cbd673efac1aa9ec34eaffb95d9f963",
-      "shortHash": "154693b",
-      "date": "2026-03-17T06:13:15+01:00",
-      "type": "chore",
-      "title": "Add Torrentio stream quality badges & rendering",
-      "body": "Introduce stream/quality badges sourced from Torrentio and per-type quality/rating controls. README: add new query/config params (streamBadges, posterStreamBadges, backdropStreamBadges, qualityBadgesSide, qualityBadgesStyle, poster/backdropQualityBadgesStyle and per-type ratings overrides) and update URL-build documentation. route.tsx: bump final image renderer cache version to v20; add Torrentio integration (fetchTorrentioBadges) with caching, dedupe in-flight requests and TTL; new types (StreamBadgeKey, BadgeKey, StreamQualityFlags) and helpers to normalize settings and parse/merge stream flags from filenames. Add STREAM_BADGE_META, generation of quality badge SVGs (buildQualityBadgeSvg) and logic to include qualityBadges in the rendering pipeline for poster and backdrop (columns/rows, positioning, style). Update badge/build/render logic to accept quality badges and adjust provider icon mapping key type and some square-style rendering details. Also add small fixes: support data: URIs for provider icons, add stream timing to server timing header, and adjust final image cache seed to account for stream badge state. Other file updates reflect README and UI/config changes."
-    },
-    {
-      "hash": "b1f2c45c66f3beb2a175fdbb3f9bf4127e1e2181",
-      "shortHash": "b1f2c45",
-      "date": "2026-03-16T23:36:04+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "ade27ed8732a12f061bc3a7448951a8a6c6a4d14",
-      "shortHash": "ade27ed",
-      "date": "2026-03-16T23:34:59+01:00",
-      "type": "chore",
-      "title": "Update README to remove Dockerfile.hf note",
-      "body": "Removed note about using Dockerfile.hf for Hugging Face Spaces."
-    },
-    {
-      "hash": "d69d2ab70d848faea7612fca8d60319a64873f68",
-      "shortHash": "d69d2ab",
-      "date": "2026-03-16T23:34:30+01:00",
-      "type": "chore",
-      "title": "Fix typo in HuggingFace Guide section",
-      "body": null
-    },
-    {
-      "hash": "c47148bb550905ae1c2f548b0183ca0fcc71409d",
-      "shortHash": "c47148b",
-      "date": "2026-03-16T23:34:10+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "b239b2bdfc7788041d46ff14c754fb86a33344f7",
-      "shortHash": "b239b2b",
-      "date": "2026-03-16T23:33:47+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "f76b650c55de420ebeca6eb84c90115d9da477a2",
-      "shortHash": "f76b650",
-      "date": "2026-03-16T10:34:21+01:00",
-      "type": "chore",
-      "title": "Update Dockerfile",
-      "body": null
-    },
-    {
-      "hash": "ed612212c1c63ab729e48d6b8cd5a480ef5dfdd4",
-      "shortHash": "ed61221",
-      "date": "2026-03-16T10:28:22+01:00",
-      "type": "chore",
-      "title": "Update Dockerfile.hf",
-      "body": null
-    },
-    {
-      "hash": "f3e31001ab6fcb8457f51c4809ebee6ce103a224",
-      "shortHash": "f3e3100",
-      "date": "2026-03-16T10:15:26+01:00",
-      "type": "chore",
-      "title": "Update Dockerfile.hf",
-      "body": null
-    },
-    {
-      "hash": "9d5ea2249bca728ceab807f2b7d947dd6687e268",
-      "shortHash": "9d5ea22",
-      "date": "2026-03-16T09:31:56+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "c79fcd9739d551ec28e9ec2285e8d415049c3862",
-      "shortHash": "c79fcd9",
-      "date": "2026-03-16T09:27:52+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "43e80c3502349efed1553fc5b503e6faca5338e2",
-      "shortHash": "43e80c3",
-      "date": "2026-03-16T09:13:18+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "51c0a40fa1c7fd1b709a3280d687cbc0794e07ca",
-      "shortHash": "51c0a40",
-      "date": "2026-03-16T09:06:49+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "68d2c5dd18cfdce0de229bede0004505fdac1717",
-      "shortHash": "68d2c5d",
-      "date": "2026-03-16T08:59:18+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "03af7450d10d750e35c8f9b11ce647ac5197f3f5",
-      "shortHash": "03af745",
-      "date": "2026-03-16T08:50:28+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "e33e8630323c1d190eb8d04e55951cabc03eb9e0",
-      "shortHash": "e33e863",
-      "date": "2026-03-16T08:44:55+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "9c7acfd567ac0b6d682834eb04eac5b86524e12d",
-      "shortHash": "9c7acfd",
-      "date": "2026-03-16T08:10:48+01:00",
-      "type": "chore",
-      "title": "Update route.ts",
-      "body": null
-    },
-    {
-      "hash": "e4262e804542cb740c8ea47789327b2c8f81768e",
-      "shortHash": "e4262e8",
-      "date": "2026-03-15T19:14:24+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
-      "body": null
-    },
-    {
-      "hash": "cb51c67bfb569e79ad2beaf38b12418beb6f9ded",
-      "shortHash": "cb51c67",
-      "date": "2026-03-15T18:09:13+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "291974e17a2b6bb65a086a43f2d924c0124dd252",
-      "shortHash": "291974e",
-      "date": "2026-03-15T18:06:48+01:00",
-      "type": "chore",
-      "title": "Delete for unsupported addons.mp4",
-      "body": null
-    },
-    {
-      "hash": "bbf9565764e3e525cc2b3617083593d2c68ff2d1",
-      "shortHash": "bbf9565",
-      "date": "2026-03-15T18:06:40+01:00",
-      "type": "chore",
-      "title": "Delete for supported addons.mp4",
-      "body": null
-    },
-    {
-      "hash": "93885fdfb98efa216c7d51621f5b7a966b0536a6",
-      "shortHash": "93885fd",
-      "date": "2026-03-15T18:06:20+01:00",
-      "type": "chore",
-      "title": "Add files via upload",
-      "body": null
-    },
-    {
-      "hash": "2688a72db69521c2d3c4e6c697a65769ba287dc9",
-      "shortHash": "2688a72",
-      "date": "2026-03-14T02:53:11+01:00",
-      "type": "chore",
-      "title": "Merge pull request #3 from qwertyuiop8899/patch-1",
-      "body": null
-    },
-    {
-      "hash": "a7aead2767d9fa415b0c5d9f0d790fc915b37818",
-      "shortHash": "a7aead2",
-      "date": "2026-03-13T21:43:01+01:00",
-      "type": "chore",
-      "title": "Update Dockerfile",
-      "body": null
-    },
-    {
-      "hash": "a4ba38c599f50c2dec82148479a582cce510ef2c",
-      "shortHash": "a4ba38c",
-      "date": "2026-03-13T21:09:58+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "1d1b1e877ff045f68a1ae3121871ba9001d1ca55",
-      "shortHash": "1d1b1e8",
-      "date": "2026-03-13T21:00:22+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "fa63fe62209d35caaecd7f7bca1a90e8624defe5",
-      "shortHash": "fa63fe6",
-      "date": "2026-03-13T18:14:07+01:00",
-      "type": "chore",
-      "title": "Update addonProxy.ts",
-      "body": null
-    },
-    {
-      "hash": "c52628aba19181583aa4086b6ad84d2ec7168428",
-      "shortHash": "c52628a",
-      "date": "2026-03-13T17:41:01+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
-      "body": null
-    },
-    {
-      "hash": "ae84d80f5b22a2d836dc5084a042a1e19c52a20b",
-      "shortHash": "ae84d80",
-      "date": "2026-03-13T17:37:33+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "85d938ca6e10a7482d42c50b0fe0e24e706255d4",
-      "shortHash": "85d938c",
-      "date": "2026-03-13T09:40:19+01:00",
-      "type": "chore",
-      "title": "HuggingFace Dockerfile",
-      "body": null
-    },
-    {
-      "hash": "63bd0f5ee4b6fb5b8b37ef69d6a70b39750de854",
-      "shortHash": "63bd0f5",
-      "date": "2026-03-13T09:35:26+01:00",
-      "type": "chore",
-      "title": "Update Dockerfile",
-      "body": null
-    },
-    {
-      "hash": "84008ea91c6afac24439f61d6250cceee32cc041",
-      "shortHash": "84008ea",
-      "date": "2026-03-13T09:33:35+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "e3d43066ef6aa353c574b366d825e4fdea116267",
-      "shortHash": "e3d4306",
-      "date": "2026-03-13T09:07:15+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "724a1e966a04bfe1bca25e854e5536f059614e5d",
-      "shortHash": "724a1e9",
-      "date": "2026-03-12T05:48:43+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "fa680c48afef531fc02b826c95a2393bf1694bca",
-      "shortHash": "fa680c4",
-      "date": "2026-03-12T05:46:49+01:00",
-      "type": "chore",
-      "title": "proxy any addon",
-      "body": null
-    },
-    {
-      "hash": "dd52a5ee643219aa3b66b2387d64282d4126f537",
-      "shortHash": "dd52a5e",
-      "date": "2026-03-12T04:48:32+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
-      "body": null
-    },
-    {
-      "hash": "90bb391fd9509333d57e6d4a73a51b5897910ede",
-      "shortHash": "90bb391",
-      "date": "2026-03-12T04:34:47+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "abb37a45a933dbab05696f65d0a051201fb15d09",
-      "shortHash": "abb37a4",
-      "date": "2026-03-12T04:34:14+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
-      "body": null
-    },
-    {
-      "hash": "3ae181cdc32310165c707f775991566f2efc5dba",
-      "shortHash": "3ae181c",
-      "date": "2026-03-12T04:26:41+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "6a98ab1f57dc3e9d0a1583638827cc50ff853697",
-      "shortHash": "6a98ab1",
-      "date": "2026-03-12T04:16:57+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "1c4ca7437ed10f1bbe33ba866fa0844c22c21ae0",
-      "shortHash": "1c4ca74",
-      "date": "2026-03-12T04:13:08+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "fe832a5211657f7fa18815ab0fde3593e52257af",
-      "shortHash": "fe832a5",
-      "date": "2026-03-12T04:12:04+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "34741e76ba12ef4415a0b74642771823bbaa84a6",
-      "shortHash": "34741e7",
-      "date": "2026-03-12T04:05:26+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "3632ac79d36d92cfaf4f05058d98363acd052c1c",
-      "shortHash": "3632ac7",
-      "date": "2026-03-12T04:00:47+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "b36b4cdbaacc2c1dc928aca8dfe57526f1a38ba4",
-      "shortHash": "b36b4cd",
-      "date": "2026-03-12T03:59:04+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "80617d33525d97c991b11c3e58f9ff1438d2f42a",
-      "shortHash": "80617d3",
-      "date": "2026-03-12T03:57:18+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "e84fddb40e0f84e9d5ba39aa7431b8a3bb093c16",
-      "shortHash": "e84fddb",
-      "date": "2026-03-12T03:52:35+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
-      "body": null
-    },
-    {
-      "hash": "bc93059a37235f39e683bf740bac9cbdcf64f359",
-      "shortHash": "bc93059",
-      "date": "2026-03-12T03:47:12+01:00",
-      "type": "chore",
-      "title": "Update docker-compose.yml",
-      "body": null
-    },
-    {
-      "hash": "98b660588e9995276c9175e985ac784fd4996e09",
-      "shortHash": "98b6605",
-      "date": "2026-03-12T03:42:41+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "9a8098d23c08103a261ee98559fb7167e8b54d1d",
-      "shortHash": "9a8098d",
-      "date": "2026-03-12T03:38:44+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
-    },
-    {
-      "hash": "e5bc6f968f2675546d273fa2fa0c4032b8410505",
-      "shortHash": "e5bc6f9",
-      "date": "2026-03-12T03:35:19+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "d49d4cfbd245d38b797273048649746490cb331e",
-      "shortHash": "d49d4cf",
-      "date": "2026-03-12T03:34:44+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "3bce9eea3ce2a818b1f7c88868a82d5e6f34a28a",
-      "shortHash": "3bce9ee",
-      "date": "2026-03-12T03:34:12+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "53c660919c9bd633e188134c075bb11d85d4bbe2",
-      "shortHash": "53c6609",
-      "date": "2026-03-12T03:33:05+01:00",
-      "type": "chore",
-      "title": "Update README.md",
-      "body": null
-    },
-    {
-      "hash": "c690a44ac2258228b3c4d8a1dc7f2b053cd2d8be",
-      "shortHash": "c690a44",
-      "date": "2026-03-12T03:32:02+01:00",
-      "type": "chore",
-      "title": "Initial commit",
       "body": null
     }
   ]
