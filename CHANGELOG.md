@@ -1,3 +1,15 @@
+## [v2.16.2] - 20/03/2026
+
+### Fixed
+- fix: recent changes ui
+
+### Other Changes
+- Delete .github/workflows directory
+- Update docker-build.yml
+- Delete release.yml
+- Update release.yml
+- .
+
 ## [v2.16.1] - 19/03/2026
 
 ### Other Changes
