@@ -1,3 +1,8 @@
+## [v2.17.1] - 20/03/2026
+
+### Other Changes
+-  feat: include all lines of commit message
+
 ## [v2.17.0] - 20/03/2026
 
 ### Added
