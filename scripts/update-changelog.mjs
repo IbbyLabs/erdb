@@ -4,8 +4,84 @@ import path from 'node:path';
 
 const pkgPath = path.resolve('package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-const newVersion = `v${pkg.version}`;
+const currentVersion = `v${pkg.version}`;
 const today = new Date().toLocaleDateString('en-GB');
+
+const prettyFormat = '%H%x1f%s%x1f%b%x1e';
+
+function getCommits(range) {
+  try {
+    return execSync(`git log ${range} --no-merges --pretty=format:${prettyFormat}`, { encoding: 'utf8' })
+      .split('\x1e')
+      .map(entry => entry.trim())
+      .filter(Boolean)
+      .map(entry => {
+        const [hash, subject, body] = entry.split('\x1f');
+        return {
+          hash: (hash || '').trim(),
+          subject: (subject || '').trim(),
+          body: body ? body.trim() : ''
+        };
+      });
+  } catch (err) {
+    return [];
+  }
+}
+
+function formatEntries(entries) {
+  return entries.map(m => {
+    if (m.includes('\n')) {
+      const lines = m.split('\n');
+      return `- ${lines[0]}\n${lines.slice(1).map(l => `  ${l}`).join('\n')}`;
+    }
+    return `- ${m}`;
+  }).join('\n');
+}
+
+function generateSection(version, date, commits) {
+  if (commits.length === 0) return '';
+
+  const groups = {
+    feat: [],
+    fix: [],
+    docs: [],
+    refactor: [],
+    perf: [],
+    chore: [],
+    other: []
+  };
+
+  for (const commit of commits) {
+    const { subject, body } = commit;
+    const lower = subject.toLowerCase();
+    
+    if (lower.startsWith('chore: release') || lower.includes('synchronize with upstream')) {
+      continue;
+    }
+
+    const message = body ? `${subject}\n\n${body}` : subject;
+
+    if (lower.startsWith('feat')) groups.feat.push(message);
+    else if (lower.startsWith('fix')) groups.fix.push(message);
+    else if (lower.startsWith('docs')) groups.docs.push(message);
+    else if (lower.startsWith('refactor')) groups.refactor.push(message);
+    else if (lower.startsWith('perf')) groups.perf.push(message);
+    else if (lower.startsWith('chore')) groups.chore.push(message);
+    else groups.other.push(message);
+  }
+
+  let section = `## [${version}] - ${date}\n\n`;
+
+  if (groups.feat.length) section += `### Added\n${formatEntries(groups.feat)}\n\n`;
+  if (groups.fix.length) section += `### Fixed\n${formatEntries(groups.fix)}\n\n`;
+  if (groups.docs.length) section += `### Documentation\n${formatEntries(groups.docs)}\n\n`;
+  if (groups.perf.length) section += `### Performance\n${formatEntries(groups.perf)}\n\n`;
+
+  const otherChanges = [...groups.other, ...groups.refactor, ...groups.chore];
+  if (otherChanges.length) section += `### Other Changes\n${formatEntries(otherChanges)}\n\n`;
+
+  return section;
+}
 
 function lastTag() {
   try {
@@ -15,85 +91,64 @@ function lastTag() {
   }
 }
 
-function getCommitsSince(tag) {
-  const range = tag ? `${tag}..HEAD` : 'HEAD';
+function getAllTags() {
   try {
-    return execSync(`git log ${range} --oneline --no-merges`, { encoding: 'utf8' })
+    return execSync('git tag --sort=creatordate', { encoding: 'utf8' })
       .split('\n')
-      .map(line => line.trim())
+      .map(t => t.trim())
       .filter(Boolean);
   } catch {
     return [];
   }
 }
 
-const prevTag = lastTag();
-
-const existingChangelog = fs.readFileSync('CHANGELOG.md', 'utf8');
-if (existingChangelog.includes(`## [${newVersion}]`)) {
-  console.log(`Changelog already contains entry for ${newVersion}. Skipping.`);
-  process.exit(0);
+function getTagDate(tag) {
+  try {
+    const dateStr = execSync(`git log -1 --format=%ai ${tag}`, { encoding: 'utf8' }).trim();
+    return new Date(dateStr).toLocaleDateString('en-GB');
+  } catch {
+    return today;
+  }
 }
 
-const commits = getCommitsSince(prevTag);
-if (commits.length === 0) {
-  console.log('No new commits since last tag. Skipping changelog update.');
-  process.exit(0);
-}
-
-const groups = {
-  feat: [],
-  fix: [],
-  docs: [],
-  refactor: [],
-  perf: [],
-  chore: [],
-  other: []
-};
-
-for (const commit of commits) {
-  const message = commit.split(' ').slice(1).join(' ');
-  const lower = message.toLowerCase();
+if (process.argv.includes('--rebuild')) {
+  console.log('Rebuilding entire CHANGELOG.md...');
+  const tags = getAllTags();
+  let fullChangelog = '# Changelog\n\n';
   
-  if (lower.startsWith('chore: release') || lower.includes('synchronize with upstream')) {
-    continue;
+  for (let i = tags.length - 1; i >= 0; i--) {
+    const current = tags[i];
+    const prev = i > 0 ? tags[i - 1] : null;
+    const range = prev ? `${prev}..${current}` : current;
+    const commits = getCommits(range);
+    const date = getTagDate(current);
+    fullChangelog += generateSection(current, date, commits);
   }
 
-  if (lower.startsWith('feat')) groups.feat.push(message);
-  else if (lower.startsWith('fix')) groups.fix.push(message);
-  else if (lower.startsWith('docs')) groups.docs.push(message);
-  else if (lower.startsWith('refactor')) groups.refactor.push(message);
-  else if (lower.startsWith('perf')) groups.perf.push(message);
-  else if (lower.startsWith('chore')) groups.chore.push(message);
-  else groups.other.push(message);
-}
+  fs.writeFileSync('CHANGELOG.md', fullChangelog);
+  console.log('Rebuilt CHANGELOG.md successfully.');
+} else {
+  const prevTag = lastTag();
+  const existingChangelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+  
+  if (existingChangelog.includes(`## [${currentVersion}]`)) {
+    console.log(`Changelog already contains entry for ${currentVersion}. skipping.`);
+    process.exit(0);
+  }
 
-let newEntry = `## [${newVersion}] - ${today}\n\n`;
+  const commits = getCommits(prevTag ? `${prevTag}..HEAD` : 'HEAD');
+  if (commits.length === 0) {
+    console.log('No new commits. Skipping.');
+    process.exit(0);
+  }
 
-if (groups.feat.length) {
-  newEntry += `### Added\n${groups.feat.map(m => `- ${m}`).join('\n')}\n\n`;
-}
-if (groups.fix.length) {
-  newEntry += `### Fixed\n${groups.fix.map(m => `- ${m}`).join('\n')}\n\n`;
-}
-if (groups.docs.length) {
-  newEntry += `### Documentation\n${groups.docs.map(m => `- ${m}`).join('\n')}\n\n`;
-}
-if (groups.perf.length) {
-  newEntry += `### Performance\n${groups.perf.map(m => `- ${m}`).join('\n')}\n\n`;
-}
+  const newEntry = generateSection(currentVersion, today, commits);
+  
+  const lines = existingChangelog.split('\n');
+  const headerEndIndex = lines.findIndex(line => line.startsWith('## ['));
+  const header = headerEndIndex === -1 ? '# Changelog\n\n' : lines.slice(0, headerEndIndex) ? lines.slice(0, headerEndIndex).join('\n') + '\n' : '# Changelog\n\n';
+  const rest = headerEndIndex === -1 ? '' : lines.slice(headerEndIndex).join('\n');
 
-const otherChanges = [...groups.other, ...groups.refactor, ...groups.chore];
-if (otherChanges.length) {
-  newEntry += `### Other Changes\n${otherChanges.map(m => `- ${m}`).join('\n')}\n\n`;
+  fs.writeFileSync('CHANGELOG.md', `${header}${newEntry}${rest}`);
+  console.log(`Updated CHANGELOG.md with ${currentVersion} changes.`);
 }
-
-const lines = existingChangelog.split('\n');
-const headerEndIndex = lines.findIndex(line => line.startsWith('## ['));
-const header = lines.slice(0, headerEndIndex).join('\n');
-const rest = lines.slice(headerEndIndex).join('\n');
-
-const updatedChangelog = `${header}${newEntry}${rest}`;
-fs.writeFileSync('CHANGELOG.md', updatedChangelog);
-
-console.log(`Updated CHANGELOG.md with ${newVersion} changes.`);
