@@ -1,3 +1,8 @@
+## [v2.17.0] - 20/03/2026
+
+### Added
+- feat: refine recent changes feed
+
 ## [v2.16.2] - 20/03/2026
 
 ### Fixed
