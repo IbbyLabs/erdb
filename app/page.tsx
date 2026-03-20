@@ -85,6 +85,7 @@ type RecentCommit = {
   type: RecentCommitType;
   title: string;
   body: string | null;
+  isUpstream: boolean;
 };
 const COMMIT_FEED_URL = '/commits.json';
 const COMMIT_PAGE_SIZE = 5;
@@ -298,6 +299,11 @@ function RecentChanges({
                       <span className={`erdb-commit-type erdb-commit-type-${commit.type}`}>
                         {commit.type.toUpperCase()}
                       </span>
+                      {commit.isUpstream && (
+                        <span className="erdb-commit-type erdb-commit-type-upstream">
+                          UPSTREAM
+                        </span>
+                      )}
                       <span className="erdb-commit-hash font-mono">{commit.shortHash}</span>
                     </div>
                     <p className="erdb-commit-title">{commit.title}</p>
@@ -448,6 +454,7 @@ export default function Home() {
                 type: String(entry.type || 'chore') as RecentCommitType,
                 title: String(entry.title || ''),
                 body: entry.body ? String(entry.body) : null,
+                isUpstream: Boolean(entry.isUpstream),
               }))
               .filter((entry: RecentCommit) => entry.hash && entry.shortHash && entry.title)
           : [];

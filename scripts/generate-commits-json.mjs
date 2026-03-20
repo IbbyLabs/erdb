@@ -16,7 +16,7 @@ const ALLOWED_TYPES = new Set([
   'revert',
 ]);
 
-const prettyFormat = '%H%x1f%h%x1f%cI%x1f%s%x1f%b%x1e';
+const prettyFormat = '%H%x1f%h%x1f%an%x1f%ae%x1f%cI%x1f%s%x1f%b%x1e';
 const output = execSync(`git log -n ${COMMIT_LIMIT} --date=iso-strict --pretty=format:${prettyFormat}`, {
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],
@@ -27,7 +27,7 @@ const commitRecords = output
   .map((entry) => entry.trim())
   .filter(Boolean)
   .map((entry) => {
-    const [hash, shortHash, date, subject, body] = entry.split('\x1f');
+    const [hash, shortHash, authorName, authorEmail, date, subject, body] = entry.split('\x1f');
     const normalizedSubject = String(subject || '').trim();
     const normalizedBody = String(body || '').trim() || null;
 
@@ -36,9 +36,16 @@ const commitRecords = output
     const type = ALLOWED_TYPES.has(typeRaw) ? typeRaw : 'chore';
     const title = conventionalMatch ? conventionalMatch[4].trim() : normalizedSubject;
 
+    const isUpstream = authorName !== 'IbbyLabs' && !authorEmail.includes('IbbyLabs');
+
     return {
       hash: String(hash || '').trim(),
       shortHash: String(shortHash || '').trim(),
+      author: {
+        name: authorName,
+        email: authorEmail,
+      },
+      isUpstream,
       date: String(date || '').trim(),
       type,
       title,

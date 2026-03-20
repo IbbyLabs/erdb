@@ -1,10 +1,41 @@
 {
-  "generatedAt": "2026-03-20T01:02:00.023Z",
+  "generatedAt": "2026-03-20T01:25:36.077Z",
   "total": 120,
   "commits": [
     {
+      "hash": "a8805ebb50b814aa00d70fcab6a0298f7f1826d3",
+      "shortHash": "a8805eb",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:03:36Z",
+      "type": "chore",
+      "title": "release 2.16.2",
+      "body": null
+    },
+    {
+      "hash": "9afe30a139122ea942b36966684095ed797a9dbd",
+      "shortHash": "9afe30a",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:03:07Z",
+      "type": "fix",
+      "title": "recent changes ui",
+      "body": null
+    },
+    {
       "hash": "6fcb988a1c8dee9d2c8071a8e60aa9e89e3b7bd2",
       "shortHash": "6fcb988",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-20T00:54:40Z",
       "type": "chore",
       "title": "merge upstream/main (ours)",
@@ -13,6 +44,11 @@
     {
       "hash": "fcd806816ebf72b3e424628d9b5cb6adc56f8ecc",
       "shortHash": "fcd8068",
+      "author": {
+        "name": "Bestia",
+        "email": "233500038+realbestia1@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-20T01:50:29+01:00",
       "type": "chore",
       "title": "Delete .github/workflows directory",
@@ -21,6 +57,11 @@
     {
       "hash": "0134e41a13ec59b8754bf7f85ef9fc284a5a5ebd",
       "shortHash": "0134e41",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-20T01:41:03+01:00",
       "type": "chore",
       "title": "Update docker-build.yml",
@@ -29,6 +70,11 @@
     {
       "hash": "fe384a7b8a4e0f98f6a94fc675de5109a81bf6dc",
       "shortHash": "fe384a7",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-20T01:31:33+01:00",
       "type": "chore",
       "title": "Delete release.yml",
@@ -37,6 +83,11 @@
     {
       "hash": "606ac044214e891cb9b86269fca4e58c93f4c6b1",
       "shortHash": "606ac04",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-20T01:27:01+01:00",
       "type": "chore",
       "title": "Update release.yml",
@@ -45,6 +96,11 @@
     {
       "hash": "7b2489b0811dd47b4f0cc4cc3b9fe32777863673",
       "shortHash": "7b2489b",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-20T00:20:30Z",
       "type": "chore",
       "title": "merge upstream/main (ours)",
@@ -53,6 +109,11 @@
     {
       "hash": "4c6d80eb82922c2f556705dfec9a94877ae755a1",
       "shortHash": "4c6d80e",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-20T01:16:45+01:00",
       "type": "chore",
       "title": ".",
@@ -61,6 +122,11 @@
     {
       "hash": "164a4a257a8f1ec42934e05fe45b9c5b052b8e01",
       "shortHash": "164a4a2",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:48:47Z",
       "type": "chore",
       "title": "release 2.16.1",
@@ -69,6 +135,11 @@
     {
       "hash": "ce6b2dc84b2b2e7699700f359964b9606786374e",
       "shortHash": "ce6b2dc",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:48:01Z",
       "type": "chore",
       "title": "remove all comments and boilerplate markers",
@@ -77,6 +148,11 @@
     {
       "hash": "f883434afae2d6d40469f4a134b8447b945a4e28",
       "shortHash": "f883434",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:46:03Z",
       "type": "chore",
       "title": "refine changelog generation logic",
@@ -85,6 +161,11 @@
     {
       "hash": "97bb620b394cd26ec1e9a96173242d3b2222746b",
       "shortHash": "97bb620",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:42:40Z",
       "type": "chore",
       "title": "release 2.16.0",
@@ -93,6 +174,11 @@
     {
       "hash": "0b74a9c59fd6798ede6e5bf756bb9bde05bbe4d2",
       "shortHash": "0b74a9c",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:41:43Z",
       "type": "chore",
       "title": "normalize date formats to UK standard (DD/MM/YYYY)",
@@ -101,6 +187,11 @@
     {
       "hash": "f19a3972efe507cb1cbd2c10b47b059f9b2fc328",
       "shortHash": "f19a397",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:39:00Z",
       "type": "chore",
       "title": "add automated changelog management",
@@ -109,6 +200,11 @@
     {
       "hash": "d520e69a4b28f02f7b61c6909450929c00699184",
       "shortHash": "d520e69",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:34:25Z",
       "type": "chore",
       "title": "release 2.15.0",
@@ -117,6 +213,11 @@
     {
       "hash": "588039151e2faea26410f961004752d5ae1b75f8",
       "shortHash": "5880391",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:33:08Z",
       "type": "chore",
       "title": "synchronize with upstream/main to clear behind status",
@@ -125,6 +226,11 @@
     {
       "hash": "18cc07d5c0a3954dd6698410b14387251370c74a",
       "shortHash": "18cc07d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T21:33:08Z",
       "type": "feat",
       "title": "implement select-all as default for rating preferences",
@@ -133,6 +239,11 @@
     {
       "hash": "036e3e7e6de7f118093815fae6472afe0fb2bb1e",
       "shortHash": "036e3e7",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T21:33:03Z",
       "type": "fix",
       "title": "display 10.0 as 10 for cleaner visuals",
@@ -141,6 +252,11 @@
     {
       "hash": "826fdb9d24176eed47e5f5244e20afa4a144cc0f",
       "shortHash": "826fdb9",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T21:32:59Z",
       "type": "feat",
       "title": "normalize ratings to 0-10 scale and optimize backdrop layout for multi-row",
@@ -149,6 +265,11 @@
     {
       "hash": "26c01e9646aaa2ef3bdabd258b8a665401a0783a",
       "shortHash": "26c01e9",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T22:07:23+01:00",
       "type": "chore",
       "title": "Update route.tsx",
@@ -157,6 +278,11 @@
     {
       "hash": "533961ab5db7e0cef78452d8d60f2a3c4980ab62",
       "shortHash": "533961a",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T21:52:00+01:00",
       "type": "chore",
       "title": "Normalize ratings to a 0-10 scale and improve anime/backdrop badge behavior",
@@ -165,6 +291,11 @@
     {
       "hash": "5ba092f39863824e4387b6ba98ad5d385f5643f8",
       "shortHash": "5ba092f",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T19:01:47Z",
       "type": "chore",
       "title": "release 2.14.3",
@@ -173,6 +304,11 @@
     {
       "hash": "461e92e78d85b41b44debde63ccf64f26c23ba40",
       "shortHash": "461e92e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T19:00:54Z",
       "type": "chore",
       "title": "merge upstream/main (ours)",
@@ -181,6 +317,11 @@
     {
       "hash": "a2b102b6fc179c333419d9a90b330a86e3f13940",
       "shortHash": "a2b102b",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T19:00:15Z",
       "type": "fix",
       "title": "improve badge layout spacing and column limits",
@@ -189,6 +330,11 @@
     {
       "hash": "664646419d093e9d1a3f24d1afb9e2111d357e63",
       "shortHash": "6646464",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T15:56:40+01:00",
       "type": "chore",
       "title": "Update route.tsx",
@@ -197,6 +343,11 @@
     {
       "hash": "3da0df75eb5ecab2d93d72be3d35a0926a9d886b",
       "shortHash": "3da0df7",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T04:56:54Z",
       "type": "chore",
       "title": "release 2.14.2",
@@ -205,6 +356,11 @@
     {
       "hash": "614bfe766f987d293a65c40487c01345fd011856",
       "shortHash": "614bfe7",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T04:54:43Z",
       "type": "fix",
       "title": "prevent long strings from overflowing containers on mobile",
@@ -213,6 +369,11 @@
     {
       "hash": "8e99b690ffc205bde1969dcf235d9efabcde77f0",
       "shortHash": "8e99b69",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T04:00:28Z",
       "type": "ci",
       "title": "upgrade build-push-action to v6 and enable provenance",
@@ -221,6 +382,11 @@
     {
       "hash": "b904f70a4581d509cc47c19914defbc071e23afa",
       "shortHash": "b904f70",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:55:47Z",
       "type": "chore",
       "title": "release 2.14.1",
@@ -229,6 +395,11 @@
     {
       "hash": "f7a11a362df5d41ee2a62fbc370886255ef3ea1c",
       "shortHash": "f7a11a3",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:53:08Z",
       "type": "test",
       "title": "add posterQualityBadgesPosition to workspace round-trip assertion",
@@ -237,6 +408,11 @@
     {
       "hash": "688f3985bae55f770290666fadc656547b1733fd",
       "shortHash": "688f398",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:49:32Z",
       "type": "chore",
       "title": "release 2.14.0",
@@ -245,6 +421,11 @@
     {
       "hash": "eb706d127a3bfeb24a77b96e8c9e9475a6187459",
       "shortHash": "eb706d1",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:46:55Z",
       "type": "style",
       "title": "apply violet theme to configurator card and toggle buttons",
@@ -253,6 +434,11 @@
     {
       "hash": "1e348048cc23dc0506e4abc97c3bcda150113d20",
       "shortHash": "1e34804",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:40:57Z",
       "type": "chore",
       "title": "merge upstream/main.",
@@ -261,6 +447,11 @@
     {
       "hash": "4091a9e284d16315f327d79d3f045c0f3483f643",
       "shortHash": "4091a9e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:37:13Z",
       "type": "perf",
       "title": "remove metadata cache hard row cap",
@@ -269,6 +460,11 @@
     {
       "hash": "852028fb1c75c7565a1746b65d92eea5907f87e3",
       "shortHash": "852028f",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "add show/hide toggles for config string and proxy URL",
@@ -277,6 +473,11 @@
     {
       "hash": "e451a056b1916e702c6fdf12ff3fa0681732acea",
       "shortHash": "e451a05",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "add posterQualityBadgesPosition setting",
@@ -285,6 +486,11 @@
     {
       "hash": "ad4dee2125b37beefb2ce16ce7b7434f7b0eaf49",
       "shortHash": "ad4dee2",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "add posterQualityBadgesPosition to addon proxy config",
@@ -293,6 +499,11 @@
     {
       "hash": "d97c22335e5b20188e627fb14d29d65dbcbd7650",
       "shortHash": "d97c223",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "handle 3-badge top row in left-right poster layout",
@@ -301,6 +512,11 @@
     {
       "hash": "a44e2a980044a3ecdb00f48a2c87b81e8a26b131",
       "shortHash": "a44e2a9",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T03:43:04+01:00",
       "type": "chore",
       "title": ".",
@@ -309,6 +525,11 @@
     {
       "hash": "49350b08ddb607e246914b179cc861325e0e1dcd",
       "shortHash": "49350b0",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T03:40:12+01:00",
       "type": "chore",
       "title": ".",
@@ -317,6 +538,11 @@
     {
       "hash": "0ccbbfbc7496008f02a8df3130ff4029c1b38c25",
       "shortHash": "0ccbbfb",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T03:13:26+01:00",
       "type": "chore",
       "title": "Update page.tsx",
@@ -325,6 +551,11 @@
     {
       "hash": "7d4d2190819cc890a230fba92ee3ff40994b8b6a",
       "shortHash": "7d4d219",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T01:19:02Z",
       "type": "chore",
       "title": "release 2.13.8",
@@ -333,6 +564,11 @@
     {
       "hash": "a252f7fbc556c4fd369149ce3403887f21ed0687",
       "shortHash": "a252f7f",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T01:19:01Z",
       "type": "chore",
       "title": "add comprehensive env vars reference and fix stale docs",
@@ -341,6 +577,11 @@
     {
       "hash": "2d5b29968e2d3e52cfceda0399a263715c735072",
       "shortHash": "2d5b299",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:36:44Z",
       "type": "chore",
       "title": "release 2.13.7",
@@ -349,6 +590,11 @@
     {
       "hash": "2b7af704e916cf3700f73c2f399f2f2ac1535c2b",
       "shortHash": "2b7af70",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:36:22Z",
       "type": "fix",
       "title": "sync pnpm lockfile for undici dependency",
@@ -357,6 +603,11 @@
     {
       "hash": "cbd79577fe439ee79ec1ba62663de558980a31b0",
       "shortHash": "cbd7957",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:34:20Z",
       "type": "chore",
       "title": "release 2.13.6",
@@ -365,6 +616,11 @@
     {
       "hash": "63ddd28dd9e6c107ba402166ca8dd242669572d2",
       "shortHash": "63ddd28",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:34:19Z",
       "type": "feat",
       "title": "route Torrentio requests through HTTP_PROXY/HTTPS_PROXY",
@@ -373,6 +629,11 @@
     {
       "hash": "59a7e5d4f781b029025417c97ebda91b2ac2265b",
       "shortHash": "59a7e5d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:31:23Z",
       "type": "chore",
       "title": "release 2.13.5",
@@ -381,6 +642,11 @@
     {
       "hash": "56af6f8b51cbaf4c7921078c11f1f94cbcb06d88",
       "shortHash": "56af6f8",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:31:21Z",
       "type": "fix",
       "title": "add User-Agent header to Torrentio fetch to bypass 403",
@@ -389,6 +655,11 @@
     {
       "hash": "15536a87baa05bf35b97404251efe830b3fd2495",
       "shortHash": "15536a8",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:28:52Z",
       "type": "chore",
       "title": "release 2.13.4",
@@ -397,6 +668,11 @@
     {
       "hash": "e7651945f815b613af99b9d6bbaab3703f45d8eb",
       "shortHash": "e765194",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:28:51Z",
       "type": "chore",
       "title": "add per-request log to verify deployed code version",
@@ -405,6 +681,11 @@
     {
       "hash": "d2bb456fec16654ec02f58e2ca9a32dc4488a04c",
       "shortHash": "d2bb456",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:06:20Z",
       "type": "chore",
       "title": "release 2.13.3",
@@ -413,6 +694,11 @@
     {
       "hash": "1d91c82d52cb0a6b532843e5519530cac8f143e8",
       "shortHash": "1d91c82",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-19T00:06:19Z",
       "type": "chore",
       "title": "add diagnostic logging for Torrentio fetch failures",
@@ -421,6 +707,11 @@
     {
       "hash": "85e90ef2c2f7f4808ba2cda72c39c7cc07ab1961",
       "shortHash": "85e90ef",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T00:36:42+01:00",
       "type": "chore",
       "title": ".",
@@ -429,6 +720,11 @@
     {
       "hash": "3c2f6f98150421b51cb39296730a03230611b75a",
       "shortHash": "3c2f6f9",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T23:19:12Z",
       "type": "chore",
       "title": "release 2.13.2",
@@ -437,6 +733,11 @@
     {
       "hash": "76cde91dce0e3b975bd56f34ca390531318cb915",
       "shortHash": "76cde91",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T23:19:11Z",
       "type": "fix",
       "title": "strip internal port from public-facing image URLs",
@@ -445,6 +746,11 @@
     {
       "hash": "77310dd5dc846b97fa91daf2cf37c411c38ba3bb",
       "shortHash": "77310dd",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T23:13:44Z",
       "type": "chore",
       "title": "release 2.13.1",
@@ -453,6 +759,11 @@
     {
       "hash": "faade1d50a2b1f85c5ce92cce559c91ecc64594f",
       "shortHash": "faade1d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T23:13:42Z",
       "type": "fix",
       "title": "remove torrentio language filter for badge detection",
@@ -461,6 +772,11 @@
     {
       "hash": "657f8d60cdf2a264adde86508ebc0da0675757fb",
       "shortHash": "657f8d6",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T00:11:50+01:00",
       "type": "chore",
       "title": "Update page.tsx",
@@ -469,6 +785,11 @@
     {
       "hash": "b3027f336a7ec7025a31e55a31c5e989f0df40b9",
       "shortHash": "b3027f3",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-19T00:08:22+01:00",
       "type": "chore",
       "title": "Add show/hide toggles for config and proxy",
@@ -477,6 +798,11 @@
     {
       "hash": "40683e13581c7919a7f92222edc4ca092aadcbd7",
       "shortHash": "40683e1",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-18T23:57:04+01:00",
       "type": "chore",
       "title": "Add posterQualityBadgesPosition option",
@@ -485,6 +811,11 @@
     {
       "hash": "7fcc55bf9b5c373a8af53544c85d9bed0d04b6f9",
       "shortHash": "7fcc55b",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-18T23:53:29+01:00",
       "type": "chore",
       "title": "Add posterQualityBadgesPosition support",
@@ -493,6 +824,11 @@
     {
       "hash": "93200ab97493eeba402cfe36b345efa2eca7044c",
       "shortHash": "93200ab",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T22:37:34Z",
       "type": "chore",
       "title": "release 2.13.0",
@@ -501,6 +837,11 @@
     {
       "hash": "486446f73f10bdf7ee795323dcc056d0e1ae39e3",
       "shortHash": "486446f",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T22:36:47Z",
       "type": "chore",
       "title": "release 2.12.0",
@@ -509,6 +850,11 @@
     {
       "hash": "6d76f603cd48120c38b0a2686af3cae43c55dfe7",
       "shortHash": "6d76f60",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T22:36:46Z",
       "type": "feat",
       "title": "added an override for badges",
@@ -517,6 +863,11 @@
     {
       "hash": "ffc7966cc223cad91109a34572920764adda813f",
       "shortHash": "ffc7966",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T22:24:28Z",
       "type": "chore",
       "title": "release 2.11.2",
@@ -525,6 +876,11 @@
     {
       "hash": "301af7276fb7531b9cfe203a968e08e5bd12c236",
       "shortHash": "301af72",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T22:24:27Z",
       "type": "fix",
       "title": "resolve stremio badge inconsistency by adding Torrentio concurrency limiter and fixing series streams",
@@ -533,6 +889,11 @@
     {
       "hash": "a13ce21fd82ecac9f583f318f153026910b3719d",
       "shortHash": "a13ce21",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-18T23:15:11+01:00",
       "type": "chore",
       "title": "Handle 3-badge top row in left-right layout",
@@ -541,6 +902,11 @@
     {
       "hash": "bf3576ee1196ce482c9061f3bdcfd26f3dcaf331",
       "shortHash": "bf3576e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T20:35:16Z",
       "type": "ci",
       "title": "fix release workflow dependency",
@@ -549,6 +915,11 @@
     {
       "hash": "4ac13d51e44d0e8a133704815aa65c65e5e70bcd",
       "shortHash": "4ac13d5",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T20:07:55Z",
       "type": "chore",
       "title": "release 2.11.1",
@@ -557,6 +928,11 @@
     {
       "hash": "240f29dfe7983fbfa896f2474e69d1210913eb3c",
       "shortHash": "240f29d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T20:07:55Z",
       "type": "fix",
       "title": "remove lingering edge middleware to resolve CSP hydration block",
@@ -565,6 +941,11 @@
     {
       "hash": "7609a04b235222ffbcca7d8161a660366468a0e8",
       "shortHash": "7609a04",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T19:41:31Z",
       "type": "chore",
       "title": "remove temporary commit file",
@@ -573,6 +954,11 @@
     {
       "hash": "2c8c128ff6506eed06bfd4c7a5d59f19d02dd735",
       "shortHash": "2c8c128",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T19:40:19Z",
       "type": "chore",
       "title": "release 2.11.0",
@@ -581,6 +967,11 @@
     {
       "hash": "1b3ac53614974c8a3723d903ae5f7e64170ca28b",
       "shortHash": "1b3ac53",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T19:40:19Z",
       "type": "chore",
       "title": "repo-wide performance and security fixes",
@@ -589,6 +980,11 @@
     {
       "hash": "cf842a204e330ca79ff611dd1457afd10d06d162",
       "shortHash": "cf842a2",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T19:39:53Z",
       "type": "chore",
       "title": "repo-wide performance and security fixes",
@@ -597,6 +993,11 @@
     {
       "hash": "0af59561f8066e85b958711a263fdc1bbcfd408f",
       "shortHash": "0af5956",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T18:05:38Z",
       "type": "chore",
       "title": "release 2.10.2",
@@ -605,6 +1006,11 @@
     {
       "hash": "db6a3289cc54818ceaf9ca20548ac28023faa9f4",
       "shortHash": "db6a328",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T18:05:02Z",
       "type": "chore",
       "title": "tightened some wording",
@@ -613,6 +1019,11 @@
     {
       "hash": "014c18d0a14e957af7e76f67446d8501eb419733",
       "shortHash": "014c18d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T17:39:37Z",
       "type": "chore",
       "title": "release 2.10.1",
@@ -621,6 +1032,11 @@
     {
       "hash": "3023fd895961eefe5d2c3bad98f261d1cdc82a28",
       "shortHash": "3023fd8",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T17:37:31Z",
       "type": "feat",
       "title": "tighten the merged configurator workspace layout",
@@ -629,6 +1045,11 @@
     {
       "hash": "e906470af1a58f9daebc9b1b8ad4fad9381475bc",
       "shortHash": "e906470",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T17:21:41Z",
       "type": "chore",
       "title": "release 2.10.0",
@@ -637,6 +1058,11 @@
     {
       "hash": "70f70e85c03296979ce45a368e2de492ebdd9898",
       "shortHash": "70f70e8",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T17:21:32Z",
       "type": "feat",
       "title": "collapse proxy configuration into the shared configurator flow",
@@ -645,6 +1071,11 @@
     {
       "hash": "21b8c5c4688f4d4285d64ff7475edb249d56bb8e",
       "shortHash": "21b8c5c",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T17:05:00Z",
       "type": "chore",
       "title": "release 2.9.0",
@@ -653,6 +1084,11 @@
     {
       "hash": "7f3b4e51e4f9ceca31ef372b52651b7febf2518f",
       "shortHash": "7f3b4e5",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T17:04:47Z",
       "type": "feat",
       "title": "unify configurator and addon proxy workflows",
@@ -661,6 +1097,11 @@
     {
       "hash": "4b1127aa836161c591ef0f6f4fba3b6f3b8714df",
       "shortHash": "4b1127a",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T06:28:52Z",
       "type": "chore",
       "title": "release 2.8.1",
@@ -669,6 +1110,11 @@
     {
       "hash": "0c0271779ef1fd56c012ff28005fd3daee257c90",
       "shortHash": "0c02717",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T06:28:47Z",
       "type": "fix",
       "title": "use configured CORS fallback origin in proxy routes",
@@ -677,6 +1123,11 @@
     {
       "hash": "13e0bb9ce2fa4378123052df8084e74b522b2420",
       "shortHash": "13e0bb9",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T05:15:19Z",
       "type": "chore",
       "title": "release 2.8.0",
@@ -685,6 +1136,11 @@
     {
       "hash": "31a81095ceedafbfc8a86ae4fe8b2070d3603b72",
       "shortHash": "31a8109",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T05:03:27Z",
       "type": "chore",
       "title": "detail post-v2.7.2 updates",
@@ -693,6 +1149,11 @@
     {
       "hash": "dec4bb9c6dc1723cef13f9545dde9086863b1587",
       "shortHash": "dec4bb9",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T02:10:42Z",
       "type": "chore",
       "title": "release 2.7.2",
@@ -701,6 +1162,11 @@
     {
       "hash": "b6b7e41ea43463b7fce420639fb25429bead4e01",
       "shortHash": "b6b7e41",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T02:10:32Z",
       "type": "fix",
       "title": "improve upstream TMDB error classification",
@@ -709,6 +1175,11 @@
     {
       "hash": "57a34986f029cae6021de65e4c78eef63ad4c84d",
       "shortHash": "57a3498",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T00:35:39Z",
       "type": "chore",
       "title": "release 2.7.1",
@@ -717,6 +1188,11 @@
     {
       "hash": "caa44424aab1a73f93ea33f0f60e907278dfc1cd",
       "shortHash": "caa4442",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-18T00:20:22Z",
       "type": "chore",
       "title": "cleanup",
@@ -725,6 +1201,11 @@
     {
       "hash": "424f816449006661aa016dd0046455645f61dafe",
       "shortHash": "424f816",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T23:31:05Z",
       "type": "chore",
       "title": "release 2.7.0",
@@ -733,6 +1214,11 @@
     {
       "hash": "3f27bf49ba5673d5d57e8d1004ae4398b0bc2231",
       "shortHash": "3f27bf4",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T23:16:39Z",
       "type": "chore",
       "title": "Merge remote-tracking branch 'upstream/main'",
@@ -741,6 +1227,11 @@
     {
       "hash": "e7030847ecc8ea1a8fe493f652858f9e3ef116f3",
       "shortHash": "e703084",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T23:06:12Z",
       "type": "chore",
       "title": "release 2.6.0",
@@ -749,6 +1240,11 @@
     {
       "hash": "2a56a82f89956e6bd48d60116596513d7cf45bb6",
       "shortHash": "2a56a82",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T23:05:59Z",
       "type": "feat",
       "title": "surface uptime tracker across landing page",
@@ -757,6 +1253,11 @@
     {
       "hash": "e7d96c61907c37e82b7d466eb1b665bedf4155a7",
       "shortHash": "e7d96c6",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T23:54:12+01:00",
       "type": "chore",
       "title": "Redesign homepage UI; add fonts & smooth scroll",
@@ -765,6 +1266,11 @@
     {
       "hash": "10990586e8086e940db8afe4ae1c35c8c7f34fc0",
       "shortHash": "1099058",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T23:04:42+01:00",
       "type": "chore",
       "title": "Update page.tsx",
@@ -773,6 +1279,11 @@
     {
       "hash": "be2c397ba845259314c10ac4dfb808fb0d781ae5",
       "shortHash": "be2c397",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T22:58:08+01:00",
       "type": "chore",
       "title": "Translate catalog metas concurrently",
@@ -781,6 +1292,11 @@
     {
       "hash": "2097296239a6cf1708265a6bea98bdb6b3c5a3a1",
       "shortHash": "2097296",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T22:51:46+01:00",
       "type": "chore",
       "title": "Add translateMeta option and TMDB translation",
@@ -789,6 +1305,11 @@
     {
       "hash": "4d1c9bbb78c6a62cc60adf2f2cf2139a61dc10a7",
       "shortHash": "4d1c9bb",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T22:46:29+01:00",
       "type": "chore",
       "title": "Add config export/import and refactor proxy UI",
@@ -797,6 +1318,11 @@
     {
       "hash": "61eeba767110f56076d89972f29bc2504773bc74",
       "shortHash": "61eeba7",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T21:34:04Z",
       "type": "chore",
       "title": "release 2.5.0",
@@ -805,6 +1331,11 @@
     {
       "hash": "58b335bd43d776912971f1ac7d0161de2f37efe6",
       "shortHash": "58b335b",
+      "author": {
+        "name": "Bestia",
+        "email": "233500038+realbestia1@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T21:32:37Z",
       "type": "chore",
       "title": "Create LICENSE",
@@ -813,6 +1344,11 @@
     {
       "hash": "4fe9808a451ad5a0ed270aa61c0ef995f5d90243",
       "shortHash": "4fe9808",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T21:32:22Z",
       "type": "feat",
       "title": "improve preview error feedback and hero layout",
@@ -821,6 +1357,11 @@
     {
       "hash": "fa9885d49e7e4846982eadca9e4688c7558863b2",
       "shortHash": "fa9885d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T21:07:20Z",
       "type": "chore",
       "title": "disable next telemetry in docker, pin node to 22",
@@ -829,6 +1370,11 @@
     {
       "hash": "1839409aa67a477dd8d88ea3079aab1e031661a1",
       "shortHash": "1839409",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:57:41Z",
       "type": "chore",
       "title": "release 2.4.4",
@@ -837,6 +1383,11 @@
     {
       "hash": "bb290a47f950fb18e6631acc32720e4694f3bad9",
       "shortHash": "bb290a4",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:57:29Z",
       "type": "fix",
       "title": "complete pnpm migration",
@@ -845,6 +1396,11 @@
     {
       "hash": "f0d5d2638c4ed34c1d0e8462daa6bb0c4308e275",
       "shortHash": "f0d5d26",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:49:21Z",
       "type": "build",
       "title": "switch to pnpm, enable corepack, optimize Docker and workflows for speed",
@@ -853,6 +1409,11 @@
     {
       "hash": "5727613824f8446a5b8195b86dae19c27bcf31e9",
       "shortHash": "5727613",
+      "author": {
+        "name": "Bestia",
+        "email": "233500038+realbestia1@users.noreply.github.com"
+      },
+      "isUpstream": true,
       "date": "2026-03-17T21:38:58+01:00",
       "type": "chore",
       "title": "Create LICENSE",
@@ -861,6 +1422,11 @@
     {
       "hash": "e559c0d518e604fcb764a01d4898145d06330596",
       "shortHash": "e559c0d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:32:57Z",
       "type": "chore",
       "title": "release 2.4.2",
@@ -869,6 +1435,11 @@
     {
       "hash": "e76d9176dbd9c6745dbf77286e9d4717ae531511",
       "shortHash": "e76d917",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:32:50Z",
       "type": "fix",
       "title": "expand selected labels",
@@ -877,6 +1448,11 @@
     {
       "hash": "495c84bb6dc4da22c4810b9d01c04bfc6b825e83",
       "shortHash": "495c84b",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:26:10Z",
       "type": "chore",
       "title": "release 2.4.1",
@@ -885,6 +1461,11 @@
     {
       "hash": "203801988a15ed4affea39d6aa3cc6f4cc4c3a5e",
       "shortHash": "2038019",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:25:55Z",
       "type": "ci",
       "title": "queue docker workflow",
@@ -893,6 +1474,11 @@
     {
       "hash": "21dbbfd4ff9f047e2254bc3050065f939414b8ae",
       "shortHash": "21dbbfd",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:19:43Z",
       "type": "chore",
       "title": "release 2.4.0",
@@ -901,6 +1487,11 @@
     {
       "hash": "0086bbcd8aff2569985415632c136979f2818c5d",
       "shortHash": "0086bbc",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:19:26Z",
       "type": "feat",
       "title": "save api key config",
@@ -909,6 +1500,11 @@
     {
       "hash": "24ef22caf66ceb3b31b361c980af0ec41ee91a2e",
       "shortHash": "24ef22c",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:08:23Z",
       "type": "chore",
       "title": "release 2.3.0",
@@ -917,6 +1513,11 @@
     {
       "hash": "c6dc9b40796687a14399077a5806afe4dad27544",
       "shortHash": "c6dc9b4",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T20:07:57Z",
       "type": "feat",
       "title": "add recent changes feed and restore automated release flow",
@@ -925,6 +1526,11 @@
     {
       "hash": "4327a3fca9b2d9664ba17645fdd1509cb1c54413",
       "shortHash": "4327a3f",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T19:29:19Z",
       "type": "fix",
       "title": "resolve homepage lint regressions",
@@ -933,6 +1539,11 @@
     {
       "hash": "ba7e4ab84b2fa0f8de01ed129d710e85a45491bc",
       "shortHash": "ba7e4ab",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T19:21:37Z",
       "type": "feat",
       "title": "refresh branding, stabilize UI, and improve release pipeline",
@@ -941,25 +1552,14 @@
     {
       "hash": "1b2f2faa651beae3191ce878eec15ab3be1956bc",
       "shortHash": "1b2f2fa",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
       "date": "2026-03-17T18:24:13Z",
       "type": "chore",
       "title": "release 2.1.0",
-      "body": null
-    },
-    {
-      "hash": "aef4e017cfbb7515b2ec50d05d94a811ca98589a",
-      "shortHash": "aef4e01",
-      "date": "2026-03-17T18:24:02Z",
-      "type": "feat",
-      "title": "align branding and chrome theme",
-      "body": null
-    },
-    {
-      "hash": "a04d47ec62ad0e12d6bfc5110f68a271740babbe",
-      "shortHash": "a04d47e",
-      "date": "2026-03-17T18:06:40Z",
-      "type": "ci",
-      "title": "reduce duplicate docker runs",
       "body": null
     }
   ]

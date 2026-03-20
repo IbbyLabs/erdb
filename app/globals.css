@@ -708,6 +708,12 @@ pre {
 	color: #d7c9ff;
 }
 
+.erdb-commit-type-upstream {
+	background: rgba(245, 158, 11, 0.15);
+	border-color: rgba(251, 191, 36, 0.4);
+	color: #fde68a;
+}
+
 .erdb-commit-hash {
 	font-size: 0.72rem;
 	color: var(--brand-muted);
