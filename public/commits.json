@@ -1,7 +1,33 @@
 {
-  "generatedAt": "2026-03-20T01:25:36.077Z",
+  "generatedAt": "2026-03-20T01:33:01.541Z",
   "total": 120,
   "commits": [
+    {
+      "hash": "bcfbb24964d752b68cc4675f2957d8dffa5a3f1c",
+      "shortHash": "bcfbb24",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:30:06Z",
+      "type": "chore",
+      "title": "release 2.17.0",
+      "body": null
+    },
+    {
+      "hash": "6f94ba2650a00fd6f62c19ce529dec800ef5d3ab",
+      "shortHash": "6f94ba2",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:27:30Z",
+      "type": "feat",
+      "title": "refine recent changes feed",
+      "body": "- enhance [generate-commits-json.mjs] to include author/isUpstream metadata\n- add UI badges and custom styling in for upstream attribution\n- configure GitHub action to fetch full history (fetch-depth: 0)"
+    },
     {
       "hash": "a8805ebb50b814aa00d70fcab6a0298f7f1826d3",
       "shortHash": "a8805eb",
@@ -1535,32 +1561,6 @@
       "type": "fix",
       "title": "resolve homepage lint regressions",
       "body": "- replace root anchor usage with Next Link\n\n- remove effect-driven setState patterns flagged by react-hooks/set-state-in-effect\n\n- add lint regression test for app/page.tsx and wire npm test script"
-    },
-    {
-      "hash": "ba7e4ab84b2fa0f8de01ed129d710e85a45491bc",
-      "shortHash": "ba7e4ab",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T19:21:37Z",
-      "type": "feat",
-      "title": "refresh branding, stabilize UI, and improve release pipeline",
-      "body": "- update ERDB page structure and styling with a redesigned hero, section headers, and panel system\n\n- fix layout overflow and preview regressions by tightening responsive shrink behavior and client-side preview URL handling\n\n- remove redundant footer subtitle copy for fork-safe presentation\n\n- add complete favicon/web manifest asset set and align layout metadata/icons\n\n- update Docker publishing workflow and Dockerfile to improve release publishing and cache behavior\n\n- revise README instructions and bump package version to 2.2.0 for this feature release"
-    },
-    {
-      "hash": "1b2f2faa651beae3191ce878eec15ab3be1956bc",
-      "shortHash": "1b2f2fa",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T18:24:13Z",
-      "type": "chore",
-      "title": "release 2.1.0",
-      "body": null
     }
   ]
 }
