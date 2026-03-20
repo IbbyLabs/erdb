@@ -1,5 +1,8 @@
 # Changelog
 
+> [!NOTE]
+> This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
+
 ## [v2.17.3] - 20/03/2026
 
 ### Documentation

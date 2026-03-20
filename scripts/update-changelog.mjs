@@ -111,10 +111,16 @@ function getTagDate(tag) {
   }
 }
 
+const HEADER = `# Changelog
+
+> [!NOTE]
+> This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
+`;
+
 if (process.argv.includes('--rebuild')) {
   console.log('Rebuilding entire CHANGELOG.md...');
   const tags = getAllTags();
-  let fullChangelog = '# Changelog\n\n';
+  let fullChangelog = HEADER + '\n';
   
   for (let i = tags.length - 1; i >= 0; i--) {
     const current = tags[i];
@@ -146,7 +152,7 @@ if (process.argv.includes('--rebuild')) {
   
   const lines = existingChangelog.split('\n');
   const headerEndIndex = lines.findIndex(line => line.startsWith('## ['));
-  const header = headerEndIndex === -1 ? '# Changelog\n\n' : lines.slice(0, headerEndIndex) ? lines.slice(0, headerEndIndex).join('\n') + '\n' : '# Changelog\n\n';
+  const header = headerEndIndex === -1 ? HEADER + '\n' : lines.slice(0, headerEndIndex).join('\n') + '\n';
   const rest = headerEndIndex === -1 ? '' : lines.slice(headerEndIndex).join('\n');
 
   fs.writeFileSync('CHANGELOG.md', `${header}${newEntry}${rest}`);
