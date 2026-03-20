@@ -322,9 +322,9 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | `ERDB_SHARP_CACHE_ITEMS` | Sharp default | Max cached items |
 | `ERDB_SHARP_CACHE_FILES` | Sharp default | Max cached files/handles |
 
-https://github.com/user-attachments/assets/cb70624f-75c8-49da-96fc-b7f6e177df98
+https://github.com/user-attachments/assets/5e1e2496-509a-4b85-ab45-d1f406576af4
 
-https://github.com/user-attachments/assets/b041ae36-c2d1-44ee-9daa-c92f72409a8b
+https://github.com/user-attachments/assets/2385d7a1-c5da-4240-b016-d2880c6d1184
 
 © 2026 ERDB Project
 
