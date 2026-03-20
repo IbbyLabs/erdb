@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.17.2] - 20/03/2026
+
+### Added
+- feat(changelog): support multi-line commit messages and backfill history
+  
+  This update refactors the changelog script to capture full commit bodies (using %b) and correctly indent them in the Markdown output.
+  
+  It also adds a --rebuild flag to systematically backfill the entire project history, ensuring older commits also show their detailed descriptions in the changelog and the 'Recent Changes' UI.
+
 ## [v2.17.1] - 20/03/2026
 
 ### Added
