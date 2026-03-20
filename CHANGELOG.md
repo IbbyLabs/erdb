@@ -3,6 +3,17 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.18.0] - 20/03/2026
+
+### Added
+- feat: polish homepage guidance and clean poster rendering
+  
+  Bring over the post-v2.17.4 UX and rendering improvements while keeping the existing IbbyLabs branding, proxy flow, and security-related behavior intact.
+  
+  - add hydration-safe client origin handling for generated URLs\n- add offset-aware smooth scrolling for nav, hero, and footer anchor links\n- add a prominent ERDB Discord support callout styled to match the landing page\n- keep the new support entry configurable with brand Discord env vars\n- only apply clean poster title and logo overlays when the selected poster is actually textless
+  
+  Tests:\n- npm run lint\n- npm test\n- npx tsc --noEmit
+
 ## [v2.17.4] - 20/03/2026
 
 ### Other Changes
