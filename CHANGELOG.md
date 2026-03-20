@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.17.3] - 20/03/2026
+
+### Documentation
+- docs: update README.md (Upstream change - video link)
+
+### Other Changes
+- Update README.md
+
 ## [v2.17.2] - 20/03/2026
 
 ### Added
