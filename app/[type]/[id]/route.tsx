@@ -1411,6 +1411,15 @@ const pickByLanguageWithFallback = (
   return items[0];
 };
 
+const isTextlessPosterSelection = (posters: any[] = [], selectedPoster?: any | null) => {
+  if (!Array.isArray(posters) || posters.length === 0 || !selectedPoster?.file_path) return false;
+
+  return posters.some(
+    (poster: any) =>
+      poster?.file_path === selectedPoster.file_path && normalizeImageLanguage(poster?.iso_639_1) === null
+  );
+};
+
 const pickPosterByPreference = (
   posters: any[] = [],
   preference: PosterTextPreference,
@@ -3759,6 +3768,7 @@ export async function GET(
       let outputHeight = 720;
       let selectedLogoAspectRatio: number | null = null;
       let selectedPosterLogoPath: string | null = null;
+      let selectedPosterIsTextless = false;
       const requestedExternalRatings = new Set([...selectedRatings]);
       const needsAnimeOnlyRatings = [...requestedExternalRatings].some((provider) =>
         ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
@@ -3773,10 +3783,6 @@ export async function GET(
       const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
       const shouldRenderStreamBadges = shouldApplyStreamBadges && !isAnimeContent;
       const shouldRenderBadges = shouldRenderRatings || shouldRenderStreamBadges;
-      const posterTitleText =
-        imageType === 'poster' && posterTextPreference === 'clean'
-          ? pickPosterTitleFromMedia(media, mediaType, rawFallbackTitle)
-          : null;
       const releaseDateForCache =
         mediaType === 'movie' ? media?.release_date : mediaType === 'tv' ? media?.first_air_date : null;
       const tmdbIdForCache =
@@ -4344,10 +4350,12 @@ export async function GET(
               FALLBACK_IMAGE_LANGUAGE,
               originalPosterPath
             );
+            const posterIsTextless = isTextlessPosterSelection(posterCollection, selectedPoster);
             return {
               imgPath: selectedPoster?.file_path || '',
               logoAspectRatio: null,
               logoPath,
+              posterIsTextless,
             };
           }
 
@@ -4363,6 +4371,7 @@ export async function GET(
               imgPath: selectedBackdrop?.file_path || '',
               logoAspectRatio: null,
               logoPath,
+              posterIsTextless: false,
             };
           }
 
@@ -4370,7 +4379,7 @@ export async function GET(
             typeof selectedLogo?.aspect_ratio === 'number' && selectedLogo.aspect_ratio > 0
               ? selectedLogo.aspect_ratio
               : null;
-          return { imgPath: logoPath || '', logoAspectRatio, logoPath };
+          return { imgPath: logoPath || '', logoAspectRatio, logoPath, posterIsTextless: false };
         };
 
         const initialImages = bundledImages || {};
@@ -4384,7 +4393,13 @@ export async function GET(
         imgPath = initialSelection.imgPath;
         selectedLogoAspectRatio = initialSelection.logoAspectRatio;
         selectedPosterLogoPath = initialSelection.logoPath || null;
-        if (imageType === 'poster' && posterTextPreference === 'clean' && !selectedPosterLogoPath) {
+        selectedPosterIsTextless = initialSelection.posterIsTextless;
+        if (
+          imageType === 'poster' &&
+          posterTextPreference === 'clean' &&
+          selectedPosterIsTextless &&
+          !selectedPosterLogoPath
+        ) {
           const logoFallbackImagesResponse = await fetchJsonCached(
             `tmdb:${mediaType}:${media.id}:images:all`,
             `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
@@ -4431,6 +4446,7 @@ export async function GET(
               imgPath = fallbackSelection.imgPath;
               selectedLogoAspectRatio = fallbackSelection.logoAspectRatio;
               selectedPosterLogoPath = fallbackSelection.logoPath || selectedPosterLogoPath;
+              selectedPosterIsTextless = fallbackSelection.posterIsTextless;
               if (selectedLogoAspectRatio) {
                 outputWidth = Math.max(
                   LOGO_MIN_WIDTH,
@@ -4448,8 +4464,13 @@ export async function GET(
       if (!imgUrl) {
         imgUrl = buildTmdbImageUrl(imageType, imgPath, outputWidth);
       }
+      const shouldApplyPosterCleanOverlay =
+        imageType === 'poster' && posterTextPreference === 'clean' && selectedPosterIsTextless;
+      const posterTitleText = shouldApplyPosterCleanOverlay
+        ? pickPosterTitleFromMedia(media, mediaType, rawFallbackTitle)
+        : null;
       const posterLogoUrl =
-        imageType === 'poster' && posterTextPreference === 'clean' && selectedPosterLogoPath
+        shouldApplyPosterCleanOverlay && selectedPosterLogoPath
           ? buildTmdbImageUrl('logo', selectedPosterLogoPath, outputWidth)
           : null;
       if (!shouldRenderBadges && !posterTitleText && !posterLogoUrl) {

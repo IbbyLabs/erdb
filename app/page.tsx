@@ -2,7 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+  type MouseEvent,
+} from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff } from 'lucide-react';
 import {
   RATING_PROVIDER_OPTIONS,
@@ -62,6 +71,8 @@ const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
+const BRAND_DISCORD_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_URL || 'https://discordapp.com/users/947862578682548255';
+const BRAND_DISCORD_HANDLE = process.env.NEXT_PUBLIC_BRAND_DISCORD_HANDLE || '@ibbys89';
 const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
@@ -93,6 +104,15 @@ const UI_CONFIG_STORAGE_KEY = 'erdb.uiConfig.v1';
 const UI_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.uiConfig.settings.v1';
 const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
+
+const subscribeToNothing = () => () => {};
+
+const useClientOrigin = () =>
+  useSyncExternalStore(
+    subscribeToNothing,
+    () => window.location.origin,
+    () => ''
+  );
 
 type LegacyApiKeyConfigStorage = {
   tmdbKey?: string;
@@ -151,6 +171,24 @@ function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: string }) {
     >
       <span className="site-status-text">{label}</span>
       <ExternalLink className="site-status-icon" aria-hidden="true" />
+    </a>
+  );
+}
+
+function DiscordPill({ label = BRAND_DISCORD_HANDLE }: { label?: string }) {
+  return (
+    <a
+      className="site-discord-pill"
+      href={BRAND_DISCORD_URL}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Message IbbyLabs on Discord"
+      title="Message IbbyLabs on Discord"
+    >
+      <svg className="site-discord-icon" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
+        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.33,46,96.22,53,91.08,65.69,84.69,65.69Z" />
+      </svg>
+      <span>{label}</span>
     </a>
   );
 }
@@ -331,9 +369,8 @@ function RecentChanges({
 }
 
 export default function Home() {
-  const [baseUrl] = useState(() =>
-    normalizeBaseUrl(typeof window !== 'undefined' ? window.location.origin : '')
-  );
+  const navRef = useRef<HTMLElement | null>(null);
+  const baseUrl = normalizeBaseUrl(useClientOrigin());
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
@@ -397,6 +434,30 @@ export default function Home() {
   const setActiveQualityBadgesStyle =
     previewType === 'backdrop' ? setBackdropQualityBadgesStyle : setPosterQualityBadgesStyle;
 
+  const scrollToHash = useCallback((hash: string, behavior: ScrollBehavior = 'smooth') => {
+    if (typeof window === 'undefined') return;
+    if (!hash || !hash.startsWith('#')) return;
+    const target = document.querySelector(hash);
+    if (!target) return;
+    const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
+    const offset = navHeight + 12;
+    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+    window.scrollTo({ top, behavior });
+  }, []);
+
+  const handleAnchorClick = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      const href = event.currentTarget.getAttribute('href');
+      if (!href || !href.startsWith('#')) return;
+      event.preventDefault();
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', href);
+      }
+      scrollToHash(href);
+    },
+    [scrollToHash]
+  );
+
   useEffect(() => {
     if (tmdbKey && tmdbKey.length > 10) {
       fetch(`https://api.themoviedb.org/3/configuration/languages?api_key=${tmdbKey}`)
@@ -423,6 +484,16 @@ export default function Home() {
       clearInterval(tick);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleHashChange = () => scrollToHash(window.location.hash);
+    if (window.location.hash) {
+      requestAnimationFrame(() => scrollToHash(window.location.hash, 'auto'));
+    }
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [scrollToHash]);
 
   useEffect(() => {
     let active = true;
@@ -1071,16 +1142,16 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
   return (
     <div className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
-      <nav className="erdb-chrome sticky top-0 z-50">
+      <nav ref={navRef} className="erdb-chrome sticky top-0 z-50">
         <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <BrandLockup />
             <span className="erdb-brand-tag">Stateless ratings engine</span>
           </div>
           <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
-            <a href="#preview" className="erdb-nav-link">Configurator</a>
-            <a href="#proxy" className="erdb-nav-link">Addon Proxy</a>
-            <a href="#docs" className="erdb-nav-link">API Docs</a>
+            <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
+            <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
+            <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-nav-link">github</a>
             <UptimePill />
             <SupportPill />
@@ -1105,12 +1176,22 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                 Generate dynamic posters, backdrops, and logos with a cleaner config to output workflow.
               </p>
               <div className="erdb-hero-actions flex flex-wrap items-center gap-4">
-                <a href="#preview" className="erdb-hero-primary">
+                <a href="#preview" onClick={handleAnchorClick} className="erdb-hero-primary">
                   Open Configurator
                 </a>
-                <a href="#docs" className="erdb-hero-secondary">
+                <a href="#docs" onClick={handleAnchorClick} className="erdb-hero-secondary">
                   Read API Docs
                 </a>
+              </div>
+              <div className="site-discord-callout">
+                <p className="site-discord-callout-title">Need help with ERDB, ratings, or the addon proxy?</p>
+                <p className="site-discord-callout-copy">
+                  If you hit a rendering issue, need help with badges or language, or want a hand wiring this project into your setup, message me on Discord.
+                </p>
+                <div className="site-discord-callout-actions">
+                  <DiscordPill />
+                  <span className="site-discord-fallback">If the button does not open, search for {BRAND_DISCORD_HANDLE} in Discord.</span>
+                </div>
               </div>
               <div className="erdb-hero-strip">
                 <div className="erdb-hero-chip">Poster, backdrop, and logo output</div>
@@ -2099,9 +2180,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
             <SupportPill />
           </div>
           <div className="site-page-footer-links">
-            <a href="#preview" className="erdb-footer-link">Configurator</a>
-            <a href="#proxy" className="erdb-footer-link">Addon Proxy</a>
-            <a href="#docs" className="erdb-footer-link">API Docs</a>
+            <a href="#preview" onClick={handleAnchorClick} className="erdb-footer-link">Configurator</a>
+            <a href="#proxy" onClick={handleAnchorClick} className="erdb-footer-link">Addon Proxy</a>
+            <a href="#docs" onClick={handleAnchorClick} className="erdb-footer-link">API Docs</a>
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">github</a>
           </div>
           <div className="site-page-credit">
@@ -2116,9 +2197,5 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
-
-
-
 
 

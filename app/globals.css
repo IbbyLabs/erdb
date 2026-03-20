@@ -358,6 +358,91 @@ pre {
 	line-height: 1;
 }
 
+.site-discord-callout {
+	display: grid;
+	gap: 0.8rem;
+	padding: 1rem 1.05rem;
+	border-radius: 1.2rem;
+	border: 1px solid color-mix(in srgb, #5865f2 38%, var(--border) 62%);
+	background:
+		linear-gradient(180deg, rgba(19, 12, 37, 0.92), rgba(11, 8, 24, 0.84)),
+		radial-gradient(circle at top right, rgba(88, 101, 242, 0.2), transparent 42%);
+	box-shadow:
+		0 20px 38px -30px rgba(88, 101, 242, 0.78),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.site-discord-callout-title {
+	margin: 0;
+	color: var(--brand-ink);
+	font-size: 0.98rem;
+	font-weight: 700;
+	line-height: 1.45;
+}
+
+.site-discord-callout-copy {
+	margin: 0;
+	color: color-mix(in srgb, var(--brand-muted) 84%, var(--brand-ink) 16%);
+	font-size: 0.9rem;
+	line-height: 1.7;
+}
+
+.site-discord-callout-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.site-discord-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.42rem;
+	padding: 0.5rem 0.92rem;
+	border-radius: 999px;
+	border: 1px solid rgba(201, 210, 255, 0.26);
+	background: #5865f2;
+	color: #fff;
+	text-decoration: none;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	box-shadow:
+		0 14px 28px -20px rgba(88, 101, 242, 0.96),
+		inset 0 1px 0 rgba(255, 255, 255, 0.12);
+	transition:
+		transform 0.2s ease,
+		background-color 0.2s ease,
+		box-shadow 0.2s ease,
+		border-color 0.2s ease;
+}
+
+.site-discord-pill:hover {
+	transform: translateY(-1px);
+	background: #4752c4;
+	border-color: rgba(229, 232, 255, 0.42);
+	box-shadow:
+		0 18px 32px -18px rgba(88, 101, 242, 0.96),
+		inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.site-discord-pill:focus-visible {
+	outline: 2px solid rgba(192, 201, 255, 0.9);
+	outline-offset: 2px;
+}
+
+.site-discord-icon {
+	width: 0.86rem;
+	height: 0.86rem;
+	flex-shrink: 0;
+}
+
+.site-discord-fallback {
+	color: var(--brand-muted);
+	font-size: 0.82rem;
+	line-height: 1.55;
+}
+
 .site-page-credit {
 	display: inline-flex;
 	align-items: center;
@@ -1039,6 +1124,15 @@ pre {
 	}
 
 	.erdb-hero-chip {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.site-discord-callout-actions {
+		align-items: flex-start;
+	}
+
+	.site-discord-pill {
 		width: 100%;
 		justify-content: center;
 	}
