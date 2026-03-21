@@ -3,6 +3,17 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.5] - 21/03/2026
+
+### Fixed
+* refresh live gallery cards and darken logo demos
+  
+  Wrap the README preview images in direct preview links and rotate the cache buster tokens so GitHub fetches fresh renders instead of keeping the old broken camo entries.
+  
+  Add a dark logo background option to the image renderer and use it for the curated The Boys logo preset so the live README sample stays visible on GitHub's light canvas.
+  
+  Replace the old video attachment URLs with static demo thumbnails captured from the live erdb.ibbylabs.dev fork and link them to the live Configurator and Addon Proxy sections.
+
 ## [v2.21.4] - 21/03/2026
 
 ### Fixed
