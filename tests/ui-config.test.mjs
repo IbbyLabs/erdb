@@ -36,6 +36,9 @@ const buildSampleSettings = () =>
     },
     proxy: {
       manifestUrl: 'stremio://addon.example.com/manifest.json',
+      translateMeta: true,
+      translateMetaMode: 'prefer-requested-language',
+      debugMetaTranslation: true,
     },
   });
 
@@ -71,6 +74,9 @@ test('workspace serialization round-trips shared settings and proxy state', () =
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',
+      translateMeta: true,
+      translateMetaMode: 'prefer-requested-language',
+      debugMetaTranslation: true,
     },
   });
 });
@@ -93,6 +99,9 @@ test('workspace normalization ignores legacy proxy enabled flags', () => {
 
   assert.deepEqual(config.proxy, {
     manifestUrl: 'https://addon.example.com/manifest.json',
+    translateMeta: false,
+    translateMetaMode: 'fill-missing',
+    debugMetaTranslation: false,
   });
 });
 
@@ -126,7 +135,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropRatingsLayout: 'right-vertical',
   });
 
-  const proxyUrl = buildProxyUrl(baseUrl, config.proxy.manifestUrl, config.settings);
+  const proxyUrl = buildProxyUrl(baseUrl, config.proxy, config.settings);
   assert.match(proxyUrl, /^https:\/\/erdb\.example\.com\/proxy\/.+\/manifest\.json$/);
 
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
@@ -137,6 +146,9 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     url: 'https://addon.example.com/manifest.json',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
+    translateMeta: true,
+    translateMetaMode: 'prefer-requested-language',
+    debugMetaTranslation: true,
     posterRatings: 'imdb,tmdb',
     backdropRatings: 'mdblist',
     logoRatings: '',
@@ -161,14 +173,17 @@ test('proxy manifest generation stops when required inputs are missing', () => {
   const config = buildSampleSettings();
 
   assert.equal(
-    buildProxyUrl('https://erdb.example.com', '', config.settings),
+    buildProxyUrl('https://erdb.example.com', { ...config.proxy, manifestUrl: '' }, config.settings),
     '',
   );
 
   assert.equal(
     buildProxyUrl(
       'https://erdb.example.com',
-      'https://addon.example.com/manifest.json',
+      {
+        ...config.proxy,
+        manifestUrl: 'https://addon.example.com/manifest.json',
+      },
       {
         ...config.settings,
         tmdbKey: '',

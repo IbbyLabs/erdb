@@ -21,6 +21,11 @@ import {
   type RatingPreference,
   ALL_RATING_PREFERENCES,
 } from './ratingPreferences.ts';
+import {
+  DEFAULT_METADATA_TRANSLATION_MODE,
+  normalizeMetadataTranslationMode,
+  type MetadataTranslationMode,
+} from './metadataTranslation.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -52,9 +57,14 @@ export type SharedErdbSettings = {
 export type SavedUiConfig = {
   version: 1;
   settings: SharedErdbSettings;
-  proxy: {
-    manifestUrl: string;
-  };
+  proxy: SavedProxySettings;
+};
+
+export type SavedProxySettings = {
+  manifestUrl: string;
+  translateMeta: boolean;
+  translateMetaMode: MetadataTranslationMode;
+  debugMetaTranslation: boolean;
 };
 
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
@@ -62,6 +72,18 @@ const IMAGE_TEXT_PREFERENCE_SET = new Set<ImageTextPreference>(['original', 'cle
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
+
+const normalizeBoolean = (value: unknown, fallback = false) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return fallback;
+    if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false;
+  }
+  return fallback;
+};
 
 export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   tmdbKey: '',
@@ -91,6 +113,9 @@ export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
   settings: createDefaultSharedErdbSettings(),
   proxy: {
     manifestUrl: '',
+    translateMeta: false,
+    translateMetaMode: DEFAULT_METADATA_TRANSLATION_MODE,
+    debugMetaTranslation: false,
   },
 });
 
@@ -271,6 +296,9 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
     settings?: unknown;
     proxy?: {
       manifestUrl?: unknown;
+      translateMeta?: unknown;
+      translateMetaMode?: unknown;
+      debugMetaTranslation?: unknown;
     };
   };
 
@@ -282,6 +310,15 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
         typeof candidate.proxy?.manifestUrl === 'string'
           ? normalizeManifestUrl(candidate.proxy.manifestUrl, true)
           : defaults.proxy.manifestUrl,
+      translateMeta: normalizeBoolean(candidate.proxy?.translateMeta, defaults.proxy.translateMeta),
+      translateMetaMode: normalizeMetadataTranslationMode(
+        candidate.proxy?.translateMetaMode,
+        defaults.proxy.translateMetaMode,
+      ),
+      debugMetaTranslation: normalizeBoolean(
+        candidate.proxy?.debugMetaTranslation,
+        defaults.proxy.debugMetaTranslation,
+      ),
     },
   };
 };
@@ -389,30 +426,43 @@ export const buildConfigString = (baseUrl: string, settings: SharedErdbSettings)
 
 export const buildProxyPayload = (
   baseUrl: string,
-  manifestUrl: string,
+  proxy: SavedProxySettings,
   settings: SharedErdbSettings,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const normalizedManifestUrl = normalizeManifestUrl(manifestUrl);
+  const normalizedManifestUrl = normalizeManifestUrl(proxy.manifestUrl);
   const sharedPayload = buildSharedPayload(settings);
   if (!origin || !normalizedManifestUrl || isBareHttpUrl(normalizedManifestUrl) || !sharedPayload) {
     return null;
   }
 
-  return {
+  const payload: Record<string, string | number | boolean> = {
     url: normalizedManifestUrl,
     ...sharedPayload,
     erdbBase: origin,
   };
+
+  if (proxy.translateMeta) {
+    payload.translateMeta = true;
+    payload.translateMetaMode = normalizeMetadataTranslationMode(
+      proxy.translateMetaMode,
+      DEFAULT_METADATA_TRANSLATION_MODE,
+    );
+    if (proxy.debugMetaTranslation) {
+      payload.debugMetaTranslation = true;
+    }
+  }
+
+  return payload;
 };
 
 export const buildProxyUrl = (
   baseUrl: string,
-  manifestUrl: string,
+  proxy: SavedProxySettings,
   settings: SharedErdbSettings,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const payload = buildProxyPayload(baseUrl, manifestUrl, settings);
+  const payload = buildProxyPayload(baseUrl, proxy, settings);
   if (!origin || !payload) {
     return '';
   }

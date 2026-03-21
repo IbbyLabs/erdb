@@ -279,6 +279,12 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - The proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` (types can be toggled in the Addon Proxy UI).
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` and `mdblistKey` are required.
+- Optional proxy metadata translation can localize `meta.name` / `meta.description` and episode text.
+- `translateMetaMode=fill-missing` is the safe default: keep good addon text and only backfill blanks or placeholders.
+- `translateMetaMode=prefer-upstream` keeps any non-empty upstream text, even placeholders like `N/A`.
+- `translateMetaMode=prefer-requested-language` replaces upstream text only when TMDB has an exact translation for the requested language; anime-native fallback can still fill missing fields.
+- `translateMetaMode=prefer-tmdb` prefers TMDB text whenever it is available.
+- When `debugMetaTranslation=true`, the proxy adds an `_erdbMetaTranslation` object to returned metas so you can inspect field provenance.
 
 ## Environment Variables
 
@@ -327,5 +333,4 @@ https://github.com/user-attachments/assets/5e1e2496-509a-4b85-ab45-d1f406576af4
 https://github.com/user-attachments/assets/2385d7a1-c5da-4240-b016-d2880c6d1184
 
 © 2026 ERDB Project
-
 

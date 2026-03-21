@@ -9,8 +9,17 @@ import {
   parseAddonBaseUrl,
   type ProxyConfig,
 } from '@/lib/addonProxy';
+import { DEFAULT_METADATA_TRANSLATION_MODE } from '@/lib/metadataTranslation';
 import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
-import { mergeTranslatedTextFields, resolveTmdbTranslationTarget } from '@/lib/proxyMetaTranslation';
+import {
+  applyTranslatedTextFields,
+  extractTmdbTextCandidates,
+  hasMeaningfulText,
+  isAnimeErdbId,
+  resolveAnimeTextFallback,
+  resolveTmdbTranslationFieldAvailability,
+  resolveTmdbTranslationTarget,
+} from '@/lib/proxyMetaTranslation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,44 +74,58 @@ const parseForwardedHost = (value: string | null) => {
 };
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
+const ANILIST_MEDIA_QUERY = `
+  query ErdbAnimeTextFallback($id: Int) {
+    Media(id: $id, type: ANIME) {
+      title {
+        romaji
+        english
+        native
+        userPreferred
+      }
+      description(asHtml: false)
+    }
+  }
+`;
 type CacheEntry<T> = { value: T; expiresAt: number };
 const tmdbFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const animeMappingFetchCache = new Map<string, CacheEntry<Promise<any>>>();
+const kitsuFetchCache = new Map<string, CacheEntry<Promise<any>>>();
+const anilistFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const TMDB_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const TMDB_FAILED_TTL_MS = 2 * 60 * 1000;
 const ANIME_MAPPING_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const ANIME_MAPPING_FAILED_TTL_MS = 2 * 60 * 1000;
 
-const pruneJsonCache = (cache: Map<string, CacheEntry<Promise<any>>>) => {
+const prunePromiseCache = (cache: Map<string, CacheEntry<Promise<any>>>) => {
   const now = Date.now();
   for (const [key, entry] of cache.entries()) {
     if (entry.expiresAt <= now) cache.delete(key);
   }
 };
 
-const createCachedJsonFetcher = (
+const createCachedValueFetcher = <T,>(
   cache: Map<string, CacheEntry<Promise<any>>>,
   successTtlMs: number,
   failedTtlMs: number,
-) => async (url: string) => {
+  resolver: (key: string) => Promise<T>,
+) => async (key: string): Promise<T | null> => {
   const now = Date.now();
-  const cached = cache.get(url);
+  const cached = cache.get(key);
   if (cached && cached.expiresAt > now) {
     return cached.value;
   }
 
-  if (cache.size > 2000) pruneJsonCache(cache);
+  if (cache.size > 2000) prunePromiseCache(cache);
 
   const entry: CacheEntry<Promise<any>> = { value: Promise.resolve(null), expiresAt: now + successTtlMs };
-  cache.set(url, entry);
+  cache.set(key, entry);
 
   const promise = (async () => {
-    let result = null;
+    let result: T | null = null;
     try {
-      const response = await fetch(url, { cache: 'no-store' });
-      if (response.ok) {
-        result = await response.json();
-      }
+      result = await resolver(key);
     } catch {
       // fallback
     }
@@ -115,11 +138,62 @@ const createCachedJsonFetcher = (
   return promise;
 };
 
+const createCachedJsonFetcher = (
+  cache: Map<string, CacheEntry<Promise<any>>>,
+  successTtlMs: number,
+  failedTtlMs: number,
+) =>
+  createCachedValueFetcher(cache, successTtlMs, failedTtlMs, async (url: string) => {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  });
+
 const fetchTmdbJson = createCachedJsonFetcher(tmdbFetchCache, TMDB_CACHE_TTL_MS, TMDB_FAILED_TTL_MS);
 const fetchAnimeMappingJson = createCachedJsonFetcher(
   animeMappingFetchCache,
   ANIME_MAPPING_CACHE_TTL_MS,
   ANIME_MAPPING_FAILED_TTL_MS,
+);
+const fetchKitsuJson = createCachedJsonFetcher(
+  kitsuFetchCache,
+  ANIME_MAPPING_CACHE_TTL_MS,
+  ANIME_MAPPING_FAILED_TTL_MS,
+);
+const fetchAniListMediaJson = createCachedValueFetcher(
+  anilistFetchCache,
+  ANIME_MAPPING_CACHE_TTL_MS,
+  ANIME_MAPPING_FAILED_TTL_MS,
+  async (id: string) => {
+    const mediaId = Number.parseInt(id, 10);
+    if (!Number.isFinite(mediaId) || mediaId <= 0) {
+      return null;
+    }
+
+    const response = await fetch(ANILIST_GRAPHQL_URL, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query: ANILIST_MEDIA_QUERY,
+        variables: { id: mediaId },
+      }),
+    });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json();
+    if (payload?.errors) {
+      return null;
+    }
+    return payload;
+  },
 );
 
 const mapWithConcurrency = async <T, R>(
@@ -148,6 +222,8 @@ const translateMetaPayload = async (
   config: ProxyConfig,
 ) => {
   if (!config.translateMeta) return meta;
+  const mode = config.translateMetaMode || DEFAULT_METADATA_TRANSLATION_MODE;
+  const debugMetaTranslation = config.debugMetaTranslation === true;
   const lang = config.lang || requestUrl.searchParams.get('lang');
   if (!lang) return meta;
 
@@ -164,21 +240,89 @@ const translateMetaPayload = async (
     fetchTmdbJson,
     fetchAnimeMappingJson,
   });
-  if (!tmdbTarget) return meta;
-  const { id: tmdbId, type: tmdbType, details } = tmdbTarget;
+  const tmdbId = tmdbTarget?.id ?? null;
+  const tmdbType = tmdbTarget?.type ?? null;
+  const details = tmdbTarget?.details ?? null;
+  const { title: translatedTitle, overview: translatedOverview } = extractTmdbTextCandidates(details);
+  const needsTmdbLanguageCheck = mode === 'prefer-requested-language' || debugMetaTranslation;
+  const tmdbRequestedLanguage = tmdbTarget && needsTmdbLanguageCheck
+    ? await resolveTmdbTranslationFieldAvailability({
+        tmdbId: tmdbTarget.id,
+        type: tmdbTarget.type,
+        tmdbKey: config.tmdbKey,
+        lang,
+        fetchTmdbJson,
+      })
+    : { title: null, overview: null };
 
-  const translatedTitle =
-    typeof details.title === 'string'
-      ? details.title
-      : typeof details.name === 'string'
-        ? details.name
-        : null;
-  const translatedOverview = typeof details.overview === 'string' ? details.overview : null;
+  const shouldFetchAnimeFallback =
+    isAnimeErdbId(erdbId) &&
+    (debugMetaTranslation ||
+      !tmdbTarget ||
+      (mode === 'prefer-requested-language' &&
+        (tmdbRequestedLanguage.title === false || tmdbRequestedLanguage.overview === false)) ||
+      !hasMeaningfulText(translatedTitle) ||
+      !hasMeaningfulText(translatedOverview));
+
+  const animeFallback = shouldFetchAnimeFallback
+    ? await resolveAnimeTextFallback({
+        erdbId,
+        lang,
+        fetchAnimeMappingJson,
+        fetchKitsuJson,
+        fetchAniListMediaJson,
+      })
+    : null;
 
   const nextMeta: Record<string, unknown> = { ...meta };
-  mergeTranslatedTextFields(nextMeta, translatedTitle, translatedOverview);
+  const topLevelDebug = applyTranslatedTextFields(nextMeta, {
+    mode,
+    tmdbTitle: translatedTitle,
+    tmdbOverview: translatedOverview,
+    tmdbTitleExactRequestedLanguage: tmdbRequestedLanguage.title,
+    tmdbOverviewExactRequestedLanguage: tmdbRequestedLanguage.overview,
+    animeTitle: animeFallback?.title.value ?? null,
+    animeOverview: animeFallback?.overview.value ?? null,
+    animeTitleSource: animeFallback?.title.source ?? null,
+    animeOverviewSource: animeFallback?.overview.source ?? null,
+    animeTitleExactRequestedLanguage: animeFallback?.title.exactRequestedLanguage ?? null,
+    animeOverviewExactRequestedLanguage: animeFallback?.overview.exactRequestedLanguage ?? null,
+  });
 
-  if (tmdbType === 'tv' && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
+  if (debugMetaTranslation) {
+    nextMeta._erdbMetaTranslation = {
+      requestedLanguage: lang,
+      mode,
+      erdbId,
+      resolutionPath: erdbId.startsWith('tmdb:')
+        ? 'tmdb'
+        : /^tt\d+$/i.test(erdbId)
+          ? 'imdb'
+          : isAnimeErdbId(erdbId)
+            ? 'anime'
+            : 'unknown',
+      tmdbTarget:
+        tmdbId && tmdbType
+          ? {
+              id: tmdbId,
+              type: tmdbType,
+              requestedLanguage: tmdbRequestedLanguage,
+            }
+          : null,
+      animeFallback:
+        animeFallback
+          ? {
+              titleSource: animeFallback.title.source,
+              titleExactRequestedLanguage: animeFallback.title.exactRequestedLanguage,
+              overviewSource: animeFallback.overview.source,
+              overviewExactRequestedLanguage: animeFallback.overview.exactRequestedLanguage,
+            }
+          : null,
+      fields: topLevelDebug,
+    };
+  }
+
+  if (tmdbType === 'tv' && tmdbId && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
     const videos = nextMeta.videos as Array<Record<string, unknown>>;
     const seasonValues = new Set<number>();
     for (const video of videos) {
@@ -215,7 +359,25 @@ const translateMetaPayload = async (
       if (!episodeTitle && !episodeOverview) return video;
 
       const nextVideo = { ...video };
-      mergeTranslatedTextFields(nextVideo, episodeTitle, episodeOverview);
+      const episodeDebug = applyTranslatedTextFields(nextVideo, {
+        mode,
+        tmdbTitle: episodeTitle,
+        tmdbOverview: episodeOverview,
+      });
+      if (debugMetaTranslation) {
+        nextVideo._erdbMetaTranslation = {
+          scope: 'episode',
+          requestedLanguage: lang,
+          mode,
+          tmdbTarget: {
+            id: tmdbId,
+            type: tmdbType,
+            season: seasonValue,
+            episode: episodeValue,
+          },
+          fields: episodeDebug,
+        };
+      }
       return nextVideo;
     });
 

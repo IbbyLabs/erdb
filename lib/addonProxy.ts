@@ -1,4 +1,8 @@
 import { createHash } from 'node:crypto';
+import {
+  normalizeMetadataTranslationMode,
+  type MetadataTranslationMode,
+} from './metadataTranslation.ts';
 
 const ERDB_OPTIONAL_PARAMS = [
   'ratings',
@@ -44,6 +48,8 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'mdblistKey',
   'erdbBase',
   'translateMeta',
+  'translateMetaMode',
+  'debugMetaTranslation',
   'posterEnabled',
   'backdropEnabled',
   'logoEnabled',
@@ -62,6 +68,8 @@ export type ProxyConfig = {
   tmdbKey: string;
   mdblistKey: string;
   translateMeta?: boolean;
+  translateMetaMode?: MetadataTranslationMode;
+  debugMetaTranslation?: boolean;
   ratings?: string;
   posterRatings?: string;
   backdropRatings?: string;
@@ -92,6 +100,7 @@ export type ProxyConfig = {
 };
 
 const PROXY_OPTIONAL_STRING_KEYS = [
+  'translateMetaMode',
   'ratings',
   'posterRatings',
   'backdropRatings',
@@ -121,6 +130,7 @@ type ProxyOptionalStringKey = (typeof PROXY_OPTIONAL_STRING_KEYS)[number];
 
 const PROXY_OPTIONAL_BOOLEAN_KEYS = [
   'translateMeta',
+  'debugMetaTranslation',
   'posterEnabled',
   'backdropEnabled',
   'logoEnabled',
@@ -263,7 +273,11 @@ export const decodeProxyConfig = (encoded: string): ProxyConfig | null => {
     for (const key of PROXY_OPTIONAL_STRING_KEYS) {
       const value = toOptionalStringAllowEmpty((parsed as ProxyConfig)[key]);
       if (value !== undefined) {
-        config[key] = value;
+        if (key === 'translateMetaMode') {
+          config.translateMetaMode = normalizeMetadataTranslationMode(value);
+        } else {
+          config[key] = value;
+        }
       }
     }
     for (const key of PROXY_OPTIONAL_BOOLEAN_KEYS) {
@@ -288,7 +302,11 @@ export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyCon
   for (const key of PROXY_OPTIONAL_STRING_KEYS) {
     const value = searchParams.get(key);
     if (value !== null) {
-      config[key] = value;
+      if (key === 'translateMetaMode') {
+        config.translateMetaMode = normalizeMetadataTranslationMode(value);
+      } else {
+        config[key] = value;
+      }
     }
   }
   for (const key of PROXY_OPTIONAL_BOOLEAN_KEYS) {

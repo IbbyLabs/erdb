@@ -47,6 +47,11 @@ import {
   type SavedUiConfig,
   type StreamBadgesSetting,
 } from '@/lib/uiConfig';
+import {
+  DEFAULT_METADATA_TRANSLATION_MODE,
+  METADATA_TRANSLATION_MODE_OPTIONS,
+  type MetadataTranslationMode,
+} from '@/lib/metadataTranslation';
 
 const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -402,6 +407,10 @@ export default function Home() {
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
+  const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
+  const [proxyTranslateMetaMode, setProxyTranslateMetaMode] =
+    useState<MetadataTranslationMode>(DEFAULT_METADATA_TRANSLATION_MODE);
+  const [proxyDebugMetaTranslation, setProxyDebugMetaTranslation] = useState(false);
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
   const [showConfigString, setShowConfigString] = useState(false);
@@ -583,6 +592,9 @@ export default function Home() {
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
+      setProxyTranslateMeta(normalized.proxy.translateMeta);
+      setProxyTranslateMetaMode(normalized.proxy.translateMetaMode);
+      setProxyDebugMetaTranslation(normalized.proxy.debugMetaTranslation);
       setSavedConfigStatus(status);
     },
     []
@@ -615,6 +627,9 @@ export default function Home() {
       },
       proxy: {
         manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
+        translateMeta: proxyTranslateMeta,
+        translateMetaMode: proxyTranslateMetaMode,
+        debugMetaTranslation: proxyDebugMetaTranslation,
       },
     }),
     [
@@ -639,6 +654,9 @@ export default function Home() {
       logoRatingStyle,
       posterRatingsMaxPerSide,
       proxyManifestUrl,
+      proxyTranslateMeta,
+      proxyTranslateMetaMode,
+      proxyDebugMetaTranslation,
     ]
   );
 
@@ -955,7 +973,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   );
 
   const proxyUrl = useMemo(
-    () => buildProxyUrl(baseUrl, currentUiConfig.proxy.manifestUrl, currentUiConfig.settings),
+    () => buildProxyUrl(baseUrl, currentUiConfig.proxy, currentUiConfig.settings),
     [baseUrl, currentUiConfig]
   );
 
@@ -1660,6 +1678,64 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       className="w-full min-w-0 bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
                     />
                   </div>
+                  <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3 space-y-3">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={proxyTranslateMeta}
+                        onChange={(event) => setProxyTranslateMeta(event.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                      />
+                      <span className="space-y-1">
+                        <span className="block text-[11px] font-semibold text-zinc-200">Translate metadata in the proxy</span>
+                        <span className="block text-[11px] leading-5 text-zinc-500">
+                          Preserve good addon text by default, then backfill localized TMDB text. Anime-native IDs can bridge through anime mapping plus AniList or Kitsu when TMDB is weak.
+                        </span>
+                      </span>
+                    </label>
+
+                    {proxyTranslateMeta && (
+                      <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-3">
+                        <div>
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Merge mode</div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {METADATA_TRANSLATION_MODE_OPTIONS.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => setProxyTranslateMetaMode(option.id)}
+                                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                                  proxyTranslateMetaMode === option.id
+                                    ? 'border-violet-500/60 bg-zinc-800 text-white'
+                                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+                            {METADATA_TRANSLATION_MODE_OPTIONS.find((option) => option.id === proxyTranslateMetaMode)?.description}
+                          </p>
+                        </div>
+
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={proxyDebugMetaTranslation}
+                            onChange={(event) => setProxyDebugMetaTranslation(event.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                          />
+                          <span className="space-y-1">
+                            <span className="block text-[11px] font-semibold text-zinc-200">Attach debug provenance</span>
+                            <span className="block text-[11px] leading-5 text-zinc-500">
+                              Adds a `_erdbMetaTranslation` object to proxied meta items so you can see which fields came from upstream, TMDB, AniList, or Kitsu.
+                            </span>
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
                   <div className="erdb-panel-head">
@@ -2197,5 +2273,3 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     </div>
   );
 }
-
-

@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { mergeTranslatedTextFields, resolveTmdbTranslationTarget } from '../lib/proxyMetaTranslation.ts';
+import {
+  applyTranslatedTextFields,
+  resolveAnimeTextFallback,
+  resolveTmdbTranslationFieldAvailability,
+  resolveTmdbTranslationTarget,
+} from '../lib/proxyMetaTranslation.ts';
 
 test('anime metadata translation falls back through MAL reverse mapping', async () => {
   const tmdbUrls = [];
@@ -147,55 +152,193 @@ test('anime mapping translation falls back to the alternate TMDB media type when
   assert.match(tmdbUrls[1], /\/movie\/1429\?/);
 });
 
-test('translated metadata preserves existing upstream title and overview text', () => {
-  assert.deepEqual(
-    mergeTranslatedTextFields(
-      {
-        name: 'Cowboy Bebop',
-        description: 'Existing richer overview',
-      },
-      'Titre traduit',
-      'Resume traduit',
-    ),
-    {
-      name: 'Cowboy Bebop',
-      description: 'Existing richer overview',
-    },
-  );
+test('TMDB translation availability requires an exact requested locale match when a region is present', async () => {
+  const availability = await resolveTmdbTranslationFieldAvailability({
+    tmdbId: 30991,
+    type: 'tv',
+    tmdbKey: 'tmdb-key-123',
+    lang: 'pt-BR',
+    fetchTmdbJson: async () => ({
+      translations: [
+        {
+          iso_639_1: 'pt',
+          iso_3166_1: 'PT',
+          data: {
+            name: 'Cowboy Bebop',
+            overview: 'Resumo europeu',
+          },
+        },
+      ],
+    }),
+  });
+
+  assert.deepEqual(availability, {
+    title: false,
+    overview: false,
+  });
 });
 
-test('translated metadata fills only missing or placeholder top-level text fields', () => {
-  assert.deepEqual(
-    mergeTranslatedTextFields(
-      {
-        title: 'N/A',
-        overview: '  ',
+test('anime text fallback prefers localized anime-native titles and Kitsu overview text', async () => {
+  const fallback = await resolveAnimeTextFallback({
+    erdbId: 'mal:1',
+    lang: 'ja',
+    fetchAnimeMappingJson: async () => ({
+      ok: true,
+      requested: {
+        resolvedKitsuId: '1',
       },
-      'Titre traduit',
-      'Resume traduit',
-    ),
-    {
-      title: 'N/A',
-      overview: '  ',
-      name: 'Titre traduit',
-      description: 'Resume traduit',
+      kitsu: {
+        canonicalTitle: 'Cowboy Bebop',
+        titles: {
+          en: 'Cowboy Bebop',
+          ja_jp: 'カウボーイビバップ',
+        },
+      },
+      mappings: {
+        ids: {
+          anilist: '1',
+        },
+      },
+    }),
+    fetchKitsuJson: async () => ({
+      data: {
+        attributes: {
+          canonicalTitle: 'Cowboy Bebop',
+          titles: {
+            en: 'Cowboy Bebop',
+            ja_jp: 'カウボーイビバップ',
+          },
+          synopsis: 'Space bounty hunters roam the galaxy.',
+        },
+      },
+    }),
+    fetchAniListMediaJson: async () => ({
+      data: {
+        Media: {
+          title: {
+            english: 'Cowboy Bebop',
+            native: 'カウボーイビバップ',
+            romaji: 'Cowboy Bebop',
+            userPreferred: 'Cowboy Bebop',
+          },
+          description: 'AniList description',
+        },
+      },
+    }),
+  });
+
+  assert.deepEqual(fallback, {
+    title: {
+      value: 'カウボーイビバップ',
+      source: 'kitsu',
+      exactRequestedLanguage: true,
     },
-  );
+    overview: {
+      value: 'Space bounty hunters roam the galaxy.',
+      source: 'kitsu',
+      exactRequestedLanguage: false,
+    },
+  });
 });
 
-test('translated metadata preserves existing episode title while filling missing overview text', () => {
-  assert.deepEqual(
-    mergeTranslatedTextFields(
-      {
-        title: 'Episode 1',
-        description: '',
-      },
-      'Episode 1 traduit',
-      'Resume episode traduit',
-    ),
-    {
-      title: 'Episode 1',
-      description: 'Resume episode traduit',
-    },
-  );
+test('fill-missing mode preserves meaningful upstream title and overview text', () => {
+  const meta = {
+    name: 'Cowboy Bebop',
+    description: 'Existing richer overview',
+  };
+
+  const debug = applyTranslatedTextFields(meta, {
+    mode: 'fill-missing',
+    tmdbTitle: 'Titre traduit',
+    tmdbOverview: 'Resume traduit',
+  });
+
+  assert.deepEqual(meta, {
+    name: 'Cowboy Bebop',
+    description: 'Existing richer overview',
+  });
+  assert.equal(debug.title.source, 'upstream');
+  assert.equal(debug.overview.source, 'upstream');
+});
+
+test('fill-missing mode replaces placeholder and blank fields in place', () => {
+  const meta = {
+    title: 'N/A',
+    overview: '  ',
+  };
+
+  applyTranslatedTextFields(meta, {
+    mode: 'fill-missing',
+    tmdbTitle: 'Titre traduit',
+    tmdbOverview: 'Resume traduit',
+  });
+
+  assert.deepEqual(meta, {
+    title: 'Titre traduit',
+    overview: 'Resume traduit',
+  });
+});
+
+test('prefer-upstream mode keeps non-empty placeholder text untouched', () => {
+  const meta = {
+    title: 'N/A',
+    overview: 'unknown',
+  };
+
+  applyTranslatedTextFields(meta, {
+    mode: 'prefer-upstream',
+    tmdbTitle: 'Titre traduit',
+    tmdbOverview: 'Resume traduit',
+  });
+
+  assert.deepEqual(meta, {
+    title: 'N/A',
+    overview: 'unknown',
+  });
+});
+
+test('prefer-requested-language mode replaces meaningful upstream text when TMDB has an exact translation', () => {
+  const meta = {
+    name: 'Cowboy Bebop',
+    description: 'Existing English overview',
+  };
+
+  applyTranslatedTextFields(meta, {
+    mode: 'prefer-requested-language',
+    tmdbTitle: 'Cowboy Bebop FR',
+    tmdbOverview: 'Resume FR',
+    tmdbTitleExactRequestedLanguage: true,
+    tmdbOverviewExactRequestedLanguage: true,
+  });
+
+  assert.deepEqual(meta, {
+    name: 'Cowboy Bebop FR',
+    description: 'Resume FR',
+  });
+});
+
+test('prefer-requested-language mode can use an exact anime-native title when TMDB only has a fallback language', () => {
+  const meta = {
+    name: '',
+    description: '',
+  };
+
+  applyTranslatedTextFields(meta, {
+    mode: 'prefer-requested-language',
+    tmdbTitle: 'Cowboy Bebop',
+    tmdbOverview: 'English overview',
+    tmdbTitleExactRequestedLanguage: false,
+    tmdbOverviewExactRequestedLanguage: false,
+    animeTitle: 'カウボーイビバップ',
+    animeOverview: 'Anime fallback overview',
+    animeTitleSource: 'kitsu',
+    animeOverviewSource: 'kitsu',
+    animeTitleExactRequestedLanguage: true,
+    animeOverviewExactRequestedLanguage: false,
+  });
+
+  assert.deepEqual(meta, {
+    name: 'カウボーイビバップ',
+    description: 'English overview',
+  });
 });
