@@ -27,6 +27,55 @@ This means that the ERDB server itself does not permanently store or centrally m
 
 This intentional design allows you to host public ERDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
+## Live Preview Gallery
+
+These are live requests against production so readers can see current poster, backdrop, and logo output directly inside GitHub.
+
+The gallery is intended to use the optional server side preview env vars `ERDB_README_PREVIEW_TMDB_KEY` and `ERDB_README_PREVIEW_MDBLIST_KEY` so the README does not need to expose a raw API key.
+
+Each preview URL includes a `cb` cache buster token. Change that token when you want GitHub to fetch a fresh preview again.
+
+### Posters
+
+<table>
+  <tr>
+    <td><strong>The Boys</strong><br>Glass ratings, stream badges, original text</td>
+    <td><strong>Dune Part Two</strong><br>Square ratings, clean text, compact layout</td>
+    <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
+  </tr>
+  <tr>
+    <td><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260321" alt="The Boys poster live preview" width="220"></td>
+    <td><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260321" alt="Dune Part Two poster live preview" width="220"></td>
+    <td><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260321" alt="Attack on Titan poster live preview" width="220"></td>
+  </tr>
+</table>
+
+### Backdrops
+
+<table>
+  <tr>
+    <td><strong>Game of Thrones</strong><br>French backdrop, right side ratings</td>
+    <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
+  </tr>
+  <tr>
+    <td><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260321" alt="Game of Thrones backdrop live preview" width="320"></td>
+    <td><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260321" alt="Stranger Things backdrop live preview" width="320"></td>
+  </tr>
+</table>
+
+### Logos
+
+<table>
+  <tr>
+    <td><strong>The Boys</strong><br>Plain logo ratings</td>
+    <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings</td>
+  </tr>
+  <tr>
+    <td><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260321" alt="The Boys logo live preview" width="320"></td>
+    <td><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260321" alt="Attack on Titan logo live preview" width="320"></td>
+  </tr>
+</table>
+
 
 ## Scalability & Docker
 
@@ -286,6 +335,36 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - `translateMetaMode=prefer-tmdb` prefers TMDB text whenever it is available.
 - When `debugMetaTranslation=true`, the proxy adds an `_erdbMetaTranslation` object to returned metas so you can inspect field provenance.
 
+### Metadata Translation In Action
+
+These screenshots were captured against the live deployment at `https://erdb.ibbylabs.dev` on `2026-03-21`.
+
+To make each merge mode visible on demand, the production proxy was exercised against a temporary public test addon that returned controlled upstream metadata for three real IDs:
+
+1. `tt0133093` (`The Matrix`) with placeholder movie text (`N/A`, blank overview)
+2. `tt0944947` (`Game of Thrones`) with good top level upstream text plus mixed episode text
+3. `mal:16498` (`Attack on Titan`) with blank anime text so TMDB and anime fallback behavior are both observable
+
+That addon was only used to create deterministic before and after cases. The proxy requests still resolved real TMDB, AniList, and Kitsu data through the live ERDB deployment.
+
+#### Settings Panel
+
+![Proxy metadata translation settings](docs/images/metadata-translation/proxy-translation-settings-panel.png)
+
+Fill Missing in French (France) replaces placeholder movie fields with TMDB French text.
+
+![Fill missing movie example in French](docs/images/metadata-translation/proxy-translation-fill-missing-movie-fr.png)
+
+Prefer Requested Language in French (Belgium) preserves good upstream series text when TMDB does not have an exact regional match, while still filling missing episode fields.
+
+![Prefer requested language show example in French Belgium](docs/images/metadata-translation/proxy-translation-prefer-language-show-fr-be.png)
+
+Anime fallback in English (United Kingdom): Prefer Requested Language falls back to anime native text when TMDB only has exact English (United States), and provenance records the fallback source.
+
+![Anime fallback example in English United Kingdom](docs/images/metadata-translation/proxy-translation-anime-fallback-en-gb.png)
+
+Production validation for this feature covered French (France), French (Belgium), English (United States), and English (United Kingdom).
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
@@ -296,6 +375,8 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 |----------|---------|-------------|
 | `ERDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
 | `ERDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma-separated CORS allowlist. Empty = reflect incoming `Origin` header |
+| `ERDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
+| `ERDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
 
 ### Cache TTLs
 
@@ -333,4 +414,3 @@ https://github.com/user-attachments/assets/5e1e2496-509a-4b85-ab45-d1f406576af4
 https://github.com/user-attachments/assets/2385d7a1-c5da-4240-b016-d2880c6d1184
 
 © 2026 ERDB Project
-
