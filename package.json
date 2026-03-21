@@ -10,6 +10,7 @@
   },
   "homepage": "https://github.com/IbbyLabs/erdb#readme",
   "scripts": {
+    "predev": "npm run commits:generate",
     "dev": "next dev -p 3000",
     "version": "node scripts/update-changelog.mjs && git add CHANGELOG.md",
     "build": "npm run commits:generate && next build",
