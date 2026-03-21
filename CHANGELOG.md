@@ -3,6 +3,17 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.19.0] - 21/03/2026
+
+### Added
+- feat(proxy): prefer upstream metadata and only fill missing translated fields
+  
+  Change translateMeta merging so localized TMDB text no longer blindly overwrites addon-provided titles and overviews.
+  
+  Preserve existing upstream title and overview fields when they already contain meaningful text, treat common placeholders as missing, and only backfill missing metadata from TMDB after ID resolution succeeds.
+  
+  Keep anime reverse mapping as the fallback ID-resolution path for anime-native IDs, and add regression tests covering upstream-preserving merge behavior plus placeholder and episode-field backfilling.
+
 ## [v2.18.1] - 21/03/2026
 
 ### Added
