@@ -3,6 +3,24 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.20.3] - 21/03/2026
+
+### Fixed
+* remove user facing hyphens across the full page
+  
+  Refresh the docs, prompt, and metadata translation copy so the visible page text uses plain language without hyphenated phrases.
+  
+  Accept spaced layout names such as "top bottom", "left right", and "right vertical" so the updated docs and examples stay accurate.
+  
+  Add a regression test for spaced layout normalization and keep the rendered page text clean end to end.
+
+### Documentation
+* restore standard ISO notation
+  
+  Bring back the correct ISO 639 to 1 label in the docs and prompt copy while keeping the rest of the full page cleanup in place.
+  
+  The rendered page text now only includes the intended standard hyphen in 639 to 1.
+
 ## [v2.20.2] - 21/03/2026
 
 ### Fixed
