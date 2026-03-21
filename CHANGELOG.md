@@ -3,6 +3,15 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.20.2] - 21/03/2026
+
+### Fixed
+* remove visible hyphens from recent changes copy
+  
+  Normalize user facing commit titles and bodies before they reach the recent changes panel and changelog output.
+  
+  Rewrite low signal history entries into clearer summaries, convert list marker dashes into bullet points, and strip hyphen compounds from display text while keeping git history intact.
+
 ## [v2.20.1] - 21/03/2026
 
 ### Fixed
