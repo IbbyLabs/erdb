@@ -3,6 +3,11 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.4] - 21/03/2026
+
+### Fixed
+* fall back to the container bind host
+
 ## [v2.21.3] - 21/03/2026
 
 ### Fixed
