@@ -19,16 +19,20 @@ const buildTextResponse = (message: string, status: number) =>
     },
   });
 
-const copyPreviewHeaders = (response: Response) => {
+const copyPreviewHeaders = (response: Response, contentLength?: number) => {
   const headers = new Headers();
   const contentType = response.headers.get('content-type');
   const cacheControl = response.headers.get('cache-control');
-  const contentLength = response.headers.get('content-length');
+  const upstreamContentLength = response.headers.get('content-length');
   const etag = response.headers.get('etag');
 
   if (contentType) headers.set('content-type', contentType);
   if (cacheControl) headers.set('cache-control', cacheControl);
-  if (contentLength) headers.set('content-length', contentLength);
+  if (typeof contentLength === 'number' && Number.isFinite(contentLength) && contentLength >= 0) {
+    headers.set('content-length', String(contentLength));
+  } else if (upstreamContentLength) {
+    headers.set('content-length', upstreamContentLength);
+  }
   if (etag) headers.set('etag', etag);
   headers.set('x-robots-tag', 'noindex');
 
@@ -84,8 +88,15 @@ export async function GET(
     });
   }
 
-  return new NextResponse(upstreamResponse.body, {
+  let payload: ArrayBuffer;
+  try {
+    payload = await upstreamResponse.arrayBuffer();
+  } catch {
+    return buildTextResponse('README preview fetch failed.', 502);
+  }
+
+  return new NextResponse(payload, {
     status: upstreamResponse.status,
-    headers: copyPreviewHeaders(upstreamResponse),
+    headers: copyPreviewHeaders(upstreamResponse, payload.byteLength),
   });
 }
