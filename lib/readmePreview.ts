@@ -146,3 +146,27 @@ export const buildReadmePreviewTargetUrl = ({
 
   return base;
 };
+
+export const resolveReadmePreviewOrigin = ({
+  requestOrigin,
+  internalOrigin = null,
+}: {
+  requestOrigin: string;
+  internalOrigin?: string | null;
+}) => {
+  const trimmedInternalOrigin = String(internalOrigin || '').trim();
+  if (!trimmedInternalOrigin) {
+    return requestOrigin;
+  }
+
+  try {
+    const normalized = new URL(trimmedInternalOrigin);
+    normalized.pathname =
+      normalized.pathname === '/' ? '' : normalized.pathname.replace(/\/+$/, '');
+    normalized.search = '';
+    normalized.hash = '';
+    return normalized.toString();
+  } catch {
+    return requestOrigin;
+  }
+};

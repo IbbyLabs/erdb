@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { buildReadmePreviewTargetUrl, resolveReadmePreviewDefinition } from '@/lib/readmePreview';
+import {
+  buildReadmePreviewTargetUrl,
+  resolveReadmePreviewDefinition,
+  resolveReadmePreviewOrigin,
+} from '@/lib/readmePreview';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,15 +52,25 @@ export async function GET(
 
   const mdblistKey = process.env.ERDB_README_PREVIEW_MDBLIST_KEY?.trim() || null;
   const cacheBuster = request.nextUrl.searchParams.get('cb');
+  const previewOrigin = resolveReadmePreviewOrigin({
+    requestOrigin: request.nextUrl.origin,
+    internalOrigin: process.env.PREVIEW_INTERNAL_ORIGIN,
+  });
   const targetUrl = buildReadmePreviewTargetUrl({
-    origin: request.nextUrl.origin,
+    origin: previewOrigin,
     definition,
     tmdbKey,
     mdblistKey,
     cacheBuster,
   });
 
-  const upstreamResponse = await fetch(targetUrl.toString(), { cache: 'no-store' });
+  let upstreamResponse: Response;
+  try {
+    upstreamResponse = await fetch(targetUrl.toString(), { cache: 'no-store' });
+  } catch {
+    return buildTextResponse('README preview fetch failed.', 502);
+  }
+
   if (!upstreamResponse.ok) {
     const fallbackBody = await upstreamResponse.text().catch(() => 'README preview fetch failed.');
     return new NextResponse(fallbackBody, {
