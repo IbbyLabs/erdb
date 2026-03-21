@@ -29,6 +29,7 @@ import {
 } from '@/lib/ratingStyle';
 import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
+import { resolveReverseMappedAnimeImageTarget } from '@/lib/animeReverseMapping';
 import {
   buildObjectStorageImageKey,
   buildObjectStorageSourceImageKey,
@@ -3716,81 +3717,49 @@ export async function GET(
         inputAnimeMappingProvider !== 'imdb' &&
         inputAnimeMappingProvider !== 'tmdb'
       ) {
-        const mappedTmdbId = await fetchTmdbIdFromReverseMapping({
-          provider: inputAnimeMappingProvider,
-          externalId: inputAnimeMappingExternalId,
-          season,
-          phases,
-        });
-        if (!mappedTmdbId) {
-          const kitsuId = await fetchKitsuIdFromReverseMapping({
-            provider: inputAnimeMappingProvider,
-            externalId: inputAnimeMappingExternalId,
-            season,
-            phases,
-          });
-          if (!kitsuId) {
-            throw new HttpError('TMDB ID not found for anime mapping ID', 404);
-          }
-
-          const kitsuFallbackAsset = await fetchKitsuFallbackAsset(kitsuId, imageType, phases);
-          rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
-          rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
-          rawFallbackTitle = kitsuFallbackAsset?.title || null;
-          rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
-          if (!rawFallbackImageUrl) {
-            throw new HttpError('TMDB ID not found for anime mapping ID', 404);
-          }
-          useRawKitsuFallback = true;
-          allowAnimeOnlyRatings = false;
-          hasConfirmedAnimeMapping = false;
-        }
-
-        if (!useRawKitsuFallback) {
-          const tvResponse = await fetchJsonCached(
-            `tmdb:tv:${mappedTmdbId}`,
-            `https://api.themoviedb.org/3/tv/${mappedTmdbId}?api_key=${tmdbKey}`,
-            TMDB_CACHE_TTL_MS,
-            phases,
-            'tmdb'
-          );
-          if (tvResponse.ok) {
-            media = tvResponse.data;
-            mediaType = 'tv';
-          } else {
-            const movieResponse = await fetchJsonCached(
-              `tmdb:movie:${mappedTmdbId}`,
-              `https://api.themoviedb.org/3/movie/${mappedTmdbId}?api_key=${tmdbKey}`,
-              TMDB_CACHE_TTL_MS,
-              phases,
-              'tmdb'
-            );
-            if (movieResponse.ok) {
-              media = movieResponse.data;
-              mediaType = 'movie';
-            }
-          }
-
-          if (!media) {
-            const kitsuId = await fetchKitsuIdFromReverseMapping({
+        const reverseMappedAnimeTarget = await resolveReverseMappedAnimeImageTarget({
+          imageType,
+          fetchTmdbId: () =>
+            fetchTmdbIdFromReverseMapping({
               provider: inputAnimeMappingProvider,
               externalId: inputAnimeMappingExternalId,
               season,
               phases,
-            });
-            if (kitsuId) {
-              const kitsuFallbackAsset = await fetchKitsuFallbackAsset(kitsuId, imageType, phases);
-              rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
-              rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
-              rawFallbackTitle = kitsuFallbackAsset?.title || null;
-              rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
-              if (rawFallbackImageUrl) {
-                useRawKitsuFallback = true;
-                allowAnimeOnlyRatings = false;
-                hasConfirmedAnimeMapping = false;
-              }
-            }
-          }
+            }),
+          fetchKitsuId: () =>
+            fetchKitsuIdFromReverseMapping({
+              provider: inputAnimeMappingProvider,
+              externalId: inputAnimeMappingExternalId,
+              season,
+              phases,
+            }),
+          fetchTmdbMedia: async (mappedTmdbId, mappedMediaType) => {
+            const mappedMediaResponse = await fetchJsonCached(
+              `tmdb:${mappedMediaType}:${mappedTmdbId}`,
+              `https://api.themoviedb.org/3/${mappedMediaType}/${mappedTmdbId}?api_key=${tmdbKey}`,
+              TMDB_CACHE_TTL_MS,
+              phases,
+              'tmdb'
+            );
+            return mappedMediaResponse.ok ? mappedMediaResponse.data : null;
+          },
+          fetchKitsuFallbackAsset: (kitsuId, fallbackImageType) =>
+            fetchKitsuFallbackAsset(kitsuId, fallbackImageType, phases),
+        });
+
+        if (reverseMappedAnimeTarget.kind === 'tmdb') {
+          media = reverseMappedAnimeTarget.media;
+          mediaType = reverseMappedAnimeTarget.mediaType;
+        } else if (reverseMappedAnimeTarget.kind === 'kitsu-fallback') {
+          rawFallbackImageUrl = reverseMappedAnimeTarget.fallbackAsset.imageUrl || null;
+          rawFallbackKitsuRating = reverseMappedAnimeTarget.fallbackAsset.rating || null;
+          rawFallbackTitle = reverseMappedAnimeTarget.fallbackAsset.title || null;
+          rawFallbackLogoAspectRatio = reverseMappedAnimeTarget.fallbackAsset.logoAspectRatio ?? null;
+          useRawKitsuFallback = true;
+          allowAnimeOnlyRatings = false;
+          hasConfirmedAnimeMapping = false;
+        } else if (!reverseMappedAnimeTarget.tmdbId) {
+          throw new HttpError('TMDB ID not found for anime mapping ID', 404);
         }
       } else {
         const findResponse = await fetchJsonCached(
