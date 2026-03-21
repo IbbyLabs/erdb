@@ -93,9 +93,10 @@ type RequestedLanguage = {
   region: string | null;
 };
 
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const ANIME_MAPPING_BASE_URL = 'https://animemapping.stremio.dpdns.org';
-const KITSU_BASE_URL = 'https://kitsu.io/api/edge';
+const TMDB_BASE_URL = process.env.ERDB_TMDB_API_BASE_URL?.trim() || 'https://api.themoviedb.org/3';
+const ANIME_MAPPING_BASE_URL =
+  process.env.ERDB_ANIME_MAPPING_BASE_URL?.trim() || 'https://animemapping.stremio.dpdns.org';
+const KITSU_BASE_URL = process.env.ERDB_KITSU_API_BASE_URL?.trim() || 'https://kitsu.io/api/edge';
 const IMDB_RE = /^tt\d+$/i;
 const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>(['mal', 'anilist', 'kitsu', 'anidb']);
 

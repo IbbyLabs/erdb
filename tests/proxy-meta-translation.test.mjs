@@ -342,3 +342,117 @@ test('prefer-requested-language mode can use an exact anime-native title when TM
     description: 'English overview',
   });
 });
+
+test('seeded random metadata cases follow the documented merge rules', () => {
+  let seed = 0x5eed1234;
+  const nextInt = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed;
+  };
+  const pick = (values) => values[nextInt() % values.length];
+
+  const statuses = ['meaningful', 'placeholder', 'blank', 'missing'];
+  const candidateStatuses = ['meaningful', 'blank'];
+  const buildExistingValue = (label, status) => {
+    if (status === 'meaningful') return `${label} existing ${nextInt().toString(16)}`;
+    if (status === 'placeholder') return pick(['N/A', 'unknown', 'tbd']);
+    if (status === 'blank') return pick(['', '   ']);
+    return undefined;
+  };
+  const buildCandidateValue = (label, status) =>
+    status === 'meaningful' ? `${label} candidate ${nextInt().toString(16)}` : '';
+
+  const resolveExpected = ({
+    mode,
+    existingValue,
+    tmdbValue,
+    tmdbExact,
+    animeValue,
+    animeExact,
+  }) => {
+    const hasExistingNonEmpty = typeof existingValue === 'string' && existingValue.trim().length > 0;
+    const hasExistingMeaningful =
+      hasExistingNonEmpty && !['n/a', 'unknown', 'tbd'].includes(existingValue.trim().toLowerCase());
+    const hasTmdb = typeof tmdbValue === 'string' && tmdbValue.trim().length > 0;
+    const hasAnime = typeof animeValue === 'string' && animeValue.trim().length > 0;
+
+    if (mode === 'prefer-tmdb' && hasTmdb) return tmdbValue;
+    if (mode === 'prefer-requested-language' && hasTmdb && tmdbExact) return tmdbValue;
+    if (mode === 'prefer-upstream' ? hasExistingNonEmpty : hasExistingMeaningful) return existingValue;
+    if (mode === 'prefer-requested-language' && hasAnime && animeExact) return animeValue;
+    if (hasTmdb) return tmdbValue;
+    if (hasAnime) return animeValue;
+    if (hasExistingNonEmpty) return existingValue;
+    return existingValue;
+  };
+
+  const modes = ['fill-missing', 'prefer-upstream', 'prefer-requested-language', 'prefer-tmdb'];
+  for (let index = 0; index < 120; index += 1) {
+    const mode = pick(modes);
+    const titleStatus = pick(statuses);
+    const overviewStatus = pick(statuses);
+    const tmdbTitleStatus = pick(candidateStatuses);
+    const tmdbOverviewStatus = pick(candidateStatuses);
+    const animeTitleStatus = pick(candidateStatuses);
+    const animeOverviewStatus = pick(candidateStatuses);
+    const meta = {};
+    const titleValue = buildExistingValue('title', titleStatus);
+    const overviewValue = buildExistingValue('overview', overviewStatus);
+    if (titleValue !== undefined) {
+      meta[index % 2 === 0 ? 'name' : 'title'] = titleValue;
+    }
+    if (overviewValue !== undefined) {
+      meta[index % 2 === 0 ? 'description' : 'overview'] = overviewValue;
+    }
+
+    const tmdbTitle = buildCandidateValue('tmdb title', tmdbTitleStatus);
+    const tmdbOverview = buildCandidateValue('tmdb overview', tmdbOverviewStatus);
+    const animeTitle = buildCandidateValue('anime title', animeTitleStatus);
+    const animeOverview = buildCandidateValue('anime overview', animeOverviewStatus);
+    const tmdbTitleExact = Boolean(nextInt() % 2);
+    const tmdbOverviewExact = Boolean(nextInt() % 2);
+    const animeTitleExact = Boolean(nextInt() % 2);
+    const animeOverviewExact = Boolean(nextInt() % 2);
+
+    applyTranslatedTextFields(meta, {
+      mode,
+      tmdbTitle,
+      tmdbOverview,
+      tmdbTitleExactRequestedLanguage: tmdbTitleExact,
+      tmdbOverviewExactRequestedLanguage: tmdbOverviewExact,
+      animeTitle,
+      animeOverview,
+      animeTitleSource: 'kitsu',
+      animeOverviewSource: 'anilist',
+      animeTitleExactRequestedLanguage: animeTitleExact,
+      animeOverviewExactRequestedLanguage: animeOverviewExact,
+    });
+
+    const titleKey = 'name' in meta ? 'name' : 'title';
+    const overviewKey = 'description' in meta ? 'description' : 'overview';
+    assert.equal(
+      meta[titleKey],
+      resolveExpected({
+        mode,
+        existingValue: titleValue,
+        tmdbValue: tmdbTitle,
+        tmdbExact: tmdbTitleExact,
+        animeValue: animeTitle,
+        animeExact: animeTitleExact,
+      }),
+      `title mismatch for mode=${mode} case=${index}`,
+    );
+    assert.equal(
+      meta[overviewKey],
+      resolveExpected({
+        mode,
+        existingValue: overviewValue,
+        tmdbValue: tmdbOverview,
+        tmdbExact: tmdbOverviewExact,
+        animeValue: animeOverview,
+        animeExact: animeOverviewExact,
+      }),
+      `overview mismatch for mode=${mode} case=${index}`,
+    );
+  }
+});

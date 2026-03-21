@@ -96,6 +96,13 @@ export const assertSafeUpstreamUrl = async (input: string) => {
     throw new Error('URL credentials are not allowed.');
   }
 
+  if (
+    process.env.ERDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS === 'true' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
+    return parsed;
+  }
+
   const hostname = parsed.hostname;
   if (isBlockedHostname(hostname)) {
     throw new Error('Hostname is not allowed.');

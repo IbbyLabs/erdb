@@ -73,8 +73,8 @@ const parseForwardedHost = (value: string | null) => {
   }
 };
 
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
+const TMDB_BASE_URL = process.env.ERDB_TMDB_API_BASE_URL?.trim() || 'https://api.themoviedb.org/3';
+const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const ANILIST_MEDIA_QUERY = `
   query ErdbAnimeTextFallback($id: Int) {
     Media(id: $id, type: ANIME) {
@@ -341,7 +341,7 @@ const translateMetaPayload = async (
       }
     });
 
-    const translatedVideos = videos.map((video) => {
+    const translatedVideos = await mapWithConcurrency(videos, 6, async (video) => {
       const seasonValue = typeof video.season === 'number' ? video.season : parseInt(String(video.season || ''), 10);
       const episodeValue = typeof video.episode === 'number' ? video.episode : parseInt(String(video.episode || ''), 10);
       if (!Number.isFinite(seasonValue) || !Number.isFinite(episodeValue)) {
@@ -358,11 +358,25 @@ const translateMetaPayload = async (
       const episodeOverview = typeof episodeData.overview === 'string' ? episodeData.overview : null;
       if (!episodeTitle && !episodeOverview) return video;
 
+      const episodeRequestedLanguage = needsTmdbLanguageCheck
+        ? await resolveTmdbTranslationFieldAvailability({
+            tmdbId,
+            type: tmdbType,
+            tmdbKey: config.tmdbKey,
+            lang,
+            fetchTmdbJson,
+            seasonNumber: seasonValue,
+            episodeNumber: episodeValue,
+          })
+        : { title: null, overview: null };
+
       const nextVideo = { ...video };
       const episodeDebug = applyTranslatedTextFields(nextVideo, {
         mode,
         tmdbTitle: episodeTitle,
         tmdbOverview: episodeOverview,
+        tmdbTitleExactRequestedLanguage: episodeRequestedLanguage.title,
+        tmdbOverviewExactRequestedLanguage: episodeRequestedLanguage.overview,
       });
       if (debugMetaTranslation) {
         nextVideo._erdbMetaTranslation = {
@@ -374,6 +388,7 @@ const translateMetaPayload = async (
             type: tmdbType,
             season: seasonValue,
             episode: episodeValue,
+            requestedLanguage: episodeRequestedLanguage,
           },
           fields: episodeDebug,
         };

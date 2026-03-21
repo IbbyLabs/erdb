@@ -15,6 +15,7 @@
     "build": "npm run commits:generate && next build",
     "start": "node .next/standalone/server.js",
     "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
+    "verify:proxy-meta": "node scripts/verify-proxy-metadata-translation.mjs",
     "lint": "eslint .",
     "clean": "next clean",
     "imdb:import": "node scripts/imdb-import.js",
