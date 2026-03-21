@@ -1,7 +1,33 @@
 {
-  "generatedAt": "2026-03-21T03:17:05.490Z",
+  "generatedAt": "2026-03-21T03:29:25.158Z",
   "total": 120,
   "commits": [
+    {
+      "hash": "5cb6ceacf90134d57be4c60dc79c89b61360576d",
+      "shortHash": "5cb6cea",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:17:55Z",
+      "type": "chore",
+      "title": "release 2.20.2",
+      "body": null
+    },
+    {
+      "hash": "db4343843c4e002b962f913e48bdc2abcf9b1e5e",
+      "shortHash": "db43438",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:17:43Z",
+      "type": "fix",
+      "title": "remove visible hyphens from recent changes copy",
+      "body": "Normalize user facing commit titles and bodies before they reach the recent changes panel and changelog output.\n\nRewrite low signal history entries into clearer summaries, convert list marker dashes into bullet points, and strip hyphen compounds from display text while keeping git history intact."
+    },
     {
       "hash": "6753748b3dcd3e8cabd2b81cc46d0a6cf5120721",
       "shortHash": "6753748",
@@ -1534,32 +1560,6 @@
       "date": "2026-03-17T23:31:05Z",
       "type": "chore",
       "title": "release 2.7.0",
-      "body": null
-    },
-    {
-      "hash": "3f27bf49ba5673d5d57e8d1004ae4398b0bc2231",
-      "shortHash": "3f27bf4",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T23:16:39Z",
-      "type": "chore",
-      "title": "Merge remote tracking branch 'upstream/main'",
-      "body": "# Conflicts:\n#\tapp/globals.css\n#\tapp/page.tsx"
-    },
-    {
-      "hash": "e7030847ecc8ea1a8fe493f652858f9e3ef116f3",
-      "shortHash": "e703084",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T23:06:12Z",
-      "type": "chore",
-      "title": "release 2.6.0",
       "body": null
     }
   ]

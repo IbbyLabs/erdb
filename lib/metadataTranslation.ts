@@ -19,12 +19,12 @@ export const METADATA_TRANSLATION_MODE_OPTIONS: Array<{
   {
     id: 'prefer-upstream',
     label: 'Prefer Upstream',
-    description: 'Keep any non-empty upstream metadata and only fill truly absent fields.',
+    description: 'Keep upstream metadata that already has content and only fill truly absent fields.',
   },
   {
     id: 'prefer-requested-language',
     label: 'Prefer Language',
-    description: 'Prefer exact requested-language translations when they exist.',
+    description: 'Prefer exact translations for the requested language when they exist.',
   },
   {
     id: 'prefer-tmdb',

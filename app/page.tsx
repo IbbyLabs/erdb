@@ -109,6 +109,80 @@ const UI_CONFIG_STORAGE_KEY = 'erdb.uiConfig.v1';
 const UI_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.uiConfig.settings.v1';
 const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
+const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
+const TMDB_LANGUAGE_DOC_COPY = 'Any TMDB ISO 639 1 code (en, it, fr, es, de, ja, ko, etc.)';
+const TMDB_LANGUAGE_HELP_COPY = 'All TMDB ISO 639 1 codes are supported (en, it, fr, es, de, etc.). Default: en.';
+const POSTER_LAYOUT_DOC_VALUES = 'top, bottom, left, right, top bottom, left right';
+const POSTER_LAYOUT_DOC_DEFAULT = 'top bottom';
+const POSTER_RATINGS_MAX_DOC_COPY = '1 to 20';
+const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
+const AI_DEVELOPER_PROMPT = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
+
+CONFIG INPUT
+Add a single text field called "erdbConfig" (base64url). The user will paste it from the ERDB site after configuring there.
+Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from erdbConfig.
+
+DECODE
+Node/JS: const cfg = JSON.parse(Buffer.from(erdbConfig, 'base64url').toString('utf8'));
+
+FULL API REFERENCE
+Endpoint: GET /{type}/{id}.jpg?...queryParams
+
+Parameter               | Values                                                              | Default
+type (path)             | poster, backdrop, logo                                               | none
+id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | none
+ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (global fallback)                                     |
+posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (poster only)                                         |
+backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (backdrop only)                                       |
+logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
+                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | anilist, kitsu (logo only)                                           |
+lang                    | ${TMDB_LANGUAGE_DOC_COPY}                                             | en
+streamBadges            | auto, on, off (global fallback)                                      | auto
+posterStreamBadges      | auto, on, off (poster only)                                          | auto
+backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
+qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
+posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
+qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
+posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
+backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
+ratingStyle             | glass, square, plain                                                 | glass
+imageText               | original, clean, alternative                                         | original
+posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
+posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
+backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
+tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
+mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
+
+TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
+
+INTEGRATION REQUIREMENTS
+1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
+2. Add toggles to enable or disable poster, backdrop, and logo.
+3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
+4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
+
+PER TYPE SETTINGS
+poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
+backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
+logo     : ratingStyle = cfg.logoRatingStyle (omit imageText)
+Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
+Quality badges style can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
+
+URL BUILD
+const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
+const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+
+Omit imageText when type=logo.
+
+Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable providers.`;
 
 const subscribeToNothing = () => () => {};
 
@@ -221,7 +295,7 @@ function SectionHeader({
 const formatCommitTimestamp = (value: string, nowMs: number) => {
   const commitMs = Date.parse(value);
   if (!Number.isFinite(commitMs)) {
-    return '--';
+    return INVALID_COMMIT_TIMESTAMP_LABEL;
   }
   const deltaSeconds = Math.max(0, Math.floor((nowMs - commitMs) / 1000));
   if (deltaSeconds < 60) {
@@ -743,73 +817,7 @@ export default function Home() {
   }, [configAutoSave, buildCurrentUiConfig, persistUiConfig]);
 
   const handleCopyPrompt = useCallback(() => {
-    const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
-
---- CONFIG INPUT ---
-Add a single text field called \"erdbConfig\" (base64url). The user will paste it from the ERDB site after configuring there.
-Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from erdbConfig.
-
---- DECODE ---
-Node/JS: const cfg = JSON.parse(Buffer.from(erdbConfig, 'base64url').toString('utf8'));
-
---- FULL API REFERENCE ---
-Endpoint: GET /{type}/{id}.jpg?...queryParams
-
-Parameter               | Values                                                              | Default
-type (path)             | poster, backdrop, logo                                               | -
-id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
-ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (global fallback)                                     |
-posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (poster only)                                         |
-backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (backdrop only)                                       |
-logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (logo only)                                           |
-lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
-streamBadges            | auto, on, off (global fallback)                                      | auto
-posterStreamBadges      | auto, on, off (poster only)                                          | auto
-backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster top-bottom only)                                 | left
-posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
-qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
-posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
-backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
-ratingStyle             | glass, square, plain                                                 | glass
-imageText               | original, clean, alternative                                         | original
-posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
-posterRatingsMaxPerSide | Number (1-20)                                                        | auto
-backdropRatingsLayout   | center, right, right-vertical                                        | center
-tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
-mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
-
---- INTEGRATION REQUIREMENTS ---
-1. Use ONLY the \"erdbConfig\" field (no modal and no extra settings panels).
-2. Add toggles to enable/disable: poster, backdrop, logo.
-3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
-4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
-
---- PER-TYPE SETTINGS ---
-poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
-backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
-logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
-Ratings providers can be set per-type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
-Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
-
---- URL BUILD ---
-const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
-const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
-
-Omit imageText when type=logo.
-
-Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable providers.`;
-
-    navigator.clipboard.writeText(prompt);
+    navigator.clipboard.writeText(AI_DEVELOPER_PROMPT);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, []);
@@ -1689,7 +1697,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <span className="space-y-1">
                         <span className="block text-[11px] font-semibold text-zinc-200">Translate metadata in the proxy</span>
                         <span className="block text-[11px] leading-5 text-zinc-500">
-                          Preserve good addon text by default, then backfill localized TMDB text. Anime-native IDs can bridge through anime mapping plus AniList or Kitsu when TMDB is weak.
+                          Preserve good addon text by default, then backfill localized TMDB text. Anime native IDs can bridge through anime mapping plus AniList or Kitsu when TMDB is weak.
                         </span>
                       </span>
                     </label>
@@ -1858,12 +1866,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">type <span className="text-zinc-500">(path)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">poster, backdrop, logo</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">id <span className="text-zinc-500">(path)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">IMDb, TMDB, Kitsu, etc.</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratings</td>
@@ -1907,7 +1915,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesSide</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">left, right (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">left, right (poster top bottom layout only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">left</td>
                       </tr>
                       <tr>
@@ -1937,28 +1945,28 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsLayout</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">top, bottom, left, right, top-bottom, left-right</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">top-bottom</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{POSTER_LAYOUT_DOC_VALUES}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">{POSTER_LAYOUT_DOC_DEFAULT}</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsMaxPerSide</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">1-20</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{POSTER_RATINGS_MAX_DOC_COPY}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingsLayout</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">center, right, right-vertical</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BACKDROP_LAYOUT_DOC_VALUES}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">center</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">TMDB v3 API Key</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">mdblistKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">MDBList.com API Key</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1993,8 +2001,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
-                            <div>top, bottom, left, right, top-bottom, left-right</div>
-                            <div>1-20 (auto if omitted)</div>
+                            <div>{POSTER_LAYOUT_DOC_VALUES}</div>
+                            <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
                           </div>
                         </td>
                       </tr>
@@ -2009,14 +2017,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
-                            <div>center, right, right-vertical</div>
+                            <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                           </div>
                         </td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logo</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">none (base params only)</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">—</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">none</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2100,7 +2108,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
                     <div className="flex gap-2">
                       <span className="text-violet-500 font-bold shrink-0">lang (optional):</span>
-                      <span className="text-zinc-400">All TMDB ISO 639-1 codes are supported (en, it, fr, es, de, etc.). Default: en.</span>
+                      <span className="text-zinc-400">{TMDB_LANGUAGE_HELP_COPY}</span>
                     </div>
                     <div className="flex gap-2">
                       <span className="text-violet-500 font-bold shrink-0">id (required):</span>
@@ -2149,74 +2157,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   </div>
 
                   <div className="bg-black/40 border border-white/5 rounded-xl p-4 font-mono text-[11px] text-zinc-400 leading-relaxed overflow-auto relative max-h-[340px]">
-                    <div className="whitespace-pre-wrap">{`Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
-
---- CONFIG INPUT ---
-Add a single text field called "erdbConfig" (base64url). The user will paste it from the ERDB site after configuring there.
-Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from erdbConfig.
-
---- DECODE ---
-Node/JS: const cfg = JSON.parse(Buffer.from(erdbConfig, 'base64url').toString('utf8'));
-
---- FULL API REFERENCE ---
-Endpoint: GET /{type}/{id}.jpg?...queryParams
-
-Parameter               | Values                                                              | Default
-type (path)             | poster, backdrop, logo                                               | -
-id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
-ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (global fallback)                                     |
-posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (poster only)                                         |
-backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (backdrop only)                                       |
-logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (logo only)                                           |
-lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
-streamBadges            | auto, on, off (global fallback)                                      | auto
-posterStreamBadges      | auto, on, off (poster only)                                          | auto
-backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster top-bottom only)                                 | left
-posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
-qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
-posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
-backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
-ratingStyle             | glass, square, plain                                                 | glass
-imageText               | original, clean, alternative                                         | original
-posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
-posterRatingsMaxPerSide | Number (1-20)                                                        | auto
-backdropRatingsLayout   | center, right, right-vertical                                        | center
-tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
-mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
-
-TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
-
---- INTEGRATION REQUIREMENTS ---
-1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
-2. Add toggles to enable/disable: poster, backdrop, logo.
-3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
-4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
-
---- PER-TYPE SETTINGS ---
-poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
-backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
-logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
-Ratings providers can be set per-type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
-Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
-
---- URL BUILD ---
-const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
-const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
-
-Omit imageText when type=logo.
-
-Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable providers.`}</div>
-                </div>
+                    <div className="whitespace-pre-wrap">{AI_DEVELOPER_PROMPT}</div>
+                  </div>
 
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Live Examples</h4>
                 <pre className="text-xs font-mono text-zinc-400 leading-6 space-y-1.5">
@@ -2224,7 +2166,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
                   <div className="text-zinc-600 font-bold mt-4">Backdrop (TMDB)</div>
-                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=right-vertical`}</div>
+                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}`}</div>
 
                 </pre>
               </div>

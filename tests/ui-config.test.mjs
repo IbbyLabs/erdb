@@ -193,6 +193,18 @@ test('proxy manifest generation stops when required inputs are missing', () => {
   );
 });
 
+test('workspace normalization accepts spaced layout values from the page docs', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterRatingsLayout: 'left right',
+      backdropRatingsLayout: 'right vertical',
+    },
+  });
+
+  assert.equal(config.settings.posterRatingsLayout, 'left-right');
+  assert.equal(config.settings.backdropRatingsLayout, 'right-vertical');
+});
+
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {
   assert.equal(normalizeErdbId('mal:456', 'series'), 'mal:456');
   assert.equal(normalizeErdbId('myanimelist:456', 'series'), 'mal:456');

@@ -19,11 +19,16 @@ const POSTER_RATING_LAYOUT_SET = new Set<PosterRatingLayout>(
 );
 const SINGLE_POSTER_RATING_LAYOUTS = new Set<PosterRatingLayout>(['top', 'bottom', 'left', 'right']);
 const VERTICAL_POSTER_RATING_LAYOUTS = new Set<PosterRatingLayout>(['left', 'right', 'left-right']);
+const POSTER_RATING_LAYOUT_ALIASES: Record<string, PosterRatingLayout> = {
+  'top bottom': 'top-bottom',
+  'left right': 'left-right',
+};
 
 export const normalizePosterRatingLayout = (value?: string | null): PosterRatingLayout => {
-  const normalized = (value || '').trim().toLowerCase();
-  return POSTER_RATING_LAYOUT_SET.has(normalized as PosterRatingLayout)
-    ? (normalized as PosterRatingLayout)
+  const normalized = (value || '').trim().toLowerCase().replace(/[_\s]+/g, ' ');
+  const canonical = POSTER_RATING_LAYOUT_ALIASES[normalized] || normalized;
+  return POSTER_RATING_LAYOUT_SET.has(canonical as PosterRatingLayout)
+    ? (canonical as PosterRatingLayout)
     : DEFAULT_POSTER_RATING_LAYOUT;
 };
 
