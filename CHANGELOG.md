@@ -3,6 +3,17 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.20.0] - 21/03/2026
+
+### Added
+- feat(proxy): add configurable metadata translation modes and anime fallback
+  
+  Expose proxy-side metadata translation controls end to end so generated proxy manifests can opt into localized metadata merging without changing the shared ERDB image renderer settings.
+  
+  Add explicit fill-missing, prefer-upstream, prefer-requested-language, and prefer-tmdb modes, verify exact TMDB translation availability before requested-language replacement, and use AniList or Kitsu text as a fallback when anime-native IDs cannot get strong TMDB text.
+  
+  Also attach optional _erdbMetaTranslation provenance data for debugging, wire the new settings through saved UI config and the configurator, update the README, and add regression coverage for translation target resolution, selection modes, and proxy payload encoding.
+
 ## [v2.19.0] - 21/03/2026
 
 ### Added
