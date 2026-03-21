@@ -3,6 +3,13 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.20.5] - 21/03/2026
+
+### Documentation
+* rebuild changelog and recent changes after message rewrite
+  
+  Regenerate CHANGELOG.md and public/commits.json from the rewritten forward facing commit history so the repo outputs match the updated user facing subjects and bodies.
+
 ## [v2.20.4] - 21/03/2026
 
 ### Fixed
