@@ -1,7 +1,293 @@
 {
-  "generatedAt": "2026-03-20T01:33:01.541Z",
+  "generatedAt": "2026-03-21T03:17:05.490Z",
   "total": 120,
   "commits": [
+    {
+      "hash": "6753748b3dcd3e8cabd2b81cc46d0a6cf5120721",
+      "shortHash": "6753748",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T02:34:55Z",
+      "type": "chore",
+      "title": "release 2.20.1",
+      "body": null
+    },
+    {
+      "hash": "17b835d4874a103e050b24a413b510fcdc39f3ae",
+      "shortHash": "17b835d",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T02:34:48Z",
+      "type": "fix",
+      "title": "verify episode requested language translations before replacement",
+      "body": "Apply the same requested language TMDB translation availability check to episode metadata that the top level proxy meta path already uses, so prefer requested language no longer overwrites episode titles or overviews from season detail responses unless TMDB exposes a real translation for that exact episode locale.\n\nAdd a reusable local smoke verifier that boots a mock upstream addon plus mock TMDB, anime mapping, AniList, and Kitsu services against a local Next server, and add seeded randomized merge tests so the translation rules are exercised across many title and overview combinations.\n\nAlso add a narrowly scoped non production test override for private upstream URLs so the local verifier can drive the real proxy route without weakening the production SSRF checks."
+    },
+    {
+      "hash": "e2e924142ff2a95e2596bf47588a51fd99290262",
+      "shortHash": "e2e9241",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T02:25:33Z",
+      "type": "chore",
+      "title": "release 2.20.0",
+      "body": null
+    },
+    {
+      "hash": "723347eef48bc349739614b7d4656f17bc0e616f",
+      "shortHash": "723347e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T02:25:22Z",
+      "type": "feat",
+      "title": "add configurable metadata translation modes and anime fallback",
+      "body": "Expose proxy side metadata translation controls end to end so generated proxy manifests can opt into localized metadata merging without changing the shared ERDB image renderer settings.\n\nAdd explicit fill missing, prefer upstream, prefer requested language, and prefer tmdb modes, verify exact TMDB translation availability before requested language replacement, and use AniList or Kitsu text as a fallback when anime native IDs cannot get strong TMDB text.\n\nAlso attach optional _erdbMetaTranslation provenance data for debugging, wire the new settings through saved UI config and the configurator, update the README, and add regression coverage for translation target resolution, selection modes, and proxy payload encoding."
+    },
+    {
+      "hash": "1e953b4b6e7411e71f2003494de86353bcb1f1e4",
+      "shortHash": "1e953b4",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T01:58:57Z",
+      "type": "chore",
+      "title": "release 2.19.0",
+      "body": null
+    },
+    {
+      "hash": "26fabfc881f6b3b0ff2215e001d62ad7b690d3aa",
+      "shortHash": "26fabfc",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T01:58:46Z",
+      "type": "feat",
+      "title": "prefer upstream metadata and only fill missing translated fields",
+      "body": "Change translateMeta merging so localized TMDB text no longer blindly overwrites addon provided titles and overviews.\n\nPreserve existing upstream title and overview fields when they already contain meaningful text, treat common placeholders as missing, and only backfill missing metadata from TMDB after ID resolution succeeds.\n\nKeep anime reverse mapping as the fallback ID resolution path for anime native IDs, and add regression tests covering upstream preserving merge behavior plus placeholder and episode field backfilling."
+    },
+    {
+      "hash": "36459e137f59253c87271d714e1ed802b8d7e761",
+      "shortHash": "36459e1",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T01:54:28Z",
+      "type": "chore",
+      "title": "release 2.18.1",
+      "body": null
+    },
+    {
+      "hash": "184c02a8281c05e6fc77655d1664df3bfa533440",
+      "shortHash": "184c02a",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T01:54:14Z",
+      "type": "feat",
+      "title": "add anime reverse mapping fallback for metadata translation",
+      "body": "Route proxy metadata translation through a dedicated resolver that keeps the existing direct TMDB and IMDb path first, and only falls back to anime reverse mapping for anime native IDs when the direct path does not apply.\n\nUse the Stremio anime mapping service to resolve mal/myanimelist, anilist, kitsu, and anidb IDs to TMDB, then probe the preferred TV/movie order before fetching localized TMDB details for translated titles, overviews, and episode metadata.\n\nAlso add cached anime mapping fetches plus regression tests covering MAL alias normalization, direct path precedence over anime fallback, and alternate media type fallback when the preferred TMDB type is missing."
+    },
+    {
+      "hash": "df6b4f565c0fcdbce3ffc3b098f9bd5c47387e37",
+      "shortHash": "df6b4f5",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T01:41:26Z",
+      "type": "chore",
+      "title": "sync upstream changes",
+      "body": null
+    },
+    {
+      "hash": "d989a1e65aee7970d6e08f90b0f3f5b8d9f6c27f",
+      "shortHash": "d989a1e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T01:41:21Z",
+      "type": "fix",
+      "title": "canonicalize MAL addon proxy IDs for anime image rewrites",
+      "body": "Accept both mal:* and myanimelist:* addon IDs in proxy normalization, and canonicalize both forms to mal:* before building ERDB image URLs.\n\nThis keeps proxy side poster/background/logo rewrites aligned with the renderer's native anime mapping provider set, which recognizes mal as the canonical MyAnimeList provider prefix.\n\nAlso add regression coverage for MAL alias normalization so anime addons emitting either form continue to resolve stable ERDB image URLs."
+    },
+    {
+      "hash": "f98367371d10274d700405e8941c96fa27e66327",
+      "shortHash": "f983673",
+      "author": {
+        "name": "nzo66",
+        "email": "233500038+stremio-manager@users.noreply.github.com"
+      },
+      "isUpstream": true,
+      "date": "2026-03-21T00:44:51+01:00",
+      "type": "fix",
+      "title": "update addon proxy handling",
+      "body": null
+    },
+    {
+      "hash": "596d9f4d8b1f01cf3f87b7ff37a0bb5ee83aa47c",
+      "shortHash": "596d9f4",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T03:24:49Z",
+      "type": "chore",
+      "title": "release 2.18.0",
+      "body": null
+    },
+    {
+      "hash": "01c27af2dfbb6850baf4713004e567273ef517c0",
+      "shortHash": "01c27af",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T03:23:27Z",
+      "type": "feat",
+      "title": "polish homepage guidance and clean poster rendering",
+      "body": "Bring over the post v2.17.4 UX and rendering improvements while keeping the existing IbbyLabs branding, proxy flow, and security related behavior intact.\n\n• add hydration safe client origin handling for generated URLs\n• add offset aware smooth scrolling for nav, hero, and footer anchor links\n• add a prominent ERDB Discord support callout styled to match the landing page\n• keep the new support entry configurable with brand Discord env vars\n• only apply clean poster title and logo overlays when the selected poster is actually textless\n\nTests:\n• npm run lint\n• npm test\n• npx tsc noEmit"
+    },
+    {
+      "hash": "823ab5f6d14afaeabc0d7ff1cf654864857286af",
+      "shortHash": "823ab5f",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T02:49:48Z",
+      "type": "chore",
+      "title": "release 2.17.4",
+      "body": null
+    },
+    {
+      "hash": "bfa2cd99caca93c0b7689c383c8f4bef5c38ce37",
+      "shortHash": "bfa2cd9",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T02:48:56Z",
+      "type": "chore",
+      "title": "added disclaimer to CHANGELOG.md to explain duplicate commits",
+      "body": null
+    },
+    {
+      "hash": "7338c821a8815c1f1d39f16784ae5083a4122dbd",
+      "shortHash": "7338c82",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T02:46:10Z",
+      "type": "chore",
+      "title": "release 2.17.3",
+      "body": null
+    },
+    {
+      "hash": "b3bc6a671e0c0577245ed85494f099485532d003",
+      "shortHash": "b3bc6a6",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T02:45:16Z",
+      "type": "chore",
+      "title": "sync upstream changes",
+      "body": null
+    },
+    {
+      "hash": "c09bc3a8808bfdfd7bfd36a6e50d811cb6f7482d",
+      "shortHash": "c09bc3a",
+      "author": {
+        "name": "Bestia",
+        "email": "233500038+realbestia1@users.noreply.github.com"
+      },
+      "isUpstream": true,
+      "date": "2026-03-20T02:44:39Z",
+      "type": "docs",
+      "title": "refresh README guide",
+      "body": null
+    },
+    {
+      "hash": "c1b9c72629fcc504e0536168c34e2fb94663dc3f",
+      "shortHash": "c1b9c72",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:37:58Z",
+      "type": "chore",
+      "title": "release 2.17.2",
+      "body": null
+    },
+    {
+      "hash": "0c0604e3d6657243bd0a5211b94b2887f8badba0",
+      "shortHash": "0c0604e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:37:51Z",
+      "type": "feat",
+      "title": "support multi line commit messages and backfill history",
+      "body": "This update refactors the changelog script to capture full commit bodies (using %b) and correctly indent them in the Markdown output.\n\nIt also adds a rebuild flag to systematically backfill the entire project history, ensuring older commits also show their detailed descriptions in the changelog and the 'Recent Changes' UI."
+    },
+    {
+      "hash": "3639a5a5b8e9b92e62f58c74510d8904c2dc4b0f",
+      "shortHash": "3639a5a",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:34:06Z",
+      "type": "chore",
+      "title": "release 2.17.1",
+      "body": null
+    },
+    {
+      "hash": "59fe2e30414426b00cb807560a6609fb3ce76f6a",
+      "shortHash": "59fe2e3",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-20T01:33:35Z",
+      "type": "feat",
+      "title": "include all lines of commit message",
+      "body": null
+    },
     {
       "hash": "bcfbb24964d752b68cc4675f2957d8dffa5a3f1c",
       "shortHash": "bcfbb24",
@@ -26,7 +312,20 @@
       "date": "2026-03-20T01:27:30Z",
       "type": "feat",
       "title": "refine recent changes feed",
-      "body": "- enhance [generate-commits-json.mjs] to include author/isUpstream metadata\n- add UI badges and custom styling in for upstream attribution\n- configure GitHub action to fetch full history (fetch-depth: 0)"
+      "body": "• enhance [generate commits json.mjs] to include author/isUpstream metadata\n• add UI badges and custom styling in for upstream attribution\n• configure GitHub action to fetch full history (fetch depth: 0)"
+    },
+    {
+      "hash": "8bd6187c01a32a2ad54ec3a68ad65a201786aa15",
+      "shortHash": "8bd6187",
+      "author": {
+        "name": "Bestia",
+        "email": "233500038+realbestia1@users.noreply.github.com"
+      },
+      "isUpstream": true,
+      "date": "2026-03-20T02:20:47+01:00",
+      "type": "docs",
+      "title": "refresh README guide",
+      "body": null
     },
     {
       "hash": "a8805ebb50b814aa00d70fcab6a0298f7f1826d3",
@@ -64,7 +363,7 @@
       "isUpstream": false,
       "date": "2026-03-20T00:54:40Z",
       "type": "chore",
-      "title": "merge upstream/main (ours)",
+      "title": "sync upstream changes",
       "body": null
     },
     {
@@ -76,8 +375,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-20T01:50:29+01:00",
-      "type": "chore",
-      "title": "Delete .github/workflows directory",
+      "type": "ci",
+      "title": "remove GitHub workflows",
       "body": null
     },
     {
@@ -89,8 +388,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-20T01:41:03+01:00",
-      "type": "chore",
-      "title": "Update docker-build.yml",
+      "type": "ci",
+      "title": "update GitHub workflows",
       "body": null
     },
     {
@@ -102,8 +401,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-20T01:31:33+01:00",
-      "type": "chore",
-      "title": "Delete release.yml",
+      "type": "ci",
+      "title": "remove GitHub workflows",
       "body": null
     },
     {
@@ -115,8 +414,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-20T01:27:01+01:00",
-      "type": "chore",
-      "title": "Update release.yml",
+      "type": "ci",
+      "title": "update GitHub workflows",
       "body": null
     },
     {
@@ -129,7 +428,7 @@
       "isUpstream": false,
       "date": "2026-03-20T00:20:30Z",
       "type": "chore",
-      "title": "merge upstream/main (ours)",
+      "title": "sync upstream changes",
       "body": null
     },
     {
@@ -141,8 +440,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-20T01:16:45+01:00",
-      "type": "chore",
-      "title": ".",
+      "type": "ci",
+      "title": "update GitHub workflows",
       "body": null
     },
     {
@@ -169,7 +468,7 @@
       "date": "2026-03-19T21:48:01Z",
       "type": "chore",
       "title": "remove all comments and boilerplate markers",
-      "body": "- Stripped code comments from update-changelog.mjs and core route file.\n- Removed boilerplate header from CHANGELOG.md.\n- Cleaned up JSX comments and example markers in home-page-view.tsx."
+      "body": "• Stripped code comments from update changelog.mjs and core route file.\n• Removed boilerplate header from CHANGELOG.md.\n• Cleaned up JSX comments and example markers in home page view.tsx."
     },
     {
       "hash": "f883434afae2d6d40469f4a134b8447b945a4e28",
@@ -182,7 +481,7 @@
       "date": "2026-03-19T21:46:03Z",
       "type": "chore",
       "title": "refine changelog generation logic",
-      "body": "- Filtered out redundant 'chore: release' and synchronization commits.\n- Added a dedicated 'Documentation' section for 'docs:' commits.\n- Improved commit grouping and section headings for better readability."
+      "body": "• Filtered out redundant 'chore: release' and synchronization commits.\n• Added a dedicated 'Documentation' section for 'docs:' commits.\n• Improved commit grouping and section headings for better readability."
     },
     {
       "hash": "97bb620b394cd26ec1e9a96173242d3b2222746b",
@@ -208,7 +507,7 @@
       "date": "2026-03-19T21:41:43Z",
       "type": "chore",
       "title": "normalize date formats to UK standard (DD/MM/YYYY)",
-      "body": "- Updated CHANGELOG.md history with UK date format.\n- Modified update-changelog.mjs to generate UK format dates for new entries."
+      "body": "• Updated CHANGELOG.md history with UK date format.\n• Modified update changelog.mjs to generate UK format dates for new entries."
     },
     {
       "hash": "f19a3972efe507cb1cbd2c10b47b059f9b2fc328",
@@ -221,7 +520,7 @@
       "date": "2026-03-19T21:39:00Z",
       "type": "chore",
       "title": "add automated changelog management",
-      "body": "- Generated initial CHANGELOG.md from git history.\n- Added scripts/update-changelog.mjs for automated updates.\n- Integrated changelog updates into npm version lifecycle."
+      "body": "• Generated initial CHANGELOG.md from git history.\n• Added scripts/update changelog.mjs for automated updates.\n• Integrated changelog updates into npm version lifecycle."
     },
     {
       "hash": "d520e69a4b28f02f7b61c6909450929c00699184",
@@ -259,7 +558,7 @@
       "isUpstream": false,
       "date": "2026-03-19T21:33:08Z",
       "type": "feat",
-      "title": "implement select-all as default for rating preferences",
+      "title": "implement select all as default for rating preferences",
       "body": null
     },
     {
@@ -285,8 +584,8 @@
       "isUpstream": true,
       "date": "2026-03-19T21:32:59Z",
       "type": "feat",
-      "title": "normalize ratings to 0-10 scale and optimize backdrop layout for multi-row",
-      "body": "This update standardizes ratings across poster, backdrop, and logo outputs by converting all providers to a 0-10 visual scale. It also improves backdrop rating rendering with dynamic multi-row layouts and prioritizes anime-specific providers."
+      "title": "normalize ratings to 0 to 10 scale and optimize backdrop layout for multi row",
+      "body": "This update standardizes ratings across poster, backdrop, and logo outputs by converting all providers to a 0 to 10 visual scale. It also improves backdrop rating rendering with dynamic multi row layouts and prioritizes anime specific providers."
     },
     {
       "hash": "26c01e9646aaa2ef3bdabd258b8a665401a0783a",
@@ -297,8 +596,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T22:07:23+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
+      "type": "fix",
+      "title": "update image rendering route",
       "body": null
     },
     {
@@ -311,8 +610,8 @@
       "isUpstream": true,
       "date": "2026-03-19T21:52:00+01:00",
       "type": "chore",
-      "title": "Normalize ratings to a 0-10 scale and improve anime/backdrop badge behavior",
-      "body": "This update standardizes displayed ratings across poster, backdrop, and logo outputs by converting all providers to a 0-10 visual scale. It also improves backdrop rating rendering with dynamic multi-row layouts and prioritizes anime-specific providers like MyAnimeList, AniList, and Kitsu when anime metadata is detected."
+      "title": "Normalize ratings to a 0 to 10 scale and improve anime/backdrop badge behavior",
+      "body": "This update standardizes displayed ratings across poster, backdrop, and logo outputs by converting all providers to a 0 to 10 visual scale. It also improves backdrop rating rendering with dynamic multi row layouts and prioritizes anime specific providers like MyAnimeList, AniList, and Kitsu when anime metadata is detected."
     },
     {
       "hash": "5ba092f39863824e4387b6ba98ad5d385f5643f8",
@@ -337,7 +636,7 @@
       "isUpstream": false,
       "date": "2026-03-19T19:00:54Z",
       "type": "chore",
-      "title": "merge upstream/main (ours)",
+      "title": "sync upstream changes",
       "body": null
     },
     {
@@ -351,7 +650,7 @@
       "date": "2026-03-19T19:00:15Z",
       "type": "fix",
       "title": "improve badge layout spacing and column limits",
-      "body": "- Capped quality badges strictly at 2 items per column (left/right) to prevent vertical overflow.\n\n- Dynamically adjust vertical start offset when backdrop ratings layout is 'center' matching top/bottom badges, preventing overlap with rating badges."
+      "body": "• Capped quality badges strictly at 2 items per column (left/right) to prevent vertical overflow.\n\n• Dynamically adjust vertical start offset when backdrop ratings layout is 'center' matching top/bottom badges, preventing overlap with rating badges."
     },
     {
       "hash": "664646419d093e9d1a3f24d1afb9e2111d357e63",
@@ -362,8 +661,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T15:56:40+01:00",
-      "type": "chore",
-      "title": "Update route.tsx",
+      "type": "fix",
+      "title": "update image rendering route",
       "body": null
     },
     {
@@ -390,7 +689,7 @@
       "date": "2026-03-19T04:54:43Z",
       "type": "fix",
       "title": "prevent long strings from overflowing containers on mobile",
-      "body": "- Add `overflow-hidden` to the config string and generated manifest wrapper divs to ensure long `break-all` text respects the `rounded-2xl` border on narrow viewports\n\n- Add `min-w-0` to the manifest URL input field so it can shrink below its intrinsic width in the flex/grid layout\n\n- Add `overflow-y-hidden` to the base structure code block container to prevent vertical bleed while retaining `overflow-x-auto`"
+      "body": "• Add `overflow hidden` to the config string and generated manifest wrapper divs to ensure long `break all` text respects the `rounded 2xl` border on narrow viewports\n\n• Add `min w 0` to the manifest URL input field so it can shrink below its intrinsic width in the flex/grid layout\n\n• Add `overflow y hidden` to the base structure code block container to prevent vertical bleed while retaining `overflow x auto`"
     },
     {
       "hash": "8e99b690ffc205bde1969dcf235d9efabcde77f0",
@@ -402,8 +701,8 @@
       "isUpstream": false,
       "date": "2026-03-19T04:00:28Z",
       "type": "ci",
-      "title": "upgrade build-push-action to v6 and enable provenance",
-      "body": "Upgrade docker/build-push-action from v5 to v6 and explicitly enable\nprovenance attestation for supply chain security. The signed build\nattestation is added as metadata to the image layer — no change to the\nimage contents or runtime behaviour."
+      "title": "upgrade build push action to v6 and enable provenance",
+      "body": "Upgrade docker/build push action from v5 to v6 and explicitly enable\nprovenance attestation for supply chain security. The signed build\nattestation is added as metadata to the image layer — no change to the\nimage contents or runtime behaviour."
     },
     {
       "hash": "b904f70a4581d509cc47c19914defbc071e23afa",
@@ -428,8 +727,8 @@
       "isUpstream": false,
       "date": "2026-03-19T03:53:08Z",
       "type": "test",
-      "title": "add posterQualityBadgesPosition to workspace round-trip assertion",
-      "body": "Include the new posterQualityBadgesPosition default ('auto') in the\nexpected settings for the workspace serialization round-trip test."
+      "title": "add posterQualityBadgesPosition to workspace round trip assertion",
+      "body": "Include the new posterQualityBadgesPosition default ('auto') in the\nexpected settings for the workspace serialization round trip test."
     },
     {
       "hash": "688f3985bae55f770290666fadc656547b1733fd",
@@ -455,7 +754,7 @@
       "date": "2026-03-19T03:46:55Z",
       "type": "style",
       "title": "apply violet theme to configurator card and toggle buttons",
-      "body": "Update the Configurator & Proxy wrapper card background from plain\ngrey-zinc gradient to violet-tinted dark (rgba(30,22,42) base) with\nan extended violet radial glow (60% ellipse spread) and a\nborder-violet-500/15 border.\n\nUpdate SHOW/HIDE toggle buttons from flat bg-zinc-800 to\nbg-violet-500/20 with violet-300 text and violet-500/30 border,\nmatching the purple accent theme used throughout the page."
+      "body": "Update the Configurator & Proxy wrapper card background from plain\ngrey zinc gradient to violet tinted dark (rgba(30,22,42) base) with\nan extended violet radial glow (60% ellipse spread) and a\nborder violet 500/15 border.\n\nUpdate SHOW/HIDE toggle buttons from flat bg zinc 800 to\nbg violet 500/20 with violet 300 text and violet 500/30 border,\nmatching the purple accent theme used throughout the page."
     },
     {
       "hash": "1e348048cc23dc0506e4abc97c3bcda150113d20",
@@ -481,7 +780,7 @@
       "date": "2026-03-19T03:37:13Z",
       "type": "perf",
       "title": "remove metadata cache hard row cap",
-      "body": "Remove the pruneOldestMetadata(2000) call from setMetadata. TTL-based\nexpiration via pruneExpiredMetadata already handles cleanup naturally,\nand the aggressive 2,000-row hard cap could evict still-valid cached\nratings, forcing unnecessary re-fetches. SQLite handles tens of\nthousands of rows without issue."
+      "body": "Remove the pruneOldestMetadata(2000) call from setMetadata. TTL based\nexpiration via pruneExpiredMetadata already handles cleanup naturally,\nand the aggressive 2,000 row hard cap could evict still valid cached\nratings, forcing unnecessary re fetches. SQLite handles tens of\nthousands of rows without issue."
     },
     {
       "hash": "852028fb1c75c7565a1746b65d92eea5907f87e3",
@@ -494,7 +793,7 @@
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "add show/hide toggles for config string and proxy URL",
-      "body": "Add ability to toggle visibility of the ERDB config string and\ngenerated proxy URL to prevent accidental exposure during\nscreen-sharing or streaming.\n\n- Import `Eye` and `EyeOff` icons from lucide-react\n- Add `maskSensitiveText` helper that replaces visible characters\n  with asterisks\n- Add `showConfigString` and `showProxyUrl` state with `useEffect`\n  hooks to auto-hide when the underlying values are cleared\n- Compute `displayedConfigString` and `displayedProxyUrl` using\n  masked values when hidden\n- Add toggle buttons next to copy buttons in both the config string\n  and proxy URL sections\n- Apply `select-none` CSS class when masked to prevent clipboard\n  selection of asterisks"
+      "body": "Add ability to toggle visibility of the ERDB config string and\ngenerated proxy URL to prevent accidental exposure during\nscreen sharing or streaming.\n\n• Import `Eye` and `EyeOff` icons from lucide react\n• Add `maskSensitiveText` helper that replaces visible characters\n  with asterisks\n• Add `showConfigString` and `showProxyUrl` state with `useEffect`\n  hooks to auto hide when the underlying values are cleared\n• Compute `displayedConfigString` and `displayedProxyUrl` using\n  masked values when hidden\n• Add toggle buttons next to copy buttons in both the config string\n  and proxy URL sections\n• Apply `select none` CSS class when masked to prevent clipboard\n  selection of asterisks"
     },
     {
       "hash": "e451a056b1916e702c6fdf12ff3fa0681732acea",
@@ -507,7 +806,7 @@
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "add posterQualityBadgesPosition setting",
-      "body": "Introduce `posterQualityBadgesPosition` to control quality-badge\nplacement for poster `top`/`bottom` layouts. Accepted values:\n`auto` (default), `left`, `right`.\n\nServer (`route.tsx`):\n- Add `PosterQualityBadgesPosition` type and `normalizePosterQualityBadgesPosition`\n- Add `resolvePosterQualityBadgePlacement` resolver that determines\n  placement based on layout, qualityBadgesSide, and the new setting\n- Replace hardcoded placement logic in `renderWithSharp` with the\n  resolver function\n- Parse `posterQualityBadgesPosition` from URL search params\n- Include in both render-seed and final-image cache keys\n\nClient (`page.tsx`):\n- Add state, derived visibility booleans, and a Position toggle UI\n  (auto/left/right) shown only for `top` or `bottom` poster layouts\n- Include in preview URL, config export, proxy URL, and AI prompt\n\nConfig (`uiConfig.ts`):\n- Add type, default (`auto`), normalizer, and include in\n  `SharedErdbSettings`, `normalizeSharedErdbSettings`, and\n  `buildSharedPayload`"
+      "body": "Introduce `posterQualityBadgesPosition` to control quality badge\nplacement for poster `top`/`bottom` layouts. Accepted values:\n`auto` (default), `left`, `right`.\n\nServer (`route.tsx`):\n• Add `PosterQualityBadgesPosition` type and `normalizePosterQualityBadgesPosition`\n• Add `resolvePosterQualityBadgePlacement` resolver that determines\n  placement based on layout, qualityBadgesSide, and the new setting\n• Replace hardcoded placement logic in `renderWithSharp` with the\n  resolver function\n• Parse `posterQualityBadgesPosition` from URL search params\n• Include in both render seed and final image cache keys\n\nClient (`page.tsx`):\n• Add state, derived visibility booleans, and a Position toggle UI\n  (auto/left/right) shown only for `top` or `bottom` poster layouts\n• Include in preview URL, config export, proxy URL, and AI prompt\n\nConfig (`uiConfig.ts`):\n• Add type, default (`auto`), normalizer, and include in\n  `SharedErdbSettings`, `normalizeSharedErdbSettings`, and\n  `buildSharedPayload`"
     },
     {
       "hash": "ad4dee2125b37beefb2ce16ce7b7434f7b0eaf49",
@@ -520,7 +819,7 @@
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
       "title": "add posterQualityBadgesPosition to addon proxy config",
-      "body": "Register `posterQualityBadgesPosition` across the proxy layer:\n\n- Add to `ERDB_OPTIONAL_PARAMS` array\n- Include in the `ProxyConfig` type definition\n- Add to `PROXY_OPTIONAL_STRING_KEYS` for optional string handling\n\nThis ensures the poster quality badge position setting is recognized,\ntyped, and treated as an optional string key for proxy URL generation."
+      "body": "Register `posterQualityBadgesPosition` across the proxy layer:\n\n• Add to `ERDB_OPTIONAL_PARAMS` array\n• Include in the `ProxyConfig` type definition\n• Add to `PROXY_OPTIONAL_STRING_KEYS` for optional string handling\n\nThis ensures the poster quality badge position setting is recognized,\ntyped, and treated as an optional string key for proxy URL generation."
     },
     {
       "hash": "d97c22335e5b20188e627fb14d29d65dbcbd7650",
@@ -532,8 +831,8 @@
       "isUpstream": true,
       "date": "2026-03-19T03:31:40Z",
       "type": "feat",
-      "title": "handle 3-badge top row in left-right poster layout",
-      "body": "Add support for an extra centered top badge when using the left-right\nposter ratings layout with an odd number of badges.\n\n- `splitPosterBadgesByLayout` now surfaces a single top badge when\n  the total is odd, with remaining badges split evenly across left\n  and right columns\n- `getMaxBadgeColumnCount` and `fitPosterBadgeMetricsToHeight` gain\n  a `reservedTopRows` parameter so column heights correctly subtract\n  the reserved top-row space\n- `renderWithSharp` gains `splitAcrossHalves` and `spreadAcrossThirds`\n  composition flags for the row renderer\n- `getPosterRatingLayoutMaxBadges` for `left-right` now returns\n  `n*2 + 1` and `describePosterRatingLayoutLimit` includes the\n  top-center badge in the human-readable description"
+      "title": "handle 3 badge top row in left right poster layout",
+      "body": "Add support for an extra centered top badge when using the left right\nposter ratings layout with an odd number of badges.\n\n• `splitPosterBadgesByLayout` now surfaces a single top badge when\n  the total is odd, with remaining badges split evenly across left\n  and right columns\n• `getMaxBadgeColumnCount` and `fitPosterBadgeMetricsToHeight` gain\n  a `reservedTopRows` parameter so column heights correctly subtract\n  the reserved top row space\n• `renderWithSharp` gains `splitAcrossHalves` and `spreadAcrossThirds`\n  composition flags for the row renderer\n• `getPosterRatingLayoutMaxBadges` for `left right` now returns\n  `n*2 + 1` and `describePosterRatingLayoutLimit` includes the\n  top center badge in the human readable description"
     },
     {
       "hash": "a44e2a980044a3ecdb00f48a2c87b81e8a26b131",
@@ -544,8 +843,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T03:43:04+01:00",
-      "type": "chore",
-      "title": ".",
+      "type": "feat",
+      "title": "update homepage and configurator",
       "body": null
     },
     {
@@ -557,8 +856,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T03:40:12+01:00",
-      "type": "chore",
-      "title": ".",
+      "type": "feat",
+      "title": "update homepage and configurator",
       "body": null
     },
     {
@@ -570,8 +869,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T03:13:26+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
+      "type": "feat",
+      "title": "update homepage and configurator",
       "body": null
     },
     {
@@ -596,9 +895,9 @@
       },
       "isUpstream": false,
       "date": "2026-03-19T01:19:01Z",
-      "type": "chore",
+      "type": "docs",
       "title": "add comprehensive env vars reference and fix stale docs",
-      "body": "- .env.example: add all env vars with defaults, min/max, and sections\n  (proxy/security, cache TTLs, Torrentio, IMDb, Sharp rendering)\n- README: add Environment Variables section with tables for all settings\n- README: fix release command (npm run release:patch, not npm run release -- patch)\n- Add missing env vars: ERDB_TORRENTIO_CACHE_TTL_MS, ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS,\n  ERDB_TRUST_PROXY_HEADERS, ERDB_PROXY_ALLOWED_ORIGINS"
+      "body": "• .env.example: add all env vars with defaults, min/max, and sections\n  (proxy/security, cache TTLs, Torrentio, IMDb, Sharp rendering)\n• README: add Environment Variables section with tables for all settings\n• README: fix release command (npm run release:patch, not npm run release patch)\n• Add missing env vars: ERDB_TORRENTIO_CACHE_TTL_MS, ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS,\n  ERDB_TRUST_PROXY_HEADERS, ERDB_PROXY_ALLOWED_ORIGINS"
     },
     {
       "hash": "2d5b29968e2d3e52cfceda0399a263715c735072",
@@ -650,7 +949,7 @@
       "date": "2026-03-19T00:34:19Z",
       "type": "feat",
       "title": "route Torrentio requests through HTTP_PROXY/HTTPS_PROXY",
-      "body": "Node.js native fetch does not respect HTTP_PROXY/HTTPS_PROXY env vars.\nThis adds undici's ProxyAgent to route Torrentio stream badge requests\nthrough the configured proxy (e.g. gluetun VPN container).\n\nAlso includes the User-Agent fix from v2.13.5 to bypass Cloudflare\nbot protection on Torrentio."
+      "body": "Node.js native fetch does not respect HTTP_PROXY/HTTPS_PROXY env vars.\nThis adds undici's ProxyAgent to route Torrentio stream badge requests\nthrough the configured proxy (e.g. gluetun VPN container).\n\nAlso includes the User Agent fix from v2.13.5 to bypass Cloudflare\nbot protection on Torrentio."
     },
     {
       "hash": "59a7e5d4f781b029025417c97ebda91b2ac2265b",
@@ -675,8 +974,8 @@
       "isUpstream": false,
       "date": "2026-03-19T00:31:21Z",
       "type": "fix",
-      "title": "add User-Agent header to Torrentio fetch to bypass 403",
-      "body": "Torrentio/Cloudflare returns 403 for requests without a browser-like\nUser-Agent header. This caused all stream quality badges (4K, HDR, DV,\nAtmos) to silently fail in production. Adding a Chrome User-Agent to\nthe fetch request resolves the issue."
+      "title": "add User Agent header to Torrentio fetch to bypass 403",
+      "body": "Torrentio/Cloudflare returns 403 for requests without a browser like\nUser Agent header. This caused all stream quality badges (4K, HDR, DV,\nAtmos) to silently fail in production. Adding a Chrome User Agent to\nthe fetch request resolves the issue."
     },
     {
       "hash": "15536a87baa05bf35b97404251efe830b3fd2495",
@@ -701,7 +1000,7 @@
       "isUpstream": false,
       "date": "2026-03-19T00:28:51Z",
       "type": "chore",
-      "title": "add per-request log to verify deployed code version",
+      "title": "add per request log to verify deployed code version",
       "body": "Logs every image request with type, id, and streamBadges param\nto confirm the deployed Docker image contains the latest code."
     },
     {
@@ -728,7 +1027,7 @@
       "date": "2026-03-19T00:06:19Z",
       "type": "chore",
       "title": "add diagnostic logging for Torrentio fetch failures",
-      "body": "Logs warnings when Torrentio fetch throws (network/timeout), returns\nnon-200, or has zero streams. This helps diagnose why stream quality\nbadges are not appearing in production."
+      "body": "Logs warnings when Torrentio fetch throws (network/timeout), returns\nnon 200, or has zero streams. This helps diagnose why stream quality\nbadges are not appearing in production."
     },
     {
       "hash": "85e90ef2c2f7f4808ba2cda72c39c7cc07ab1961",
@@ -739,9 +1038,9 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T00:36:42+01:00",
-      "type": "chore",
-      "title": ".",
-      "body": null
+      "type": "fix",
+      "title": "update multiple project areas",
+      "body": "Touches image rendering route and project internals."
     },
     {
       "hash": "3c2f6f98150421b51cb39296730a03230611b75a",
@@ -766,7 +1065,7 @@
       "isUpstream": false,
       "date": "2026-03-18T23:19:11Z",
       "type": "fix",
-      "title": "strip internal port from public-facing image URLs",
+      "title": "strip internal port from public facing image URLs",
       "body": "When ERDB runs behind a reverse proxy (ERDB_TRUST_PROXY_HEADERS=true),\nthe internal port (e.g. :3000) was leaking into generated image URLs.\nThis made all poster, backdrop, and logo URLs unreachable through the\nreverse proxy, causing blank posters and missing badges in Stremio.\n\nNow strips the port from generated URLs when behind a trusted proxy,\nso URLs use the reverse proxy's default port instead."
     },
     {
@@ -793,7 +1092,7 @@
       "date": "2026-03-18T23:13:42Z",
       "type": "fix",
       "title": "remove torrentio language filter for badge detection",
-      "body": "The `language=italian` filter in the Torrentio stream URL caused empty\nresults for all non-Italian content, preventing quality badges (4K, HDR,\nDolby Vision, etc.) from appearing on most titles.\n\nSince badge detection only needs to know WHETHER quality streams exist\n(not their language), the language filter is now removed entirely.\nThis ensures Torrentio returns all available streams for accurate\nbadge generation regardless of content language.\n\nAlso adds ERDB_TORRENTIO_BASE_URL env var for custom Torrentio instances."
+      "body": "The `language=italian` filter in the Torrentio stream URL caused empty\nresults for all non Italian content, preventing quality badges (4K, HDR,\nDolby Vision, etc.) from appearing on most titles.\n\nSince badge detection only needs to know WHETHER quality streams exist\n(not their language), the language filter is now removed entirely.\nThis ensures Torrentio returns all available streams for accurate\nbadge generation regardless of content language.\n\nAlso adds ERDB_TORRENTIO_BASE_URL env var for custom Torrentio instances."
     },
     {
       "hash": "657f8d60cdf2a264adde86508ebc0da0675757fb",
@@ -804,8 +1103,8 @@
       },
       "isUpstream": true,
       "date": "2026-03-19T00:11:50+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
+      "type": "feat",
+      "title": "update homepage and configurator",
       "body": null
     },
     {
@@ -845,7 +1144,7 @@
       "date": "2026-03-18T23:53:29+01:00",
       "type": "chore",
       "title": "Add posterQualityBadgesPosition support",
-      "body": "Introduce a new posterQualityBadgesPosition setting to control quality-badge placement for poster top/bottom layouts. README updated with docs and URL parameter. Server: add types, normalization, resolver and use the new value in rendering logic and URL parsing so badge placement is computed correctly. Client: add UI control, state, validation and include the setting in preview, exported config and proxy manifest URLs; refactor preview/config/proxy generation to use useMemo and a client-origin helper, and use requestAnimationFrame when loading stored keys for smoother startup."
+      "body": "Introduce a new posterQualityBadgesPosition setting to control quality badge placement for poster top/bottom layouts. README updated with docs and URL parameter. Server: add types, normalization, resolver and use the new value in rendering logic and URL parsing so badge placement is computed correctly. Client: add UI control, state, validation and include the setting in preview, exported config and proxy manifest URLs; refactor preview/config/proxy generation to use useMemo and a client origin helper, and use requestAnimationFrame when loading stored keys for smoother startup."
     },
     {
       "hash": "93200ab97493eeba402cfe36b345efa2eca7044c",
@@ -910,7 +1209,7 @@
       "date": "2026-03-18T22:24:27Z",
       "type": "fix",
       "title": "resolve stremio badge inconsistency by adding Torrentio concurrency limiter and fixing series streams",
-      "body": "- Adds a global `torrentioConcurrencyLimit` queue to `route.tsx` (limit: 3) to prevent aggressive rate-limiting from Torrentio when Stremio requests 20+ catalog posters concurrently.\n- Modifies the Torrentio stream request for series to properly append `:1:1` (S01E01), allowing Torrentio to successfully fetch stream badges rather than returning empty streams.\n\nThese changes resolve an issue where stream badges would intermittently fail on Stremio catalogs due to connection drops and lack of episodic context for TV show requests."
+      "body": "• Adds a global `torrentioConcurrencyLimit` queue to `route.tsx` (limit: 3) to prevent aggressive rate limiting from Torrentio when Stremio requests 20+ catalog posters concurrently.\n• Modifies the Torrentio stream request for series to properly append `:1:1` (S01E01), allowing Torrentio to successfully fetch stream badges rather than returning empty streams.\n\nThese changes resolve an issue where stream badges would intermittently fail on Stremio catalogs due to connection drops and lack of episodic context for TV show requests."
     },
     {
       "hash": "a13ce21fd82ecac9f583f318f153026910b3719d",
@@ -922,8 +1221,8 @@
       "isUpstream": true,
       "date": "2026-03-18T23:15:11+01:00",
       "type": "chore",
-      "title": "Handle 3-badge top row in left-right layout",
-      "body": "Add support for an extra centered top badge when using the left-right poster ratings layout. Reserved top rows are now accounted for in sizing (getMaxBadgeColumnCount, fitPosterBadgeMetricsToHeight) so column heights subtract the reserved top-row space. splitPosterBadgesByLayout now surfaces a single top badge when the total is odd, and renderWithSharp gains helpers and options to correctly compose a three-badge top row and to align side columns (composeEdgeAlignedPosterBadge, updated composeBadgeColumn, splitAcrossHalves/spreadAcrossThirds flags). The GET flow is updated to compute fitted columns, reservedTopRows and effective per-side limits when the extra top badge is present. Also update posterRatingLayout helpers to include the additional top-center badge in counts and human-readable descriptions."
+      "title": "Handle 3 badge top row in left right layout",
+      "body": "Add support for an extra centered top badge when using the left right poster ratings layout. Reserved top rows are now accounted for in sizing (getMaxBadgeColumnCount, fitPosterBadgeMetricsToHeight) so column heights subtract the reserved top row space. splitPosterBadgesByLayout now surfaces a single top badge when the total is odd, and renderWithSharp gains helpers and options to correctly compose a three badge top row and to align side columns (composeEdgeAlignedPosterBadge, updated composeBadgeColumn, splitAcrossHalves/spreadAcrossThirds flags). The GET flow is updated to compute fitted columns, reservedTopRows and effective per side limits when the extra top badge is present. Also update posterRatingLayout helpers to include the additional top center badge in counts and human readable descriptions."
     },
     {
       "hash": "bf3576ee1196ce482c9061f3bdcfd26f3dcaf331",
@@ -1000,8 +1299,8 @@
       "isUpstream": false,
       "date": "2026-03-18T19:40:19Z",
       "type": "chore",
-      "title": "repo-wide performance and security fixes",
-      "body": "- fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate-limit bans\n- feat(cache): implement TTL-based map for TMDB fetch caching to prevent permanent memory leaks\n- fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n- feat(cache): integrate disk-level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n- feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n- security(cors): correct proxy manifest and proxy endpoints to default to Access-Control-Allow-Origin: * rather than aggressively reflecting arbitrary origin headers\n- fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n- ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n- docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
+      "title": "repo wide performance and security fixes",
+      "body": "• fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate limit bans\n• feat(cache): implement TTL based map for TMDB fetch caching to prevent permanent memory leaks\n• fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n• feat(cache): integrate disk level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n• feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n• security(cors): correct proxy manifest and proxy endpoints to default to Access Control Allow Origin: * rather than aggressively reflecting arbitrary origin headers\n• fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n• ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n• docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
     },
     {
       "hash": "cf842a204e330ca79ff611dd1457afd10d06d162",
@@ -1013,8 +1312,8 @@
       "isUpstream": false,
       "date": "2026-03-18T19:39:53Z",
       "type": "chore",
-      "title": "repo-wide performance and security fixes",
-      "body": "- fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate-limit bans\n- feat(cache): implement TTL-based map for TMDB fetch caching to prevent permanent memory leaks\n- fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n- feat(cache): integrate disk-level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n- feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n- security(cors): correct proxy manifest and proxy endpoints to default to Access-Control-Allow-Origin: * rather than aggressively reflecting arbitrary origin headers\n- fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n- ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n- docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
+      "title": "repo wide performance and security fixes",
+      "body": "• fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate limit bans\n• feat(cache): implement TTL based map for TMDB fetch caching to prevent permanent memory leaks\n• fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n• feat(cache): integrate disk level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n• feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n• security(cors): correct proxy manifest and proxy endpoints to default to Access Control Allow Origin: * rather than aggressively reflecting arbitrary origin headers\n• fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n• ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n• docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
     },
     {
       "hash": "0af59561f8066e85b958711a263fdc1bbcfd408f",
@@ -1066,7 +1365,7 @@
       "date": "2026-03-18T17:37:31Z",
       "type": "feat",
       "title": "tighten the merged configurator workspace layout",
-      "body": "Restructure the primary workspace surface into a denser desktop composition so the configurator, live preview, config-string export, and thin proxy panel read as one all-in-one flow instead of two spaced-out sections.\n\nKeep the merged proxy behavior intact by preserving the manifest-only proxy input while moving the preview stack back into the center column and reducing visual dead space across the workspace container, card chrome, and header treatment.\n\nRetain the existing persistence and export wiring so the new layout remains compatible with the shared workspace model, copied config strings, and generated proxy manifests."
+      "body": "Restructure the primary workspace surface into a denser desktop composition so the configurator, live preview, config string export, and thin proxy panel read as one all in one flow instead of two spaced out sections.\n\nKeep the merged proxy behavior intact by preserving the manifest only proxy input while moving the preview stack back into the center column and reducing visual dead space across the workspace container, card chrome, and header treatment.\n\nRetain the existing persistence and export wiring so the new layout remains compatible with the shared workspace model, copied config strings, and generated proxy manifests."
     },
     {
       "hash": "e906470af1a58f9daebc9b1b8ad4fad9381475bc",
@@ -1092,7 +1391,7 @@
       "date": "2026-03-18T17:21:32Z",
       "type": "feat",
       "title": "collapse proxy configuration into the shared configurator flow",
-      "body": "Remove the duplicate proxy-side ERDB controls so the addon proxy only accepts an upstream manifest URL and consumes the configurator state above as its single source of truth.\n\nDrop proxy enabled-type state from the saved workspace model and proxy URL builder, while continuing to normalize older saved payloads that still include legacy enabled flags.\n\nUpdate browser-facing copy to make the merged workflow explicit and extend regression coverage for workspace serialization plus proxy payload generation under the new contract."
+      "body": "Remove the duplicate proxy side ERDB controls so the addon proxy only accepts an upstream manifest URL and consumes the configurator state above as its single source of truth.\n\nDrop proxy enabled type state from the saved workspace model and proxy URL builder, while continuing to normalize older saved payloads that still include legacy enabled flags.\n\nUpdate browser facing copy to make the merged workflow explicit and extend regression coverage for workspace serialization plus proxy payload generation under the new contract."
     },
     {
       "hash": "21b8c5c4688f4d4285d64ff7475edb249d56bb8e",
@@ -1118,7 +1417,7 @@
       "date": "2026-03-18T17:04:47Z",
       "type": "feat",
       "title": "unify configurator and addon proxy workflows",
-      "body": "- remove the duplicated proxy-side ERDB settings state and drive both exports from one shared configuration model\n\n- add full workspace save and JSON download/import support with migration from the legacy API-key-only local storage format\n\n- extract shared UI config helpers for serialization, proxy payload generation, and browser-safe base64url encoding\n\n- add regression tests for workspace round-tripping and shared config/proxy manifest generation\n\n- validate with npm run lint, npm test, npm run build, browser verification of shared-state persistence and JSON download, and live proxy checks against Cinemeta meta rewriting"
+      "body": "• remove the duplicated proxy side ERDB settings state and drive both exports from one shared configuration model\n\n• add full workspace save and JSON download/import support with migration from the legacy API key only local storage format\n\n• extract shared UI config helpers for serialization, proxy payload generation, and browser safe base64url encoding\n\n• add regression tests for workspace round tripping and shared config/proxy manifest generation\n\n• validate with npm run lint, npm test, npm run build, browser verification of shared state persistence and JSON download, and live proxy checks against Cinemeta meta rewriting"
     },
     {
       "hash": "4b1127aa836161c591ef0f6f4fba3b6f3b8714df",
@@ -1144,7 +1443,7 @@
       "date": "2026-03-18T06:28:47Z",
       "type": "fix",
       "title": "use configured CORS fallback origin in proxy routes",
-      "body": "When ERDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access-Control-Allow-Origin and caused client-side failures.\n\nUpdate both proxy route handlers to keep wildcard support, preserve valid Origin echoing, and otherwise fall back to the first configured allowed origin whenever the allowlist is non-empty but the request origin is missing or not permitted."
+      "body": "When ERDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access Control Allow Origin and caused client side failures.\n\nUpdate both proxy route handlers to keep wildcard support, preserve valid Origin echoing, and otherwise fall back to the first configured allowed origin whenever the allowlist is non empty but the request origin is missing or not permitted."
     },
     {
       "hash": "13e0bb9ce2fa4378123052df8084e74b522b2420",
@@ -1169,8 +1468,8 @@
       "isUpstream": false,
       "date": "2026-03-18T05:03:27Z",
       "type": "chore",
-      "title": "detail post-v2.7.2 updates",
-      "body": "Changes since v2.7.2:\n\n- docs: update README example language to en and clarify proxy CORS fallback behavior\n\n- ui: normalize supported language labels on the home page to English display names\n\n- proxy: adjust CORS logic in both proxy routes to reflect incoming Origin when allowlist is empty\n\n- imdb: switch import progress number formatting from en-US to en-GB in sync/import scripts\n\n- git: keep local planning notes local by ignoring future stuff.md"
+      "title": "detail post v2.7.2 updates",
+      "body": "Changes since v2.7.2:\n\n• docs: update README example language to en and clarify proxy CORS fallback behavior\n\n• ui: normalize supported language labels on the home page to English display names\n\n• proxy: adjust CORS logic in both proxy routes to reflect incoming Origin when allowlist is empty\n\n• imdb: switch import progress number formatting from en US to en GB in sync/import scripts\n\n• git: keep local planning notes local by ignoring future stuff.md"
     },
     {
       "hash": "dec4bb9c6dc1723cef13f9545dde9086863b1587",
@@ -1247,7 +1546,7 @@
       "isUpstream": false,
       "date": "2026-03-17T23:16:39Z",
       "type": "chore",
-      "title": "Merge remote-tracking branch 'upstream/main'",
+      "title": "Merge remote tracking branch 'upstream/main'",
       "body": "# Conflicts:\n#\tapp/globals.css\n#\tapp/page.tsx"
     },
     {
@@ -1262,305 +1561,6 @@
       "type": "chore",
       "title": "release 2.6.0",
       "body": null
-    },
-    {
-      "hash": "2a56a82f89956e6bd48d60116596513d7cf45bb6",
-      "shortHash": "2a56a82",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T23:05:59Z",
-      "type": "feat",
-      "title": "surface uptime tracker across landing page",
-      "body": "Changes since last release (v2.5.0):\n\n- add a dedicated status pill component that links to the IbbyLabs uptime tracker\n\n- wire uptime links into top navigation and footer for faster status access\n\n- add a status-board explainer section near the page end with a clear CTA\n\n- introduce focused status pill styles with hover and focus-visible states\n\n- update hero copy to clarify project positioning in the same ecosystem"
-    },
-    {
-      "hash": "e7d96c61907c37e82b7d466eb1b665bedf4155a7",
-      "shortHash": "e7d96c6",
-      "author": {
-        "name": "nzo66",
-        "email": "233500038+stremio-manager@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T23:54:12+01:00",
-      "type": "chore",
-      "title": "Redesign homepage UI; add fonts & smooth scroll",
-      "body": "Revamp homepage layout and styling, add Google fonts, and implement smooth anchor scrolling. Changes include:\n\n- globals.css: add .scrollbar-hidden utility to hide scrollbars.\n- layout.tsx: import Space_Grotesk and Unbounded Google fonts, expose CSS variables and apply them to <body> (antialiased).\n- page.tsx: import useRef and create navRef; add scrollToHash, handleAnchorClick, and hashchange listener to enable offset-aware smooth scrolling to in-page anchors.\n- Major UI overhaul of the nav, hero, configurator, preview output, and proxy sections: new layout, responsive grid, background radial gradients, updated colors, spacing, and component structure.\n- Move/export/import controls into the configurator header; make config/proxy output areas scrollable (uses scrollbar-hidden), update button/input styles and state-driven visuals.\n\nOverall this commit modernizes the visual design, improves UX for anchor navigation, and centralizes font usage for consistent typography."
-    },
-    {
-      "hash": "10990586e8086e940db8afe4ae1c35c8c7f34fc0",
-      "shortHash": "1099058",
-      "author": {
-        "name": "nzo66",
-        "email": "233500038+stremio-manager@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T23:04:42+01:00",
-      "type": "chore",
-      "title": "Update page.tsx",
-      "body": null
-    },
-    {
-      "hash": "be2c397ba845259314c10ac4dfb808fb0d781ae5",
-      "shortHash": "be2c397",
-      "author": {
-        "name": "nzo66",
-        "email": "233500038+stremio-manager@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T22:58:08+01:00",
-      "type": "chore",
-      "title": "Translate catalog metas concurrently",
-      "body": "For 'catalog' resources, first apply rewriteMetaImages to each meta, then run translateMetaPayload in parallel using mapWithConcurrency with a concurrency of 6 and assign the results back to payload.metas. This parallelizes translation work for improved performance while preserving the image-rewrite step."
-    },
-    {
-      "hash": "2097296239a6cf1708265a6bea98bdb6b3c5a3a1",
-      "shortHash": "2097296",
-      "author": {
-        "name": "nzo66",
-        "email": "233500038+stremio-manager@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T22:51:46+01:00",
-      "type": "chore",
-      "title": "Add translateMeta option and TMDB translation",
-      "body": "Introduce a translateMeta proxy option that lets the proxy fetch localized titles/plots from TMDB. UI: add checkbox, state, import/export support, and include translateMeta in generated config. Types: expose translateMeta in ProxyConfig and reserved params. Proxy: implement TMDB helpers (cached fetch, ERDB→TMDB resolution), text translation helpers, concurrent episode translation, and translateMetaPayload which is applied after image rewrites. Misc: small utility refactor for rating provider id checks."
-    },
-    {
-      "hash": "4d1c9bbb78c6a62cc60adf2f2cf2139a61dc10a7",
-      "shortHash": "4d1c9bb",
-      "author": {
-        "name": "nzo66",
-        "email": "233500038+stremio-manager@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T22:46:29+01:00",
-      "type": "chore",
-      "title": "Add config export/import and refactor proxy UI",
-      "body": "Introduce config export/import (including optional API keys) and file import handling, with base64url encode/decode and JSON download helpers. Consolidate and persist TMDB/MDBList keys using safe localStorage helpers, remove duplicated proxy-specific state in favor of the primary configurator state, and update proxy manifest generation to use the consolidated values. Add runtime validation/normalization helpers (type guards, URL normalization), adjust supported language entries to use escaped unicode flags/labels, and reorganize UI layout (grid changes, new Config Transfer section, simplified Addon Proxy panel) and copy/update behavior for proxy links."
-    },
-    {
-      "hash": "61eeba767110f56076d89972f29bc2504773bc74",
-      "shortHash": "61eeba7",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T21:34:04Z",
-      "type": "chore",
-      "title": "release 2.5.0",
-      "body": null
-    },
-    {
-      "hash": "58b335bd43d776912971f1ac7d0161de2f37efe6",
-      "shortHash": "58b335b",
-      "author": {
-        "name": "Bestia",
-        "email": "233500038+realbestia1@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T21:32:37Z",
-      "type": "chore",
-      "title": "Create LICENSE",
-      "body": null
-    },
-    {
-      "hash": "4fe9808a451ad5a0ed270aa61c0ef995f5d90243",
-      "shortHash": "4fe9808",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T21:32:22Z",
-      "type": "feat",
-      "title": "improve preview error feedback and hero layout",
-      "body": "Add detailed preview error diagnostics for image load failures, including TMDB key hints and API/network messaging. Update hero overflow and mobile commit window sizing to prevent clipping and improve small-screen layout."
-    },
-    {
-      "hash": "fa9885d49e7e4846982eadca9e4688c7558863b2",
-      "shortHash": "fa9885d",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T21:07:20Z",
-      "type": "chore",
-      "title": "disable next telemetry in docker, pin node to 22",
-      "body": null
-    },
-    {
-      "hash": "1839409aa67a477dd8d88ea3079aab1e031661a1",
-      "shortHash": "1839409",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:57:41Z",
-      "type": "chore",
-      "title": "release 2.4.4",
-      "body": null
-    },
-    {
-      "hash": "bb290a47f950fb18e6631acc32720e4694f3bad9",
-      "shortHash": "bb290a4",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:57:29Z",
-      "type": "fix",
-      "title": "complete pnpm migration",
-      "body": null
-    },
-    {
-      "hash": "f0d5d2638c4ed34c1d0e8462daa6bb0c4308e275",
-      "shortHash": "f0d5d26",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:49:21Z",
-      "type": "build",
-      "title": "switch to pnpm, enable corepack, optimize Docker and workflows for speed",
-      "body": null
-    },
-    {
-      "hash": "5727613824f8446a5b8195b86dae19c27bcf31e9",
-      "shortHash": "5727613",
-      "author": {
-        "name": "Bestia",
-        "email": "233500038+realbestia1@users.noreply.github.com"
-      },
-      "isUpstream": true,
-      "date": "2026-03-17T21:38:58+01:00",
-      "type": "chore",
-      "title": "Create LICENSE",
-      "body": null
-    },
-    {
-      "hash": "e559c0d518e604fcb764a01d4898145d06330596",
-      "shortHash": "e559c0d",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:32:57Z",
-      "type": "chore",
-      "title": "release 2.4.2",
-      "body": null
-    },
-    {
-      "hash": "e76d9176dbd9c6745dbf77286e9d4717ae531511",
-      "shortHash": "e76d917",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:32:50Z",
-      "type": "fix",
-      "title": "expand selected labels",
-      "body": null
-    },
-    {
-      "hash": "495c84bb6dc4da22c4810b9d01c04bfc6b825e83",
-      "shortHash": "495c84b",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:26:10Z",
-      "type": "chore",
-      "title": "release 2.4.1",
-      "body": null
-    },
-    {
-      "hash": "203801988a15ed4affea39d6aa3cc6f4cc4c3a5e",
-      "shortHash": "2038019",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:25:55Z",
-      "type": "ci",
-      "title": "queue docker workflow",
-      "body": null
-    },
-    {
-      "hash": "21dbbfd4ff9f047e2254bc3050065f939414b8ae",
-      "shortHash": "21dbbfd",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:19:43Z",
-      "type": "chore",
-      "title": "release 2.4.0",
-      "body": null
-    },
-    {
-      "hash": "0086bbcd8aff2569985415632c136979f2818c5d",
-      "shortHash": "0086bbc",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:19:26Z",
-      "type": "feat",
-      "title": "save api key config",
-      "body": null
-    },
-    {
-      "hash": "24ef22caf66ceb3b31b361c980af0ec41ee91a2e",
-      "shortHash": "24ef22c",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:08:23Z",
-      "type": "chore",
-      "title": "release 2.3.0",
-      "body": null
-    },
-    {
-      "hash": "c6dc9b40796687a14399077a5806afe4dad27544",
-      "shortHash": "c6dc9b4",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T20:07:57Z",
-      "type": "feat",
-      "title": "add recent changes feed and restore automated release flow",
-      "body": "- add a Recent changes panel on the homepage with commit type badges, relative timestamps, and incremental loading\n\n- mirror uptime-status commit feed behavior by loading /commits.json and adding robust client-side handling for loading and empty/error states\n\n- add a git-log export utility (scripts/generate-commits-json.mjs) and package script to regenerate public/commits.json\n\n- harden commit subject parsing to accept both colon-with-space and colon-without-space conventional commit forms\n\n- update release automation to require a clean tree and push commit+tag automatically after npm version so chore release commits are restored\n\n- include styling and integration updates needed for the new recent changes workflow surface"
-    },
-    {
-      "hash": "4327a3fca9b2d9664ba17645fdd1509cb1c54413",
-      "shortHash": "4327a3f",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T19:29:19Z",
-      "type": "fix",
-      "title": "resolve homepage lint regressions",
-      "body": "- replace root anchor usage with Next Link\n\n- remove effect-driven setState patterns flagged by react-hooks/set-state-in-effect\n\n- add lint regression test for app/page.tsx and wire npm test script"
     }
   ]
 }

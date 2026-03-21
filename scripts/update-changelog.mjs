@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeCommitForDisplay } from './commit-display-utils.mjs';
 
 const pkgPath = path.resolve('package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -32,9 +33,9 @@ function formatEntries(entries) {
   return entries.map(m => {
     if (m.includes('\n')) {
       const lines = m.split('\n');
-      return `- ${lines[0]}\n${lines.slice(1).map(l => `  ${l}`).join('\n')}`;
+      return `* ${lines[0]}\n${lines.slice(1).map(l => `  ${l}`).join('\n')}`;
     }
-    return `- ${m}`;
+    return `* ${m}`;
   }).join('\n');
 }
 
@@ -52,21 +53,22 @@ function generateSection(version, date, commits) {
   };
 
   for (const commit of commits) {
-    const { subject, body } = commit;
+    const { subject } = commit;
     const lower = subject.toLowerCase();
     
     if (lower.startsWith('chore: release') || lower.includes('synchronize with upstream')) {
       continue;
     }
 
-    const message = body ? `${subject}\n\n${body}` : subject;
+    const normalized = normalizeCommitForDisplay(commit);
+    const message = normalized.body ? `${normalized.title}\n\n${normalized.body}` : normalized.title;
 
-    if (lower.startsWith('feat')) groups.feat.push(message);
-    else if (lower.startsWith('fix')) groups.fix.push(message);
-    else if (lower.startsWith('docs')) groups.docs.push(message);
-    else if (lower.startsWith('refactor')) groups.refactor.push(message);
-    else if (lower.startsWith('perf')) groups.perf.push(message);
-    else if (lower.startsWith('chore')) groups.chore.push(message);
+    if (normalized.type === 'feat') groups.feat.push(message);
+    else if (normalized.type === 'fix') groups.fix.push(message);
+    else if (normalized.type === 'docs') groups.docs.push(message);
+    else if (normalized.type === 'refactor') groups.refactor.push(message);
+    else if (normalized.type === 'perf') groups.perf.push(message);
+    else if (normalized.type === 'chore') groups.chore.push(message);
     else groups.other.push(message);
   }
 
