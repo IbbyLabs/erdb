@@ -1,7 +1,72 @@
 {
-  "generatedAt": "2026-03-21T03:40:04.971Z",
+  "generatedAt": "2026-03-21T14:23:19.386Z",
   "total": 120,
   "commits": [
+    {
+      "hash": "799fbacff69de4528b334f538554ae313cadd12f",
+      "shortHash": "799fbac",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T14:23:13Z",
+      "type": "fix",
+      "title": "fall back to Kitsu assets when reverse mappings miss TMDB",
+      "body": "Reverse mapped anime IDs could still fail in the image renderer when animemapping returned no TMDB target or when the resolved TMDB record no longer produced usable media. That branch exited before the existing raw Kitsu fallback helpers had a chance to recover poster, backdrop, or logo output.\n\n• try the reverse Kitsu lookup before returning a hard 404 for anime native IDs\n• reuse the raw Kitsu asset fallback when TMDB reverse mapping succeeds but the follow up TMDB fetch still produces no media\n• accept anidb prefixed IDs in proxy normalization so addon rewrites stay aligned with the main renderer\n• cover the proxy side anidb normalization path in the regression suite"
+    },
+    {
+      "hash": "2e9a510297d77b0477e334219dc343e9535c923b",
+      "shortHash": "2e9a510",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T14:07:08Z",
+      "type": "chore",
+      "title": "pass README preview env vars through docker compose",
+      "body": null
+    },
+    {
+      "hash": "7ca0039ab800978b2e3811791ea8b215be1cb85a",
+      "shortHash": "7ca0039",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T14:04:27Z",
+      "type": "feat",
+      "title": "add dedicated README preview gallery route",
+      "body": null
+    },
+    {
+      "hash": "74e1e0c2ba961d772f672d950bc73a0501843060",
+      "shortHash": "74e1e0c",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:41:01Z",
+      "type": "chore",
+      "title": "release 2.20.5",
+      "body": null
+    },
+    {
+      "hash": "fc6c7a7d9902fca7f7c1da4f2e1585b10ec96ba0",
+      "shortHash": "fc6c7a7",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:40:33Z",
+      "type": "docs",
+      "title": "rebuild changelog and recent changes after message rewrite",
+      "body": "Regenerate CHANGELOG.md and public/commits.json from the rewritten forward facing commit history so the repo outputs match the updated user facing subjects and bodies."
+    },
     {
       "hash": "3f3494effb917e6320ee0ceab98bcefa787b1e29",
       "shortHash": "3f3494e",
@@ -1496,71 +1561,6 @@
       "type": "chore",
       "title": "release 2.9.0",
       "body": null
-    },
-    {
-      "hash": "91d61c455c0e6b75cfd522a90d64c1189932b23d",
-      "shortHash": "91d61c4",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T17:04:47Z",
-      "type": "feat",
-      "title": "unify configurator and addon proxy workflows",
-      "body": "• remove the duplicated proxy side ERDB settings state and drive both exports from one shared configuration model\n\n• add full workspace save and JSON download/import support with migration from the legacy API key only local storage format\n\n• extract shared UI config helpers for serialization, proxy payload generation, and browser safe base64url encoding\n\n• add regression tests for workspace round tripping and shared config/proxy manifest generation\n\n• validate with npm run lint, npm test, npm run build, browser verification of shared state persistence and JSON download, and live proxy checks against Cinemeta meta rewriting"
-    },
-    {
-      "hash": "0e73d9a6562bfa7196f91265c2a22afbc61eb772",
-      "shortHash": "0e73d9a",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T06:28:52Z",
-      "type": "chore",
-      "title": "release 2.8.1",
-      "body": null
-    },
-    {
-      "hash": "11610332e1741d8ede257613e1a52e511e8a2d02",
-      "shortHash": "1161033",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T06:28:47Z",
-      "type": "fix",
-      "title": "use configured CORS fallback origin in proxy routes",
-      "body": "When ERDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access Control Allow Origin and caused client side failures.\n\nUpdate both proxy route handlers to keep wildcard support, preserve valid Origin echoing, and otherwise fall back to the first configured allowed origin whenever the allowlist is non empty but the request origin is missing or not permitted."
-    },
-    {
-      "hash": "9f28c20c737874ba9d1c14ffb93c155f5598b96d",
-      "shortHash": "9f28c20",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T05:15:19Z",
-      "type": "chore",
-      "title": "release 2.8.0",
-      "body": null
-    },
-    {
-      "hash": "35abc337db4aab7159c97cbd3abc6fbaec22f325",
-      "shortHash": "35abc33",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T05:03:27Z",
-      "type": "chore",
-      "title": "detail post v2.7.2 updates",
-      "body": "Changes since v2.7.2:\n\n• docs: update README example language to en and clarify proxy CORS fallback behavior\n\n• ui: normalize supported language labels on the home page to English display names\n\n• proxy: adjust CORS logic in both proxy routes to reflect incoming Origin when allowlist is empty\n\n• imdb: switch import progress number formatting from en US to en GB in sync/import scripts\n\n• git: keep local planning notes local by ignoring future stuff.md"
     }
   ]
 }
