@@ -44,9 +44,9 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
   </tr>
   <tr>
-    <td><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260321" alt="The Boys poster live preview" width="220"></td>
-    <td><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260321" alt="Dune Part Two poster live preview" width="220"></td>
-    <td><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260321" alt="Attack on Titan poster live preview" width="220"></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260321refresh1" alt="The Boys poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260321refresh1" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260321refresh1" alt="Attack on Titan poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -58,8 +58,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
   </tr>
   <tr>
-    <td><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260321" alt="Game of Thrones backdrop live preview" width="320"></td>
-    <td><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260321" alt="Stranger Things backdrop live preview" width="320"></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260321refresh1" alt="Game of Thrones backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260321refresh1" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -67,12 +67,12 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
 
 <table>
   <tr>
-    <td><strong>The Boys</strong><br>Plain logo ratings</td>
+    <td><strong>The Boys</strong><br>Dark canvas, glass ratings</td>
     <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings</td>
   </tr>
   <tr>
-    <td><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260321" alt="The Boys logo live preview" width="320"></td>
-    <td><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260321" alt="Attack on Titan logo live preview" width="320"></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260321refresh1" alt="The Boys logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260321refresh1" alt="Attack on Titan logo live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -415,8 +415,17 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | `ERDB_SHARP_CACHE_ITEMS` | Sharp default | Max cached items |
 | `ERDB_SHARP_CACHE_FILES` | Sharp default | Max cached files/handles |
 
-https://github.com/user-attachments/assets/5e1e2496-509a-4b85-ab45-d1f406576af4
+## Live Demo Cards
 
-https://github.com/user-attachments/assets/2385d7a1-c5da-4240-b016-d2880c6d1184
+<table>
+  <tr>
+    <td><strong>Live Configurator Workspace</strong><br>The current configurator and preview workspace running on `erdb.ibbylabs.dev`.</td>
+    <td><strong>Live Addon Proxy Workspace</strong><br>The current proxy panel and export flow running on `erdb.ibbylabs.dev`.</td>
+  </tr>
+  <tr>
+    <td><a href="https://erdb.ibbylabs.dev/#preview"><img src="docs/images/demo-videos/configurator-live-demo.png" alt="Open the live ERDB configurator workspace" width="420"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/#proxy"><img src="docs/images/demo-videos/addon-proxy-live-demo.png" alt="Open the live ERDB addon proxy workspace" width="304"></a></td>
+  </tr>
+</table>
 
 © 2026 ERDB Project

@@ -46,6 +46,7 @@ type StreamBadgeKey = '4k' | 'hdr' | 'dolbyvision' | 'dolbyatmos' | 'remux';
 type BadgeKey = RatingPreference | StreamBadgeKey;
 type QualityBadgesSide = 'left' | 'right';
 type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
+type LogoBackground = 'transparent' | 'dark';
 type StreamQualityFlags = {
   has4k: boolean;
   hasHdr: boolean;
@@ -481,6 +482,14 @@ const normalizeQualityBadgesStyle = (value?: string | null): RatingStyle => {
     return normalized;
   }
   return DEFAULT_QUALITY_BADGES_STYLE;
+};
+
+const normalizeLogoBackground = (value?: string | null): LogoBackground => {
+  const normalized = (value || '').trim().toLowerCase();
+  if (normalized === 'dark' || normalized === 'solid' || normalized === 'canvas') {
+    return 'dark';
+  }
+  return 'transparent';
 };
 
 const createEmptyStreamFlags = (): StreamQualityFlags => ({
@@ -1534,6 +1543,7 @@ type FastRenderInput = {
   posterRatingsMaxPerSide: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
   ratingStyle: RatingStyle;
+  logoBackground: LogoBackground;
   topBadges: RatingBadge[];
   bottomBadges: RatingBadge[];
   leftBadges: RatingBadge[];
@@ -3319,7 +3329,9 @@ const renderWithSharp = async (
 
     const background =
       input.imageType === 'logo'
-        ? { r: 0, g: 0, b: 0, alpha: 0 }
+        ? input.logoBackground === 'dark'
+          ? { r: 17, g: 24, b: 39, alpha: 1 }
+          : { r: 0, g: 0, b: 0, alpha: 0 }
         : { r: 17, g: 17, b: 17, alpha: 1 };
 
     const pipeline = sharp({
@@ -3433,6 +3445,7 @@ export async function GET(
     : type === 'logo'
       ? 'plain'
       : DEFAULT_RATING_STYLE;
+  const logoBackground = normalizeLogoBackground(request.nextUrl.searchParams.get('logoBackground'));
   const mdblistKey = request.nextUrl.searchParams.get('mdblistKey') || request.nextUrl.searchParams.get('mdblist_key');
   const tmdbKey = request.nextUrl.searchParams.get('tmdbKey') || request.nextUrl.searchParams.get('tmdb_key');
 
@@ -4864,6 +4877,7 @@ export async function GET(
           posterRatingsMaxPerSide,
           backdropRatingsLayout,
           ratingStyle,
+          logoBackground,
           topBadges: topRatingBadges,
           bottomBadges: bottomRatingBadges,
           leftBadges: leftRatingBadges,

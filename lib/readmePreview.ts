@@ -86,7 +86,8 @@ const README_PREVIEW_DEFINITIONS: ReadonlyArray<ReadmePreviewDefinition> = [
     params: {
       lang: 'en',
       logoRatings: 'tmdb,imdb',
-      ratingStyle: 'plain',
+      ratingStyle: 'glass',
+      logoBackground: 'dark',
     },
   },
   {
