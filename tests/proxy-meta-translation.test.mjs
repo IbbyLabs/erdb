@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveTmdbTranslationTarget } from '../lib/proxyMetaTranslation.ts';
+import { mergeTranslatedTextFields, resolveTmdbTranslationTarget } from '../lib/proxyMetaTranslation.ts';
 
 test('anime metadata translation falls back through MAL reverse mapping', async () => {
   const tmdbUrls = [];
@@ -145,4 +145,57 @@ test('anime mapping translation falls back to the alternate TMDB media type when
   assert.equal(tmdbUrls.length, 2);
   assert.match(tmdbUrls[0], /\/tv\/1429\?/);
   assert.match(tmdbUrls[1], /\/movie\/1429\?/);
+});
+
+test('translated metadata preserves existing upstream title and overview text', () => {
+  assert.deepEqual(
+    mergeTranslatedTextFields(
+      {
+        name: 'Cowboy Bebop',
+        description: 'Existing richer overview',
+      },
+      'Titre traduit',
+      'Resume traduit',
+    ),
+    {
+      name: 'Cowboy Bebop',
+      description: 'Existing richer overview',
+    },
+  );
+});
+
+test('translated metadata fills only missing or placeholder top-level text fields', () => {
+  assert.deepEqual(
+    mergeTranslatedTextFields(
+      {
+        title: 'N/A',
+        overview: '  ',
+      },
+      'Titre traduit',
+      'Resume traduit',
+    ),
+    {
+      title: 'N/A',
+      overview: '  ',
+      name: 'Titre traduit',
+      description: 'Resume traduit',
+    },
+  );
+});
+
+test('translated metadata preserves existing episode title while filling missing overview text', () => {
+  assert.deepEqual(
+    mergeTranslatedTextFields(
+      {
+        title: 'Episode 1',
+        description: '',
+      },
+      'Episode 1 traduit',
+      'Resume episode traduit',
+    ),
+    {
+      title: 'Episode 1',
+      description: 'Resume episode traduit',
+    },
+  );
 });

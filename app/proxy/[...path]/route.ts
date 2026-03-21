@@ -10,7 +10,7 @@ import {
   type ProxyConfig,
 } from '@/lib/addonProxy';
 import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
-import { resolveTmdbTranslationTarget } from '@/lib/proxyMetaTranslation';
+import { mergeTranslatedTextFields, resolveTmdbTranslationTarget } from '@/lib/proxyMetaTranslation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -122,47 +122,6 @@ const fetchAnimeMappingJson = createCachedJsonFetcher(
   ANIME_MAPPING_FAILED_TTL_MS,
 );
 
-const translateTextFields = (
-  target: Record<string, unknown>,
-  translatedTitle: string | null,
-  translatedOverview: string | null,
-) => {
-  if (translatedTitle) {
-    if (typeof target.name === 'string') {
-      target.name = translatedTitle;
-    }
-    if (typeof target.title === 'string') {
-      target.title = translatedTitle;
-    }
-    if (typeof target.name !== 'string' && typeof target.title !== 'string') {
-      target.name = translatedTitle;
-    }
-  }
-
-  if (translatedOverview) {
-    if (typeof target.description === 'string') {
-      target.description = translatedOverview;
-    }
-    if (typeof target.overview === 'string') {
-      target.overview = translatedOverview;
-    }
-    if (typeof target.plot === 'string') {
-      target.plot = translatedOverview;
-    }
-    if (typeof target.synopsis === 'string') {
-      target.synopsis = translatedOverview;
-    }
-    if (
-      typeof target.description !== 'string' &&
-      typeof target.overview !== 'string' &&
-      typeof target.plot !== 'string' &&
-      typeof target.synopsis !== 'string'
-    ) {
-      target.description = translatedOverview;
-    }
-  }
-};
-
 const mapWithConcurrency = async <T, R>(
   items: T[],
   limit: number,
@@ -217,7 +176,7 @@ const translateMetaPayload = async (
   const translatedOverview = typeof details.overview === 'string' ? details.overview : null;
 
   const nextMeta: Record<string, unknown> = { ...meta };
-  translateTextFields(nextMeta, translatedTitle, translatedOverview);
+  mergeTranslatedTextFields(nextMeta, translatedTitle, translatedOverview);
 
   if (tmdbType === 'tv' && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
     const videos = nextMeta.videos as Array<Record<string, unknown>>;
@@ -256,7 +215,7 @@ const translateMetaPayload = async (
       if (!episodeTitle && !episodeOverview) return video;
 
       const nextVideo = { ...video };
-      translateTextFields(nextVideo, episodeTitle, episodeOverview);
+      mergeTranslatedTextFields(nextVideo, episodeTitle, episodeOverview);
       return nextVideo;
     });
 

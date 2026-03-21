@@ -6,6 +6,9 @@ export type TmdbTranslationTarget = {
   details: Record<string, unknown>;
 };
 
+const TITLE_FIELD_KEYS = ['name', 'title'] as const;
+const OVERVIEW_FIELD_KEYS = ['description', 'overview', 'plot', 'synopsis'] as const;
+
 type AnimeMappingProvider = 'mal' | 'anilist' | 'kitsu' | 'anidb';
 type AnimeMappingLookup = {
   provider: AnimeMappingProvider;
@@ -23,6 +26,36 @@ const toNonEmptyString = (value: unknown) => {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
   return normalized || null;
+};
+
+const PLACEHOLDER_TEXT_SET = new Set(['-', '--', 'n/a', 'na', 'none', 'null', 'undefined', 'unknown', 'tbd']);
+
+const hasMeaningfulText = (value: unknown) => {
+  const normalized = toNonEmptyString(value);
+  if (!normalized) return false;
+  return !PLACEHOLDER_TEXT_SET.has(normalized.toLowerCase());
+};
+
+export const mergeTranslatedTextFields = (
+  target: Record<string, unknown>,
+  translatedTitle: string | null,
+  translatedOverview: string | null,
+) => {
+  if (translatedTitle) {
+    const hasExistingTitle = TITLE_FIELD_KEYS.some((key) => hasMeaningfulText(target[key]));
+    if (!hasExistingTitle) {
+      target.name = translatedTitle;
+    }
+  }
+
+  if (translatedOverview) {
+    const hasExistingOverview = OVERVIEW_FIELD_KEYS.some((key) => hasMeaningfulText(target[key]));
+    if (!hasExistingOverview) {
+      target.description = translatedOverview;
+    }
+  }
+
+  return target;
 };
 
 const normalizeTmdbId = (value: unknown) => {
