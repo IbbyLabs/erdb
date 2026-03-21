@@ -178,6 +178,13 @@ function removeUserFacingHyphens(text) {
     return normalized;
   }
 
+  const preservedTerms = [];
+  normalized = normalized.replace(/\bISO 639-1\b/gi, (match) => {
+    const token = `__ERDB_PRESERVE_${preservedTerms.length}__`;
+    preservedTerms.push(match);
+    return token;
+  });
+
   normalized = normalized
     .replace(/^[ \t]*-\s+/gm, '• ')
     .replace(/\s-\s/g, ', ')
@@ -192,6 +199,7 @@ function removeUserFacingHyphens(text) {
   }
 
   return normalized
+    .replace(/__ERDB_PRESERVE_(\d+)__/g, (_, index) => preservedTerms[Number(index)] || '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

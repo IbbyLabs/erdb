@@ -1,7 +1,33 @@
 {
-  "generatedAt": "2026-03-21T03:31:45.391Z",
+  "generatedAt": "2026-03-21T03:37:05.149Z",
   "total": 120,
   "commits": [
+    {
+      "hash": "2c435332a13cb685a425f18681175816ae7341cc",
+      "shortHash": "2c43533",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:32:59Z",
+      "type": "chore",
+      "title": "release 2.20.3",
+      "body": null
+    },
+    {
+      "hash": "d429aff49ed7be941001c3e37a1e935490e7527a",
+      "shortHash": "d429aff",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:32:48Z",
+      "type": "docs",
+      "title": "restore standard ISO notation",
+      "body": "Bring back the correct ISO 639-1 label in the docs and prompt copy while keeping the rest of the full page cleanup in place.\n\nThe rendered page text now only includes the intended standard hyphen in 639 to 1."
+    },
     {
       "hash": "a122785b2c1885ebffc403b9939a4aea4ba29267",
       "shortHash": "a122785",
@@ -1534,32 +1560,6 @@
       "date": "2026-03-18T02:10:32Z",
       "type": "fix",
       "title": "improve upstream TMDB error classification",
-      "body": null
-    },
-    {
-      "hash": "57a34986f029cae6021de65e4c78eef63ad4c84d",
-      "shortHash": "57a3498",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T00:35:39Z",
-      "type": "chore",
-      "title": "release 2.7.1",
-      "body": null
-    },
-    {
-      "hash": "caa44424aab1a73f93ea33f0f60e907278dfc1cd",
-      "shortHash": "caa4442",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T00:20:22Z",
-      "type": "chore",
-      "title": "cleanup",
       "body": null
     }
   ]

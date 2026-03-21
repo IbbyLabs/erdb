@@ -93,3 +93,14 @@ test('rewrites low signal conventional titles into area based copy', () => {
   assert.equal(normalized.title, 'refresh README guide');
   assert.equal(normalized.body, null);
 });
+
+test('preserves standard technical hyphens such as ISO 639-1', () => {
+  const normalized = normalizeCommitForDisplay({
+    subject: 'docs: restore standard ISO 639-1 notation',
+    body: 'Bring back ISO 639-1 labels in the docs.',
+    files: ['app/page.tsx'],
+  });
+
+  assert.equal(normalized.title, 'restore standard ISO 639-1 notation');
+  assert.equal(normalized.body, 'Bring back ISO 639-1 labels in the docs.');
+});
