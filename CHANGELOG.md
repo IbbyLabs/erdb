@@ -3,6 +3,29 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.0] - 21/03/2026
+
+### Added
+* add dedicated README preview gallery route
+
+### Fixed
+* fall back to Kitsu assets when reverse mappings miss TMDB
+  
+  Reverse mapped anime IDs could still fail in the image renderer when animemapping returned no TMDB target or when the resolved TMDB record no longer produced usable media. That branch exited before the existing raw Kitsu fallback helpers had a chance to recover poster, backdrop, or logo output.
+  
+  • try the reverse Kitsu lookup before returning a hard 404 for anime native IDs
+  • reuse the raw Kitsu asset fallback when TMDB reverse mapping succeeds but the follow up TMDB fetch still produces no media
+  • accept anidb prefixed IDs in proxy normalization so addon rewrites stay aligned with the main renderer
+  • cover the proxy side anidb normalization path in the regression suite
+
+### Documentation
+* regenerate recent changes feed for the anime fallback fix
+  
+  Refresh public/commits.json after the anime fallback and proxy normalization changes so the tracked recent changes feed reflects the post v2.20.5 work that is about to ship in the next release.
+
+### Other Changes
+* pass README preview env vars through docker compose
+
 ## [v2.20.5] - 21/03/2026
 
 ### Documentation
