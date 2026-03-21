@@ -3,6 +3,15 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.3] - 21/03/2026
+
+### Fixed
+* buffer proxied preview images before returning them
+  
+  The live README preview route itself was reachable, but successful preview slugs still failed at the edge while direct image URLs worked. That pointed at the nested image passthrough path rather than slug resolution or key lookup.
+  
+  Buffer the fetched preview payload into an ArrayBuffer before constructing the outgoing response instead of re streaming the nested fetch body directly. Preserve the important response headers and set the final content length from the buffered payload so reverse proxies receive a normal concrete image response.
+
 ## [v2.21.2] - 21/03/2026
 
 ### Other Changes
