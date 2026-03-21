@@ -3,6 +3,23 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.1] - 21/03/2026
+
+### Fixed
+* route live gallery requests through the internal app origin
+  
+  The README preview proxy was building its target URL from the public request origin even though production already injects PREVIEW_INTERNAL_ORIGIN for internal self fetches. Behind Cloudflare and the reverse proxy that caused the live gallery route to collapse into a blank 500 while the underlying poster and backdrop endpoints were still healthy.
+  
+  • prefer PREVIEW_INTERNAL_ORIGIN when building the internal preview target URL
+  • fall back to the public request origin when the internal override is missing or invalid
+  • return a controlled 502 text response when the internal fetch itself fails instead of bubbling an empty 500
+  • add regression coverage for the preview origin resolution helper
+
+### Documentation
+* regenerate recent changes feed after the preview fix
+  
+  Refresh public/commits.json after the README live preview route fix so the tracked recent changes feed reflects the latest main branch work.
+
 ## [v2.21.0] - 21/03/2026
 
 ### Added
