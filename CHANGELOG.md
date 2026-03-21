@@ -26,7 +26,7 @@
 ### Documentation
 * restore standard ISO notation
   
-  Bring back the correct ISO 639 to 1 label in the docs and prompt copy while keeping the rest of the full page cleanup in place.
+  Bring back the correct ISO 639-1 label in the docs and prompt copy while keeping the rest of the full page cleanup in place.
   
   The rendered page text now only includes the intended standard hyphen in 639 to 1.
 
@@ -148,6 +148,11 @@
 ## [v2.16.2] - 20/03/2026
 
 ### Added
+* add automated changelog management
+  
+  • Generated initial CHANGELOG.md from git history.
+  • Added scripts/update changelog.mjs for automated updates.
+  • Integrated changelog updates into npm version lifecycle.
 * implement select all as default for rating preferences
 * normalize ratings to 0 to 10 scale and optimize backdrop layout for multi row
   
@@ -227,6 +232,15 @@
   
   Also includes the User Agent fix from v2.13.5 to bypass Cloudflare
   bot protection on Torrentio.
+* add per request log to verify deployed code version
+  
+  Logs every image request with type, id, and streamBadges param
+  to confirm the deployed Docker image contains the latest code.
+* add diagnostic logging for Torrentio fetch failures
+  
+  Logs warnings when Torrentio fetch throws (network/timeout), returns
+  non 200, or has zero streams. This helps diagnose why stream quality
+  badges are not appearing in production.
 * added an override for badges
 * tighten the merged configurator workspace layout
   
@@ -297,11 +311,16 @@
   
   • revise README instructions and bump package version to 2.2.0 for this feature release
 * align branding and chrome theme
+* add renovate configuration
 * split ci and publish
 * add docker publish workflow
 
 ### Fixed
 * recent changes ui
+* normalize date formats to UK standard (DD/MM/YYYY)
+  
+  • Updated CHANGELOG.md history with UK date format.
+  • Modified update changelog.mjs to generate UK format dates for new entries.
 * display 10.0 as 10 for cleaner visuals
   
   Rounding values of 10.0 to 10 to ensure a consistent look across providers when they reach the maximum normalized rating.
@@ -367,6 +386,9 @@
   • remove effect driven setState patterns flagged by react hooks/set state in effect
   
   • add lint regression test for app/page.tsx and wire npm test script
+* bump renderer cache; set ratings to bottom
+  
+  Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster backdrop logo v27' to 'poster backdrop logo v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left right' layouts now map to 'bottom', standardizing quality badge positioning. (app/[type]/[id]/route.tsx)
 * lint cleanup
 
 ### Documentation
@@ -429,24 +451,6 @@
   • Filtered out redundant 'chore: release' and synchronization commits.
   • Added a dedicated 'Documentation' section for 'docs:' commits.
   • Improved commit grouping and section headings for better readability.
-* normalize date formats to UK standard (DD/MM/YYYY)
-  
-  • Updated CHANGELOG.md history with UK date format.
-  • Modified update changelog.mjs to generate UK format dates for new entries.
-* add automated changelog management
-  
-  • Generated initial CHANGELOG.md from git history.
-  • Added scripts/update changelog.mjs for automated updates.
-  • Integrated changelog updates into npm version lifecycle.
-* add per request log to verify deployed code version
-  
-  Logs every image request with type, id, and streamBadges param
-  to confirm the deployed Docker image contains the latest code.
-* add diagnostic logging for Torrentio fetch failures
-  
-  Logs warnings when Torrentio fetch throws (network/timeout), returns
-  non 200, or has zero streams. This helps diagnose why stream quality
-  badges are not appearing in production.
 * remove temporary commit file
 * repo wide performance and security fixes
   
@@ -485,18 +489,14 @@
   
   • git: keep local planning notes local by ignoring future stuff.md
 * cleanup
-* Create LICENSE
+* create LICENSE
 * disable next telemetry in docker, pin node to 22
 * adjust renovate config
 * enable fork processing
 * enable renovate onboarding
 * enable docker layer cache
-* add renovate configuration
 * adjust docker base image
 * update proxy and docker setup
-* Bump renderer cache; set ratings to bottom
-  
-  Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster backdrop logo v27' to 'poster backdrop logo v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left right' layouts now map to 'bottom', standardizing quality badge positioning. (app/[type]/[id]/route.tsx)
 * adjust release script
 
 ## [main-latest] - 20/03/2026
@@ -520,16 +520,18 @@
 
 ## [v2.16.0] - 19/03/2026
 
-### Other Changes
-* normalize date formats to UK standard (DD/MM/YYYY)
-  
-  • Updated CHANGELOG.md history with UK date format.
-  • Modified update changelog.mjs to generate UK format dates for new entries.
+### Added
 * add automated changelog management
   
   • Generated initial CHANGELOG.md from git history.
   • Added scripts/update changelog.mjs for automated updates.
   • Integrated changelog updates into npm version lifecycle.
+
+### Fixed
+* normalize date formats to UK standard (DD/MM/YYYY)
+  
+  • Updated CHANGELOG.md history with UK date format.
+  • Modified update changelog.mjs to generate UK format dates for new entries.
 
 ## [v2.15.0] - 19/03/2026
 
@@ -544,9 +546,7 @@
   
   Rounding values of 10.0 to 10 to ensure a consistent look across providers when they reach the maximum normalized rating.
 * update image rendering route
-
-### Other Changes
-* Normalize ratings to a 0 to 10 scale and improve anime/backdrop badge behavior
+* normalize ratings to a 0 to 10 scale and improve anime/backdrop badge behavior
   
   This update standardizes displayed ratings across poster, backdrop, and logo outputs by converting all providers to a 0 to 10 visual scale. It also improves backdrop rating rendering with dynamic multi row layouts and prioritizes anime specific providers like MyAnimeList, AniList, and Kitsu when anime metadata is detected.
 
@@ -661,11 +661,23 @@
 * update homepage and configurator
 * update homepage and configurator
 * update homepage and configurator
+* add show/hide toggles for config and proxy
+  
+  Add ability to toggle visibility of the ERDB config string and generated proxy URL. Import Eye and EyeOff icons, add maskSensitiveText helper, and new state (showConfigString, showProxyUrl) with effects to reset when their values are cleared. Compute displayedConfigString/displayedProxyUrl to show masked values when hidden and update UI: add toggle buttons, adjust text styling to prevent selection when masked, and disable toggles when no value is available.
+* add posterQualityBadgesPosition option
+  
+  Introduce posterQualityBadgesPosition across the codebase: add to ERDB_OPTIONAL_PARAMS, include in the ProxyConfig type, and add to PROXY_OPTIONAL_STRING_KEYS. This ensures the poster quality badge position setting is recognized, typed, and treated as an optional string key for proxy handling.
+* add posterQualityBadgesPosition support
+  
+  Introduce a new posterQualityBadgesPosition setting to control quality badge placement for poster top/bottom layouts. README updated with docs and URL parameter. Server: add types, normalization, resolver and use the new value in rendering logic and URL parsing so badge placement is computed correctly. Client: add UI control, state, validation and include the setting in preview, exported config and proxy manifest URLs; refactor preview/config/proxy generation to use useMemo and a client origin helper, and use requestAnimationFrame when loading stored keys for smoother startup.
 
 ### Fixed
 * update multiple project areas
   
   Touches image rendering route and project internals.
+* handle 3 badge top row in left right layout
+  
+  Add support for an extra centered top badge when using the left right poster ratings layout. Reserved top rows are now accounted for in sizing (getMaxBadgeColumnCount, fitPosterBadgeMetricsToHeight) so column heights subtract the reserved top row space. splitPosterBadgesByLayout now surfaces a single top badge when the total is odd, and renderWithSharp gains helpers and options to correctly compose a three badge top row and to align side columns (composeEdgeAlignedPosterBadge, updated composeBadgeColumn, splitAcrossHalves/spreadAcrossThirds flags). The GET flow is updated to compute fitted columns, reservedTopRows and effective per side limits when the extra top badge is present. Also update posterRatingLayout helpers to include the additional top center badge in counts and human readable descriptions.
 
 ### Performance
 * remove metadata cache hard row cap
@@ -687,18 +699,6 @@
   Update SHOW/HIDE toggle buttons from flat bg zinc 800 to
   bg violet 500/20 with violet 300 text and violet 500/30 border,
   matching the purple accent theme used throughout the page.
-* Add show/hide toggles for config and proxy
-  
-  Add ability to toggle visibility of the ERDB config string and generated proxy URL. Import Eye and EyeOff icons, add maskSensitiveText helper, and new state (showConfigString, showProxyUrl) with effects to reset when their values are cleared. Compute displayedConfigString/displayedProxyUrl to show masked values when hidden and update UI: add toggle buttons, adjust text styling to prevent selection when masked, and disable toggles when no value is available.
-* Add posterQualityBadgesPosition option
-  
-  Introduce posterQualityBadgesPosition across the codebase: add to ERDB_OPTIONAL_PARAMS, include in the ProxyConfig type, and add to PROXY_OPTIONAL_STRING_KEYS. This ensures the poster quality badge position setting is recognized, typed, and treated as an optional string key for proxy handling.
-* Add posterQualityBadgesPosition support
-  
-  Introduce a new posterQualityBadgesPosition setting to control quality badge placement for poster top/bottom layouts. README updated with docs and URL parameter. Server: add types, normalization, resolver and use the new value in rendering logic and URL parsing so badge placement is computed correctly. Client: add UI control, state, validation and include the setting in preview, exported config and proxy manifest URLs; refactor preview/config/proxy generation to use useMemo and a client origin helper, and use requestAnimationFrame when loading stored keys for smoother startup.
-* Handle 3 badge top row in left right layout
-  
-  Add support for an extra centered top badge when using the left right poster ratings layout. Reserved top rows are now accounted for in sizing (getMaxBadgeColumnCount, fitPosterBadgeMetricsToHeight) so column heights subtract the reserved top row space. splitPosterBadgesByLayout now surfaces a single top badge when the total is odd, and renderWithSharp gains helpers and options to correctly compose a three badge top row and to align side columns (composeEdgeAlignedPosterBadge, updated composeBadgeColumn, splitAcrossHalves/spreadAcrossThirds flags). The GET flow is updated to compute fitted columns, reservedTopRows and effective per side limits when the extra top badge is present. Also update posterRatingLayout helpers to include the additional top center badge in counts and human readable descriptions.
 
 ## [v2.13.8] - 19/03/2026
 
@@ -739,7 +739,7 @@
 
 ## [v2.13.4] - 19/03/2026
 
-### Other Changes
+### Added
 * add per request log to verify deployed code version
   
   Logs every image request with type, id, and streamBadges param
@@ -747,7 +747,7 @@
 
 ## [v2.13.3] - 19/03/2026
 
-### Other Changes
+### Added
 * add diagnostic logging for Torrentio fetch failures
   
   Logs warnings when Torrentio fetch throws (network/timeout), returns
@@ -917,9 +917,23 @@
 
 ### Added
 * update homepage and configurator
+* add translateMeta option and TMDB translation
+  
+  Introduce a translateMeta proxy option that lets the proxy fetch localized titles/plots from TMDB. UI: add checkbox, state, import/export support, and include translateMeta in generated config. Types: expose translateMeta in ProxyConfig and reserved params. Proxy: implement TMDB helpers (cached fetch, ERDB→TMDB resolution), text translation helpers, concurrent episode translation, and translateMetaPayload which is applied after image rewrites. Misc: small utility refactor for rating provider id checks.
+* add config export/import and refactor proxy UI
+  
+  Introduce config export/import (including optional API keys) and file import handling, with base64url encode/decode and JSON download helpers. Consolidate and persist TMDB/MDBList keys using safe localStorage helpers, remove duplicated proxy specific state in favor of the primary configurator state, and update proxy manifest generation to use the consolidated values. Add runtime validation/normalization helpers (type guards, URL normalization), adjust supported language entries to use escaped unicode flags/labels, and reorganize UI layout (grid changes, new Config Transfer section, simplified Addon Proxy panel) and copy/update behavior for proxy links.
+
+### Fixed
+* translate catalog metas concurrently
+  
+  For 'catalog' resources, first apply rewriteMetaImages to each meta, then run translateMetaPayload in parallel using mapWithConcurrency with a concurrency of 6 and assign the results back to payload.metas. This parallelizes translation work for improved performance while preserving the image rewrite step.
+* bump renderer cache; set ratings to bottom
+  
+  Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster backdrop logo v27' to 'poster backdrop logo v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left right' layouts now map to 'bottom', standardizing quality badge positioning. (app/[type]/[id]/route.tsx)
 
 ### Other Changes
-* Redesign homepage UI; add fonts & smooth scroll
+* redesign homepage UI; add fonts & smooth scroll
   
   Revamp homepage layout and styling, add Google fonts, and implement smooth anchor scrolling. Changes include:
   
@@ -930,19 +944,7 @@
   • Move/export/import controls into the configurator header; make config/proxy output areas scrollable (uses scrollbar hidden), update button/input styles and state driven visuals.
   
   Overall this commit modernizes the visual design, improves UX for anchor navigation, and centralizes font usage for consistent typography.
-* Translate catalog metas concurrently
-  
-  For 'catalog' resources, first apply rewriteMetaImages to each meta, then run translateMetaPayload in parallel using mapWithConcurrency with a concurrency of 6 and assign the results back to payload.metas. This parallelizes translation work for improved performance while preserving the image rewrite step.
-* Add translateMeta option and TMDB translation
-  
-  Introduce a translateMeta proxy option that lets the proxy fetch localized titles/plots from TMDB. UI: add checkbox, state, import/export support, and include translateMeta in generated config. Types: expose translateMeta in ProxyConfig and reserved params. Proxy: implement TMDB helpers (cached fetch, ERDB→TMDB resolution), text translation helpers, concurrent episode translation, and translateMetaPayload which is applied after image rewrites. Misc: small utility refactor for rating provider id checks.
-* Add config export/import and refactor proxy UI
-  
-  Introduce config export/import (including optional API keys) and file import handling, with base64url encode/decode and JSON download helpers. Consolidate and persist TMDB/MDBList keys using safe localStorage helpers, remove duplicated proxy specific state in favor of the primary configurator state, and update proxy manifest generation to use the consolidated values. Add runtime validation/normalization helpers (type guards, URL normalization), adjust supported language entries to use escaped unicode flags/labels, and reorganize UI layout (grid changes, new Config Transfer section, simplified Addon Proxy panel) and copy/update behavior for proxy links.
-* Create LICENSE
-* Bump renderer cache; set ratings to bottom
-  
-  Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster backdrop logo v27' to 'poster backdrop logo v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left right' layouts now map to 'bottom', standardizing quality badge positioning. (app/[type]/[id]/route.tsx)
+* create LICENSE
 
 ## [pre-upstream-2026-03-17] - 17/03/2026
 
@@ -969,7 +971,7 @@
   Add detailed preview error diagnostics for image load failures, including TMDB key hints and API/network messaging. Update hero overflow and mobile commit window sizing to prevent clipping and improve small screen layout.
 
 ### Other Changes
-* Create LICENSE
+* create LICENSE
 * disable next telemetry in docker, pin node to 22
 
 ## [v2.4.4] - 17/03/2026
@@ -1055,9 +1057,11 @@
 
 ## [v2.0.1] - 17/03/2026
 
+### Added
+* add renovate configuration
+
 ### Other Changes
 * enable docker layer cache
-* add renovate configuration
 
 ## [v2.0.0] - 17/03/2026
 
@@ -1071,8 +1075,8 @@
 
 ## [v1.0.4] - 17/03/2026
 
-### Other Changes
-* Bump renderer cache; set ratings to bottom
+### Fixed
+* bump renderer cache; set ratings to bottom
   
   Update FINAL_IMAGE_RENDERER_CACHE_VERSION from 'poster backdrop logo v27' to 'poster backdrop logo v32' to invalidate/update cached image outputs. Adjust renderWithSharp logic so poster rating placements for 'left', 'right', and 'left right' layouts now map to 'bottom', standardizing quality badge positioning. (app/[type]/[id]/route.tsx)
 
@@ -1098,17 +1102,28 @@
 ### Added
 * add docker publish workflow
 * update homepage and configurator
+* render poster title/logo overlays & bump cache
+  
+  Bump image renderer cache version to v25 and add support for rendering a centered poster title SVG or TMDB logo overlay for "clean" poster mode. Introduces pickPosterTitleFromMedia and passes posterTitleText/posterLogoUrl through the rendering pipeline (including selection of TMDB logoPath), includes kitsu fallback title in fallback asset results, and adds buildPosterTitleSvg + helper to generate optimized SVG title images. Rendering logic now composes a poster title/logo overlay above bottom badges, handles logo resizing, and updates badge placement/quality badge positioning to accommodate the overlay. Also updates caching logic to consider clean poster text as a reason to cache the final image and tightens UI preview logic (only 'top bottom' now shows poster quality badges side) in app/page.tsx.
+* add Torrentio stream quality badges & rendering
+  
+  Introduce stream/quality badges sourced from Torrentio and per type quality/rating controls. README: add new query/config params (streamBadges, posterStreamBadges, backdropStreamBadges, qualityBadgesSide, qualityBadgesStyle, poster/backdropQualityBadgesStyle and per type ratings overrides) and update URL build documentation. route.tsx: bump final image renderer cache version to v20; add Torrentio integration (fetchTorrentioBadges) with caching, dedupe in flight requests and TTL; new types (StreamBadgeKey, BadgeKey, StreamQualityFlags) and helpers to normalize settings and parse/merge stream flags from filenames. Add STREAM_BADGE_META, generation of quality badge SVGs (buildQualityBadgeSvg) and logic to include qualityBadges in the rendering pipeline for poster and backdrop (columns/rows, positioning, style). Update badge/build/render logic to accept quality badges and adjust provider icon mapping key type and some square style rendering details. Also add small fixes: support data: URIs for provider icons, add stream timing to server timing header, and adjust final image cache seed to account for stream badge state. Other file updates reflect README and UI/config changes.
 * update homepage and configurator
 * update homepage and configurator
 * add addon proxy support
 * update homepage and configurator
 * update homepage and configurator
+* bootstrap ERDB project
 
 ### Fixed
 * update image rendering route
 * update image rendering route
 * update image rendering route
 * update image rendering route
+* handle square style stroke width in badge
+  
+  Update buildQualityBadgeSvg in app/[type]/[id]/route.tsx to add a specific strokeWidth case for style === 'square' (Math.max(1, Math.round(h * 0.05))). Previously the ternary only handled 'glass' and a default; this change ensures square badges use a slightly smaller stroke. Also split the expression across multiple lines for readability.
+* fix typo in HuggingFace Guide section
 * update image rendering route
 * update multiple project areas
   
@@ -1175,21 +1190,10 @@
 * update multiple project areas
   
   Touches project tooling and README guide.
-* Render poster title/logo overlays & bump cache
-  
-  Bump image renderer cache version to v25 and add support for rendering a centered poster title SVG or TMDB logo overlay for "clean" poster mode. Introduces pickPosterTitleFromMedia and passes posterTitleText/posterLogoUrl through the rendering pipeline (including selection of TMDB logoPath), includes kitsu fallback title in fallback asset results, and adds buildPosterTitleSvg + helper to generate optimized SVG title images. Rendering logic now composes a poster title/logo overlay above bottom badges, handles logo resizing, and updates badge placement/quality badge positioning to accommodate the overlay. Also updates caching logic to consider clean poster text as a reason to cache the final image and tightens UI preview logic (only 'top bottom' now shows poster quality badges side) in app/page.tsx.
-* Handle square style stroke width in badge
-  
-  Update buildQualityBadgeSvg in app/[type]/[id]/route.tsx to add a specific strokeWidth case for style === 'square' (Math.max(1, Math.round(h * 0.05))). Previously the ternary only handled 'glass' and a default; this change ensures square badges use a slightly smaller stroke. Also split the expression across multiple lines for readability.
-* Add Torrentio stream quality badges & rendering
-  
-  Introduce stream/quality badges sourced from Torrentio and per type quality/rating controls. README: add new query/config params (streamBadges, posterStreamBadges, backdropStreamBadges, qualityBadgesSide, qualityBadgesStyle, poster/backdropQualityBadgesStyle and per type ratings overrides) and update URL build documentation. route.tsx: bump final image renderer cache version to v20; add Torrentio integration (fetchTorrentioBadges) with caching, dedupe in flight requests and TTL; new types (StreamBadgeKey, BadgeKey, StreamQualityFlags) and helpers to normalize settings and parse/merge stream flags from filenames. Add STREAM_BADGE_META, generation of quality badge SVGs (buildQualityBadgeSvg) and logic to include qualityBadges in the rendering pipeline for poster and backdrop (columns/rows, positioning, style). Update badge/build/render logic to accept quality badges and adjust provider icon mapping key type and some square style rendering details. Also add small fixes: support data: URIs for provider icons, add stream timing to server timing header, and adjust final image cache seed to account for stream badge state. Other file updates reflect README and UI/config changes.
-* Fix typo in HuggingFace Guide section
 * update project internals
   
   Touches project internals and project tooling.
 * update project internals
   
   Touches project internals, project tooling, and README guide.
-* bootstrap ERDB project
 

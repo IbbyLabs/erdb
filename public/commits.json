@@ -1,10 +1,36 @@
 {
-  "generatedAt": "2026-03-21T03:37:05.149Z",
+  "generatedAt": "2026-03-21T03:40:04.971Z",
   "total": 120,
   "commits": [
     {
-      "hash": "2c435332a13cb685a425f18681175816ae7341cc",
-      "shortHash": "2c43533",
+      "hash": "3f3494effb917e6320ee0ceab98bcefa787b1e29",
+      "shortHash": "3f3494e",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:37:41Z",
+      "type": "chore",
+      "title": "release 2.20.4",
+      "body": null
+    },
+    {
+      "hash": "1503fcbf4fbed92b73958e6b64431a7d6e1ad160",
+      "shortHash": "1503fcb",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:37:37Z",
+      "type": "fix",
+      "title": "preserve standard ISO notation in user facing commit copy",
+      "body": "Keep standard labels such as ISO 639-1 intact when commit titles and bodies are normalized for the recent changes feed and changelog.\n\nAdd regression coverage for the preserved standard notation and regenerate the tracked commit feed from the updated rules."
+    },
+    {
+      "hash": "6dc37f700aed435baa1f5bb02e2073f22447f4c7",
+      "shortHash": "6dc37f7",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -16,8 +42,8 @@
       "body": null
     },
     {
-      "hash": "d429aff49ed7be941001c3e37a1e935490e7527a",
-      "shortHash": "d429aff",
+      "hash": "4276f5d9221f427da2a9b133ba011f2f3cf3fdc0",
+      "shortHash": "4276f5d",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -29,8 +55,8 @@
       "body": "Bring back the correct ISO 639-1 label in the docs and prompt copy while keeping the rest of the full page cleanup in place.\n\nThe rendered page text now only includes the intended standard hyphen in 639 to 1."
     },
     {
-      "hash": "a122785b2c1885ebffc403b9939a4aea4ba29267",
-      "shortHash": "a122785",
+      "hash": "bee5fd88a7016a436ad37f8c554ac590fe7cd580",
+      "shortHash": "bee5fd8",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -42,8 +68,8 @@
       "body": "Refresh the docs, prompt, and metadata translation copy so the visible page text uses plain language without hyphenated phrases.\n\nAccept spaced layout names such as \"top bottom\", \"left right\", and \"right vertical\" so the updated docs and examples stay accurate.\n\nAdd a regression test for spaced layout normalization and keep the rendered page text clean end to end."
     },
     {
-      "hash": "5cb6ceacf90134d57be4c60dc79c89b61360576d",
-      "shortHash": "5cb6cea",
+      "hash": "ee38a78c5470afd3c473c524001d069792b21e40",
+      "shortHash": "ee38a78",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -55,8 +81,8 @@
       "body": null
     },
     {
-      "hash": "db4343843c4e002b962f913e48bdc2abcf9b1e5e",
-      "shortHash": "db43438",
+      "hash": "43f22aba273509021a1e3bdb6e258ddbfb60813d",
+      "shortHash": "43f22ab",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -68,8 +94,8 @@
       "body": "Normalize user facing commit titles and bodies before they reach the recent changes panel and changelog output.\n\nRewrite low signal history entries into clearer summaries, convert list marker dashes into bullet points, and strip hyphen compounds from display text while keeping git history intact."
     },
     {
-      "hash": "6753748b3dcd3e8cabd2b81cc46d0a6cf5120721",
-      "shortHash": "6753748",
+      "hash": "d60e64416e14902f92fbde4c491c0c68a17829ca",
+      "shortHash": "d60e644",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -81,8 +107,8 @@
       "body": null
     },
     {
-      "hash": "17b835d4874a103e050b24a413b510fcdc39f3ae",
-      "shortHash": "17b835d",
+      "hash": "e4b0ef38d7ec8f5fca7e65368989eaf2b481a7dd",
+      "shortHash": "e4b0ef3",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -94,8 +120,8 @@
       "body": "Apply the same requested language TMDB translation availability check to episode metadata that the top level proxy meta path already uses, so prefer requested language no longer overwrites episode titles or overviews from season detail responses unless TMDB exposes a real translation for that exact episode locale.\n\nAdd a reusable local smoke verifier that boots a mock upstream addon plus mock TMDB, anime mapping, AniList, and Kitsu services against a local Next server, and add seeded randomized merge tests so the translation rules are exercised across many title and overview combinations.\n\nAlso add a narrowly scoped non production test override for private upstream URLs so the local verifier can drive the real proxy route without weakening the production SSRF checks."
     },
     {
-      "hash": "e2e924142ff2a95e2596bf47588a51fd99290262",
-      "shortHash": "e2e9241",
+      "hash": "0c5490137836e348ab4a611a35533850b44ed6ed",
+      "shortHash": "0c54901",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -107,8 +133,8 @@
       "body": null
     },
     {
-      "hash": "723347eef48bc349739614b7d4656f17bc0e616f",
-      "shortHash": "723347e",
+      "hash": "21db2f712cc00f013c82ceb3d21a823771e549a2",
+      "shortHash": "21db2f7",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -120,8 +146,8 @@
       "body": "Expose proxy side metadata translation controls end to end so generated proxy manifests can opt into localized metadata merging without changing the shared ERDB image renderer settings.\n\nAdd explicit fill missing, prefer upstream, prefer requested language, and prefer tmdb modes, verify exact TMDB translation availability before requested language replacement, and use AniList or Kitsu text as a fallback when anime native IDs cannot get strong TMDB text.\n\nAlso attach optional _erdbMetaTranslation provenance data for debugging, wire the new settings through saved UI config and the configurator, update the README, and add regression coverage for translation target resolution, selection modes, and proxy payload encoding."
     },
     {
-      "hash": "1e953b4b6e7411e71f2003494de86353bcb1f1e4",
-      "shortHash": "1e953b4",
+      "hash": "629c0d8e9209c041ea710f42ab2df2840408d7e1",
+      "shortHash": "629c0d8",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -133,8 +159,8 @@
       "body": null
     },
     {
-      "hash": "26fabfc881f6b3b0ff2215e001d62ad7b690d3aa",
-      "shortHash": "26fabfc",
+      "hash": "e4933833bd38e94d2bbb3d12f60bb9f1a98c0125",
+      "shortHash": "e493383",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -146,8 +172,8 @@
       "body": "Change translateMeta merging so localized TMDB text no longer blindly overwrites addon provided titles and overviews.\n\nPreserve existing upstream title and overview fields when they already contain meaningful text, treat common placeholders as missing, and only backfill missing metadata from TMDB after ID resolution succeeds.\n\nKeep anime reverse mapping as the fallback ID resolution path for anime native IDs, and add regression tests covering upstream preserving merge behavior plus placeholder and episode field backfilling."
     },
     {
-      "hash": "36459e137f59253c87271d714e1ed802b8d7e761",
-      "shortHash": "36459e1",
+      "hash": "979767cce481dc0c22da2b6fc209997ab28f853e",
+      "shortHash": "979767c",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -159,8 +185,8 @@
       "body": null
     },
     {
-      "hash": "184c02a8281c05e6fc77655d1664df3bfa533440",
-      "shortHash": "184c02a",
+      "hash": "b53b4b3f8019d2957e9efef1d0d834f4dd4a78e8",
+      "shortHash": "b53b4b3",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -172,8 +198,8 @@
       "body": "Route proxy metadata translation through a dedicated resolver that keeps the existing direct TMDB and IMDb path first, and only falls back to anime reverse mapping for anime native IDs when the direct path does not apply.\n\nUse the Stremio anime mapping service to resolve mal/myanimelist, anilist, kitsu, and anidb IDs to TMDB, then probe the preferred TV/movie order before fetching localized TMDB details for translated titles, overviews, and episode metadata.\n\nAlso add cached anime mapping fetches plus regression tests covering MAL alias normalization, direct path precedence over anime fallback, and alternate media type fallback when the preferred TMDB type is missing."
     },
     {
-      "hash": "df6b4f565c0fcdbce3ffc3b098f9bd5c47387e37",
-      "shortHash": "df6b4f5",
+      "hash": "ba54a840fa08522fc1696b2e8b1f9f50c0d00c01",
+      "shortHash": "ba54a84",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -185,8 +211,8 @@
       "body": null
     },
     {
-      "hash": "d989a1e65aee7970d6e08f90b0f3f5b8d9f6c27f",
-      "shortHash": "d989a1e",
+      "hash": "3d3204010fab1ae3da006cd85171262723c09a03",
+      "shortHash": "3d32040",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -198,8 +224,8 @@
       "body": "Accept both mal:* and myanimelist:* addon IDs in proxy normalization, and canonicalize both forms to mal:* before building ERDB image URLs.\n\nThis keeps proxy side poster/background/logo rewrites aligned with the renderer's native anime mapping provider set, which recognizes mal as the canonical MyAnimeList provider prefix.\n\nAlso add regression coverage for MAL alias normalization so anime addons emitting either form continue to resolve stable ERDB image URLs."
     },
     {
-      "hash": "f98367371d10274d700405e8941c96fa27e66327",
-      "shortHash": "f983673",
+      "hash": "e614dfe4cf0c58435888dcfd1f098831504bb281",
+      "shortHash": "e614dfe",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -211,8 +237,8 @@
       "body": null
     },
     {
-      "hash": "596d9f4d8b1f01cf3f87b7ff37a0bb5ee83aa47c",
-      "shortHash": "596d9f4",
+      "hash": "90c7156c371e7094507f541d04337f04b2f399bd",
+      "shortHash": "90c7156",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -224,8 +250,8 @@
       "body": null
     },
     {
-      "hash": "01c27af2dfbb6850baf4713004e567273ef517c0",
-      "shortHash": "01c27af",
+      "hash": "1cdb09a217abcd6d0addfa378a020a508a20172e",
+      "shortHash": "1cdb09a",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -237,8 +263,8 @@
       "body": "Bring over the post v2.17.4 UX and rendering improvements while keeping the existing IbbyLabs branding, proxy flow, and security related behavior intact.\n\n• add hydration safe client origin handling for generated URLs\n• add offset aware smooth scrolling for nav, hero, and footer anchor links\n• add a prominent ERDB Discord support callout styled to match the landing page\n• keep the new support entry configurable with brand Discord env vars\n• only apply clean poster title and logo overlays when the selected poster is actually textless\n\nTests:\n• npm run lint\n• npm test\n• npx tsc noEmit"
     },
     {
-      "hash": "823ab5f6d14afaeabc0d7ff1cf654864857286af",
-      "shortHash": "823ab5f",
+      "hash": "0aa73708de4f86391c9d728087b50ca219901c52",
+      "shortHash": "0aa7370",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -250,8 +276,8 @@
       "body": null
     },
     {
-      "hash": "bfa2cd99caca93c0b7689c383c8f4bef5c38ce37",
-      "shortHash": "bfa2cd9",
+      "hash": "328c2d2beb218099619c9bd59fe6b4b124a40347",
+      "shortHash": "328c2d2",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -263,8 +289,8 @@
       "body": null
     },
     {
-      "hash": "7338c821a8815c1f1d39f16784ae5083a4122dbd",
-      "shortHash": "7338c82",
+      "hash": "dc4ca77f8e452a8de40c7e1573dca1327025f40d",
+      "shortHash": "dc4ca77",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -276,8 +302,8 @@
       "body": null
     },
     {
-      "hash": "b3bc6a671e0c0577245ed85494f099485532d003",
-      "shortHash": "b3bc6a6",
+      "hash": "968eff45e5195d0cbd1323168940877eca7197a7",
+      "shortHash": "968eff4",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -289,8 +315,8 @@
       "body": null
     },
     {
-      "hash": "c09bc3a8808bfdfd7bfd36a6e50d811cb6f7482d",
-      "shortHash": "c09bc3a",
+      "hash": "b734b20f25f615ddbe0b0c0b8c568d397d024a1f",
+      "shortHash": "b734b20",
       "author": {
         "name": "Bestia",
         "email": "233500038+realbestia1@users.noreply.github.com"
@@ -302,8 +328,8 @@
       "body": null
     },
     {
-      "hash": "c1b9c72629fcc504e0536168c34e2fb94663dc3f",
-      "shortHash": "c1b9c72",
+      "hash": "20f516ceadbcc3b04a3eb6eb9d2e2509bc42d50f",
+      "shortHash": "20f516c",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -315,8 +341,8 @@
       "body": null
     },
     {
-      "hash": "0c0604e3d6657243bd0a5211b94b2887f8badba0",
-      "shortHash": "0c0604e",
+      "hash": "343e2fedfc48d58683c82676f06a8b88b0d76077",
+      "shortHash": "343e2fe",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -328,8 +354,8 @@
       "body": "This update refactors the changelog script to capture full commit bodies (using %b) and correctly indent them in the Markdown output.\n\nIt also adds a rebuild flag to systematically backfill the entire project history, ensuring older commits also show their detailed descriptions in the changelog and the 'Recent Changes' UI."
     },
     {
-      "hash": "3639a5a5b8e9b92e62f58c74510d8904c2dc4b0f",
-      "shortHash": "3639a5a",
+      "hash": "41bece1b65da38a74486e2a557d2e068d06b34a4",
+      "shortHash": "41bece1",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -341,8 +367,8 @@
       "body": null
     },
     {
-      "hash": "59fe2e30414426b00cb807560a6609fb3ce76f6a",
-      "shortHash": "59fe2e3",
+      "hash": "74dff788333b441847bc57180b9ee70efe58c2d7",
+      "shortHash": "74dff78",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -354,8 +380,8 @@
       "body": null
     },
     {
-      "hash": "bcfbb24964d752b68cc4675f2957d8dffa5a3f1c",
-      "shortHash": "bcfbb24",
+      "hash": "336009039e82e9008da506c1b86bf38f5f84181c",
+      "shortHash": "3360090",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -367,8 +393,8 @@
       "body": null
     },
     {
-      "hash": "6f94ba2650a00fd6f62c19ce529dec800ef5d3ab",
-      "shortHash": "6f94ba2",
+      "hash": "795b2649a4520eeb9d773f33e9da7890fd5bb823",
+      "shortHash": "795b264",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -380,8 +406,8 @@
       "body": "• enhance [generate commits json.mjs] to include author/isUpstream metadata\n• add UI badges and custom styling in for upstream attribution\n• configure GitHub action to fetch full history (fetch depth: 0)"
     },
     {
-      "hash": "8bd6187c01a32a2ad54ec3a68ad65a201786aa15",
-      "shortHash": "8bd6187",
+      "hash": "f2f372ab926be1d6c5b2c4e1bb95ee5207c9c07c",
+      "shortHash": "f2f372a",
       "author": {
         "name": "Bestia",
         "email": "233500038+realbestia1@users.noreply.github.com"
@@ -393,8 +419,8 @@
       "body": null
     },
     {
-      "hash": "a8805ebb50b814aa00d70fcab6a0298f7f1826d3",
-      "shortHash": "a8805eb",
+      "hash": "8bd6592fb9c2cdafb4b8ad411594833de98fa0cc",
+      "shortHash": "8bd6592",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -406,8 +432,8 @@
       "body": null
     },
     {
-      "hash": "9afe30a139122ea942b36966684095ed797a9dbd",
-      "shortHash": "9afe30a",
+      "hash": "82ca7ab7a69f678f3d0f88b098d9e314a0ed9228",
+      "shortHash": "82ca7ab",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -419,8 +445,8 @@
       "body": null
     },
     {
-      "hash": "6fcb988a1c8dee9d2c8071a8e60aa9e89e3b7bd2",
-      "shortHash": "6fcb988",
+      "hash": "4d07ee05e1042e60c7ccd58b117baad298a2b21b",
+      "shortHash": "4d07ee0",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -432,8 +458,8 @@
       "body": null
     },
     {
-      "hash": "fcd806816ebf72b3e424628d9b5cb6adc56f8ecc",
-      "shortHash": "fcd8068",
+      "hash": "75f787e1fdd29de0ebf97d60d8ff7ef7e93b6dac",
+      "shortHash": "75f787e",
       "author": {
         "name": "Bestia",
         "email": "233500038+realbestia1@users.noreply.github.com"
@@ -445,8 +471,8 @@
       "body": null
     },
     {
-      "hash": "0134e41a13ec59b8754bf7f85ef9fc284a5a5ebd",
-      "shortHash": "0134e41",
+      "hash": "3fe6147f28a259d58abfb00d4774029727bf7551",
+      "shortHash": "3fe6147",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -458,8 +484,8 @@
       "body": null
     },
     {
-      "hash": "fe384a7b8a4e0f98f6a94fc675de5109a81bf6dc",
-      "shortHash": "fe384a7",
+      "hash": "f7dbdbe0ebbeaeaa4ec0888bc231301170472e17",
+      "shortHash": "f7dbdbe",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -471,8 +497,8 @@
       "body": null
     },
     {
-      "hash": "606ac044214e891cb9b86269fca4e58c93f4c6b1",
-      "shortHash": "606ac04",
+      "hash": "02436d9f44521e907f2a1195c4cb669a54b1c6e4",
+      "shortHash": "02436d9",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -484,8 +510,8 @@
       "body": null
     },
     {
-      "hash": "7b2489b0811dd47b4f0cc4cc3b9fe32777863673",
-      "shortHash": "7b2489b",
+      "hash": "7baa0291206b7b94893d1a0bcb8a100fb78c2269",
+      "shortHash": "7baa029",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -497,8 +523,8 @@
       "body": null
     },
     {
-      "hash": "4c6d80eb82922c2f556705dfec9a94877ae755a1",
-      "shortHash": "4c6d80e",
+      "hash": "19e3c28b66251eb4a90c86c567e615600269f8ca",
+      "shortHash": "19e3c28",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -510,8 +536,8 @@
       "body": null
     },
     {
-      "hash": "164a4a257a8f1ec42934e05fe45b9c5b052b8e01",
-      "shortHash": "164a4a2",
+      "hash": "244e0e174ccf7d052137bb58cc6c532158f8d2e2",
+      "shortHash": "244e0e1",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -523,8 +549,8 @@
       "body": null
     },
     {
-      "hash": "ce6b2dc84b2b2e7699700f359964b9606786374e",
-      "shortHash": "ce6b2dc",
+      "hash": "825999082d3505c6b2f63a5de26308021addad85",
+      "shortHash": "8259990",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -536,8 +562,8 @@
       "body": "• Stripped code comments from update changelog.mjs and core route file.\n• Removed boilerplate header from CHANGELOG.md.\n• Cleaned up JSX comments and example markers in home page view.tsx."
     },
     {
-      "hash": "f883434afae2d6d40469f4a134b8447b945a4e28",
-      "shortHash": "f883434",
+      "hash": "8807dea09c3895357c30fd59b452fc72ebdab205",
+      "shortHash": "8807dea",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -549,8 +575,8 @@
       "body": "• Filtered out redundant 'chore: release' and synchronization commits.\n• Added a dedicated 'Documentation' section for 'docs:' commits.\n• Improved commit grouping and section headings for better readability."
     },
     {
-      "hash": "97bb620b394cd26ec1e9a96173242d3b2222746b",
-      "shortHash": "97bb620",
+      "hash": "1501b60c15880ea7e9b0ed50389b6d9b23c5fdc0",
+      "shortHash": "1501b60",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -562,34 +588,34 @@
       "body": null
     },
     {
-      "hash": "0b74a9c59fd6798ede6e5bf756bb9bde05bbe4d2",
-      "shortHash": "0b74a9c",
+      "hash": "91f963be529a2ad1b66619f10c2641a405e212dd",
+      "shortHash": "91f963b",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
       },
       "isUpstream": false,
       "date": "2026-03-19T21:41:43Z",
-      "type": "chore",
+      "type": "fix",
       "title": "normalize date formats to UK standard (DD/MM/YYYY)",
       "body": "• Updated CHANGELOG.md history with UK date format.\n• Modified update changelog.mjs to generate UK format dates for new entries."
     },
     {
-      "hash": "f19a3972efe507cb1cbd2c10b47b059f9b2fc328",
-      "shortHash": "f19a397",
+      "hash": "067b309746055c35d29727acbb44d00a9c792868",
+      "shortHash": "067b309",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
       },
       "isUpstream": false,
       "date": "2026-03-19T21:39:00Z",
-      "type": "chore",
+      "type": "feat",
       "title": "add automated changelog management",
       "body": "• Generated initial CHANGELOG.md from git history.\n• Added scripts/update changelog.mjs for automated updates.\n• Integrated changelog updates into npm version lifecycle."
     },
     {
-      "hash": "d520e69a4b28f02f7b61c6909450929c00699184",
-      "shortHash": "d520e69",
+      "hash": "2347d1972c3fea48528e5887c0a02a7d48ca569f",
+      "shortHash": "2347d19",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -601,8 +627,8 @@
       "body": null
     },
     {
-      "hash": "588039151e2faea26410f961004752d5ae1b75f8",
-      "shortHash": "5880391",
+      "hash": "75a6fdb45f819118a94fc977fd6b8356851fc3ef",
+      "shortHash": "75a6fdb",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -614,8 +640,8 @@
       "body": null
     },
     {
-      "hash": "18cc07d5c0a3954dd6698410b14387251370c74a",
-      "shortHash": "18cc07d",
+      "hash": "d1b5e0514358605d785e7bbe7b4b028d1b1a4efc",
+      "shortHash": "d1b5e05",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -627,8 +653,8 @@
       "body": null
     },
     {
-      "hash": "036e3e7e6de7f118093815fae6472afe0fb2bb1e",
-      "shortHash": "036e3e7",
+      "hash": "53922c5b43eb67f40bd91aee95e325b2db948bd9",
+      "shortHash": "53922c5",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -640,8 +666,8 @@
       "body": "Rounding values of 10.0 to 10 to ensure a consistent look across providers when they reach the maximum normalized rating."
     },
     {
-      "hash": "826fdb9d24176eed47e5f5244e20afa4a144cc0f",
-      "shortHash": "826fdb9",
+      "hash": "b9c04501ac09c37a7660b746607c14870f4685ed",
+      "shortHash": "b9c0450",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -653,8 +679,8 @@
       "body": "This update standardizes ratings across poster, backdrop, and logo outputs by converting all providers to a 0 to 10 visual scale. It also improves backdrop rating rendering with dynamic multi row layouts and prioritizes anime specific providers."
     },
     {
-      "hash": "26c01e9646aaa2ef3bdabd258b8a665401a0783a",
-      "shortHash": "26c01e9",
+      "hash": "6f22e7e8a406541b8e5bb41932ba0ea2467fe96b",
+      "shortHash": "6f22e7e",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -666,21 +692,21 @@
       "body": null
     },
     {
-      "hash": "533961ab5db7e0cef78452d8d60f2a3c4980ab62",
-      "shortHash": "533961a",
+      "hash": "2fa63224b8709d658ad04dd1f0bcc10c33cb1aeb",
+      "shortHash": "2fa6322",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
       },
       "isUpstream": true,
       "date": "2026-03-19T21:52:00+01:00",
-      "type": "chore",
-      "title": "Normalize ratings to a 0 to 10 scale and improve anime/backdrop badge behavior",
+      "type": "fix",
+      "title": "normalize ratings to a 0 to 10 scale and improve anime/backdrop badge behavior",
       "body": "This update standardizes displayed ratings across poster, backdrop, and logo outputs by converting all providers to a 0 to 10 visual scale. It also improves backdrop rating rendering with dynamic multi row layouts and prioritizes anime specific providers like MyAnimeList, AniList, and Kitsu when anime metadata is detected."
     },
     {
-      "hash": "5ba092f39863824e4387b6ba98ad5d385f5643f8",
-      "shortHash": "5ba092f",
+      "hash": "39af16d5a9441f40256e31ea9612bd7f1c957b45",
+      "shortHash": "39af16d",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -692,8 +718,8 @@
       "body": null
     },
     {
-      "hash": "461e92e78d85b41b44debde63ccf64f26c23ba40",
-      "shortHash": "461e92e",
+      "hash": "685f697418cdf2c44a3d8778ff3845fd0f144348",
+      "shortHash": "685f697",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -705,8 +731,8 @@
       "body": null
     },
     {
-      "hash": "a2b102b6fc179c333419d9a90b330a86e3f13940",
-      "shortHash": "a2b102b",
+      "hash": "bb85ab74086c4b7279385994d3ea90d7ee098797",
+      "shortHash": "bb85ab7",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -718,8 +744,8 @@
       "body": "• Capped quality badges strictly at 2 items per column (left/right) to prevent vertical overflow.\n\n• Dynamically adjust vertical start offset when backdrop ratings layout is 'center' matching top/bottom badges, preventing overlap with rating badges."
     },
     {
-      "hash": "664646419d093e9d1a3f24d1afb9e2111d357e63",
-      "shortHash": "6646464",
+      "hash": "aa49d06f5cc5956373623836fc4a844a3c1e916a",
+      "shortHash": "aa49d06",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -731,8 +757,8 @@
       "body": null
     },
     {
-      "hash": "3da0df75eb5ecab2d93d72be3d35a0926a9d886b",
-      "shortHash": "3da0df7",
+      "hash": "e9277b12fcd99cd77f17fc4a31a0043e0b6af446",
+      "shortHash": "e9277b1",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -744,8 +770,8 @@
       "body": null
     },
     {
-      "hash": "614bfe766f987d293a65c40487c01345fd011856",
-      "shortHash": "614bfe7",
+      "hash": "f40351bfa42af70053251679c41cb9b1f2ea732f",
+      "shortHash": "f40351b",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -757,8 +783,8 @@
       "body": "• Add `overflow hidden` to the config string and generated manifest wrapper divs to ensure long `break all` text respects the `rounded 2xl` border on narrow viewports\n\n• Add `min w 0` to the manifest URL input field so it can shrink below its intrinsic width in the flex/grid layout\n\n• Add `overflow y hidden` to the base structure code block container to prevent vertical bleed while retaining `overflow x auto`"
     },
     {
-      "hash": "8e99b690ffc205bde1969dcf235d9efabcde77f0",
-      "shortHash": "8e99b69",
+      "hash": "1412bc2fb50baeb682a0bb9a2d89dbfc64721fb6",
+      "shortHash": "1412bc2",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -770,8 +796,8 @@
       "body": "Upgrade docker/build push action from v5 to v6 and explicitly enable\nprovenance attestation for supply chain security. The signed build\nattestation is added as metadata to the image layer — no change to the\nimage contents or runtime behaviour."
     },
     {
-      "hash": "b904f70a4581d509cc47c19914defbc071e23afa",
-      "shortHash": "b904f70",
+      "hash": "23f05a607df9ad2c32d6929552322e36fca58f02",
+      "shortHash": "23f05a6",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -783,8 +809,8 @@
       "body": null
     },
     {
-      "hash": "f7a11a362df5d41ee2a62fbc370886255ef3ea1c",
-      "shortHash": "f7a11a3",
+      "hash": "9149d9c4ef58e77ac0b6e19d82f525fda5c84081",
+      "shortHash": "9149d9c",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -796,8 +822,8 @@
       "body": "Include the new posterQualityBadgesPosition default ('auto') in the\nexpected settings for the workspace serialization round trip test."
     },
     {
-      "hash": "688f3985bae55f770290666fadc656547b1733fd",
-      "shortHash": "688f398",
+      "hash": "c8728003c1a4281641474385bcde663f3b9ba2d1",
+      "shortHash": "c872800",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -809,8 +835,8 @@
       "body": null
     },
     {
-      "hash": "eb706d127a3bfeb24a77b96e8c9e9475a6187459",
-      "shortHash": "eb706d1",
+      "hash": "9c0504abe9325b8b93e552f788e95c7e82b32af8",
+      "shortHash": "9c0504a",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -822,8 +848,8 @@
       "body": "Update the Configurator & Proxy wrapper card background from plain\ngrey zinc gradient to violet tinted dark (rgba(30,22,42) base) with\nan extended violet radial glow (60% ellipse spread) and a\nborder violet 500/15 border.\n\nUpdate SHOW/HIDE toggle buttons from flat bg zinc 800 to\nbg violet 500/20 with violet 300 text and violet 500/30 border,\nmatching the purple accent theme used throughout the page."
     },
     {
-      "hash": "1e348048cc23dc0506e4abc97c3bcda150113d20",
-      "shortHash": "1e34804",
+      "hash": "32b60b827e0ea5030d07023aed07289fc2d31237",
+      "shortHash": "32b60b8",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -831,12 +857,12 @@
       "isUpstream": false,
       "date": "2026-03-19T03:40:57Z",
       "type": "chore",
-      "title": "merge upstream/main.",
-      "body": "Cherry picked three features (3 badge top row, posterQualityBadgesPosition,\nshow/hide toggles) and adopted the metadata cache improvement. Remaining upstream\nchanges were evaluated and skipped."
+      "title": "sync upstream changes",
+      "body": null
     },
     {
-      "hash": "4091a9e284d16315f327d79d3f045c0f3483f643",
-      "shortHash": "4091a9e",
+      "hash": "f54259273a1afc9afae97ea9ba8f087c97521f85",
+      "shortHash": "f542592",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -848,8 +874,8 @@
       "body": "Remove the pruneOldestMetadata(2000) call from setMetadata. TTL based\nexpiration via pruneExpiredMetadata already handles cleanup naturally,\nand the aggressive 2,000 row hard cap could evict still valid cached\nratings, forcing unnecessary re fetches. SQLite handles tens of\nthousands of rows without issue."
     },
     {
-      "hash": "852028fb1c75c7565a1746b65d92eea5907f87e3",
-      "shortHash": "852028f",
+      "hash": "d22872664db1d43dbf8a49bd8ffea07c4ed41558",
+      "shortHash": "d228726",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -861,8 +887,8 @@
       "body": "Add ability to toggle visibility of the ERDB config string and\ngenerated proxy URL to prevent accidental exposure during\nscreen sharing or streaming.\n\n• Import `Eye` and `EyeOff` icons from lucide react\n• Add `maskSensitiveText` helper that replaces visible characters\n  with asterisks\n• Add `showConfigString` and `showProxyUrl` state with `useEffect`\n  hooks to auto hide when the underlying values are cleared\n• Compute `displayedConfigString` and `displayedProxyUrl` using\n  masked values when hidden\n• Add toggle buttons next to copy buttons in both the config string\n  and proxy URL sections\n• Apply `select none` CSS class when masked to prevent clipboard\n  selection of asterisks"
     },
     {
-      "hash": "e451a056b1916e702c6fdf12ff3fa0681732acea",
-      "shortHash": "e451a05",
+      "hash": "e30b42ef02ca6250c7c93086069ff8be9618d2e3",
+      "shortHash": "e30b42e",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -874,8 +900,8 @@
       "body": "Introduce `posterQualityBadgesPosition` to control quality badge\nplacement for poster `top`/`bottom` layouts. Accepted values:\n`auto` (default), `left`, `right`.\n\nServer (`route.tsx`):\n• Add `PosterQualityBadgesPosition` type and `normalizePosterQualityBadgesPosition`\n• Add `resolvePosterQualityBadgePlacement` resolver that determines\n  placement based on layout, qualityBadgesSide, and the new setting\n• Replace hardcoded placement logic in `renderWithSharp` with the\n  resolver function\n• Parse `posterQualityBadgesPosition` from URL search params\n• Include in both render seed and final image cache keys\n\nClient (`page.tsx`):\n• Add state, derived visibility booleans, and a Position toggle UI\n  (auto/left/right) shown only for `top` or `bottom` poster layouts\n• Include in preview URL, config export, proxy URL, and AI prompt\n\nConfig (`uiConfig.ts`):\n• Add type, default (`auto`), normalizer, and include in\n  `SharedErdbSettings`, `normalizeSharedErdbSettings`, and\n  `buildSharedPayload`"
     },
     {
-      "hash": "ad4dee2125b37beefb2ce16ce7b7434f7b0eaf49",
-      "shortHash": "ad4dee2",
+      "hash": "da061cf105ab610f5caeac2132180fa040c7e35e",
+      "shortHash": "da061cf",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -887,8 +913,8 @@
       "body": "Register `posterQualityBadgesPosition` across the proxy layer:\n\n• Add to `ERDB_OPTIONAL_PARAMS` array\n• Include in the `ProxyConfig` type definition\n• Add to `PROXY_OPTIONAL_STRING_KEYS` for optional string handling\n\nThis ensures the poster quality badge position setting is recognized,\ntyped, and treated as an optional string key for proxy URL generation."
     },
     {
-      "hash": "d97c22335e5b20188e627fb14d29d65dbcbd7650",
-      "shortHash": "d97c223",
+      "hash": "b7bd66e637f7fce582c42d39dc193fbe1e9e2628",
+      "shortHash": "b7bd66e",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -900,8 +926,8 @@
       "body": "Add support for an extra centered top badge when using the left right\nposter ratings layout with an odd number of badges.\n\n• `splitPosterBadgesByLayout` now surfaces a single top badge when\n  the total is odd, with remaining badges split evenly across left\n  and right columns\n• `getMaxBadgeColumnCount` and `fitPosterBadgeMetricsToHeight` gain\n  a `reservedTopRows` parameter so column heights correctly subtract\n  the reserved top row space\n• `renderWithSharp` gains `splitAcrossHalves` and `spreadAcrossThirds`\n  composition flags for the row renderer\n• `getPosterRatingLayoutMaxBadges` for `left right` now returns\n  `n*2 + 1` and `describePosterRatingLayoutLimit` includes the\n  top center badge in the human readable description"
     },
     {
-      "hash": "a44e2a980044a3ecdb00f48a2c87b81e8a26b131",
-      "shortHash": "a44e2a9",
+      "hash": "e8b4256f19d095b1acb3a0f5b694086b97179a73",
+      "shortHash": "e8b4256",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -913,8 +939,8 @@
       "body": null
     },
     {
-      "hash": "49350b08ddb607e246914b179cc861325e0e1dcd",
-      "shortHash": "49350b0",
+      "hash": "01ca92c2babb714bb5a31d6bf67d41fbfa2755a8",
+      "shortHash": "01ca92c",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -926,8 +952,8 @@
       "body": null
     },
     {
-      "hash": "0ccbbfbc7496008f02a8df3130ff4029c1b38c25",
-      "shortHash": "0ccbbfb",
+      "hash": "e13c3b9d9b7b3ccbdbd5a91910f6683450efc1e4",
+      "shortHash": "e13c3b9",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -939,8 +965,8 @@
       "body": null
     },
     {
-      "hash": "7d4d2190819cc890a230fba92ee3ff40994b8b6a",
-      "shortHash": "7d4d219",
+      "hash": "0d7e7b3550e415149cdded324ae75166a45a794c",
+      "shortHash": "0d7e7b3",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -952,8 +978,8 @@
       "body": null
     },
     {
-      "hash": "a252f7fbc556c4fd369149ce3403887f21ed0687",
-      "shortHash": "a252f7f",
+      "hash": "43f658a6fcb94161dcf13bedef636b5b8d6af751",
+      "shortHash": "43f658a",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -965,8 +991,8 @@
       "body": "• .env.example: add all env vars with defaults, min/max, and sections\n  (proxy/security, cache TTLs, Torrentio, IMDb, Sharp rendering)\n• README: add Environment Variables section with tables for all settings\n• README: fix release command (npm run release:patch, not npm run release patch)\n• Add missing env vars: ERDB_TORRENTIO_CACHE_TTL_MS, ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS,\n  ERDB_TRUST_PROXY_HEADERS, ERDB_PROXY_ALLOWED_ORIGINS"
     },
     {
-      "hash": "2d5b29968e2d3e52cfceda0399a263715c735072",
-      "shortHash": "2d5b299",
+      "hash": "e2db9f69db8d0c11300c967102710d30c499141b",
+      "shortHash": "e2db9f6",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -978,8 +1004,8 @@
       "body": null
     },
     {
-      "hash": "2b7af704e916cf3700f73c2f399f2f2ac1535c2b",
-      "shortHash": "2b7af70",
+      "hash": "82052fe876328d27e8caac9005822fdedf22a6f8",
+      "shortHash": "82052fe",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -991,8 +1017,8 @@
       "body": null
     },
     {
-      "hash": "cbd79577fe439ee79ec1ba62663de558980a31b0",
-      "shortHash": "cbd7957",
+      "hash": "e9ceec27e00b5c662ed6c6936d8945c84675bc70",
+      "shortHash": "e9ceec2",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1004,8 +1030,8 @@
       "body": null
     },
     {
-      "hash": "63ddd28dd9e6c107ba402166ca8dd242669572d2",
-      "shortHash": "63ddd28",
+      "hash": "e2122218eff208b4c3b4419d7b7b184280cf60df",
+      "shortHash": "e212221",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1017,8 +1043,8 @@
       "body": "Node.js native fetch does not respect HTTP_PROXY/HTTPS_PROXY env vars.\nThis adds undici's ProxyAgent to route Torrentio stream badge requests\nthrough the configured proxy (e.g. gluetun VPN container).\n\nAlso includes the User Agent fix from v2.13.5 to bypass Cloudflare\nbot protection on Torrentio."
     },
     {
-      "hash": "59a7e5d4f781b029025417c97ebda91b2ac2265b",
-      "shortHash": "59a7e5d",
+      "hash": "12f424c97c4aea17fb7a6947e4abd8b29d9a0e05",
+      "shortHash": "12f424c",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1030,8 +1056,8 @@
       "body": null
     },
     {
-      "hash": "56af6f8b51cbaf4c7921078c11f1f94cbcb06d88",
-      "shortHash": "56af6f8",
+      "hash": "9565611254dafcd1db2a7fffd8dbd08dca8655c7",
+      "shortHash": "9565611",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1043,8 +1069,8 @@
       "body": "Torrentio/Cloudflare returns 403 for requests without a browser like\nUser Agent header. This caused all stream quality badges (4K, HDR, DV,\nAtmos) to silently fail in production. Adding a Chrome User Agent to\nthe fetch request resolves the issue."
     },
     {
-      "hash": "15536a87baa05bf35b97404251efe830b3fd2495",
-      "shortHash": "15536a8",
+      "hash": "77cd3da8cf59f35a804a020306d099b340782630",
+      "shortHash": "77cd3da",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1056,21 +1082,21 @@
       "body": null
     },
     {
-      "hash": "e7651945f815b613af99b9d6bbaab3703f45d8eb",
-      "shortHash": "e765194",
+      "hash": "a4a0eeccf3be5d94b2e23eb7aff3fc74ac44765f",
+      "shortHash": "a4a0eec",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
       },
       "isUpstream": false,
       "date": "2026-03-19T00:28:51Z",
-      "type": "chore",
+      "type": "feat",
       "title": "add per request log to verify deployed code version",
       "body": "Logs every image request with type, id, and streamBadges param\nto confirm the deployed Docker image contains the latest code."
     },
     {
-      "hash": "d2bb456fec16654ec02f58e2ca9a32dc4488a04c",
-      "shortHash": "d2bb456",
+      "hash": "d82cd12b78a9fd2fc285fce4f1054640bd65a3fa",
+      "shortHash": "d82cd12",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1082,21 +1108,21 @@
       "body": null
     },
     {
-      "hash": "1d91c82d52cb0a6b532843e5519530cac8f143e8",
-      "shortHash": "1d91c82",
+      "hash": "b8b4c0ab3ae04f82114cc29793e407b43dc9888b",
+      "shortHash": "b8b4c0a",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
       },
       "isUpstream": false,
       "date": "2026-03-19T00:06:19Z",
-      "type": "chore",
+      "type": "feat",
       "title": "add diagnostic logging for Torrentio fetch failures",
       "body": "Logs warnings when Torrentio fetch throws (network/timeout), returns\nnon 200, or has zero streams. This helps diagnose why stream quality\nbadges are not appearing in production."
     },
     {
-      "hash": "85e90ef2c2f7f4808ba2cda72c39c7cc07ab1961",
-      "shortHash": "85e90ef",
+      "hash": "2ea17069a513fabc0715437d93b1ebcd2a0a8877",
+      "shortHash": "2ea1706",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -1108,8 +1134,8 @@
       "body": "Touches image rendering route and project internals."
     },
     {
-      "hash": "3c2f6f98150421b51cb39296730a03230611b75a",
-      "shortHash": "3c2f6f9",
+      "hash": "6378c0d8a503f5faa9516b06e710d68cd4fc287c",
+      "shortHash": "6378c0d",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1121,8 +1147,8 @@
       "body": null
     },
     {
-      "hash": "76cde91dce0e3b975bd56f34ca390531318cb915",
-      "shortHash": "76cde91",
+      "hash": "a8786680aa8dc36eaf1a66c370b7ffadf177c5b6",
+      "shortHash": "a878668",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1134,8 +1160,8 @@
       "body": "When ERDB runs behind a reverse proxy (ERDB_TRUST_PROXY_HEADERS=true),\nthe internal port (e.g. :3000) was leaking into generated image URLs.\nThis made all poster, backdrop, and logo URLs unreachable through the\nreverse proxy, causing blank posters and missing badges in Stremio.\n\nNow strips the port from generated URLs when behind a trusted proxy,\nso URLs use the reverse proxy's default port instead."
     },
     {
-      "hash": "77310dd5dc846b97fa91daf2cf37c411c38ba3bb",
-      "shortHash": "77310dd",
+      "hash": "8049f1af1f2735b23b12423a16fabafffe7d83e1",
+      "shortHash": "8049f1a",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1147,8 +1173,8 @@
       "body": null
     },
     {
-      "hash": "faade1d50a2b1f85c5ce92cce559c91ecc64594f",
-      "shortHash": "faade1d",
+      "hash": "85d15d39587eee5f92c629703c2fa5ea1f4d73d3",
+      "shortHash": "85d15d3",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1160,8 +1186,8 @@
       "body": "The `language=italian` filter in the Torrentio stream URL caused empty\nresults for all non Italian content, preventing quality badges (4K, HDR,\nDolby Vision, etc.) from appearing on most titles.\n\nSince badge detection only needs to know WHETHER quality streams exist\n(not their language), the language filter is now removed entirely.\nThis ensures Torrentio returns all available streams for accurate\nbadge generation regardless of content language.\n\nAlso adds ERDB_TORRENTIO_BASE_URL env var for custom Torrentio instances."
     },
     {
-      "hash": "657f8d60cdf2a264adde86508ebc0da0675757fb",
-      "shortHash": "657f8d6",
+      "hash": "6a8e7f0e1cd23266e4d40dee78f48d490ac2e352",
+      "shortHash": "6a8e7f0",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
@@ -1173,47 +1199,47 @@
       "body": null
     },
     {
-      "hash": "b3027f336a7ec7025a31e55a31c5e989f0df40b9",
-      "shortHash": "b3027f3",
+      "hash": "4ce1a54c9d303eaec34633ffb4820604db7cafe9",
+      "shortHash": "4ce1a54",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
       },
       "isUpstream": true,
       "date": "2026-03-19T00:08:22+01:00",
-      "type": "chore",
-      "title": "Add show/hide toggles for config and proxy",
+      "type": "feat",
+      "title": "add show/hide toggles for config and proxy",
       "body": "Add ability to toggle visibility of the ERDB config string and generated proxy URL. Import Eye and EyeOff icons, add maskSensitiveText helper, and new state (showConfigString, showProxyUrl) with effects to reset when their values are cleared. Compute displayedConfigString/displayedProxyUrl to show masked values when hidden and update UI: add toggle buttons, adjust text styling to prevent selection when masked, and disable toggles when no value is available."
     },
     {
-      "hash": "40683e13581c7919a7f92222edc4ca092aadcbd7",
-      "shortHash": "40683e1",
+      "hash": "3f91a2cf1bfa3acf389771a05b530e8cf5373f97",
+      "shortHash": "3f91a2c",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
       },
       "isUpstream": true,
       "date": "2026-03-18T23:57:04+01:00",
-      "type": "chore",
-      "title": "Add posterQualityBadgesPosition option",
+      "type": "feat",
+      "title": "add posterQualityBadgesPosition option",
       "body": "Introduce posterQualityBadgesPosition across the codebase: add to ERDB_OPTIONAL_PARAMS, include in the ProxyConfig type, and add to PROXY_OPTIONAL_STRING_KEYS. This ensures the poster quality badge position setting is recognized, typed, and treated as an optional string key for proxy handling."
     },
     {
-      "hash": "7fcc55bf9b5c373a8af53544c85d9bed0d04b6f9",
-      "shortHash": "7fcc55b",
+      "hash": "7de24ee0c8bf6ec154f72c5660d6c3aaf8e8056f",
+      "shortHash": "7de24ee",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
       },
       "isUpstream": true,
       "date": "2026-03-18T23:53:29+01:00",
-      "type": "chore",
-      "title": "Add posterQualityBadgesPosition support",
+      "type": "feat",
+      "title": "add posterQualityBadgesPosition support",
       "body": "Introduce a new posterQualityBadgesPosition setting to control quality badge placement for poster top/bottom layouts. README updated with docs and URL parameter. Server: add types, normalization, resolver and use the new value in rendering logic and URL parsing so badge placement is computed correctly. Client: add UI control, state, validation and include the setting in preview, exported config and proxy manifest URLs; refactor preview/config/proxy generation to use useMemo and a client origin helper, and use requestAnimationFrame when loading stored keys for smoother startup."
     },
     {
-      "hash": "93200ab97493eeba402cfe36b345efa2eca7044c",
-      "shortHash": "93200ab",
+      "hash": "e8ef3baf57ebc2af14e71141a1c04b67c5585e68",
+      "shortHash": "e8ef3ba",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1225,8 +1251,8 @@
       "body": null
     },
     {
-      "hash": "486446f73f10bdf7ee795323dcc056d0e1ae39e3",
-      "shortHash": "486446f",
+      "hash": "59b01794347e8616286c6e3ef5dcbb2bf26d3ab4",
+      "shortHash": "59b0179",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1238,8 +1264,8 @@
       "body": null
     },
     {
-      "hash": "6d76f603cd48120c38b0a2686af3cae43c55dfe7",
-      "shortHash": "6d76f60",
+      "hash": "85ea69c8b26a07203960d6f02caebfe640bf96e7",
+      "shortHash": "85ea69c",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1251,8 +1277,8 @@
       "body": null
     },
     {
-      "hash": "ffc7966cc223cad91109a34572920764adda813f",
-      "shortHash": "ffc7966",
+      "hash": "e1829e9c5cad538189d67e175fbdfe08da3f0747",
+      "shortHash": "e1829e9",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1264,8 +1290,8 @@
       "body": null
     },
     {
-      "hash": "301af7276fb7531b9cfe203a968e08e5bd12c236",
-      "shortHash": "301af72",
+      "hash": "3eb68433c6920ad992f503114bdf9f2a751b6af8",
+      "shortHash": "3eb6843",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1277,21 +1303,21 @@
       "body": "• Adds a global `torrentioConcurrencyLimit` queue to `route.tsx` (limit: 3) to prevent aggressive rate limiting from Torrentio when Stremio requests 20+ catalog posters concurrently.\n• Modifies the Torrentio stream request for series to properly append `:1:1` (S01E01), allowing Torrentio to successfully fetch stream badges rather than returning empty streams.\n\nThese changes resolve an issue where stream badges would intermittently fail on Stremio catalogs due to connection drops and lack of episodic context for TV show requests."
     },
     {
-      "hash": "a13ce21fd82ecac9f583f318f153026910b3719d",
-      "shortHash": "a13ce21",
+      "hash": "e702001652f64ea19607cbd04a31b0f3c280bafd",
+      "shortHash": "e702001",
       "author": {
         "name": "nzo66",
         "email": "233500038+stremio-manager@users.noreply.github.com"
       },
       "isUpstream": true,
       "date": "2026-03-18T23:15:11+01:00",
-      "type": "chore",
-      "title": "Handle 3 badge top row in left right layout",
+      "type": "fix",
+      "title": "handle 3 badge top row in left right layout",
       "body": "Add support for an extra centered top badge when using the left right poster ratings layout. Reserved top rows are now accounted for in sizing (getMaxBadgeColumnCount, fitPosterBadgeMetricsToHeight) so column heights subtract the reserved top row space. splitPosterBadgesByLayout now surfaces a single top badge when the total is odd, and renderWithSharp gains helpers and options to correctly compose a three badge top row and to align side columns (composeEdgeAlignedPosterBadge, updated composeBadgeColumn, splitAcrossHalves/spreadAcrossThirds flags). The GET flow is updated to compute fitted columns, reservedTopRows and effective per side limits when the extra top badge is present. Also update posterRatingLayout helpers to include the additional top center badge in counts and human readable descriptions."
     },
     {
-      "hash": "bf3576ee1196ce482c9061f3bdcfd26f3dcaf331",
-      "shortHash": "bf3576e",
+      "hash": "21fb2584cc7a9f9865016894f8a4e50d010ae13f",
+      "shortHash": "21fb258",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1303,8 +1329,8 @@
       "body": null
     },
     {
-      "hash": "4ac13d51e44d0e8a133704815aa65c65e5e70bcd",
-      "shortHash": "4ac13d5",
+      "hash": "4842416821f43da71d27bd2e0cd19663354527c0",
+      "shortHash": "4842416",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1316,8 +1342,8 @@
       "body": null
     },
     {
-      "hash": "240f29dfe7983fbfa896f2474e69d1210913eb3c",
-      "shortHash": "240f29d",
+      "hash": "c0f845e29c02cb1914254996103ff589f28d0768",
+      "shortHash": "c0f845e",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1329,8 +1355,8 @@
       "body": null
     },
     {
-      "hash": "7609a04b235222ffbcca7d8161a660366468a0e8",
-      "shortHash": "7609a04",
+      "hash": "5b50dc3215d09bf768b785792fe6e6238116e743",
+      "shortHash": "5b50dc3",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1342,8 +1368,8 @@
       "body": null
     },
     {
-      "hash": "2c8c128ff6506eed06bfd4c7a5d59f19d02dd735",
-      "shortHash": "2c8c128",
+      "hash": "76d66dfe891fd899efac372a9e8aeb59436af30f",
+      "shortHash": "76d66df",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1355,8 +1381,8 @@
       "body": null
     },
     {
-      "hash": "1b3ac53614974c8a3723d903ae5f7e64170ca28b",
-      "shortHash": "1b3ac53",
+      "hash": "b2ceb039293244e926fd3b722ef65ff61ab0f507",
+      "shortHash": "b2ceb03",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1368,8 +1394,8 @@
       "body": "• fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate limit bans\n• feat(cache): implement TTL based map for TMDB fetch caching to prevent permanent memory leaks\n• fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n• feat(cache): integrate disk level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n• feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n• security(cors): correct proxy manifest and proxy endpoints to default to Access Control Allow Origin: * rather than aggressively reflecting arbitrary origin headers\n• fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n• ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n• docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
     },
     {
-      "hash": "cf842a204e330ca79ff611dd1457afd10d06d162",
-      "shortHash": "cf842a2",
+      "hash": "a3f10ef2ffc8c4bce998e17bbcd7380c53b431f8",
+      "shortHash": "a3f10ef",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1381,8 +1407,8 @@
       "body": "• fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate limit bans\n• feat(cache): implement TTL based map for TMDB fetch caching to prevent permanent memory leaks\n• fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources\n• feat(cache): integrate disk level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks\n• feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows\n• security(cors): correct proxy manifest and proxy endpoints to default to Access Control Allow Origin: * rather than aggressively reflecting arbitrary origin headers\n• fix(render): migrate app/layout.tsx dynamic await connections and middleware.ts CSP nonce restrictions into a purely static next.config.ts header, restoring static generation for the homepage\n• ci(tests): add test suite execution explicitly to GitHub Actions pipeline\n• docs(readme): document the necessity and architectural intent of the Bring Your Own Key (BYOK) paradigm"
     },
     {
-      "hash": "0af59561f8066e85b958711a263fdc1bbcfd408f",
-      "shortHash": "0af5956",
+      "hash": "f416bc0089cf906d6c3ad8aa6c4629763bf978ee",
+      "shortHash": "f416bc0",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1394,8 +1420,8 @@
       "body": null
     },
     {
-      "hash": "db6a3289cc54818ceaf9ca20548ac28023faa9f4",
-      "shortHash": "db6a328",
+      "hash": "9aa5c931ac9ea905593dac0875d888edd7cb9e5a",
+      "shortHash": "9aa5c93",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1407,8 +1433,8 @@
       "body": null
     },
     {
-      "hash": "014c18d0a14e957af7e76f67446d8501eb419733",
-      "shortHash": "014c18d",
+      "hash": "925be8daf4146bef817a034eb6e1e146d16e034b",
+      "shortHash": "925be8d",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1420,8 +1446,8 @@
       "body": null
     },
     {
-      "hash": "3023fd895961eefe5d2c3bad98f261d1cdc82a28",
-      "shortHash": "3023fd8",
+      "hash": "cc2413d0ada39054148857388d0e951b51a122ff",
+      "shortHash": "cc2413d",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1433,8 +1459,8 @@
       "body": "Restructure the primary workspace surface into a denser desktop composition so the configurator, live preview, config string export, and thin proxy panel read as one all in one flow instead of two spaced out sections.\n\nKeep the merged proxy behavior intact by preserving the manifest only proxy input while moving the preview stack back into the center column and reducing visual dead space across the workspace container, card chrome, and header treatment.\n\nRetain the existing persistence and export wiring so the new layout remains compatible with the shared workspace model, copied config strings, and generated proxy manifests."
     },
     {
-      "hash": "e906470af1a58f9daebc9b1b8ad4fad9381475bc",
-      "shortHash": "e906470",
+      "hash": "8f7f438424db3b148280d67de371870873efa71b",
+      "shortHash": "8f7f438",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1446,8 +1472,8 @@
       "body": null
     },
     {
-      "hash": "70f70e85c03296979ce45a368e2de492ebdd9898",
-      "shortHash": "70f70e8",
+      "hash": "8422f4f27db1cf5cd640f71fa2dcd4e29f977c2f",
+      "shortHash": "8422f4f",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1459,8 +1485,8 @@
       "body": "Remove the duplicate proxy side ERDB controls so the addon proxy only accepts an upstream manifest URL and consumes the configurator state above as its single source of truth.\n\nDrop proxy enabled type state from the saved workspace model and proxy URL builder, while continuing to normalize older saved payloads that still include legacy enabled flags.\n\nUpdate browser facing copy to make the merged workflow explicit and extend regression coverage for workspace serialization plus proxy payload generation under the new contract."
     },
     {
-      "hash": "21b8c5c4688f4d4285d64ff7475edb249d56bb8e",
-      "shortHash": "21b8c5c",
+      "hash": "c1188d7ed724c68d0e5eefc8e43f8eb60d4a78b8",
+      "shortHash": "c1188d7",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1472,8 +1498,8 @@
       "body": null
     },
     {
-      "hash": "7f3b4e51e4f9ceca31ef372b52651b7febf2518f",
-      "shortHash": "7f3b4e5",
+      "hash": "91d61c455c0e6b75cfd522a90d64c1189932b23d",
+      "shortHash": "91d61c4",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1485,8 +1511,8 @@
       "body": "• remove the duplicated proxy side ERDB settings state and drive both exports from one shared configuration model\n\n• add full workspace save and JSON download/import support with migration from the legacy API key only local storage format\n\n• extract shared UI config helpers for serialization, proxy payload generation, and browser safe base64url encoding\n\n• add regression tests for workspace round tripping and shared config/proxy manifest generation\n\n• validate with npm run lint, npm test, npm run build, browser verification of shared state persistence and JSON download, and live proxy checks against Cinemeta meta rewriting"
     },
     {
-      "hash": "4b1127aa836161c591ef0f6f4fba3b6f3b8714df",
-      "shortHash": "4b1127a",
+      "hash": "0e73d9a6562bfa7196f91265c2a22afbc61eb772",
+      "shortHash": "0e73d9a",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1498,8 +1524,8 @@
       "body": null
     },
     {
-      "hash": "0c0271779ef1fd56c012ff28005fd3daee257c90",
-      "shortHash": "0c02717",
+      "hash": "11610332e1741d8ede257613e1a52e511e8a2d02",
+      "shortHash": "1161033",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1511,8 +1537,8 @@
       "body": "When ERDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access Control Allow Origin and caused client side failures.\n\nUpdate both proxy route handlers to keep wildcard support, preserve valid Origin echoing, and otherwise fall back to the first configured allowed origin whenever the allowlist is non empty but the request origin is missing or not permitted."
     },
     {
-      "hash": "13e0bb9ce2fa4378123052df8084e74b522b2420",
-      "shortHash": "13e0bb9",
+      "hash": "9f28c20c737874ba9d1c14ffb93c155f5598b96d",
+      "shortHash": "9f28c20",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1524,8 +1550,8 @@
       "body": null
     },
     {
-      "hash": "31a81095ceedafbfc8a86ae4fe8b2070d3603b72",
-      "shortHash": "31a8109",
+      "hash": "35abc337db4aab7159c97cbd3abc6fbaec22f325",
+      "shortHash": "35abc33",
       "author": {
         "name": "IbbyLabs",
         "email": "40578997+IbbyLabs@users.noreply.github.com"
@@ -1535,32 +1561,6 @@
       "type": "chore",
       "title": "detail post v2.7.2 updates",
       "body": "Changes since v2.7.2:\n\n• docs: update README example language to en and clarify proxy CORS fallback behavior\n\n• ui: normalize supported language labels on the home page to English display names\n\n• proxy: adjust CORS logic in both proxy routes to reflect incoming Origin when allowlist is empty\n\n• imdb: switch import progress number formatting from en US to en GB in sync/import scripts\n\n• git: keep local planning notes local by ignoring future stuff.md"
-    },
-    {
-      "hash": "dec4bb9c6dc1723cef13f9545dde9086863b1587",
-      "shortHash": "dec4bb9",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T02:10:42Z",
-      "type": "chore",
-      "title": "release 2.7.2",
-      "body": null
-    },
-    {
-      "hash": "b6b7e41ea43463b7fce420639fb25429bead4e01",
-      "shortHash": "b6b7e41",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-18T02:10:32Z",
-      "type": "fix",
-      "title": "improve upstream TMDB error classification",
-      "body": null
     }
   ]
 }
