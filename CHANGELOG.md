@@ -3,6 +3,29 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.18.1] - 21/03/2026
+
+### Added
+- feat(proxy): add anime reverse-mapping fallback for metadata translation
+  
+  Route proxy metadata translation through a dedicated resolver that keeps the existing direct TMDB and IMDb path first, and only falls back to anime reverse mapping for anime-native IDs when the direct path does not apply.
+  
+  Use the Stremio anime mapping service to resolve mal/myanimelist, anilist, kitsu, and anidb IDs to TMDB, then probe the preferred TV/movie order before fetching localized TMDB details for translated titles, overviews, and episode metadata.
+  
+  Also add cached anime-mapping fetches plus regression tests covering MAL alias normalization, direct-path precedence over anime fallback, and alternate media-type fallback when the preferred TMDB type is missing.
+
+### Fixed
+- fix(proxy): canonicalize MAL addon proxy IDs for anime image rewrites
+  
+  Accept both mal:* and myanimelist:* addon IDs in proxy normalization, and canonicalize both forms to mal:* before building ERDB image URLs.
+  
+  This keeps proxy-side poster/background/logo rewrites aligned with the renderer's native anime mapping provider set, which recognizes mal as the canonical MyAnimeList provider prefix.
+  
+  Also add regression coverage for MAL alias normalization so anime addons emitting either form continue to resolve stable ERDB image URLs.
+
+### Other Changes
+- Update addonProxy.ts
+
 ## [v2.18.0] - 20/03/2026
 
 ### Added
