@@ -3,6 +3,15 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.20.4] - 21/03/2026
+
+### Fixed
+* preserve standard ISO notation in user facing commit copy
+  
+  Keep standard labels such as ISO 639-1 intact when commit titles and bodies are normalized for the recent changes feed and changelog.
+  
+  Add regression coverage for the preserved standard notation and regenerate the tracked commit feed from the updated rules.
+
 ## [v2.20.3] - 21/03/2026
 
 ### Fixed
