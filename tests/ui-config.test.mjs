@@ -209,4 +209,5 @@ test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites'
   assert.equal(normalizeErdbId('mal:456', 'series'), 'mal:456');
   assert.equal(normalizeErdbId('myanimelist:456', 'series'), 'mal:456');
   assert.equal(normalizeErdbId('anilist:123', 'series'), 'anilist:123');
+  assert.equal(normalizeErdbId('anidb:789', 'series'), 'anidb:789');
 });

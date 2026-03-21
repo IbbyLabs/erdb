@@ -3710,30 +3710,73 @@ export async function GET(
           phases,
         });
         if (!mappedTmdbId) {
-          throw new HttpError('TMDB ID not found for anime mapping ID', 404);
+          const kitsuId = await fetchKitsuIdFromReverseMapping({
+            provider: inputAnimeMappingProvider,
+            externalId: inputAnimeMappingExternalId,
+            season,
+            phases,
+          });
+          if (!kitsuId) {
+            throw new HttpError('TMDB ID not found for anime mapping ID', 404);
+          }
+
+          const kitsuFallbackAsset = await fetchKitsuFallbackAsset(kitsuId, imageType, phases);
+          rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
+          rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
+          rawFallbackTitle = kitsuFallbackAsset?.title || null;
+          rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
+          if (!rawFallbackImageUrl) {
+            throw new HttpError('TMDB ID not found for anime mapping ID', 404);
+          }
+          useRawKitsuFallback = true;
+          allowAnimeOnlyRatings = false;
+          hasConfirmedAnimeMapping = false;
         }
 
-        const tvResponse = await fetchJsonCached(
-          `tmdb:tv:${mappedTmdbId}`,
-          `https://api.themoviedb.org/3/tv/${mappedTmdbId}?api_key=${tmdbKey}`,
-          TMDB_CACHE_TTL_MS,
-          phases,
-          'tmdb'
-        );
-        if (tvResponse.ok) {
-          media = tvResponse.data;
-          mediaType = 'tv';
-        } else {
-          const movieResponse = await fetchJsonCached(
-            `tmdb:movie:${mappedTmdbId}`,
-            `https://api.themoviedb.org/3/movie/${mappedTmdbId}?api_key=${tmdbKey}`,
+        if (!useRawKitsuFallback) {
+          const tvResponse = await fetchJsonCached(
+            `tmdb:tv:${mappedTmdbId}`,
+            `https://api.themoviedb.org/3/tv/${mappedTmdbId}?api_key=${tmdbKey}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
           );
-          if (movieResponse.ok) {
-            media = movieResponse.data;
-            mediaType = 'movie';
+          if (tvResponse.ok) {
+            media = tvResponse.data;
+            mediaType = 'tv';
+          } else {
+            const movieResponse = await fetchJsonCached(
+              `tmdb:movie:${mappedTmdbId}`,
+              `https://api.themoviedb.org/3/movie/${mappedTmdbId}?api_key=${tmdbKey}`,
+              TMDB_CACHE_TTL_MS,
+              phases,
+              'tmdb'
+            );
+            if (movieResponse.ok) {
+              media = movieResponse.data;
+              mediaType = 'movie';
+            }
+          }
+
+          if (!media) {
+            const kitsuId = await fetchKitsuIdFromReverseMapping({
+              provider: inputAnimeMappingProvider,
+              externalId: inputAnimeMappingExternalId,
+              season,
+              phases,
+            });
+            if (kitsuId) {
+              const kitsuFallbackAsset = await fetchKitsuFallbackAsset(kitsuId, imageType, phases);
+              rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
+              rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
+              rawFallbackTitle = kitsuFallbackAsset?.title || null;
+              rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
+              if (rawFallbackImageUrl) {
+                useRawKitsuFallback = true;
+                allowAnimeOnlyRatings = false;
+                hasConfirmedAnimeMapping = false;
+              }
+            }
           }
         }
       } else {

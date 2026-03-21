@@ -137,7 +137,7 @@ const PROXY_OPTIONAL_BOOLEAN_KEYS = [
 ] as const satisfies readonly (keyof ProxyConfig)[];
 type ProxyOptionalBooleanKey = (typeof PROXY_OPTIONAL_BOOLEAN_KEYS)[number];
 
-const SUPPORTED_PREFIXES = new Set(['tmdb', 'kitsu', 'anilist', 'myanimelist', 'mal']);
+const SUPPORTED_PREFIXES = new Set(['tmdb', 'kitsu', 'anilist', 'anidb', 'myanimelist', 'mal']);
 const IMDB_RE = /^tt\d+$/i;
 
 export const buildProxyId = (manifestUrl: string, configSeed?: string) => {
