@@ -10,6 +10,7 @@ import {
   type ProxyConfig,
 } from '@/lib/addonProxy';
 import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
+import { resolveTmdbTranslationTarget } from '@/lib/proxyMetaTranslation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,27 +67,34 @@ const parseForwardedHost = (value: string | null) => {
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 type CacheEntry<T> = { value: T; expiresAt: number };
 const tmdbFetchCache = new Map<string, CacheEntry<Promise<any>>>();
+const animeMappingFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const TMDB_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const TMDB_FAILED_TTL_MS = 2 * 60 * 1000;
+const ANIME_MAPPING_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const ANIME_MAPPING_FAILED_TTL_MS = 2 * 60 * 1000;
 
-const pruneTmdbCache = () => {
+const pruneJsonCache = (cache: Map<string, CacheEntry<Promise<any>>>) => {
   const now = Date.now();
-  for (const [key, entry] of tmdbFetchCache.entries()) {
-    if (entry.expiresAt <= now) tmdbFetchCache.delete(key);
+  for (const [key, entry] of cache.entries()) {
+    if (entry.expiresAt <= now) cache.delete(key);
   }
 };
 
-const fetchTmdbJson = async (url: string) => {
+const createCachedJsonFetcher = (
+  cache: Map<string, CacheEntry<Promise<any>>>,
+  successTtlMs: number,
+  failedTtlMs: number,
+) => async (url: string) => {
   const now = Date.now();
-  const cached = tmdbFetchCache.get(url);
+  const cached = cache.get(url);
   if (cached && cached.expiresAt > now) {
     return cached.value;
   }
 
-  if (tmdbFetchCache.size > 2000) pruneTmdbCache();
+  if (cache.size > 2000) pruneJsonCache(cache);
 
-  const entry: CacheEntry<Promise<any>> = { value: Promise.resolve(null), expiresAt: now + TMDB_CACHE_TTL_MS };
-  tmdbFetchCache.set(url, entry);
+  const entry: CacheEntry<Promise<any>> = { value: Promise.resolve(null), expiresAt: now + successTtlMs };
+  cache.set(url, entry);
 
   const promise = (async () => {
     let result = null;
@@ -99,8 +107,7 @@ const fetchTmdbJson = async (url: string) => {
       // fallback
     }
 
-    const ttl = result ? TMDB_CACHE_TTL_MS : TMDB_FAILED_TTL_MS;
-    entry.expiresAt = Date.now() + ttl;
+    entry.expiresAt = Date.now() + (result ? successTtlMs : failedTtlMs);
     return result;
   })();
 
@@ -108,71 +115,12 @@ const fetchTmdbJson = async (url: string) => {
   return promise;
 };
 
-const normalizeStremioType = (value: unknown): 'movie' | 'tv' | null => {
-  if (typeof value !== 'string') return null;
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) return null;
-  if (normalized === 'movie' || normalized === 'film') return 'movie';
-  if (normalized === 'series' || normalized === 'tv' || normalized === 'show') return 'tv';
-  return null;
-};
-
-const resolveTmdbFromErdbId = async (
-  erdbId: string,
-  metaType: unknown,
-  tmdbKey: string,
-  lang: string | null,
-) => {
-  if (!erdbId) return null;
-  const stremioType = normalizeStremioType(metaType);
-
-  if (erdbId.startsWith('tmdb:')) {
-    const parts = erdbId.split(':');
-    if (parts.length >= 3 && (parts[1] === 'movie' || parts[1] === 'tv')) {
-      const id = Number(parts[2]);
-      if (Number.isFinite(id)) {
-        return { id, type: parts[1] as 'movie' | 'tv' };
-      }
-    }
-    if (parts.length >= 2) {
-      const id = Number(parts[1]);
-      if (Number.isFinite(id) && stremioType) {
-        return { id, type: stremioType };
-      }
-    }
-    return null;
-  }
-
-  if (erdbId.startsWith('tt')) {
-    const findUrl = new URL(`${TMDB_BASE_URL}/find/${encodeURIComponent(erdbId)}`);
-    findUrl.searchParams.set('api_key', tmdbKey);
-    findUrl.searchParams.set('external_source', 'imdb_id');
-    if (lang) {
-      findUrl.searchParams.set('language', lang);
-    }
-    const data = await fetchTmdbJson(findUrl.toString());
-    if (!data || typeof data !== 'object') return null;
-
-    const movieResults = Array.isArray(data.movie_results) ? data.movie_results : [];
-    const tvResults = Array.isArray(data.tv_results) ? data.tv_results : [];
-
-    if (stremioType === 'movie' && movieResults[0]?.id) {
-      return { id: Number(movieResults[0].id), type: 'movie' };
-    }
-    if (stremioType === 'tv' && tvResults[0]?.id) {
-      return { id: Number(tvResults[0].id), type: 'tv' };
-    }
-
-    if (movieResults[0]?.id) {
-      return { id: Number(movieResults[0].id), type: 'movie' };
-    }
-    if (tvResults[0]?.id) {
-      return { id: Number(tvResults[0].id), type: 'tv' };
-    }
-  }
-
-  return null;
-};
+const fetchTmdbJson = createCachedJsonFetcher(tmdbFetchCache, TMDB_CACHE_TTL_MS, TMDB_FAILED_TTL_MS);
+const fetchAnimeMappingJson = createCachedJsonFetcher(
+  animeMappingFetchCache,
+  ANIME_MAPPING_CACHE_TTL_MS,
+  ANIME_MAPPING_FAILED_TTL_MS,
+);
 
 const translateTextFields = (
   target: Record<string, unknown>,
@@ -249,14 +197,16 @@ const translateMetaPayload = async (
   const erdbId = normalizeErdbId(rawId, rawType);
   if (!erdbId) return meta;
 
-  const tmdbRef = await resolveTmdbFromErdbId(erdbId, rawType, config.tmdbKey, lang);
-  if (!tmdbRef) return meta;
-
-  const detailsUrl = new URL(`${TMDB_BASE_URL}/${tmdbRef.type}/${tmdbRef.id}`);
-  detailsUrl.searchParams.set('api_key', config.tmdbKey);
-  detailsUrl.searchParams.set('language', lang);
-  const details = await fetchTmdbJson(detailsUrl.toString());
-  if (!details || typeof details !== 'object') return meta;
+  const tmdbTarget = await resolveTmdbTranslationTarget({
+    erdbId,
+    metaType: rawType,
+    tmdbKey: config.tmdbKey,
+    lang,
+    fetchTmdbJson,
+    fetchAnimeMappingJson,
+  });
+  if (!tmdbTarget) return meta;
+  const { id: tmdbId, type: tmdbType, details } = tmdbTarget;
 
   const translatedTitle =
     typeof details.title === 'string'
@@ -269,7 +219,7 @@ const translateMetaPayload = async (
   const nextMeta: Record<string, unknown> = { ...meta };
   translateTextFields(nextMeta, translatedTitle, translatedOverview);
 
-  if (tmdbRef.type === 'tv' && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
+  if (tmdbType === 'tv' && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
     const videos = nextMeta.videos as Array<Record<string, unknown>>;
     const seasonValues = new Set<number>();
     for (const video of videos) {
@@ -279,7 +229,7 @@ const translateMetaPayload = async (
 
     const seasonDataMap = new Map<number, any>();
     await mapWithConcurrency(Array.from(seasonValues), 6, async (seasonValue) => {
-      const seasonUrl = new URL(`${TMDB_BASE_URL}/tv/${tmdbRef.id}/season/${seasonValue}`);
+      const seasonUrl = new URL(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${seasonValue}`);
       seasonUrl.searchParams.set('api_key', config.tmdbKey);
       seasonUrl.searchParams.set('language', lang);
       const seasonData = await fetchTmdbJson(seasonUrl.toString());
