@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { decodeProxyConfig } from '../lib/addonProxy.ts';
+import { decodeProxyConfig, normalizeErdbId } from '../lib/addonProxy.ts';
 import {
   buildConfigString,
   buildProxyUrl,
@@ -176,4 +176,10 @@ test('proxy manifest generation stops when required inputs are missing', () => {
     ),
     '',
   );
+});
+
+test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {
+  assert.equal(normalizeErdbId('mal:456', 'series'), 'mal:456');
+  assert.equal(normalizeErdbId('myanimelist:456', 'series'), 'mal:456');
+  assert.equal(normalizeErdbId('anilist:123', 'series'), 'anilist:123');
 });
