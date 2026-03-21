@@ -3,6 +3,17 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.20.1] - 21/03/2026
+
+### Fixed
+- fix(proxy): verify episode requested-language translations before replacement
+  
+  Apply the same requested-language TMDB translation availability check to episode metadata that the top-level proxy meta path already uses, so prefer-requested-language no longer overwrites episode titles or overviews from season detail responses unless TMDB exposes a real translation for that exact episode locale.
+  
+  Add a reusable local smoke verifier that boots a mock upstream addon plus mock TMDB, anime-mapping, AniList, and Kitsu services against a local Next server, and add seeded randomized merge tests so the translation rules are exercised across many title and overview combinations.
+  
+  Also add a narrowly scoped non-production test override for private upstream URLs so the local verifier can drive the real proxy route without weakening the production SSRF checks.
+
 ## [v2.20.0] - 21/03/2026
 
 ### Added
