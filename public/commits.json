@@ -1,7 +1,20 @@
 {
-  "generatedAt": "2026-03-21T03:29:25.158Z",
+  "generatedAt": "2026-03-21T03:31:45.391Z",
   "total": 120,
   "commits": [
+    {
+      "hash": "a122785b2c1885ebffc403b9939a4aea4ba29267",
+      "shortHash": "a122785",
+      "author": {
+        "name": "IbbyLabs",
+        "email": "40578997+IbbyLabs@users.noreply.github.com"
+      },
+      "isUpstream": false,
+      "date": "2026-03-21T03:30:49Z",
+      "type": "fix",
+      "title": "remove user facing hyphens across the full page",
+      "body": "Refresh the docs, prompt, and metadata translation copy so the visible page text uses plain language without hyphenated phrases.\n\nAccept spaced layout names such as \"top bottom\", \"left right\", and \"right vertical\" so the updated docs and examples stay accurate.\n\nAdd a regression test for spaced layout normalization and keep the rendered page text clean end to end."
+    },
     {
       "hash": "5cb6ceacf90134d57be4c60dc79c89b61360576d",
       "shortHash": "5cb6cea",
@@ -1547,19 +1560,6 @@
       "date": "2026-03-18T00:20:22Z",
       "type": "chore",
       "title": "cleanup",
-      "body": null
-    },
-    {
-      "hash": "424f816449006661aa016dd0046455645f61dafe",
-      "shortHash": "424f816",
-      "author": {
-        "name": "IbbyLabs",
-        "email": "40578997+IbbyLabs@users.noreply.github.com"
-      },
-      "isUpstream": false,
-      "date": "2026-03-17T23:31:05Z",
-      "type": "chore",
-      "title": "release 2.7.0",
       "body": null
     }
   ]
