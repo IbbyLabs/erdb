@@ -3,6 +3,18 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.2] - 21/03/2026
+
+### Other Changes
+* stop tracking the generated recent changes feed
+  
+  Treat public/commits.json as generated build output instead of a tracked repository artifact.
+  
+  • ignore public/commits.json so build and dev regeneration does not create noisy diffs
+  • remove the file from the git index while keeping local/generated copies available
+  • add a predev hook so local development regenerates the feed before the app starts
+  • keep the existing build time generation path so production images still ship the feed
+
 ## [v2.21.1] - 21/03/2026
 
 ### Fixed
