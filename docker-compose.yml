@@ -7,6 +7,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOSTNAME: ${ERDB_BIND_HOST:-0.0.0.0}
       PREVIEW_INTERNAL_ORIGIN: ${PREVIEW_INTERNAL_ORIGIN:-http://127.0.0.1:3000}
       TMDB_API_KEY: ${TMDB_API_KEY}
       MDBLIST_API_KEYS: ${MDBLIST_API_KEYS}

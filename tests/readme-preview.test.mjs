@@ -6,6 +6,7 @@ import {
   getReadmePreviewDefinitions,
   resolveReadmePreviewDefinition,
   resolveReadmePreviewOrigin,
+  resolveReadmePreviewOrigins,
 } from '../lib/readmePreview.ts';
 
 test('README preview slugs resolve to curated definitions', () => {
@@ -50,6 +51,28 @@ test('README preview origin prefers the internal app origin when configured', ()
       requestOrigin: 'https://erdb.ibbylabs.dev',
       internalOrigin: 'not a url',
     }),
-    'https://erdb.ibbylabs.dev'
+    'https://erdb.ibbylabs.dev/'
+  );
+});
+
+test('README preview origins fall back through the container bind host before the public origin', () => {
+  assert.deepEqual(
+    resolveReadmePreviewOrigins({
+      requestOrigin: 'https://erdb.ibbylabs.dev',
+      internalOrigin: 'http://127.0.0.1:3000/',
+      bindHost: 'b31b3ce79adc',
+      port: '3000',
+    }),
+    ['http://127.0.0.1:3000/', 'http://b31b3ce79adc:3000/', 'https://erdb.ibbylabs.dev/']
+  );
+
+  assert.deepEqual(
+    resolveReadmePreviewOrigins({
+      requestOrigin: 'https://erdb.ibbylabs.dev',
+      internalOrigin: 'http://127.0.0.1:3000/',
+      bindHost: '0.0.0.0',
+      port: '3000',
+    }),
+    ['http://127.0.0.1:3000/', 'https://erdb.ibbylabs.dev/']
   );
 });

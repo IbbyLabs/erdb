@@ -122,6 +122,10 @@ Basic start:
 docker compose up -d --build
 ```
 
+If you are using the bundled Docker setup, the app should bind internally to `0.0.0.0`.
+Set `ERDB_BIND_HOST=0.0.0.0` in the same `.env` file that `docker compose` reads if you need to override it explicitly.
+This is only the container bind host. It is not your public domain name.
+
 Scale to multiple instances (e.g. 4):
 ```bash
 docker compose up -d --build --scale app=4
@@ -375,6 +379,8 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 |----------|---------|-------------|
 | `ERDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
 | `ERDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma-separated CORS allowlist. Empty = reflect incoming `Origin` header |
+| `ERDB_BIND_HOST` | `0.0.0.0` | Docker-only helper variable that maps to the container `HOSTNAME` bind address for standalone Next.js |
+| `PREVIEW_INTERNAL_ORIGIN` | `http://127.0.0.1:3000` | Internal self-fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
 | `ERDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
 | `ERDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
 

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildReadmePreviewTargetUrl,
   resolveReadmePreviewDefinition,
-  resolveReadmePreviewOrigin,
+  resolveReadmePreviewOrigins,
 } from '@/lib/readmePreview';
 
 export const runtime = 'nodejs';
@@ -56,22 +56,35 @@ export async function GET(
 
   const mdblistKey = process.env.ERDB_README_PREVIEW_MDBLIST_KEY?.trim() || null;
   const cacheBuster = request.nextUrl.searchParams.get('cb');
-  const previewOrigin = resolveReadmePreviewOrigin({
+  const previewOrigins = resolveReadmePreviewOrigins({
     requestOrigin: request.nextUrl.origin,
     internalOrigin: process.env.PREVIEW_INTERNAL_ORIGIN,
-  });
-  const targetUrl = buildReadmePreviewTargetUrl({
-    origin: previewOrigin,
-    definition,
-    tmdbKey,
-    mdblistKey,
-    cacheBuster,
+    bindHost: process.env.HOSTNAME,
+    port: process.env.PORT,
   });
 
-  let upstreamResponse: Response;
-  try {
-    upstreamResponse = await fetch(targetUrl.toString(), { cache: 'no-store' });
-  } catch {
+  let upstreamResponse: Response | null = null;
+  for (const previewOrigin of previewOrigins) {
+    const targetUrl = buildReadmePreviewTargetUrl({
+      origin: previewOrigin,
+      definition,
+      tmdbKey,
+      mdblistKey,
+      cacheBuster,
+    });
+
+    try {
+      upstreamResponse = await fetch(targetUrl.toString(), { cache: 'no-store' });
+    } catch {
+      continue;
+    }
+
+    if (upstreamResponse.ok) {
+      break;
+    }
+  }
+
+  if (!upstreamResponse) {
     return buildTextResponse('README preview fetch failed.', 502);
   }
 

@@ -147,6 +147,67 @@ export const buildReadmePreviewTargetUrl = ({
   return base;
 };
 
+const normalizeReadmePreviewOrigin = (value: string | null | undefined) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const normalized = new URL(trimmed);
+    normalized.pathname =
+      normalized.pathname === '/' ? '' : normalized.pathname.replace(/\/+$/, '');
+    normalized.search = '';
+    normalized.hash = '';
+    return normalized.toString();
+  } catch {
+    return null;
+  }
+};
+
+const buildReadmePreviewBindOrigin = ({
+  bindHost,
+  port,
+}: {
+  bindHost?: string | null;
+  port?: string | number | null;
+}) => {
+  const normalizedBindHost = String(bindHost || '').trim();
+  if (
+    !normalizedBindHost ||
+    normalizedBindHost === '0.0.0.0' ||
+    normalizedBindHost === '::' ||
+    normalizedBindHost === '[::]'
+  ) {
+    return null;
+  }
+
+  const normalizedPort = Number.parseInt(String(port || ''), 10);
+  const portSegment =
+    Number.isFinite(normalizedPort) && normalizedPort > 0 ? `:${normalizedPort}` : ':3000';
+  return normalizeReadmePreviewOrigin(`http://${normalizedBindHost}${portSegment}`);
+};
+
+export const resolveReadmePreviewOrigins = ({
+  requestOrigin,
+  internalOrigin = null,
+  bindHost = null,
+  port = null,
+}: {
+  requestOrigin: string;
+  internalOrigin?: string | null;
+  bindHost?: string | null;
+  port?: string | number | null;
+}) => {
+  const candidates = [
+    normalizeReadmePreviewOrigin(internalOrigin),
+    buildReadmePreviewBindOrigin({ bindHost, port }),
+    normalizeReadmePreviewOrigin(requestOrigin),
+  ].filter((value): value is string => Boolean(value));
+
+  return [...new Set(candidates)];
+};
+
 export const resolveReadmePreviewOrigin = ({
   requestOrigin,
   internalOrigin = null,
@@ -154,19 +215,5 @@ export const resolveReadmePreviewOrigin = ({
   requestOrigin: string;
   internalOrigin?: string | null;
 }) => {
-  const trimmedInternalOrigin = String(internalOrigin || '').trim();
-  if (!trimmedInternalOrigin) {
-    return requestOrigin;
-  }
-
-  try {
-    const normalized = new URL(trimmedInternalOrigin);
-    normalized.pathname =
-      normalized.pathname === '/' ? '' : normalized.pathname.replace(/\/+$/, '');
-    normalized.search = '';
-    normalized.hash = '';
-    return normalized.toString();
-  } catch {
-    return requestOrigin;
-  }
+  return resolveReadmePreviewOrigins({ requestOrigin, internalOrigin })[0] || requestOrigin;
 };
