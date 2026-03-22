@@ -16,6 +16,8 @@ import {
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   DEFAULT_POSTER_RATING_LAYOUT,
+  POSTER_RATINGS_MAX_PER_SIDE_MAX,
+  POSTER_RATINGS_MAX_PER_SIDE_MIN,
   getPosterRatingLayoutMaxBadges,
   getPosterRatingLayoutLimit,
   normalizePosterRatingLayout,
@@ -99,7 +101,15 @@ const parseNonNegativeInt = (value?: string | null, max = Number.MAX_SAFE_INTEGE
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.min(max, Math.floor(parsed));
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v32';
+const normalizeOptionalBadgeCount = (value?: string | null) => {
+  if (value == null || value.trim() === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  const normalized = Math.floor(parsed);
+  if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
+  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+};
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v33';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -160,6 +170,7 @@ const FINAL_IMAGE_CACHE_MAX_ENTRIES = 300;
 const SOURCE_IMAGE_CACHE_MAX_ENTRIES = 128;
 const METADATA_CACHE_MAX_ENTRIES = 2000;
 const PROVIDER_ICON_CACHE_MAX_ENTRIES = 64;
+const PROVIDER_ICON_CACHE_VERSION = 'v2';
 const TMDB_ANIMATION_GENRE_ID = 16;
 const MDBLIST_API_KEYS = parseApiKeyList(process.env.MDBLIST_API_KEYS, process.env.MDBLIST_API_KEY);
 type TimedCacheEntry<T> = {
@@ -1615,7 +1626,80 @@ const isTmdbSourceImageUrl = (value: string) => {
   }
 };
 
-const buildProviderIconStorageKey = (iconUrl: string) => `icons/${sha1Hex(iconUrl)}.png`;
+const buildProviderIconStorageKey = (iconUrl: string) =>
+  `icons/${PROVIDER_ICON_CACHE_VERSION}/${sha1Hex(iconUrl)}.png`;
+const buildProviderIconMemoryCacheKey = (iconUrl: string) =>
+  `icon:${PROVIDER_ICON_CACHE_VERSION}:${iconUrl}`;
+
+const isLightNeutralPixel = (r: number, g: number, b: number, alpha: number) => {
+  if (alpha < 200) return false;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  return max >= 225 && max - min <= 35;
+};
+
+const stripCornerBackgroundFromIcon = async (sharp: any, buffer: Buffer) => {
+  const { data, info } = await sharp(buffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const pixels = Buffer.from(data);
+  const { width, height, channels } = info;
+  if (!width || !height || channels < 4) {
+    return buffer;
+  }
+
+  const indexOf = (x: number, y: number) => (y * width + x) * channels;
+  const cornerQueue: Array<[number, number]> = [];
+  const seen = new Uint8Array(width * height);
+  const corners: Array<[number, number]> = [
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1],
+  ];
+
+  for (const [x, y] of corners) {
+    const index = indexOf(x, y);
+    if (isLightNeutralPixel(pixels[index], pixels[index + 1], pixels[index + 2], pixels[index + 3])) {
+      cornerQueue.push([x, y]);
+    }
+  }
+
+  if (cornerQueue.length === 0) {
+    return buffer;
+  }
+
+  let removedPixelCount = 0;
+  for (let queueIndex = 0; queueIndex < cornerQueue.length; queueIndex++) {
+    const [x, y] = cornerQueue[queueIndex]!;
+    if (x < 0 || y < 0 || x >= width || y >= height) continue;
+    const seenIndex = y * width + x;
+    if (seen[seenIndex]) continue;
+    seen[seenIndex] = 1;
+
+    const index = indexOf(x, y);
+    if (!isLightNeutralPixel(pixels[index], pixels[index + 1], pixels[index + 2], pixels[index + 3])) {
+      continue;
+    }
+
+    pixels[index + 3] = 0;
+    removedPixelCount++;
+
+    cornerQueue.push([x + 1, y]);
+    cornerQueue.push([x - 1, y]);
+    cornerQueue.push([x, y + 1]);
+    cornerQueue.push([x, y - 1]);
+  }
+
+  if (removedPixelCount === 0) {
+    return buffer;
+  }
+
+  return sharp(pixels, { raw: { width, height, channels } })
+    .png({ compressionLevel: 6 })
+    .toBuffer();
+};
 
 const readProviderIconFromStorage = async (iconUrl: string): Promise<string | null> => {
   if (!isObjectStorageConfigured()) return null;
@@ -1754,18 +1838,20 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
     return normalizedIconUrl;
   }
 
-  const localCached = getMetadata<string>(normalizedIconUrl);
+  const memoryCacheKey = buildProviderIconMemoryCacheKey(normalizedIconUrl);
+
+  const localCached = getMetadata<string>(memoryCacheKey);
   if (localCached) {
     return localCached;
   }
 
   return withDedupe(providerIconInFlight, normalizedIconUrl, async () => {
-    const warmLocal = getMetadata<string>(normalizedIconUrl);
+    const warmLocal = getMetadata<string>(memoryCacheKey);
     if (warmLocal) return warmLocal;
 
     const storageCached = await readProviderIconFromStorage(normalizedIconUrl);
     if (storageCached) {
-      setMetadata(normalizedIconUrl, storageCached, PROVIDER_ICON_CACHE_TTL_MS);
+      setMetadata(memoryCacheKey, storageCached, PROVIDER_ICON_CACHE_TTL_MS);
       return storageCached;
     }
 
@@ -1775,17 +1861,18 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
 
       const sourceBuffer = Buffer.from(await response.arrayBuffer());
       const sharp = await getSharpFactory();
-      const outputBuffer = await sharp(sourceBuffer)
+      const resizedBuffer = await sharp(sourceBuffer)
         .resize(96, 96, {
           fit: 'contain',
           background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
         .png({ compressionLevel: 6 })
         .toBuffer();
+      const outputBuffer = await stripCornerBackgroundFromIcon(sharp, resizedBuffer);
       const outputContentType = 'image/png';
 
       const dataUri = `data:${outputContentType};base64,${outputBuffer.toString('base64')}`;
-      setMetadata(normalizedIconUrl, dataUri, PROVIDER_ICON_CACHE_TTL_MS);
+      setMetadata(memoryCacheKey, dataUri, PROVIDER_ICON_CACHE_TTL_MS);
       await writeProviderIconToStorage(normalizedIconUrl, outputBuffer);
 
       return dataUri;
@@ -3401,6 +3488,7 @@ export async function GET(
   const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
   const posterRatingsLayout = normalizePosterRatingLayout(request.nextUrl.searchParams.get('posterRatingsLayout'));
   const posterRatingsMaxPerSide = normalizePosterRatingsMaxPerSide(request.nextUrl.searchParams.get('posterRatingsMaxPerSide'));
+  const logoRatingsMax = normalizeOptionalBadgeCount(request.nextUrl.searchParams.get('logoRatingsMax'));
   const backdropRatingsLayout = normalizeBackdropRatingLayout(request.nextUrl.searchParams.get('backdropRatingsLayout'));
   const globalStreamBadgesSetting = normalizeStreamBadgesSetting(request.nextUrl.searchParams.get('streamBadges'));
   const posterStreamBadgesSetting = normalizeStreamBadgesSetting(
@@ -3433,12 +3521,24 @@ export async function GET(
     request.nextUrl.searchParams.get('backdropQualityBadgesStyle') ||
     request.nextUrl.searchParams.get('qualityBadgesStyle')
   );
+  const posterQualityBadgesMax = normalizeOptionalBadgeCount(
+    request.nextUrl.searchParams.get('posterQualityBadgesMax')
+  );
+  const backdropQualityBadgesMax = normalizeOptionalBadgeCount(
+    request.nextUrl.searchParams.get('backdropQualityBadgesMax')
+  );
   const qualityBadgesStyle =
     imageType === 'poster'
       ? posterQualityBadgesStyle
       : imageType === 'backdrop'
         ? backdropQualityBadgesStyle
         : globalQualityBadgesStyle;
+  const qualityBadgesMax =
+    imageType === 'poster'
+      ? posterQualityBadgesMax
+      : imageType === 'backdrop'
+        ? backdropQualityBadgesMax
+        : null;
   const ratingStyleParam =
     request.nextUrl.searchParams.get('ratingStyle') || request.nextUrl.searchParams.get('style');
   const ratingStyle = ratingStyleParam
@@ -3521,6 +3621,7 @@ export async function GET(
     imageType !== 'logo' &&
     (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto') &&
     !hasNativeAnimeInput;
+  const shouldRenderLogoBackground = imageType === 'logo' && logoBackground === 'dark';
   const streamBadgesSeedTtlMs = shouldApplyStreamBadges
     ? getDeterministicTtlMs(TORRENTIO_CACHE_TTL_MS, cleanId)
     : null;
@@ -3532,7 +3633,10 @@ export async function GET(
     ? `torrentio:${streamBadgesSeedWindow ?? 0}`
     : 'off';
   const shouldCacheFinalImage =
-    shouldApplyRatings || shouldApplyStreamBadges || (imageType === 'poster' && posterTextPreference === 'clean');
+    shouldApplyRatings ||
+    shouldApplyStreamBadges ||
+    shouldRenderLogoBackground ||
+    (imageType === 'poster' && posterTextPreference === 'clean');
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
   const renderSeedKey = [
@@ -3544,13 +3648,16 @@ export async function GET(
     posterTextPreference,
     imageType === 'poster' ? posterRatingsLayout : '-',
     imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
+    imageType === 'logo' ? String(logoRatingsMax ?? 'auto') : '-',
     imageType === 'poster' ? qualityBadgesSide : '-',
     imageType === 'poster' && (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom')
       ? posterQualityBadgesPosition
       : '-',
     imageType !== 'logo' ? qualityBadgesStyle : '-',
+    imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
     imageType === 'backdrop' ? backdropRatingsLayout : '-',
     ratingStyle,
+    imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
     'v1',
@@ -3807,7 +3914,7 @@ export async function GET(
         useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
       const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
       const shouldRenderStreamBadges = shouldApplyStreamBadges && !isAnimeContent;
-      const shouldRenderBadges = shouldRenderRatings || shouldRenderStreamBadges;
+      const shouldRenderBadges = shouldRenderRatings || shouldRenderStreamBadges || shouldRenderLogoBackground;
       const releaseDateForCache =
         mediaType === 'movie' ? media?.release_date : mediaType === 'tv' ? media?.first_air_date : null;
       const tmdbIdForCache =
@@ -3850,13 +3957,16 @@ export async function GET(
         posterTextPreference,
         imageType === 'poster' ? posterRatingsLayout : '-',
         imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
+        imageType === 'logo' ? String(logoRatingsMax ?? 'auto') : '-',
         imageType === 'poster' ? qualityBadgesSide : '-',
         imageType === 'poster' && (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom')
           ? posterQualityBadgesPosition
           : '-',
         imageType !== 'logo' ? qualityBadgesStyle : '-',
+        imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
         imageType === 'backdrop' ? backdropRatingsLayout : '-',
         ratingStyle,
+        imageType === 'logo' ? logoBackground : '-',
         effectiveRatingPreferences.join(',') || 'none',
         streamBadgesCacheKey,
         'v1',
@@ -4542,7 +4652,13 @@ export async function GET(
           accentColor: meta.accentColor,
         });
       }
-      if (ratingBadges.length === 0 && streamBadges.length === 0 && !posterTitleText && !posterLogoUrl) {
+      if (
+        ratingBadges.length === 0 &&
+        streamBadges.length === 0 &&
+        !shouldRenderLogoBackground &&
+        !posterTitleText &&
+        !posterLogoUrl
+      ) {
         return getSourceImagePayload(imgUrl);
       }
       const usePosterBadgeLayout = type === 'poster';
@@ -4558,11 +4674,12 @@ export async function GET(
       const posterRatingLimit = usePosterBadgeLayout
         ? getPosterRatingLayoutMaxBadges(posterRatingsLayout, posterRatingsMaxPerSide)
         : null;
+      const logoRatingLimit = useLogoBadgeLayout ? logoRatingsMax ?? 6 : null;
       let cappedRatingBadges = usePosterBadgeLayout
         ? (typeof posterRatingLimit === 'number' ? ratingBadges.slice(0, posterRatingLimit) : [...ratingBadges])
         : useBackdropBadgeLayout
           ? [...ratingBadges]
-          : ratingBadges.slice(0, 6);
+          : ratingBadges.slice(0, logoRatingLimit ?? 6);
       const backdropRows =
         useBackdropBadgeLayout && !useBackdropRightVerticalLayout ? chunkBy(cappedRatingBadges, 3) : [];
       let posterBadgeGroups = splitPosterBadgesByLayout(
@@ -4776,7 +4893,11 @@ export async function GET(
           gap: badgeGap,
         })
         : 0;
-      const qualityBadges = useLogoBadgeLayout ? [] : streamBadges;
+      const qualityBadges = useLogoBadgeLayout
+        ? []
+        : typeof qualityBadgesMax === 'number'
+          ? streamBadges.slice(0, qualityBadgesMax)
+          : streamBadges;
       const badgesForIcons = cappedRatingBadges;
       const logoNaturalWidth = useLogoBadgeLayout ? outputWidth : 0;
       const finalOutputWidth = useLogoBadgeLayout && logoBadgeRowWidth > 0

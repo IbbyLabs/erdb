@@ -16,9 +16,9 @@ const ERDB_OPTIONAL_PARAMS = [
   'backdropRatingsLayout',
 ];
 const ERDB_TYPE_OPTIONAL_PARAMS = {
-  poster: ['posterStreamBadges', 'posterQualityBadgesStyle', 'posterRatings'],
-  backdrop: ['backdropStreamBadges', 'backdropQualityBadgesStyle', 'backdropRatings'],
-  logo: ['logoRatings'],
+  poster: ['posterStreamBadges', 'posterQualityBadgesStyle', 'posterQualityBadgesMax', 'posterRatings'],
+  backdrop: ['backdropStreamBadges', 'backdropQualityBadgesStyle', 'backdropQualityBadgesMax', 'backdropRatings'],
+  logo: ['logoRatings', 'logoRatingsMax', 'logoBackground'],
 } as const;
 const ERDB_OPTIONAL_PARAM_KEYS = [
   ...ERDB_OPTIONAL_PARAMS,
@@ -83,6 +83,8 @@ export type ProxyConfig = {
   qualityBadgesStyle?: string;
   posterQualityBadgesStyle?: string;
   backdropQualityBadgesStyle?: string;
+  posterQualityBadgesMax?: string;
+  backdropQualityBadgesMax?: string;
   ratingStyle?: string;
   imageText?: string;
   posterRatingStyle?: string;
@@ -93,6 +95,8 @@ export type ProxyConfig = {
   posterRatingsLayout?: string;
   posterRatingsMaxPerSide?: string;
   backdropRatingsLayout?: string;
+  logoRatingsMax?: string;
+  logoBackground?: string;
   erdbBase?: string;
   posterEnabled?: boolean;
   backdropEnabled?: boolean;
@@ -114,6 +118,8 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'qualityBadgesStyle',
   'posterQualityBadgesStyle',
   'backdropQualityBadgesStyle',
+  'posterQualityBadgesMax',
+  'backdropQualityBadgesMax',
   'ratingStyle',
   'imageText',
   'posterRatingStyle',
@@ -124,6 +130,8 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'posterRatingsLayout',
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
+  'logoRatingsMax',
+  'logoBackground',
   'erdbBase',
  ] as const satisfies readonly (keyof ProxyConfig)[];
 type ProxyOptionalStringKey = (typeof PROXY_OPTIONAL_STRING_KEYS)[number];

@@ -25,6 +25,8 @@ import {
 } from '@/lib/backdropRatingLayout';
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
+  POSTER_RATINGS_MAX_PER_SIDE_MAX,
+  POSTER_RATINGS_MAX_PER_SIDE_MIN,
   POSTER_RATING_LAYOUT_OPTIONS,
   isVerticalPosterRatingLayout,
   type PosterRatingLayout,
@@ -42,6 +44,7 @@ import {
   serializeSavedUiConfig,
   normalizeBaseUrl,
   normalizeManifestUrl,
+  type LogoBackground,
   type QualityBadgesSide,
   type PosterQualityBadgesPosition,
   type SavedUiConfig,
@@ -115,7 +118,19 @@ const TMDB_LANGUAGE_HELP_COPY = 'All TMDB ISO 639-1 codes are supported (en, it,
 const POSTER_LAYOUT_DOC_VALUES = 'top, bottom, left, right, top bottom, left right';
 const POSTER_LAYOUT_DOC_DEFAULT = 'top bottom';
 const POSTER_RATINGS_MAX_DOC_COPY = '1 to 20';
+const OPTIONAL_BADGE_MAX_DOC_COPY = '1 to 20';
 const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
+const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
+
+const normalizeOptionalBadgeCountInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+  const normalized = Math.trunc(parsed);
+  if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
+  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+};
 const AI_DEVELOPER_PROMPT = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
 CONFIG INPUT
@@ -152,11 +167,15 @@ posterQualityBadgesPosition | auto, left, right (poster top or bottom only)     
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
+posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
+backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
+logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto (6 if omitted)
+logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
 
@@ -171,14 +190,14 @@ INTEGRATION REQUIREMENTS
 PER TYPE SETTINGS
 poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
-logo     : ratingStyle = cfg.logoRatingStyle (omit imageText)
+logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
-Quality badges style can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
+Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
 
 Omit imageText when type=logo.
 
@@ -471,12 +490,16 @@ export default function Home() {
     useState<PosterQualityBadgesPosition>('auto');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [posterQualityBadgesMax, setPosterQualityBadgesMax] = useState<number | null>(null);
+  const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
+  const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
+  const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
@@ -516,6 +539,10 @@ export default function Home() {
     previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
   const setActiveQualityBadgesStyle =
     previewType === 'backdrop' ? setBackdropQualityBadgesStyle : setPosterQualityBadgesStyle;
+  const activeQualityBadgesMax =
+    previewType === 'backdrop' ? backdropQualityBadgesMax : posterQualityBadgesMax;
+  const setActiveQualityBadgesMax =
+    previewType === 'backdrop' ? setBackdropQualityBadgesMax : setPosterQualityBadgesMax;
 
   const scrollToHash = useCallback((hash: string, behavior: ScrollBehavior = 'smooth') => {
     if (typeof window === 'undefined') return;
@@ -659,12 +686,16 @@ export default function Home() {
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
       setPosterQualityBadgesStyle(normalized.settings.posterQualityBadgesStyle);
       setBackdropQualityBadgesStyle(normalized.settings.backdropQualityBadgesStyle);
+      setPosterQualityBadgesMax(normalized.settings.posterQualityBadgesMax);
+      setBackdropQualityBadgesMax(normalized.settings.backdropQualityBadgesMax);
       setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
       setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
       setPosterRatingStyle(normalized.settings.posterRatingStyle);
       setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
+      setLogoRatingsMax(normalized.settings.logoRatingsMax);
+      setLogoBackground(normalized.settings.logoBackground);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
       setProxyTranslateMeta(normalized.proxy.translateMeta);
       setProxyTranslateMetaMode(normalized.proxy.translateMetaMode);
@@ -692,12 +723,16 @@ export default function Home() {
         posterQualityBadgesPosition,
         posterQualityBadgesStyle,
         backdropQualityBadgesStyle,
+        posterQualityBadgesMax,
+        backdropQualityBadgesMax,
         posterRatingsLayout,
         backdropRatingsLayout,
         posterRatingStyle,
         backdropRatingStyle,
         logoRatingStyle,
         posterRatingsMaxPerSide,
+        logoRatingsMax,
+        logoBackground,
       },
       proxy: {
         manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
@@ -721,12 +756,16 @@ export default function Home() {
       posterQualityBadgesPosition,
       posterQualityBadgesStyle,
       backdropQualityBadgesStyle,
+      posterQualityBadgesMax,
+      backdropQualityBadgesMax,
       posterRatingsLayout,
       backdropRatingsLayout,
       posterRatingStyle,
       backdropRatingStyle,
       logoRatingStyle,
       posterRatingsMaxPerSide,
+      logoRatingsMax,
+      logoBackground,
       proxyManifestUrl,
       proxyTranslateMeta,
       proxyTranslateMetaMode,
@@ -872,6 +911,12 @@ export default function Home() {
         qualityBadgesStyleForType
       );
     }
+    if (previewType !== 'logo' && activeQualityBadgesMax !== null) {
+      query.set(
+        previewType === 'backdrop' ? 'backdropQualityBadgesMax' : 'posterQualityBadgesMax',
+        String(activeQualityBadgesMax)
+      );
+    }
 
     if (mdblistKey) {
       query.set('mdblistKey', mdblistKey);
@@ -888,6 +933,13 @@ export default function Home() {
       }
     } else if (previewType === 'backdrop') {
       query.set('backdropRatingsLayout', backdropRatingsLayout);
+    } else {
+      if (logoRatingsMax !== null) {
+        query.set('logoRatingsMax', String(logoRatingsMax));
+      }
+      if (logoBackground !== 'transparent') {
+        query.set('logoBackground', logoBackground);
+      }
     }
 
     return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
@@ -904,6 +956,7 @@ export default function Home() {
     backdropStreamBadges,
     posterRatingsLayout,
     posterRatingsMaxPerSide,
+    activeQualityBadgesMax,
     backdropRatingsLayout,
     qualityBadgesSide,
     posterQualityBadgesPosition,
@@ -912,6 +965,8 @@ export default function Home() {
     posterRatingStyle,
     backdropRatingStyle,
     logoRatingStyle,
+    logoRatingsMax,
+    logoBackground,
     baseUrl,
     shouldShowQualityBadgesSide,
     shouldShowQualityBadgesPosition,
@@ -1447,7 +1502,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {(previewType === 'poster' || previewType === 'backdrop') && (
+                {(previewType === 'poster' || previewType === 'backdrop' || previewType === 'logo') && (
                   <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
                     <div className="text-[11px] font-semibold text-zinc-400">Layouts</div>
                     {previewType === 'poster' && (
@@ -1464,7 +1519,7 @@ export default function Home() {
                           {isVerticalPosterRatingLayout(posterRatingsLayout) && (
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} max={POSTER_RATINGS_MAX_PER_SIDE_MAX} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                               <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                             </div>
                           )}
@@ -1479,6 +1534,32 @@ export default function Home() {
                           {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
                             <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                           ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {previewType === 'logo' && (
+                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Output</div>
+                        <div className="flex flex-wrap gap-3 items-end">
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Background</span>
+                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                              {(['transparent', 'dark'] as const).map((option) => (
+                                <button key={option} onClick={() => setLogoBackground(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${logoBackground === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                                  {option === 'dark' ? 'Dark' : 'Transparent'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
+                            <input type="number" value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Default" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} max={POSTER_RATINGS_MAX_PER_SIDE_MAX} className="w-20 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                            <button onClick={() => setLogoRatingsMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Default</button>
+                          </div>
+                        </div>
+                        <div className="text-[11px] text-zinc-500">
+                          Default logo output caps ratings at 6 badges. Set an explicit limit if you want a tighter or wider badge row.
                         </div>
                       </div>
                     )}
@@ -1506,6 +1587,11 @@ export default function Home() {
                         </button>
                       ))}
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
+                      <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} max={POSTER_RATINGS_MAX_PER_SIDE_MAX} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                      <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                     </div>
                     {shouldShowQualityBadgesSide && (
                       <div className="flex items-center gap-2">
@@ -1934,6 +2020,16 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgesMax</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadgesMax</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass (poster/backdrop), plain (logo)</td>
@@ -1957,6 +2053,16 @@ export default function Home() {
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingsLayout</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{BACKDROP_LAYOUT_DOC_VALUES}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">center</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatingsMax</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto (6 if omitted)</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoBackground</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{LOGO_BACKGROUND_DOC_VALUES}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">transparent</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
@@ -1996,6 +2102,7 @@ export default function Home() {
                             <div>imageText</div>
                             <div>posterRatingsLayout</div>
                             <div>posterRatingsMaxPerSide</div>
+                            <div>posterQualityBadgesMax</div>
                           </div>
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
@@ -2003,6 +2110,7 @@ export default function Home() {
                             <div>original, clean, alternative</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
+                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                           </div>
                         </td>
                       </tr>
@@ -2012,25 +2120,37 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>imageText</div>
                             <div>backdropRatingsLayout</div>
+                            <div>backdropQualityBadgesMax</div>
                           </div>
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
+                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                           </div>
                         </td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logo</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">none (base params only)</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">none</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">
+                          <div className="space-y-1">
+                            <div>logoRatingsMax</div>
+                            <div>logoBackground</div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">
+                          <div className="space-y-1">
+                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (default cap 6)</div>
+                            <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
+                          </div>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type.
+                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type and the per-type max settings when you want tighter badge limits.
                 </div>
               </div>
 

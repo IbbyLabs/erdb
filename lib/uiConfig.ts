@@ -5,6 +5,8 @@ import {
 } from './backdropRatingLayout.ts';
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
+  POSTER_RATINGS_MAX_PER_SIDE_MAX,
+  POSTER_RATINGS_MAX_PER_SIDE_MIN,
   isVerticalPosterRatingLayout,
   normalizePosterRatingLayout,
   normalizePosterRatingsMaxPerSide,
@@ -30,6 +32,7 @@ export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type ImageTextPreference = 'original' | 'clean' | 'alternative';
+export type LogoBackground = 'transparent' | 'dark';
 
 export type SharedErdbSettings = {
   tmdbKey: string;
@@ -46,12 +49,16 @@ export type SharedErdbSettings = {
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterQualityBadgesStyle: RatingStyle;
   backdropQualityBadgesStyle: RatingStyle;
+  posterQualityBadgesMax: number | null;
+  backdropQualityBadgesMax: number | null;
   posterRatingsLayout: PosterRatingLayout;
   backdropRatingsLayout: BackdropRatingLayout;
   posterRatingStyle: RatingStyle;
   backdropRatingStyle: RatingStyle;
   logoRatingStyle: RatingStyle;
   posterRatingsMaxPerSide: number | null;
+  logoRatingsMax: number | null;
+  logoBackground: LogoBackground;
 };
 
 export type SavedUiConfig = {
@@ -72,6 +79,7 @@ const IMAGE_TEXT_PREFERENCE_SET = new Set<ImageTextPreference>(['original', 'cle
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
+const LOGO_BACKGROUND_SET = new Set<LogoBackground>(['transparent', 'dark']);
 
 const normalizeBoolean = (value: unknown, fallback = false) => {
   if (typeof value === 'boolean') return value;
@@ -100,12 +108,16 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterQualityBadgesPosition: 'auto',
   posterQualityBadgesStyle: DEFAULT_RATING_STYLE,
   backdropQualityBadgesStyle: DEFAULT_RATING_STYLE,
+  posterQualityBadgesMax: null,
+  backdropQualityBadgesMax: null,
   posterRatingsLayout: 'bottom',
   backdropRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
   posterRatingStyle: DEFAULT_RATING_STYLE,
   backdropRatingStyle: DEFAULT_RATING_STYLE,
   logoRatingStyle: 'plain',
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
+  logoRatingsMax: null,
+  logoBackground: 'transparent',
 });
 
 export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
@@ -220,6 +232,30 @@ const normalizeRatingPreferencesList = (
   return [...new Set(normalized)];
 };
 
+const normalizeOptionalBadgeCount = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return null;
+  const normalized = Math.trunc(numericValue);
+  if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
+  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+};
+
+const normalizeLogoBackground = (
+  value: unknown,
+  fallback: LogoBackground,
+): LogoBackground => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return LOGO_BACKGROUND_SET.has(normalized as LogoBackground)
+    ? (normalized as LogoBackground)
+    : fallback;
+};
+
 export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings => {
   const defaults = createDefaultSharedErdbSettings();
   if (!value || typeof value !== 'object') {
@@ -270,6 +306,8 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     backdropQualityBadgesStyle: normalizeRatingStyle(
       candidate.backdropQualityBadgesStyle as string | null | undefined,
     ),
+    posterQualityBadgesMax: normalizeOptionalBadgeCount(candidate.posterQualityBadgesMax),
+    backdropQualityBadgesMax: normalizeOptionalBadgeCount(candidate.backdropQualityBadgesMax),
     posterRatingsLayout: normalizePosterRatingLayout(candidate.posterRatingsLayout as string | null | undefined),
     backdropRatingsLayout: normalizeBackdropRatingLayout(
       candidate.backdropRatingsLayout as string | null | undefined,
@@ -283,6 +321,8 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
         ? (candidate.logoRatingStyle as RatingStyle)
         : 'plain',
     posterRatingsMaxPerSide: normalizePosterRatingsMaxPerSide(candidate.posterRatingsMaxPerSide),
+    logoRatingsMax: normalizeOptionalBadgeCount(candidate.logoRatingsMax),
+    logoBackground: normalizeLogoBackground(candidate.logoBackground, defaults.logoBackground),
   };
 };
 
@@ -383,6 +423,12 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   if (settings.backdropQualityBadgesStyle !== DEFAULT_RATING_STYLE) {
     payload.backdropQualityBadgesStyle = settings.backdropQualityBadgesStyle;
   }
+  if (settings.posterQualityBadgesMax !== null) {
+    payload.posterQualityBadgesMax = settings.posterQualityBadgesMax;
+  }
+  if (settings.backdropQualityBadgesMax !== null) {
+    payload.backdropQualityBadgesMax = settings.backdropQualityBadgesMax;
+  }
 
   payload.posterRatingStyle = settings.posterRatingStyle;
   payload.backdropRatingStyle = settings.backdropRatingStyle;
@@ -396,6 +442,12 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     settings.posterRatingsMaxPerSide !== null
   ) {
     payload.posterRatingsMaxPerSide = settings.posterRatingsMaxPerSide;
+  }
+  if (settings.logoRatingsMax !== null) {
+    payload.logoRatingsMax = settings.logoRatingsMax;
+  }
+  if (settings.logoBackground !== 'transparent') {
+    payload.logoBackground = settings.logoBackground;
   }
 
   payload.backdropRatingsLayout = settings.backdropRatingsLayout;
