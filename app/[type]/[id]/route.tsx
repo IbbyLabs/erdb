@@ -7,6 +7,7 @@ import {
   normalizeRatingPreference,
   orderRatingPreferencesForRender,
   parseRatingPreferencesAllowEmpty,
+  selectAvailableRatingPreferences,
   type RatingPreference,
 } from '@/lib/ratingPreferences';
 import {
@@ -4811,7 +4812,18 @@ export async function GET(
         providerRatings.set('kitsu', rawFallbackKitsuRating as string);
         renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);
       }
-      const ratingBadges: RatingBadge[] = [];
+      const usePosterBadgeLayout = type === 'poster';
+      const useBackdropBadgeLayout = type === 'backdrop';
+      const useLogoBadgeLayout = type === 'logo';
+      const posterRatingLimit = usePosterBadgeLayout
+        ? getPosterRatingLayoutMaxBadges(posterRatingsLayout, posterRatingsMaxPerSide)
+        : null;
+      const logoRatingLimit = useLogoBadgeLayout ? logoRatingsMax ?? 6 : null;
+      const resolvedRatingBadgeLimit =
+        usePosterBadgeLayout || useLogoBadgeLayout
+          ? (posterRatingLimit ?? logoRatingLimit ?? null)
+          : null;
+      const ratingBadgeByProvider = new Map<RatingPreference, RatingBadge>();
       const renderableRatingPreferences = useRawKitsuFallback
         ? (shouldRenderRawKitsuFallbackRating ? (['kitsu'] as RatingPreference[]) : [])
         : orderRatingPreferencesForRender(
@@ -4833,7 +4845,7 @@ export async function GET(
         if (!shouldRenderRatingValue(value)) continue;
 
         const iconUrl = meta.iconUrl;
-        ratingBadges.push({
+        ratingBadgeByProvider.set(provider, {
           key: provider,
           label: meta.label,
           value,
@@ -4841,6 +4853,13 @@ export async function GET(
           accentColor: meta.accentColor,
         });
       }
+      const ratingBadges = selectAvailableRatingPreferences(
+        renderableRatingPreferences,
+        ratingBadgeByProvider.keys(),
+        resolvedRatingBadgeLimit,
+      )
+        .map((provider) => ratingBadgeByProvider.get(provider) || null)
+        .filter((badge): badge is RatingBadge => badge !== null);
       if (
         ratingBadges.length === 0 &&
         streamBadges.length === 0 &&
@@ -4850,9 +4869,6 @@ export async function GET(
       ) {
         return getSourceImagePayload(imgUrl);
       }
-      const usePosterBadgeLayout = type === 'poster';
-      const useBackdropBadgeLayout = type === 'backdrop';
-      const useLogoBadgeLayout = type === 'logo';
       const usePosterRowLayout =
         usePosterBadgeLayout &&
         (posterRatingsLayout === 'top' ||
@@ -4860,15 +4876,7 @@ export async function GET(
           posterRatingsLayout === 'top-bottom');
       const usePosterRowLayoutLarge = usePosterBadgeLayout && usePosterRowLayout;
       const useBackdropRightVerticalLayout = useBackdropBadgeLayout && backdropRatingsLayout === 'right-vertical';
-      const posterRatingLimit = usePosterBadgeLayout
-        ? getPosterRatingLayoutMaxBadges(posterRatingsLayout, posterRatingsMaxPerSide)
-        : null;
-      const logoRatingLimit = useLogoBadgeLayout ? logoRatingsMax ?? 6 : null;
-      let cappedRatingBadges = usePosterBadgeLayout
-        ? (typeof posterRatingLimit === 'number' ? ratingBadges.slice(0, posterRatingLimit) : [...ratingBadges])
-        : useBackdropBadgeLayout
-          ? [...ratingBadges]
-          : ratingBadges.slice(0, logoRatingLimit ?? 6);
+      let cappedRatingBadges = [...ratingBadges];
       const backdropRows =
         useBackdropBadgeLayout && !useBackdropRightVerticalLayout ? chunkBy(cappedRatingBadges, 3) : [];
       let posterBadgeGroups = splitPosterBadgesByLayout(

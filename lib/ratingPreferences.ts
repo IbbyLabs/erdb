@@ -163,6 +163,29 @@ export const stringifyRatingPreferences = (ratings: RatingPreference[]) => {
   return [...new Set(normalized)].join(',');
 };
 
+export const selectAvailableRatingPreferences = (
+  preferences: RatingPreference[],
+  available: Iterable<RatingPreference>,
+  maxCount?: number | null,
+) => {
+  const availableSet = new Set(available);
+  const normalizedMaxCount =
+    typeof maxCount === 'number' && Number.isFinite(maxCount) && maxCount > 0
+      ? Math.floor(maxCount)
+      : null;
+
+  const selected: RatingPreference[] = [];
+  for (const provider of preferences) {
+    if (!availableSet.has(provider)) continue;
+    selected.push(provider);
+    if (normalizedMaxCount !== null && selected.length >= normalizedMaxCount) {
+      break;
+    }
+  }
+
+  return selected;
+};
+
 export const orderRatingPreferencesForRender = (
   preferences: RatingPreference[],
   {
