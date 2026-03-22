@@ -3,6 +3,11 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.8] - 22/03/2026
+
+### Fixed
+* respect explicit anime rating order
+
 ## [v2.21.7] - 22/03/2026
 
 ### Documentation
