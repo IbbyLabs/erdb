@@ -110,7 +110,16 @@ const normalizeOptionalBadgeCount = (value?: string | null) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v34';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v38';
+const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
+const ANILIST_MEDIA_RATING_QUERY = `
+  query ErdbAnimeRating($id: Int) {
+    Media(id: $id, type: ANIME) {
+      averageScore
+      meanScore
+    }
+  }
+`;
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -1024,6 +1033,22 @@ const extractKitsuIdFromAnimemapping = (payload: any) => {
   return null;
 };
 
+const extractAniListIdFromAnimemapping = (payload: any) => {
+  const candidates = [
+    payload?.requested?.resolvedAniListId,
+    payload?.mappings?.ids?.anilist,
+    payload?.data?.requested?.resolvedAniListId,
+    payload?.data?.mappings?.ids?.anilist,
+  ];
+
+  for (const candidate of candidates) {
+    const aniListId = normalizeTmdbId(candidate);
+    if (aniListId) return aniListId;
+  }
+
+  return null;
+};
+
 const extractTmdbIdFromAnimemapping = (payload: any) => {
   const candidates = [
     payload?.mappings?.ids?.tmdb,
@@ -1059,7 +1084,7 @@ const extractAnimeSubtypeFromAnimemapping = (payload: any) => {
   return null;
 };
 
-const fetchKitsuIdFromReverseMapping = async ({
+const fetchAnimeReverseMappingPayload = async ({
   provider,
   externalId,
   season,
@@ -1075,7 +1100,7 @@ const fetchKitsuIdFromReverseMapping = async ({
 
   const normalizedSeason = (season || '').trim();
   const seasonQuery = normalizedSeason ? `?s=${encodeURIComponent(normalizedSeason)}` : '';
-  const cacheKey = `kitsu:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`;
+  const cacheKey = `anime:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`;
   const url = `https://animemapping.stremio.dpdns.org/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
 
   try {
@@ -1089,10 +1114,50 @@ const fetchKitsuIdFromReverseMapping = async ({
     if (!response.ok) return null;
     const payload = response.data;
     if (payload?.ok === false) return null;
-    return extractKitsuIdFromAnimemapping(payload);
+    return payload;
   } catch {
     return null;
   }
+};
+
+const fetchKitsuIdFromReverseMapping = async ({
+  provider,
+  externalId,
+  season,
+  phases,
+}: {
+  provider: AnimeMappingProvider;
+  externalId: string;
+  season?: string | null;
+  phases: PhaseDurations;
+}) => {
+  const payload = await fetchAnimeReverseMappingPayload({
+    provider,
+    externalId,
+    season,
+    phases,
+  });
+  return payload ? extractKitsuIdFromAnimemapping(payload) : null;
+};
+
+const fetchAniListIdFromReverseMapping = async ({
+  provider,
+  externalId,
+  season,
+  phases,
+}: {
+  provider: AnimeMappingProvider;
+  externalId: string;
+  season?: string | null;
+  phases: PhaseDurations;
+}) => {
+  const payload = await fetchAnimeReverseMappingPayload({
+    provider,
+    externalId,
+    season,
+    phases,
+  });
+  return payload ? extractAniListIdFromAnimemapping(payload) : null;
 };
 
 const fetchTmdbIdFromReverseMapping = async ({
@@ -1280,6 +1345,40 @@ const fetchKitsuFallbackAsset = async (
 const fetchKitsuRating = async (kitsuId: string, phases: PhaseDurations) => {
   const attributes = await fetchKitsuAnimeAttributes(kitsuId, phases);
   return normalizeRatingValue(attributes?.averageRating);
+};
+
+const fetchAniListRating = async (aniListId: string, phases: PhaseDurations) => {
+  const normalizedAniListId = String(aniListId || '').trim();
+  const parsedAniListId = Number.parseInt(normalizedAniListId, 10);
+  if (!Number.isFinite(parsedAniListId) || parsedAniListId <= 0) return null;
+
+  try {
+    const response = await fetchJsonCached(
+      `anilist:anime:${parsedAniListId}:rating`,
+      ANILIST_GRAPHQL_URL,
+      KITSU_CACHE_TTL_MS,
+      phases,
+      'mdb',
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          query: ANILIST_MEDIA_RATING_QUERY,
+          variables: { id: parsedAniListId },
+        }),
+      }
+    );
+    if (!response.ok || response.data?.errors) return null;
+
+    return normalizeRatingValue(
+      response.data?.data?.Media?.averageScore ?? response.data?.data?.Media?.meanScore
+    );
+  } catch {
+    return null;
+  }
 };
 
 const fetchJsonCached = async (
@@ -2517,6 +2616,7 @@ const buildBadgeSvg = ({
   accentColor,
   monogram,
   iconDataUri,
+  iconKey,
   value,
   ratingStyle,
   compactText = false,
@@ -2530,6 +2630,7 @@ const buildBadgeSvg = ({
   accentColor: string;
   monogram: string;
   iconDataUri?: string | null;
+  iconKey?: BadgeKey;
   value: string;
   ratingStyle: RatingStyle;
   compactText?: boolean;
@@ -2579,6 +2680,14 @@ const buildBadgeSvg = ({
       ? ''
       : `<rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${ratingStyle === 'square' ? '1.5' : '1'}" />`;
   const monogramFill = ratingStyle === 'glass' ? 'white' : accentColor;
+  const plainIconPlate =
+    ratingStyle === 'plain' && iconKey === 'kitsu'
+      ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.round(iconSize / 2) + 4}" fill="rgb(255,255,255)" stroke="rgba(15,23,42,0.14)" stroke-width="1" />`
+      : '';
+  const plainIconClipPath =
+    ratingStyle === 'plain' && iconKey === 'kitsu'
+      ? `<defs><clipPath id="plain-icon-clip"><circle cx="${iconCx}" cy="${iconCy}" r="${Math.round(iconSize / 2) + 1}" /></clipPath></defs>`
+      : '';
   const textShadowFilter =
     ratingStyle === 'plain'
       ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter></defs>`
@@ -2587,7 +2696,7 @@ const buildBadgeSvg = ({
     !iconDataUri
       ? ''
       : ratingStyle === 'plain'
-        ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet" />`
+        ? `${plainIconClipPath}${plainIconPlate}<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet"${iconKey === 'kitsu' ? ' clip-path="url(#plain-icon-clip)"' : ''} />`
         : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)" />${iconBorder}`;
   const monogramText =
     iconDataUri
@@ -2806,6 +2915,7 @@ const renderWithSharp = async (
           accentColor: entry.badge.accentColor,
           monogram,
           iconDataUri: iconByProvider.get(entry.badge.key) || null,
+          iconKey: entry.badge.key,
           value: entry.badge.value,
           ratingStyle: input.ratingStyle,
           compactText: compactPosterRowText,
@@ -2849,6 +2959,7 @@ const renderWithSharp = async (
                 accentColor: entry.badge.accentColor,
                 monogram,
                 iconDataUri: iconByProvider.get(entry.badge.key) || null,
+                iconKey: entry.badge.key,
                 value: entry.badge.value,
                 ratingStyle: input.ratingStyle,
                 compactText: compactPosterRowText,
@@ -2884,6 +2995,7 @@ const renderWithSharp = async (
               accentColor: entry.badge.accentColor,
               monogram,
               iconDataUri: iconByProvider.get(entry.badge.key) || null,
+              iconKey: entry.badge.key,
               value: entry.badge.value,
               ratingStyle: input.ratingStyle,
               compactText: compactPosterRowText,
@@ -2931,6 +3043,7 @@ const renderWithSharp = async (
           accentColor: entry.badge.accentColor,
           monogram,
           iconDataUri: iconByProvider.get(entry.badge.key) || null,
+          iconKey: entry.badge.key,
           value: entry.badge.value,
           ratingStyle: input.ratingStyle,
           compactText: compactPosterRowText,
@@ -3004,6 +3117,7 @@ const renderWithSharp = async (
         accentColor: badge.accentColor,
         monogram,
         iconDataUri: iconByProvider.get(badge.key) || null,
+        iconKey: badge.key,
         value: badge.value,
         ratingStyle: input.ratingStyle,
       });
@@ -3551,6 +3665,7 @@ export async function GET(
   let episode: string | null = null;
   let isTmdb = false;
   let isKitsu = false;
+  const isAniListInput = idPrefix === 'anilist';
   let explicitTmdbMediaType: 'movie' | 'tv' | null = null;
   const hasNativeAnimeInput = ANIME_NATIVE_INPUT_ID_PREFIX_SET.has(idPrefix);
   let hasConfirmedAnimeMapping = hasNativeAnimeInput;
@@ -3877,7 +3992,7 @@ export async function GET(
 
       const mediaLooksAnimated = media ? isTmdbAnimationTitle(media) : false;
       if (!hasNativeAnimeInput) {
-        allowAnimeOnlyRatings = hasConfirmedAnimeMapping && mediaLooksAnimated;
+        allowAnimeOnlyRatings = hasConfirmedAnimeMapping || mediaLooksAnimated;
       }
       const isAnimeContent = hasNativeAnimeInput || hasConfirmedAnimeMapping || mediaLooksAnimated;
 
@@ -3898,6 +4013,7 @@ export async function GET(
       const shouldAttemptAnimeMapping = hasNativeAnimeInput || mediaLooksAnimated;
       const needsExternalRatings = [...requestedExternalRatings].some((provider) => provider !== 'tmdb');
       const needsImdbRating = requestedExternalRatings.has('imdb');
+      const needsAniListRating = requestedExternalRatings.has('anilist');
       const needsKitsuRating = requestedExternalRatings.has('kitsu');
       const hasMdbListApiKey = MDBLIST_API_KEYS.length > 0;
       const shouldRenderRawKitsuFallbackRating =
@@ -4013,13 +4129,14 @@ export async function GET(
         shouldRenderRatings &&
           !useRawKitsuFallback &&
           needsExternalRatings &&
-          (mdblistKey || hasMdbListApiKey || needsKitsuRating || needsImdbRating)
+          (mdblistKey || hasMdbListApiKey || needsKitsuRating || needsImdbRating || needsAniListRating)
           ? (async () => {
             let imdbId: string | null = null;
             let kitsuId: string | null = isKitsu ? mediaId : null;
-            if (kitsuId) {
+            let aniListId: string | null = isAniListInput ? mediaId : null;
+            if (kitsuId || aniListId) {
               hasConfirmedAnimeMapping = true;
-              allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
+              allowAnimeOnlyRatings = true;
             }
 
             imdbId = media?.imdb_id || mappedImdbId;
@@ -4032,39 +4149,79 @@ export async function GET(
             if (!imdbId && mappedImdbId) {
               imdbId = mappedImdbId;
             }
-            if (!imdbId && !kitsuId && !needsAnimeOnlyRatings) {
+            if (!imdbId && !kitsuId && !aniListId && !needsAnimeOnlyRatings) {
               return new Map<RatingPreference, string>();
             }
 
-            if (needsAnimeOnlyRatings && shouldAttemptAnimeMapping && !kitsuId) {
+            const resolveAnimeRatingIds = async () => {
+              if (!shouldAttemptAnimeMapping) return;
+
               if (inputAnimeMappingProvider && inputAnimeMappingExternalId) {
-                kitsuId = await fetchKitsuIdFromReverseMapping({
-                  provider: inputAnimeMappingProvider,
-                  externalId: inputAnimeMappingExternalId,
-                  season,
-                  phases,
-                });
+                if (!kitsuId) {
+                  kitsuId = await fetchKitsuIdFromReverseMapping({
+                    provider: inputAnimeMappingProvider,
+                    externalId: inputAnimeMappingExternalId,
+                    season,
+                    phases,
+                  });
+                }
+                if (!aniListId) {
+                  aniListId = await fetchAniListIdFromReverseMapping({
+                    provider: inputAnimeMappingProvider,
+                    externalId: inputAnimeMappingExternalId,
+                    season,
+                    phases,
+                  });
+                }
               }
-              if (!kitsuId && imdbId) {
-                kitsuId = await fetchKitsuIdFromReverseMapping({
-                  provider: 'imdb',
-                  externalId: imdbId,
-                  season,
-                  phases,
-                });
+              if (imdbId) {
+                if (!kitsuId) {
+                  kitsuId = await fetchKitsuIdFromReverseMapping({
+                    provider: 'imdb',
+                    externalId: imdbId,
+                    season,
+                    phases,
+                  });
+                }
+                if (!aniListId) {
+                  aniListId = await fetchAniListIdFromReverseMapping({
+                    provider: 'imdb',
+                    externalId: imdbId,
+                    season,
+                    phases,
+                  });
+                }
               }
-              if (!kitsuId && media?.id) {
-                kitsuId = await fetchKitsuIdFromReverseMapping({
-                  provider: 'tmdb',
-                  externalId: String(media.id),
-                  season,
-                  phases,
-                });
+              if (media?.id) {
+                if (!kitsuId) {
+                  kitsuId = await fetchKitsuIdFromReverseMapping({
+                    provider: 'tmdb',
+                    externalId: String(media.id),
+                    season,
+                    phases,
+                  });
+                }
+                if (!aniListId) {
+                  aniListId = await fetchAniListIdFromReverseMapping({
+                    provider: 'tmdb',
+                    externalId: String(media.id),
+                    season,
+                    phases,
+                  });
+                }
               }
+              if (kitsuId || aniListId) {
+                hasConfirmedAnimeMapping = true;
+                allowAnimeOnlyRatings = true;
+              }
+            };
+
+            if (needsAnimeOnlyRatings && shouldAttemptAnimeMapping && (!kitsuId || !aniListId)) {
+              await resolveAnimeRatingIds();
             }
-            if (kitsuId) {
+            if (kitsuId || aniListId) {
               hasConfirmedAnimeMapping = true;
-              allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
+              allowAnimeOnlyRatings = true;
             }
 
             const combinedRatings = new Map<RatingPreference, string>();
@@ -4075,6 +4232,7 @@ export async function GET(
               let mdbRatings: Map<RatingPreference, string> | null = null;
               let mdbListCacheTtlMs: number | null = null;
               let hasFetchedMdb = false;
+              let hasFetchedAniList = false;
               let hasFetchedKitsu = false;
 
               const ensureImdbId = async () => {
@@ -4095,39 +4253,19 @@ export async function GET(
               const ensureAnimeMapping = async () => {
                 if (allowAnimeOnlyRatings || !needsAnimeOnlyRatings) return;
                 if (!shouldAttemptAnimeMapping) return;
-                if (kitsuId) {
+                if (kitsuId || aniListId) {
                   hasConfirmedAnimeMapping = true;
-                  allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
+                  allowAnimeOnlyRatings = true;
                   return;
                 }
-                if (inputAnimeMappingProvider && inputAnimeMappingExternalId) {
-                  kitsuId = await fetchKitsuIdFromReverseMapping({
-                    provider: inputAnimeMappingProvider,
-                    externalId: inputAnimeMappingExternalId,
-                    season,
-                    phases,
-                  });
-                }
                 const resolvedImdbId = await ensureImdbId();
-                if (!kitsuId && resolvedImdbId) {
-                  kitsuId = await fetchKitsuIdFromReverseMapping({
-                    provider: 'imdb',
-                    externalId: resolvedImdbId,
-                    season,
-                    phases,
-                  });
+                if (!imdbId && resolvedImdbId) {
+                  imdbId = resolvedImdbId;
                 }
-                if (!kitsuId && media?.id) {
-                  kitsuId = await fetchKitsuIdFromReverseMapping({
-                    provider: 'tmdb',
-                    externalId: String(media.id),
-                    season,
-                    phases,
-                  });
-                }
-                if (kitsuId) {
+                await resolveAnimeRatingIds();
+                if (kitsuId || aniListId) {
                   hasConfirmedAnimeMapping = true;
-                  allowAnimeOnlyRatings = hasNativeAnimeInput || mediaLooksAnimated;
+                  allowAnimeOnlyRatings = true;
                 }
               };
 
@@ -4201,6 +4339,30 @@ export async function GET(
                 return combinedRatings.get('kitsu') || null;
               };
 
+              const ensureAniListRating = async () => {
+                if (hasFetchedAniList || combinedRatings.has('anilist')) {
+                  return combinedRatings.get('anilist') || null;
+                }
+                hasFetchedAniList = true;
+                if (!aniListId) return null;
+                try {
+                  const aniListCacheTtlMs = getRatingCacheTtlMs({
+                    id: `anilist:${aniListId}`,
+                    mediaType: mediaType as 'movie' | 'tv',
+                    releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
+                    defaultTtlMs: KITSU_CACHE_TTL_MS,
+                    oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+                  });
+                  const aniListRating = await fetchAniListRating(aniListId, phases);
+                  if (aniListRating) {
+                    combinedRatings.set('anilist', aniListRating);
+                    renderedRatingTtlByProvider.set('anilist', aniListCacheTtlMs);
+                  }
+                } catch {
+                }
+                return combinedRatings.get('anilist') || null;
+              };
+
               const resolveProvider = async (provider: RatingPreference) => {
                 if (provider === 'tmdb') return tmdbRating;
 
@@ -4222,6 +4384,19 @@ export async function GET(
                   if (kitsuRating) return kitsuRating;
                   await ensureMdbRatings();
                   return combinedRatings.get('kitsu') || null;
+                }
+
+                if (provider === 'anilist') {
+                  if (combinedRatings.has('anilist')) return combinedRatings.get('anilist') || null;
+                  if (!needsAnimeOnlyRatings) return null;
+                  if (!allowAnimeOnlyRatings) {
+                    await ensureAnimeMapping();
+                  }
+                  if (!allowAnimeOnlyRatings) return null;
+                  const aniListRating = await ensureAniListRating();
+                  if (aniListRating) return aniListRating;
+                  await ensureMdbRatings();
+                  return combinedRatings.get('anilist') || null;
                 }
 
                 if (ANIME_ONLY_RATING_PROVIDER_SET.has(provider)) {
@@ -4295,6 +4470,24 @@ export async function GET(
                   combinedRatings.set('imdb', normalized);
                   renderedRatingTtlByProvider.set('imdb', IMDB_DATASET_CACHE_TTL_MS);
                 }
+              }
+            }
+
+            if (needsAniListRating && allowAnimeOnlyRatings && aniListId && !combinedRatings.has('anilist')) {
+              try {
+                const aniListCacheTtlMs = getRatingCacheTtlMs({
+                  id: `anilist:${aniListId}`,
+                  mediaType: mediaType as 'movie' | 'tv',
+                  releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
+                  defaultTtlMs: KITSU_CACHE_TTL_MS,
+                  oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+                });
+                const aniListRating = await fetchAniListRating(aniListId, phases);
+                if (aniListRating) {
+                  combinedRatings.set('anilist', aniListRating);
+                  renderedRatingTtlByProvider.set('anilist', aniListCacheTtlMs);
+                }
+              } catch {
               }
             }
 

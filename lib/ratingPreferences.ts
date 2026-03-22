@@ -75,7 +75,8 @@ export const RATING_PROVIDER_OPTIONS = [
   {
     id: 'kitsu',
     label: 'Kitsu',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=kitsu.io&sz=64',
+    iconUrl:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAbFBMVEXt8PH3UTbt8/Ts9vj3TzP4RST3RyfwzMj3Siz4RCHt7u73TTD4PRb4QR33Vz3t6urv1NH2YUv4Og/0hHX2ZlHwxcDyrqbu4N/2a1fyo5n2WkLs+/3xv7n1emnznpP0j4LzmIzxtq/1cV/1gG/DdN76AAACqUlEQVRYhe1WW4NzMBCVTG4ECYoKiu7//49fhG3tdsm2ffx2XujlnDlzyyQI/uzPDgzDm/iqwW/huziu3tJgTMaiNwTwvOry5nUJ0MQ1GPS6BChQ1E5593IeoUi74SSKZ2PAYM16xbiXTBBinowB80tRXMoIeCrQbLR2Xy+8/nBwnQgp4jwdGHF4FGoLVrwaimKsdAQ+DiWQVrpCi/tZAQc9pCETUgoWmrH25MS23xlDKdGdIMoF+fxEBB2DYxHQ5Of6jpgJQrQ1ZmofQ7zBPxIgQrWHoUoOCWwcPg3cMHJAgOTpEG8zGTSIyn0CxC6+/gRc9olLxY8EyBeEbShoVZOFgoQ8+InAIwE6Zpq6BT5Io+oNAZGMsvlpDhVAxQgRrO+CVgXtcOtKQVFf6XJmYEelhCZZkk3TkfOCrc6ZHErVtsHkCKZ9Aqjipdpi7lwm1+4xk7LzOPXMEYr9s27By+RU3bUTmnV2nNWFrXxIjHsE0NmcybDnFnBa20mkE7ZnQSNvjEgMOwSYM+vvyu3c43p1Hw4KAtAntq3jXgiRjRt17uiBD+dQoBLmwKjc4PeTGKVxEbnfcEndP69qPiGH5Fsz75URK71qg2zOQDLMaqCgX/Ek3UnhTLE+nIDEhQoF+4o/KMLN4GwFhG65QvMwDcw3TAHWySfevX4TsFfEjQDbRXTReWuHTQaUDx9EkqxbDXcPASSeQ9GhqMzW17OUX/Fx59+XuMzDJU9Y59WH2MAJ+wV+buk1z7iKdXS+l1EY/bt9/blIoZAYRwNddgUJC/XkhQHOp3kU6jFzhwJ/+sqDTe+aKWpkmE3e5fwDQXaFAEcXmvflL+4HjwZXA6BN/qFf8O4IRqo4leWLcHdhmOxGf+PGWjMWemfvyGDMp/du7fjZ1vmz/9T+AVUuIe+9A1X8AAAAAElFTkSuQmCC',
     accentColor: '#f75239',
   },
 ] as const;
