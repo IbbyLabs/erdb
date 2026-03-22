@@ -3,6 +3,19 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.21.6] - 22/03/2026
+
+### Added
+* add logo and quality badge limits
+
+### Documentation
+* add rendering comparison boards
+* remove nontechnical hyphens from user copy
+
+### Other Changes
+* cover reverse mapping fallback
+* ignore output artifacts
+
 ## [v2.21.5] - 21/03/2026
 
 ### Fixed
