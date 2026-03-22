@@ -82,6 +82,7 @@ export const RATING_PROVIDER_OPTIONS = [
 
 export type RatingPreference = (typeof RATING_PROVIDER_OPTIONS)[number]['id'];
 export const ALL_RATING_PREFERENCES: RatingPreference[] = RATING_PROVIDER_OPTIONS.map((item) => item.id);
+const ANIME_PRIORITY_RATING_PREFERENCES: RatingPreference[] = ['myanimelist', 'anilist', 'kitsu'];
 const ALIASES: Record<string, RatingPreference> = {
   tmdb: 'tmdb',
   mdblist: 'mdblist',
@@ -159,4 +160,23 @@ export const stringifyRatingPreferences = (ratings: RatingPreference[]) => {
   }
 
   return [...new Set(normalized)].join(',');
+};
+
+export const orderRatingPreferencesForRender = (
+  preferences: RatingPreference[],
+  {
+    prioritizeAnimeRatings = false,
+    preserveInputOrder = false,
+  }: {
+    prioritizeAnimeRatings?: boolean;
+    preserveInputOrder?: boolean;
+  } = {},
+) => {
+  if (!prioritizeAnimeRatings || preserveInputOrder) {
+    return [...preferences];
+  }
+
+  const prioritized = ANIME_PRIORITY_RATING_PREFERENCES.filter((provider) => preferences.includes(provider));
+  const remaining = preferences.filter((provider) => !ANIME_PRIORITY_RATING_PREFERENCES.includes(provider));
+  return [...prioritized, ...remaining];
 };

@@ -1332,7 +1332,7 @@ export default function Home() {
               <SectionHeader
                 eyebrow="Workspace"
                 title="Configurator & Proxy"
-                description="Tune layout, ratings, badges, and language once, then export a shareable config string or generate a proxy manifest from the same state."
+                description="Tune layout, ratings, badges, and language once, then export a shareable config string or generate a proxy manifest from the same state. Saved workspace values stay in this browser until you copy or export them."
               />
               <div className="flex flex-wrap gap-2 xl:max-w-md xl:justify-end">
                 {[
@@ -1364,6 +1364,9 @@ export default function Home() {
                   <div className="text-[11px] font-semibold text-zinc-400 mb-2">Workspace</div>
                   <p className="mb-2 text-[11px] text-zinc-500">
                     Save the shared ERDB settings plus proxy manifest setup to this browser, or export them as a JSON file.
+                  </p>
+                  <p className="mb-2 text-[11px] text-zinc-500">
+                    Saved workspace values only affect this page. Share the config string or the generated proxy manifest if you want the same settings somewhere else.
                   </p>
                   <input
                     ref={workspaceImportInputRef}
@@ -1645,6 +1648,9 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
+                <p className="mt-3 text-[11px] leading-5 text-zinc-500">
+                  Use this when another tool expects one ERDB config field. The settings travel inside this string, not inside your saved workspace by itself.
+                </p>
                 <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4 overflow-hidden">
                   <div className={`font-mono text-xs text-zinc-300 break-all${!showConfigString && configString ? ' select-none' : ''}`}>
                     {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
@@ -1753,7 +1759,7 @@ export default function Home() {
                     <p className="erdb-panel-eyebrow font-mono">Proxy</p>
                     <h3 className="erdb-panel-title text-white">Addon Proxy</h3>
                     <p className="erdb-panel-copy text-zinc-400">
-                      Paste a Stremio addon manifest here. The proxy uses the configurator values from this workspace as its only ERDB source of truth.
+                      Paste a Stremio addon manifest here. The generated ERDB proxy manifest carries the configurator values from this workspace as its ERDB source of truth.
                     </p>
                   </div>
                 </div>
@@ -1761,6 +1767,9 @@ export default function Home() {
                   <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
                   <p className="text-[11px] leading-5 text-zinc-500">
                     Use the configurator for keys, language, ratings, layout, badges, and text.
+                  </p>
+                  <p className="text-[11px] leading-5 text-zinc-500">
+                    A plain addon manifest URL will not pick up saved workspace values by itself. Use the generated ERDB proxy manifest below if you want those settings applied to addon artwork.
                   </p>
                   <div>
                     <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Manifest URL</label>

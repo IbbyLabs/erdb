@@ -5,6 +5,7 @@ import {
   ALL_RATING_PREFERENCES,
   RATING_PROVIDER_OPTIONS,
   normalizeRatingPreference,
+  orderRatingPreferencesForRender,
   parseRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from '@/lib/ratingPreferences';
@@ -109,7 +110,7 @@ const normalizeOptionalBadgeCount = (value?: string | null) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v33';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v34';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -366,7 +367,6 @@ const PERCENTAGE_RATING_PROVIDERS = new Set<RatingPreference>([
   'kitsu',
 ]);
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
-const ANIME_PRIORITY_RATING_PROVIDERS: RatingPreference[] = ['myanimelist', 'anilist', 'kitsu'];
 const SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, string>> = {
   tmdb: '/10',
   imdb: '/10',
@@ -706,17 +706,6 @@ const formatDisplayRatingValue = (
   }
 
   return baseValue;
-};
-
-const prioritizeAnimeRatingPreferences = (
-  preferences: RatingPreference[],
-  prioritizeAnimeRatings: boolean
-) => {
-  if (!prioritizeAnimeRatings) return preferences;
-
-  const prioritized = ANIME_PRIORITY_RATING_PROVIDERS.filter((provider) => preferences.includes(provider));
-  const remaining = preferences.filter((provider) => !ANIME_PRIORITY_RATING_PROVIDERS.includes(provider));
-  return [...prioritized, ...remaining];
 };
 
 const shouldRenderRatingValue = (value: string | null | undefined) => {
@@ -3616,6 +3605,7 @@ export async function GET(
     ratingsForType === null || ratingsForType === undefined
       ? [...ALL_RATING_PREFERENCES]
       : parseRatingPreferencesAllowEmpty(ratingsForType);
+  const hasExplicitRatingOrder = ratingsForType !== null && ratingsForType !== undefined;
   const shouldApplyRatings = ratingPreferences.length > 0;
   const shouldApplyStreamBadges =
     imageType !== 'logo' &&
@@ -4248,9 +4238,12 @@ export async function GET(
                 return combinedRatings.get(provider) || null;
               };
 
-              const orderedEffectiveRatingPreferences = prioritizeAnimeRatingPreferences(
+              const orderedEffectiveRatingPreferences = orderRatingPreferencesForRender(
                 effectiveRatingPreferences,
-                allowAnimeOnlyRatings
+                {
+                  prioritizeAnimeRatings: allowAnimeOnlyRatings,
+                  preserveInputOrder: hasExplicitRatingOrder,
+                }
               );
               let renderableCount = 0;
               for (const provider of orderedEffectiveRatingPreferences) {
@@ -4628,11 +4621,14 @@ export async function GET(
       const ratingBadges: RatingBadge[] = [];
       const renderableRatingPreferences = useRawKitsuFallback
         ? (shouldRenderRawKitsuFallbackRating ? (['kitsu'] as RatingPreference[]) : [])
-        : prioritizeAnimeRatingPreferences(
+        : orderRatingPreferencesForRender(
             effectiveRatingPreferences.filter(
               (provider) => allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
             ),
-            allowAnimeOnlyRatings
+            {
+              prioritizeAnimeRatings: allowAnimeOnlyRatings,
+              preserveInputOrder: hasExplicitRatingOrder,
+            }
           );
       for (const provider of renderableRatingPreferences) {
         const meta = RATING_PROVIDER_META.get(provider);
