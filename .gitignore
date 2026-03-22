@@ -21,3 +21,4 @@ future stuff.md
 *.db-wal
 *.sqlite
 Thumbs.db
+output/
