@@ -77,6 +77,28 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
 </table>
 
 
+## Rendering Option Comparisons
+
+These static comparison boards highlight the newer rendering controls that are easier to evaluate side by side than in a single live card. They cover `logoBackground`, `logoRatingsMax`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, and a few layout and style combinations from the local March 22, 2026 build.
+
+### Movie Poster Options
+
+<p align="center">
+  <img src="docs/images/render-comparisons/movie-poster-comparison.png" alt="Movie poster comparison showing glass, square, and plain badge styles with different limits" width="920">
+</p>
+
+### Show Backdrop Options
+
+<p align="center">
+  <img src="docs/images/render-comparisons/show-backdrop-comparison.png" alt="Show backdrop comparison showing center, right vertical, and right layouts with different quality badge limits" width="920">
+</p>
+
+### Anime Logo Options
+
+<p align="center">
+  <img src="docs/images/render-comparisons/anime-logo-comparison.png" alt="Anime logo comparison showing transparent and dark logo backgrounds with different rating styles and limits" width="920">
+</p>
+
 ## Scalability & Docker
 
 The compose file includes a reverse proxy (Caddy) to handle app scaling.
