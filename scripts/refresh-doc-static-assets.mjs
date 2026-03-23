@@ -116,14 +116,67 @@ const createMonospacePng = async ({
   await sharp(Buffer.from(svg)).png().toFile(outputPath);
 };
 
-const fetchBuffer = async (url) => {
-  const response = await fetch(url, { cache: 'no-store' });
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`${url} -> ${response.status}\n${body}`);
-  }
-  return Buffer.from(await response.arrayBuffer());
+const RETRYABLE_DOC_FETCH_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const RETRYABLE_DOC_FETCH_BODY_PATTERNS = [
+  /Unexpected end of JSON input/i,
+  /__NEXT_DATA__/i,
+  /Loading initial props cancelled/i,
+];
+
+const buildRetriableFetchError = ({ url, status = 0, body = '', error = null }) => {
+  const nextError = new Error(
+    error ? `${url} -> ${String(error)}` : `${url} -> ${status}\n${body}`,
+  );
+  nextError.retryable = Boolean(error)
+    || RETRYABLE_DOC_FETCH_STATUS_CODES.has(status)
+    || RETRYABLE_DOC_FETCH_BODY_PATTERNS.some((pattern) => pattern.test(body));
+  return nextError;
 };
+
+const fetchWithRetries = async (url, readResponse, { attempts = 6 } = {}) => {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      let response;
+
+      try {
+        response = await fetch(url, { cache: 'no-store' });
+      } catch (error) {
+        throw buildRetriableFetchError({ url, error });
+      }
+
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw buildRetriableFetchError({
+          url,
+          status: response.status,
+          body,
+        });
+      }
+
+      try {
+        return await readResponse(response);
+      } catch (error) {
+        const body = typeof error?.body === 'string' ? error.body : '';
+        throw buildRetriableFetchError({ url, body, error });
+      }
+    } catch (error) {
+      lastError = error;
+
+      if (!error?.retryable || attempt === attempts) {
+        throw error;
+      }
+
+      await delay(300 * attempt);
+    }
+  }
+
+  throw lastError;
+};
+
+const fetchBuffer = async (url) =>
+  fetchWithRetries(url, async (response) => Buffer.from(await response.arrayBuffer()));
 
 const buildRenderUrl = ({ origin, type, id, params }) => {
   const url = new URL(`/${type}/${encodeURIComponent(id)}.jpg`, origin);
@@ -580,14 +633,16 @@ const startMockServer = async () => {
   return server;
 };
 
-const getJson = async (url) => {
-  const response = await fetch(url, { cache: 'no-store' });
-  const body = await response.text();
-  if (!response.ok) {
-    throw new Error(`${url} -> ${response.status}\n${body}`);
-  }
-  return JSON.parse(body);
-};
+const getJson = async (url) =>
+  fetchWithRetries(url, async (response) => {
+    const body = await response.text();
+    try {
+      return JSON.parse(body);
+    } catch (error) {
+      error.body = body;
+      throw error;
+    }
+  });
 
 const buildPrettyJson = (payload) => `${JSON.stringify(payload, null, 2)}\n`;
 
