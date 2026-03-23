@@ -3,6 +3,11 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.22.0] - 23/03/2026
+
+### Added
+* add direct MAL and Trakt ratings
+
 ## [v2.21.10] - 22/03/2026
 
 ### Fixed
