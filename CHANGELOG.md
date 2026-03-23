@@ -3,6 +3,11 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.23.0] - 23/03/2026
+
+### Added
+* add rating provider ordering and anime fallbacks
+
 ## [v2.22.2] - 23/03/2026
 
 ### Fixed
