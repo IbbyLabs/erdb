@@ -376,6 +376,67 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - `translateMetaMode=prefer-tmdb` prefers TMDB text whenever it is available.
 - When `debugMetaTranslation=true`, the proxy adds an `_erdbMetaTranslation` object to returned metas so you can inspect field provenance.
 
+### Metadata Translation Guide
+
+Metadata translation only changes text in the proxied addon metadata:
+
+- series and movie titles
+- descriptions / overviews
+- episode titles and descriptions
+
+It does **not** change how artwork is rendered. Posters, backdrops, and logos still follow the normal ERDB image settings.
+
+#### Recommended Starting Setup
+
+If you just want a sensible default, use this:
+
+| Setting | Recommended Value | Why |
+|---------|-------------------|-----|
+| Language (`lang`) | Your actual viewing language, such as `en`, `it`, `fr`, or `fr-BE` | This tells ERDB which language to look for when translating text. |
+| Translate metadata in the proxy (`translateMeta`) | On | Turns on metadata translation for the proxy. |
+| Merge mode (`translateMetaMode`) | `fill-missing` | Best default for most people. It fixes empty, blank, or placeholder text without overwriting good text from the addon. |
+| Attach debug provenance (`debugMetaTranslation`) | Off | Keep this off unless you are testing or troubleshooting. |
+
+If you only want one recommendation: use `fill-missing`. It is the safest option because it improves bad metadata without being aggressive.
+
+#### What Each Setting Does
+
+| Setting | What It Does | How To Use It | Recommended For |
+|---------|--------------|---------------|-----------------|
+| Language (`lang`) | Chooses the language ERDB tries to use for translated metadata. | Set this to the language you actually want to read in Stremio. If you want wording for a specific region, use a regional code like `en-GB` or `fr-BE` instead of just `en` or `fr`. | Anyone using metadata translation. |
+| Translate metadata in the proxy (`translateMeta`) | Turns metadata translation on or off for the proxy. | Enable it if you want ERDB to improve titles, descriptions, and episode text coming from another addon. Leave it off if you want to preserve the addon text exactly as it arrives. | Most users should turn it on. |
+| Merge mode (`translateMetaMode`) | Controls how careful or aggressive ERDB should be when deciding whether to replace addon text. | Pick the mode based on whether you want to preserve existing addon wording, prefer exact localized text, or prefer TMDB as the main source. | See the merge mode table below. |
+| Attach debug provenance (`debugMetaTranslation`) | Adds a debug object to each proxied item showing where the final text came from. | Use it when checking whether text came from the addon itself, TMDB, AniList, or Kitsu. Turn it back off for normal use. | Testing, debugging, and comparing behavior. |
+
+#### Merge Mode Guide
+
+| Mode | What It Feels Like | Best When | Less Ideal When |
+|------|--------------------|-----------|-----------------|
+| `fill-missing` | Conservative and practical. Keeps good addon text, but replaces blanks, empty fields, and obvious placeholders like `N/A`. | You want the safest behavior for general use. | You want TMDB wording to win even when the addon already has decent text. |
+| `prefer-upstream` | Very conservative. If the addon already sent text, ERDB keeps it. | You trust the original addon and only want help when a field is truly absent. | The addon often sends weak placeholders like `N/A`, `unknown`, or `tbd`, because this mode keeps them. |
+| `prefer-requested-language` | Puts language matching first. ERDB replaces existing text only when it finds an exact match for your requested language, then still fills gaps when needed. | You want stronger localization without replacing text with the wrong regional variant. | You want the most aggressive TMDB based behavior, or you do not care about exact language matching. |
+| `prefer-tmdb` | Most opinionated. If TMDB has text, ERDB usually uses it. | You want one consistent source and prefer TMDB wording over addon wording. | You like the addon's custom descriptions, naming, or editorial style. |
+
+Example: if you request `fr-BE`, `prefer-requested-language` will not treat `fr-FR` as the same thing when deciding whether to replace existing text.
+
+#### Which Mode Should You Pick?
+
+| If You Want... | Use This Mode | Why |
+|----------------|---------------|-----|
+| The safest overall default | `fill-missing` | It improves bad metadata without unnecessarily replacing good text. |
+| To keep the source addon mostly untouched | `prefer-upstream` | ERDB only fills fields that are actually missing. |
+| Better localization with strict language matching | `prefer-requested-language` | It only replaces text when the requested language is a real match, which helps avoid awkward regional substitutions. |
+| TMDB wording whenever possible | `prefer-tmdb` | It gives you the most consistent TMDB based result. |
+
+#### Simple Advice
+
+- For most users: turn on metadata translation and leave Merge mode on `fill-missing`
+- For people who mainly care about exact localized wording: `prefer-requested-language`
+- For people who trust the addon more than TMDB: `prefer-upstream`
+- For people who want TMDB to be the main voice everywhere: `prefer-tmdb`
+
+Anime gets extra fallback help when possible. If TMDB is missing good text, ERDB can still use anime mapping plus AniList or Kitsu data to fill gaps.
+
 ### Metadata Translation In Action
 
 These screenshots were captured against the live deployment at `https://erdb.ibbylabs.dev` on `2026-03-21`.
