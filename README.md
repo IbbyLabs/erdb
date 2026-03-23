@@ -136,6 +136,8 @@ Release flow:
 npm run release:patch
 ```
 
+Store `ERDB_README_PREVIEW_TMDB_KEY` and `ERDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want the release/doc asset scripts to pick them up automatically. Shell exported vars still win if both are set.
+
 If the GHCR package already existed before it was linked to this repository, open the package in GitHub and:
 
 1. connect it to `IbbyLabs/erdb`

@@ -7,6 +7,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import sharp from 'sharp';
 
+import { loadLocalEnv } from './load-local-env.mjs';
+
+loadLocalEnv();
+
 const ROOT_DIR = fileURLToPath(new URL('..', import.meta.url));
 const DOCS_IMAGES_DIR = path.join(ROOT_DIR, 'docs', 'images');
 const RENDER_ORIGIN_OVERRIDE = process.env.DOC_SCREENSHOT_ORIGIN || '';
@@ -18,7 +22,7 @@ const tmdbKey = process.env.ERDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY
 const mdblistKey = process.env.ERDB_README_PREVIEW_MDBLIST_KEY || process.env.MDBLIST_KEY || '';
 
 if (!tmdbKey) {
-  throw new Error('Missing TMDB key. Export TMDB_KEY or ERDB_README_PREVIEW_TMDB_KEY before running.');
+  throw new Error('Missing TMDB key. Set TMDB_KEY or ERDB_README_PREVIEW_TMDB_KEY in your shell, .env, or .env.local before running.');
 }
 
 const ensureDir = async (targetPath) => {

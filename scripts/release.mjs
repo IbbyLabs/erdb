@@ -1,5 +1,9 @@
 import { spawnSync } from 'node:child_process';
 
+import { loadLocalEnv } from './load-local-env.mjs';
+
+loadLocalEnv();
+
 const level = process.argv[2];
 const allowedLevels = new Set(['patch', 'minor', 'major']);
 
