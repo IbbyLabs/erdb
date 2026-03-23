@@ -1734,6 +1734,8 @@ type FastRenderInput = {
   bottomBadges: RatingBadge[];
   leftBadges: RatingBadge[];
   rightBadges: RatingBadge[];
+  posterTopRows?: RatingBadge[][];
+  posterBottomRows?: RatingBadge[][];
   backdropRows?: RatingBadge[][];
   cacheControl: string;
 };
@@ -2357,6 +2359,41 @@ const measureBadgeRowWidth = (
   );
 };
 
+const splitBadgesAcrossRowCount = (badges: RatingBadge[], rowCount: number) => {
+  if (badges.length === 0) return [];
+  if (rowCount <= 1) return [badges];
+
+  const rows: RatingBadge[][] = [];
+  let startIndex = 0;
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    const rowsLeft = rowCount - rowIndex;
+    const badgesLeft = badges.length - startIndex;
+    const nextRowSize = Math.ceil(badgesLeft / rowsLeft);
+    rows.push(badges.slice(startIndex, startIndex + nextRowSize));
+    startIndex += nextRowSize;
+  }
+  return rows.filter((row) => row.length > 0);
+};
+
+const splitBadgesIntoFittingRows = (
+  badges: RatingBadge[],
+  maxRowWidth: number,
+  metrics: BadgeLayoutMetrics,
+  compactText = false
+) => {
+  if (badges.length === 0) return [];
+  if (maxRowWidth <= 0) return badges.map((badge) => [badge]);
+
+  for (let rowCount = 1; rowCount <= badges.length; rowCount += 1) {
+    const rows = splitBadgesAcrossRowCount(badges, rowCount);
+    if (rows.every((row) => measureBadgeRowWidth(row, metrics, compactText) <= maxRowWidth)) {
+      return rows;
+    }
+  }
+
+  return badges.map((badge) => [badge]);
+};
+
 const fitPosterBadgeMetricsToWidth = (
   rows: RatingBadge[][],
   outputWidth: number,
@@ -2861,6 +2898,26 @@ const renderWithSharp = async (
         ? posterQualityBadgePlacement
         : null;
     const posterRowRegionWidth = Math.max(0, input.outputWidth - input.posterRowHorizontalInset * 2);
+    const posterTopRows =
+      input.imageType === 'poster'
+        ? input.posterTopRows && input.posterTopRows.length > 0
+          ? input.posterTopRows
+          : input.topBadges.length > 0
+            ? [input.topBadges]
+            : []
+        : [];
+    const posterBottomRows =
+      input.imageType === 'poster'
+        ? input.posterBottomRows && input.posterBottomRows.length > 0
+          ? input.posterBottomRows
+          : input.bottomBadges.length > 0
+            ? [input.bottomBadges]
+            : []
+        : [];
+    const posterTopBlockBottom =
+      posterTopRows.length > 0
+        ? input.badgeTopOffset + posterTopRows.length * (badgeHeight + input.badgeGap)
+        : input.badgeTopOffset;
     const alignPosterRowWithQuality =
       input.imageType === 'poster' && input.qualityBadges.length > 0 && posterQualityBadgeSidePlacement !== null;
     const posterRowAlign: 'left' | 'center' | 'right' = alignPosterRowWithQuality
@@ -3139,7 +3196,7 @@ const renderWithSharp = async (
         rowX += entry.badgeWidth + rowGap;
       }
     };
-    const composePosterCleanOverlayAboveBottom = (bottomRowY: number) => {
+    const composePosterCleanOverlayAboveBottom = (bottomBlockTopY: number) => {
       if (input.imageType !== 'poster') return;
       const overlay = posterLogoSpec
         ? {
@@ -3156,15 +3213,12 @@ const renderWithSharp = async (
           : null;
       if (!overlay) return;
       const overlayGap = Math.max(8, Math.round(input.badgeGap * 0.9));
-      let overlayY = Math.round(bottomRowY - overlayGap - overlay.height);
-      const topRowBottom =
-        input.topBadges.length > 0
-          ? input.badgeTopOffset + badgeHeight + input.badgeGap
-          : input.badgeTopOffset;
+      let overlayY = Math.round(bottomBlockTopY - overlayGap - overlay.height);
+      const topRowBottom = posterTopBlockBottom;
       if (overlayY < topRowBottom) {
         overlayY = topRowBottom;
       }
-      if (overlayY + overlay.height + overlayGap > bottomRowY) {
+      if (overlayY + overlay.height + overlayGap > bottomBlockTopY) {
         return;
       }
       const overlayX = Math.max(
@@ -3424,22 +3478,35 @@ const renderWithSharp = async (
             composeBadgeColumn(remainingRightBadges, 'right', maxBadgeWidth, 'top', sideStartY);
           }
         } else {
-          if (input.topBadges.length > 0) {
-            composeBadgeRow(input.topBadges, input.badgeTopOffset, {
-              regionLeft: input.posterRowHorizontalInset,
-              regionWidth: posterRowRegionWidth,
-              align: posterRowAlign,
-            });
+          if (posterTopRows.length > 0) {
+            let topRowY = input.badgeTopOffset;
+            for (const row of posterTopRows) {
+              composeBadgeRow(row, topRowY, {
+                regionLeft: input.posterRowHorizontalInset,
+                regionWidth: posterRowRegionWidth,
+                align: posterRowAlign,
+              });
+              topRowY += badgeHeight + input.badgeGap;
+            }
           }
-          if (input.bottomBadges.length > 0) {
-            composeBadgeRow(input.bottomBadges, bottomRowY, {
-              regionLeft: input.posterRowHorizontalInset,
-              regionWidth: posterRowRegionWidth,
-              align: posterRowAlign,
-            });
+          if (posterBottomRows.length > 0) {
+            let bottomRowYStart =
+              bottomRowY - (posterBottomRows.length - 1) * (badgeHeight + input.badgeGap);
+            for (const row of posterBottomRows) {
+              composeBadgeRow(row, bottomRowYStart, {
+                regionLeft: input.posterRowHorizontalInset,
+                regionWidth: posterRowRegionWidth,
+                align: posterRowAlign,
+              });
+              bottomRowYStart += badgeHeight + input.badgeGap;
+            }
           }
         }
-        composePosterCleanOverlayAboveBottom(bottomRowY);
+        const bottomOverlayAnchorY =
+          posterBottomRows.length > 0
+            ? bottomRowY - (posterBottomRows.length - 1) * (badgeHeight + input.badgeGap)
+            : bottomRowY;
+        composePosterCleanOverlayAboveBottom(bottomOverlayAnchorY);
       }
     }
 
@@ -3482,8 +3549,8 @@ const renderWithSharp = async (
           (qualityPlacement === 'left' || qualityPlacement === 'right');
         if (shouldTopAlignQuality) {
           qualityStartY = input.badgeTopOffset;
-        } else if (input.topBadges.length > 0) {
-          const belowTop = input.badgeTopOffset + badgeHeight + input.badgeGap;
+        } else if (posterTopRows.length > 0) {
+          const belowTop = posterTopBlockBottom;
           qualityStartY = Math.max(qualityStartY, belowTop);
         } else {
           const sideBadges = qualityPlacement === 'right' ? input.rightBadges : input.leftBadges;
@@ -5137,6 +5204,8 @@ export async function GET(
         : useBackdropRightVerticalLayout
           ? [...cappedRatingBadges]
           : [];
+      let posterTopRows: RatingBadge[][] = topRatingBadges.length > 0 ? [topRatingBadges] : [];
+      let posterBottomRows: RatingBadge[][] = bottomRatingBadges.length > 0 ? [bottomRatingBadges] : [];
 
       let badgeIconSize = 34;
       let badgeFontSize = 28;
@@ -5261,6 +5330,34 @@ export async function GET(
             usePosterRowLayout,
             false
           );
+          if (posterRatingsLayout === 'top') {
+            posterTopRows = splitBadgesIntoFittingRows(
+              topRatingBadges,
+              posterRowFitWidth,
+              fittedPosterMetrics,
+              usePosterRowLayout
+            );
+          } else if (posterRatingsLayout === 'bottom') {
+            posterBottomRows = splitBadgesIntoFittingRows(
+              bottomRatingBadges,
+              posterRowFitWidth,
+              fittedPosterMetrics,
+              usePosterRowLayout
+            );
+          } else if (posterRatingsLayout === 'top-bottom') {
+            posterTopRows = splitBadgesIntoFittingRows(
+              topRatingBadges,
+              posterRowFitWidth,
+              fittedPosterMetrics,
+              usePosterRowLayout
+            );
+            posterBottomRows = splitBadgesIntoFittingRows(
+              bottomRatingBadges,
+              posterRowFitWidth,
+              fittedPosterMetrics,
+              usePosterRowLayout
+            );
+          }
         }
         badgeIconSize = fittedPosterMetrics.iconSize;
         badgeFontSize = fittedPosterMetrics.fontSize;
@@ -5406,6 +5503,8 @@ export async function GET(
           bottomBadges: bottomRatingBadges,
           leftBadges: leftRatingBadges,
           rightBadges: rightRatingBadges,
+          posterTopRows,
+          posterBottomRows,
           backdropRows,
           cacheControl: responseCacheControl,
         },
