@@ -5,10 +5,10 @@ import {
   resolveGitHubRepository,
 } from '@/lib/githubRelease';
 
-const LATEST_RELEASE_CACHE_SECONDS = 300;
-export const revalidate = 300;
+const LATEST_RELEASE_CACHE_SECONDS = 60;
+export const revalidate = 60;
 
-const CACHE_CONTROL = `public, s-maxage=${LATEST_RELEASE_CACHE_SECONDS}, stale-while-revalidate=86400`;
+const CACHE_CONTROL = `public, s-maxage=${LATEST_RELEASE_CACHE_SECONDS}, stale-while-revalidate=${LATEST_RELEASE_CACHE_SECONDS}`;
 
 export async function GET() {
   const repository = resolveGitHubRepository();
