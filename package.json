@@ -13,7 +13,7 @@
     "predev": "npm run commits:generate",
     "dev": "next dev -p 3000",
     "preversion": "npm run docs:refresh-assets",
-    "version": "node scripts/update-changelog.mjs && node scripts/refresh-readme-preview-cache-busters.mjs && git add CHANGELOG.md README.md docs/images",
+    "version": "node scripts/update-changelog.mjs && node scripts/refresh-readme-changelog-links.mjs && node scripts/refresh-readme-preview-cache-busters.mjs && git add CHANGELOG.md README.md docs/images",
     "build": "npm run commits:generate && next build",
     "start": "node .next/standalone/server.js",
     "test": "node --experimental-strip-types --test tests/**/*.test.mjs",

@@ -111,6 +111,10 @@ The compose file includes a reverse proxy (Caddy) to handle app scaling.
 
 Pushing a version tag that matches `v*` now starts two independent workflows:
 
+- browse the [full changelog](CHANGELOG.md)
+<!-- changelog-links:start -->
+- jump straight to the [latest changelog entry](CHANGELOG.md#v2-23-1)
+<!-- changelog-links:end -->
 - publishes a GitHub release with notes sourced from the matching changelog entry
 - pushes a multi architecture container image to GHCR as `ghcr.io/ibbylabs/erdb`
 
