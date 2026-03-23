@@ -9,6 +9,13 @@
 
 <a id="v2-23-3"></a>
 
+<a id="v2-23-4"></a>
+
+## [v2.23.4] - 23/03/2026
+
+### Other Changes
+* auto load local env for release scripts
+
 ## [v2.23.3] - 23/03/2026
 
 ### Added
