@@ -95,13 +95,14 @@ const previousTag = getPreviousReleaseTag(TAG);
 const compareUrl = previousTag ? `${repositoryUrl}/compare/${previousTag}...${TAG}` : null;
 const sectionBody = getChangelogSection(TAG);
 
-const lines = [
-  `[Changelog entry](${changelogUrl})`,
-];
+const changelogLine = compareUrl
+  ? `> **Changelog:** read the [matching entry](${changelogUrl}) or browse the [full compare](${compareUrl}).`
+  : `> **Changelog:** read the [matching entry](${changelogUrl}).`;
 
-if (compareUrl) {
-  lines.push(`[Full Changelog](${compareUrl})`);
-}
+const lines = [
+  '> [!TIP]',
+  changelogLine,
+];
 
 lines.push('');
 lines.push(sectionBody);
