@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
+import packageJson from '@/package.json';
 import {
   useCallback,
   useEffect,
@@ -93,6 +94,8 @@ const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
 const BRAND_DISCORD_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_URL || 'https://discordapp.com/users/947862578682548255';
 const BRAND_DISCORD_HANDLE = process.env.NEXT_PUBLIC_BRAND_DISCORD_HANDLE || '@ibbys89';
+const PACKAGE_VERSION = `v${String(packageJson.version || '').trim() || 'dev'}`;
+const DEPLOYMENT_VERSION = String(process.env.NEXT_PUBLIC_DEPLOYMENT_VERSION || PACKAGE_VERSION).trim() || 'dev';
 const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
 const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
   { id: 'auto', label: 'Auto' },
@@ -277,6 +280,22 @@ function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: string }) {
       <span className="site-status-text">{label}</span>
       <ExternalLink className="site-status-icon" aria-hidden="true" />
     </a>
+  );
+}
+
+function DeploymentVersionPill({ compact = false }: { compact?: boolean }) {
+  return (
+    <span
+      className={`erdb-deployment-pill${compact ? ' erdb-deployment-pill-compact' : ''}`}
+      aria-label={`Current deployment version ${DEPLOYMENT_VERSION}`}
+      title="This is the version currently deployed."
+    >
+      <Terminal className="erdb-deployment-pill-icon" aria-hidden="true" />
+      <span className="erdb-deployment-pill-label font-mono">
+        {compact ? 'Live' : 'Current deployment'}
+      </span>
+      <span className="erdb-deployment-pill-value font-mono">{DEPLOYMENT_VERSION}</span>
+    </span>
   );
 }
 
@@ -1265,9 +1284,10 @@ export default function Home() {
     <div className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
       <nav ref={navRef} className="erdb-chrome sticky top-0 z-50">
         <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex flex-wrap items-center gap-4 min-w-0">
             <BrandLockup />
             <span className="erdb-brand-tag">Stateless ratings engine</span>
+            <DeploymentVersionPill compact />
           </div>
           <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
             <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
@@ -1285,7 +1305,10 @@ export default function Home() {
           <div className="erdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
           <div className="erdb-hero-grid">
             <div className="erdb-hero-copy">
-              <p className="site-section-eyebrow font-mono">IbbyLabs image engine</p>
+              <div className="erdb-hero-meta">
+                <p className="site-section-eyebrow font-mono">IbbyLabs image engine</p>
+                <DeploymentVersionPill />
+              </div>
               <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
                 Stunning Ratings.<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-500 to-violet-600">
@@ -1295,6 +1318,9 @@ export default function Home() {
               <p className="erdb-hero-subtitle mt-4 text-lg text-zinc-400 leading-relaxed">
                 Forked by IbbyLabs for the same ecosystem as Uptime Tracker.
                 Generate dynamic posters, backdrops, and logos with a cleaner config to output workflow.
+              </p>
+              <p className="erdb-hero-version-note font-mono">
+                This is the version currently deployed. GitHub releases may show up first while container auto updates catch up.
               </p>
               <div className="erdb-hero-actions flex flex-wrap items-center gap-4">
                 <a href="#preview" onClick={handleAnchorClick} className="erdb-hero-primary">

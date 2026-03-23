@@ -147,6 +147,48 @@ pre {
 	white-space: nowrap;
 }
 
+.erdb-deployment-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	min-height: 2rem;
+	padding: 0.34rem 0.74rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, rgba(96, 165, 250, 0.72) 58%, var(--border) 42%);
+	background:
+		linear-gradient(180deg, rgba(13, 18, 34, 0.95), rgba(9, 12, 25, 0.9)),
+		radial-gradient(circle at top right, rgba(56, 189, 248, 0.16), transparent 42%);
+	color: color-mix(in srgb, var(--brand-ink) 88%, #dbeafe 12%);
+	box-shadow: 0 16px 32px -24px rgba(56, 189, 248, 0.65);
+	white-space: nowrap;
+}
+
+.erdb-deployment-pill-compact {
+	padding-inline: 0.64rem;
+}
+
+.erdb-deployment-pill-icon {
+	width: 0.92rem;
+	height: 0.92rem;
+	flex-shrink: 0;
+	color: #7dd3fc;
+}
+
+.erdb-deployment-pill-label {
+	font-size: 0.68rem;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--brand-muted) 68%, #dbeafe 32%);
+}
+
+.erdb-deployment-pill-value {
+	font-size: 0.74rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	color: #e0f2fe;
+}
+
 .erdb-nav-link {
 	display: inline-flex;
 	align-items: center;
@@ -542,11 +584,28 @@ pre {
 	min-width: 0;
 }
 
+.erdb-hero-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.8rem;
+}
+
 .erdb-hero-subtitle {
 	max-width: 38rem;
 	margin: 0;
 	font-size: 1.08rem;
 	line-height: 1.75;
+}
+
+.erdb-hero-version-note {
+	margin: -0.4rem 0 0;
+	max-width: 42rem;
+	font-size: 0.72rem;
+	line-height: 1.6;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--brand-muted) 78%, #dbeafe 22%);
 }
 
 .erdb-hero-actions {
@@ -1090,6 +1149,11 @@ pre {
 }
 
 @media (max-width: 720px) {
+	.erdb-hero-meta .erdb-deployment-pill {
+		width: 100%;
+		justify-content: center;
+	}
+
 	.erdb-commit-window {
 		left: 50%;
 		transform: translateX(-50%);
