@@ -7,6 +7,22 @@
 
 <a id="v2-23-2"></a>
 
+<a id="v2-23-3"></a>
+
+## [v2.23.3] - 23/03/2026
+
+### Added
+* show deployed version on homepage
+  
+  Add a visible deployment version badge in the nav and hero so the homepage reflects the version the current container is serving.
+  
+  Include a short note that GitHub releases can appear before container auto updates catch up.
+
+### Documentation
+* highlight changelog links in release notes
+* highlight changelog links in README
+* move changelog links near top of README
+
 ## [v2.23.2] - 23/03/2026
 
 ### Other Changes
