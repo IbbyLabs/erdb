@@ -5,7 +5,6 @@ import {
 } from './backdropRatingLayout.ts';
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
-  POSTER_RATINGS_MAX_PER_SIDE_MAX,
   POSTER_RATINGS_MAX_PER_SIDE_MIN,
   isVerticalPosterRatingLayout,
   normalizePosterRatingLayout,
@@ -243,7 +242,7 @@ const normalizeOptionalBadgeCount = (value: unknown): number | null => {
   if (!Number.isFinite(numericValue)) return null;
   const normalized = Math.trunc(numericValue);
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
-  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+  return normalized;
 };
 
 const normalizeLogoBackground = (

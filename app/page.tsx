@@ -25,7 +25,6 @@ import {
 } from '@/lib/backdropRatingLayout';
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
-  POSTER_RATINGS_MAX_PER_SIDE_MAX,
   POSTER_RATINGS_MAX_PER_SIDE_MIN,
   POSTER_RATING_LAYOUT_OPTIONS,
   isVerticalPosterRatingLayout,
@@ -117,8 +116,8 @@ const TMDB_LANGUAGE_DOC_COPY = 'Any TMDB ISO 639-1 code (en, it, fr, es, de, ja,
 const TMDB_LANGUAGE_HELP_COPY = 'All TMDB ISO 639-1 codes are supported (en, it, fr, es, de, etc.). Default: en.';
 const POSTER_LAYOUT_DOC_VALUES = 'top, bottom, left, right, top bottom, left right';
 const POSTER_LAYOUT_DOC_DEFAULT = 'top bottom';
-const POSTER_RATINGS_MAX_DOC_COPY = '1 to 20';
-const OPTIONAL_BADGE_MAX_DOC_COPY = '1 to 20';
+const POSTER_RATINGS_MAX_DOC_COPY = '1+';
+const OPTIONAL_BADGE_MAX_DOC_COPY = '1+';
 const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
 
@@ -129,7 +128,7 @@ const normalizeOptionalBadgeCountInput = (value: string) => {
   if (!Number.isFinite(parsed)) return null;
   const normalized = Math.trunc(parsed);
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
-  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+  return normalized;
 };
 const AI_DEVELOPER_PROMPT = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
@@ -174,7 +173,7 @@ imageText               | original, clean, alternative                          
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
-logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto (6 if omitted)
+logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
@@ -1522,7 +1521,7 @@ export default function Home() {
                           {isVerticalPosterRatingLayout(posterRatingsLayout) && (
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} max={POSTER_RATINGS_MAX_PER_SIDE_MAX} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                               <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                             </div>
                           )}
@@ -1557,12 +1556,9 @@ export default function Home() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
-                            <input type="number" value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Default" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} max={POSTER_RATINGS_MAX_PER_SIDE_MAX} className="w-20 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                            <input type="number" value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-20 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                             <button onClick={() => setLogoRatingsMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Default</button>
                           </div>
-                        </div>
-                        <div className="text-[11px] text-zinc-500">
-                          Default logo output caps ratings at 6 badges. Set an explicit limit if you want a tighter or wider badge row.
                         </div>
                       </div>
                     )}
@@ -1593,7 +1589,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
-                      <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} max={POSTER_RATINGS_MAX_PER_SIDE_MAX} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                      <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                       <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                     </div>
                     {shouldShowQualityBadgesSide && (
@@ -2066,7 +2062,7 @@ export default function Home() {
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatingsMax</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
-                        <td className="px-5 py-2 text-zinc-500 text-xs">auto (6 if omitted)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoBackground</td>
@@ -2150,7 +2146,7 @@ export default function Home() {
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
-                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (default cap 6)</div>
+                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
                           </div>
                         </td>
@@ -2159,7 +2155,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type and the per type max settings when you want tighter badge limits.
+                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type and the per type max settings only when you want to explicitly tighten badge counts.
                 </div>
               </div>
 

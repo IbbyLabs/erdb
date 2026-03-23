@@ -43,7 +43,7 @@ export const normalizePosterRatingsMaxPerSide = (value: unknown): number | null 
   if (!Number.isFinite(numericValue)) return DEFAULT_POSTER_RATINGS_MAX_PER_SIDE;
   const normalized = Math.trunc(numericValue);
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return DEFAULT_POSTER_RATINGS_MAX_PER_SIDE;
-  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+  return normalized;
 };
 
 export const isSinglePosterRatingLayout = (layout: PosterRatingLayout) =>
@@ -53,8 +53,6 @@ export const isVerticalPosterRatingLayout = (layout: PosterRatingLayout) =>
   VERTICAL_POSTER_RATING_LAYOUTS.has(layout);
 
 export const getPosterRatingLayoutLimit = (layout: PosterRatingLayout): number | null => {
-  if (layout === 'top' || layout === 'bottom') return 3;
-  if (layout === 'top-bottom') return 6;
   return null;
 };
 
@@ -75,11 +73,11 @@ export const describePosterRatingLayoutLimit = (
   layout: PosterRatingLayout,
   maxPerSide?: number | null
 ) => {
-  const limit = getPosterRatingLayoutLimit(layout);
-  if (limit !== null) return `up to ${limit}`;
-
   const normalizedMaxPerSide = normalizePosterRatingsMaxPerSide(maxPerSide);
-  if (normalizedMaxPerSide === null) return 'all that fit inside the poster';
+  if (normalizedMaxPerSide === null) {
+    if (layout === 'top-bottom') return 'all that fit across the top and bottom rows';
+    return 'all that fit inside the poster';
+  }
   if (layout === 'left-right') return `up to ${normalizedMaxPerSide} per side, plus 1 top-center`;
   return `up to ${normalizedMaxPerSide} on the selected side`;
 };

@@ -238,16 +238,16 @@ Main endpoint:
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top-bottom`, `left-right` | `top-bottom` |
-| `posterRatingsMaxPerSide` | Max badges per side | Number (1-20) | `auto` |
+| `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` | `center` |
-| `logoRatingsMax` | Logo badge limit | Number (1-20) | `auto` (`6` if omitted) |
+| `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
 
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without those optional server side credentials, they still fall back to MDBList when `mdblistKey` is present.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
-Poster layouts also cap how many badges can appear: `top` and `bottom` show up to `3`, while `top-bottom` shows up to `6`. To show more than `3` poster ratings, use `top-bottom`, `left`, `right`, or `left-right`.
+When no explicit max is set, ERDB now renders all badges that fit the layout instead of applying a fixed poster or logo badge cap. Use the max params only when you want to intentionally tighten the visible badge count.
 
 ### Supported ID Formats
 
@@ -311,14 +311,14 @@ qualityBadgesSide       | left, right (poster only)                             
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
-posterQualityBadgesMax  | Number (1-20)                                                        | auto
-backdropQualityBadgesMax| Number (1-20)                                                        | auto
+posterQualityBadgesMax  | Number (1+)                                                          | auto
+backdropQualityBadgesMax| Number (1+)                                                          | auto
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
-posterRatingsMaxPerSide | Number (1-20)                                                        | auto
+posterRatingsMaxPerSide | Number (1+)                                                          | auto
 backdropRatingsLayout   | center, right, right-vertical                                        | center
-logoRatingsMax          | Number (1-20)                                                        | auto (6 if omitted)
+logoRatingsMax          | Number (1+)                                                          | auto
 logoBackground          | transparent, dark                                                    | transparent
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -

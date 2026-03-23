@@ -18,10 +18,8 @@ import {
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   DEFAULT_POSTER_RATING_LAYOUT,
-  POSTER_RATINGS_MAX_PER_SIDE_MAX,
   POSTER_RATINGS_MAX_PER_SIDE_MIN,
   getPosterRatingLayoutMaxBadges,
-  getPosterRatingLayoutLimit,
   normalizePosterRatingLayout,
   normalizePosterRatingsMaxPerSide,
   type PosterRatingLayout,
@@ -112,9 +110,9 @@ const normalizeOptionalBadgeCount = (value?: string | null) => {
   if (!Number.isFinite(parsed)) return null;
   const normalized = Math.floor(parsed);
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
-  return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
+  return normalized;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v40';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v41';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -2545,8 +2543,9 @@ const splitPosterBadgesByLayout = (
     };
   }
 
-  const primary = limitedBadges.slice(0, 3);
-  const secondary = limitedBadges.slice(3, 6);
+  const topRowCount = Math.ceil(limitedBadges.length / 2);
+  const primary = limitedBadges.slice(0, topRowCount);
+  const secondary = limitedBadges.slice(topRowCount);
   return { topBadges: primary, bottomBadges: secondary, leftBadges: [], rightBadges: [] };
 };
 
@@ -4348,8 +4347,7 @@ export async function GET(
             }
 
             const combinedRatings = new Map<RatingPreference, string>();
-            const shortCircuitLimit =
-              imageType === 'poster' ? getPosterRatingLayoutLimit(posterRatingsLayout) : null;
+            const shortCircuitLimit = null;
 
             if (shortCircuitLimit) {
               let mdbRatings: Map<RatingPreference, string> | null = null;
@@ -5052,7 +5050,7 @@ export async function GET(
       const posterRatingLimit = usePosterBadgeLayout
         ? getPosterRatingLayoutMaxBadges(posterRatingsLayout, posterRatingsMaxPerSide)
         : null;
-      const logoRatingLimit = useLogoBadgeLayout ? logoRatingsMax ?? 6 : null;
+      const logoRatingLimit = useLogoBadgeLayout ? logoRatingsMax : null;
       const resolvedRatingBadgeLimit =
         usePosterBadgeLayout || useLogoBadgeLayout
           ? (posterRatingLimit ?? logoRatingLimit ?? null)
@@ -5112,7 +5110,12 @@ export async function GET(
       const useBackdropRightVerticalLayout = useBackdropBadgeLayout && backdropRatingsLayout === 'right-vertical';
       let cappedRatingBadges = [...ratingBadges];
       const backdropRows =
-        useBackdropBadgeLayout && !useBackdropRightVerticalLayout ? chunkBy(cappedRatingBadges, 3) : [];
+        useBackdropBadgeLayout && !useBackdropRightVerticalLayout
+          ? (() => {
+              const firstRowCount = Math.ceil(cappedRatingBadges.length / 2);
+              return [cappedRatingBadges.slice(0, firstRowCount), cappedRatingBadges.slice(firstRowCount)];
+            })()
+          : [];
       let posterBadgeGroups = splitPosterBadgesByLayout(
         cappedRatingBadges,
         posterRatingsLayout,
