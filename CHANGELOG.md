@@ -13,6 +13,17 @@
 
 <a id="v2-23-5"></a>
 
+<a id="v2-24-0"></a>
+
+## [v2.24.0] - 23/03/2026
+
+### Added
+* show latest GitHub release on homepage
+
+### Fixed
+* retry doc asset fetches during local compiles
+* auto rebuild better sqlite after Node changes
+
 ## [v2.23.5] - 23/03/2026
 
 ### Fixed
