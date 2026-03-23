@@ -3,6 +3,28 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.23.1] - 23/03/2026
+
+### Fixed
+* transparent Kitsu badge rendering
+* update addon proxy handling
+* update addon proxy handling
+* update addon proxy handling
+* update addon proxy handling
+
+### Documentation
+* clarify transparent badge behavior
+* refresh screenshots and static assets
+* expand proxy metadata translation guide
+
+### Other Changes
+* refresh docs assets and preview cache busters
+* update project internals
+  
+  Touches project internals and homepage and configurator.
+* Providers reorder
+* fix anilist
+
 ## [v2.23.0] - 23/03/2026
 
 ### Added
