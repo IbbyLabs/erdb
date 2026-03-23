@@ -7,7 +7,7 @@ name: Build and Push Docker
   workflow_dispatch: {}
 
 concurrency:
-  group: build-and-push-docker
+  group: build-and-push-docker-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

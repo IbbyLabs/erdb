@@ -7,7 +7,7 @@ name: Create GitHub Release
       - completed
 
 concurrency:
-  group: create-github-release
+  group: create-github-release-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 jobs:
@@ -29,6 +29,24 @@ jobs:
         with:
           node-version: 22
 
+      - name: Determine whether this is the latest tag
+        id: latest_tag
+        env:
+          CURRENT_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          git fetch --force --tags origin
+
+          latest_tag="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
+
+          echo "current_tag=${CURRENT_TAG}" >> "$GITHUB_OUTPUT"
+          echo "latest_tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+
+          if [ "${CURRENT_TAG}" = "${latest_tag}" ]; then
+            echo "make_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "make_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate release notes from changelog
         run: node scripts/generate-github-release-notes.mjs "${{ github.event.workflow_run.head_branch }}" .github/release-notes.md
 
@@ -37,4 +55,4 @@ jobs:
         with:
           tag_name: ${{ github.event.workflow_run.head_branch }}
           body_path: .github/release-notes.md
-          make_latest: true
+          make_latest: ${{ steps.latest_tag.outputs.make_latest }}
