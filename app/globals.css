@@ -163,6 +163,13 @@ pre {
 	white-space: nowrap;
 }
 
+.erdb-version-pill-group {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.8rem;
+}
+
 .erdb-deployment-pill-compact {
 	padding-inline: 0.64rem;
 }
@@ -187,6 +194,64 @@ pre {
 	font-weight: 600;
 	letter-spacing: 0.06em;
 	color: #e0f2fe;
+}
+
+.erdb-release-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	min-height: 2rem;
+	padding: 0.34rem 0.74rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, rgba(192, 132, 252, 0.76) 60%, var(--border) 40%);
+	background:
+		linear-gradient(180deg, rgba(27, 17, 47, 0.95), rgba(18, 11, 35, 0.9)),
+		radial-gradient(circle at top right, rgba(192, 132, 252, 0.16), transparent 42%);
+	color: color-mix(in srgb, var(--brand-ink) 88%, #ede9fe 12%);
+	box-shadow: 0 16px 32px -24px rgba(192, 132, 252, 0.58);
+	white-space: nowrap;
+}
+
+.erdb-release-pill-link {
+	text-decoration: none;
+	transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.erdb-release-pill-link:hover {
+	transform: translateY(-1px);
+	border-color: color-mix(in srgb, rgba(216, 180, 254, 0.88) 72%, white 28%);
+	box-shadow: 0 18px 34px -22px rgba(216, 180, 254, 0.72);
+}
+
+.erdb-release-pill-link:focus-visible {
+	outline: 2px solid color-mix(in srgb, rgba(216, 180, 254, 0.8) 76%, white 24%);
+	outline-offset: 2px;
+}
+
+.erdb-release-pill-compact {
+	padding-inline: 0.64rem;
+}
+
+.erdb-release-pill-icon {
+	width: 0.92rem;
+	height: 0.92rem;
+	flex-shrink: 0;
+	color: #d8b4fe;
+}
+
+.erdb-release-pill-label {
+	font-size: 0.68rem;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--brand-muted) 66%, #ede9fe 34%);
+}
+
+.erdb-release-pill-value {
+	font-size: 0.74rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	color: #f3e8ff;
 }
 
 .erdb-nav-link {
@@ -1149,7 +1214,12 @@ pre {
 }
 
 @media (max-width: 720px) {
-	.erdb-hero-meta .erdb-deployment-pill {
+	.erdb-hero-meta .erdb-version-pill-group {
+		width: 100%;
+	}
+
+	.erdb-hero-meta .erdb-deployment-pill,
+	.erdb-hero-meta .erdb-release-pill {
 		width: 100%;
 		justify-content: center;
 	}

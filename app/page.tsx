@@ -14,7 +14,7 @@ import {
   type ChangeEvent,
   type MouseEvent,
 } from 'react';
-import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff } from 'lucide-react';
+import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff, Tag } from 'lucide-react';
 import {
   ALL_RATING_PREFERENCES,
   stringifyRatingPreferencesAllowEmpty,
@@ -122,6 +122,7 @@ type RecentCommit = {
   isUpstream: boolean;
 };
 const COMMIT_FEED_URL = '/commits.json';
+const LATEST_RELEASE_FEED_URL = '/api/latest-release';
 const COMMIT_PAGE_SIZE = 5;
 const UI_CONFIG_STORAGE_KEY = 'erdb.uiConfig.v1';
 const UI_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.uiConfig.settings.v1';
@@ -295,6 +296,59 @@ function DeploymentVersionPill({ compact = false }: { compact?: boolean }) {
         {compact ? 'Live' : 'Current deployment'}
       </span>
       <span className="erdb-deployment-pill-value font-mono">{DEPLOYMENT_VERSION}</span>
+    </span>
+  );
+}
+
+function LatestReleasePill({
+  compact = false,
+  releaseTag,
+  releaseUrl,
+  loading,
+}: {
+  compact?: boolean;
+  releaseTag: string;
+  releaseUrl: string;
+  loading: boolean;
+}) {
+  const value = loading ? 'Checking' : releaseTag || 'Unknown';
+  const title = loading
+    ? 'Checking GitHub for the latest release.'
+    : releaseUrl
+      ? `Open ${value} on GitHub`
+      : 'Latest GitHub release is unavailable right now.';
+  const content = (
+    <>
+      <Tag className="erdb-release-pill-icon" aria-hidden="true" />
+      <span className="erdb-release-pill-label font-mono">
+        {compact ? 'Latest' : 'Latest release'}
+      </span>
+      <span className="erdb-release-pill-value font-mono">{value}</span>
+    </>
+  );
+
+  if (releaseUrl) {
+    return (
+      <a
+        className={`erdb-release-pill erdb-release-pill-link${compact ? ' erdb-release-pill-compact' : ''}`}
+        href={releaseUrl}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Latest release version ${value}`}
+        title={title}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <span
+      className={`erdb-release-pill${compact ? ' erdb-release-pill-compact' : ''}`}
+      aria-label={`Latest release version ${value}`}
+      title={title}
+    >
+      {content}
     </span>
   );
 }
@@ -538,6 +592,9 @@ export default function Home() {
   const [recentCommitsError, setRecentCommitsError] = useState('');
   const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(true);
   const [visibleRecentCommitCount, setVisibleRecentCommitCount] = useState(COMMIT_PAGE_SIZE);
+  const [latestReleaseTag, setLatestReleaseTag] = useState('');
+  const [latestReleaseUrl, setLatestReleaseUrl] = useState('');
+  const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(true);
   const [nowMs, setNowMs] = useState(Date.now());
   const [savedConfigStatus, setSavedConfigStatus] = useState<
     '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'error' | 'invalid'
@@ -693,6 +750,56 @@ export default function Home() {
     };
 
     loadRecentCommits();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
+    const loadLatestRelease = async () => {
+      setIsLatestReleaseLoading(true);
+      try {
+        const url = new URL(LATEST_RELEASE_FEED_URL, window.location.origin);
+        const response = await fetch(url.toString(), {
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`Latest release feed unavailable (${response.status})`);
+        }
+        const payload = await response.json();
+        const nextTag = typeof payload?.tagName === 'string' ? payload.tagName.trim() : '';
+        const nextUrl = typeof payload?.url === 'string' ? payload.url.trim() : '';
+
+        if (!active) {
+          return;
+        }
+
+        setLatestReleaseTag(nextTag);
+        setLatestReleaseUrl(nextUrl);
+      } catch (error: any) {
+        if (!active || error?.name === 'AbortError') {
+          return;
+        }
+
+        setLatestReleaseTag('');
+        setLatestReleaseUrl('');
+      } finally {
+        if (active) {
+          setIsLatestReleaseLoading(false);
+        }
+      }
+    };
+
+    loadLatestRelease();
 
     return () => {
       active = false;
@@ -1007,6 +1114,14 @@ export default function Home() {
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
+  const latestReleaseMatchesDeployment = latestReleaseTag && latestReleaseTag === DEPLOYMENT_VERSION;
+  const versionStatusNote = isLatestReleaseLoading
+    ? 'Checking the latest release on GitHub now.'
+    : latestReleaseTag
+      ? latestReleaseMatchesDeployment
+        ? 'Live matches the latest release on GitHub.'
+        : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
+      : 'Live shows the running container. The latest release is unavailable right now.';
 
   const handlePreviewImageError = useCallback(async (url: string) => {
     setPreviewErroredForUrl(url);
@@ -1288,6 +1403,12 @@ export default function Home() {
             <BrandLockup />
             <span className="erdb-brand-tag">Stateless ratings engine</span>
             <DeploymentVersionPill compact />
+            <LatestReleasePill
+              compact
+              releaseTag={latestReleaseTag}
+              releaseUrl={latestReleaseUrl}
+              loading={isLatestReleaseLoading}
+            />
           </div>
           <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
             <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
@@ -1307,7 +1428,14 @@ export default function Home() {
             <div className="erdb-hero-copy">
               <div className="erdb-hero-meta">
                 <p className="site-section-eyebrow font-mono">IbbyLabs image engine</p>
-                <DeploymentVersionPill />
+                <div className="erdb-version-pill-group">
+                  <DeploymentVersionPill />
+                  <LatestReleasePill
+                    releaseTag={latestReleaseTag}
+                    releaseUrl={latestReleaseUrl}
+                    loading={isLatestReleaseLoading}
+                  />
+                </div>
               </div>
               <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
                 Stunning Ratings.<br />
@@ -1320,7 +1448,7 @@ export default function Home() {
                 Generate dynamic posters, backdrops, and logos with a cleaner config to output workflow.
               </p>
               <p className="erdb-hero-version-note font-mono">
-                This is the version currently deployed. GitHub releases may show up first while container auto updates catch up.
+                {versionStatusNote}
               </p>
               <div className="erdb-hero-actions flex flex-wrap items-center gap-4">
                 <a href="#preview" onClick={handleAnchorClick} className="erdb-hero-primary">
