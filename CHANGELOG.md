@@ -5,6 +5,14 @@
 
 <a id="v2-23-1"></a>
 
+<a id="v2-23-2"></a>
+
+## [v2.23.2] - 23/03/2026
+
+### Other Changes
+* add README changelog links
+* rebuild changelog history and release notes
+
 ## [v2.23.1] - 23/03/2026
 
 ### Fixed
