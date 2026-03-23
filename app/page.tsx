@@ -1693,16 +1693,11 @@ export default function Home() {
                   <p className="text-[10px] leading-4 text-zinc-500">
                     ERDB respects this order when rendering badges. Disabled providers stay available but are skipped.
                   </p>
-                  {previewType === 'poster' ? (
-                    <p className="text-[10px] leading-4 text-zinc-500/90">
-                      Poster layouts flow top to bottom in the left column first, then continue on the right.
-                    </p>
-                  ) : null}
                   <RatingProviderSortableList
                     rows={ratingProviderRows}
                     onReorder={reorderRatingPreference}
                     onToggle={toggleRatingPreference}
-                    fillDirection={previewType === 'poster' ? 'column' : 'row'}
+                    fillDirection="row"
                   />
                 </div>
               </div>
