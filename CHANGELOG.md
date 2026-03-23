@@ -11,6 +11,16 @@
 
 <a id="v2-23-4"></a>
 
+<a id="v2-23-5"></a>
+
+## [v2.23.5] - 23/03/2026
+
+### Fixed
+* keep poster provider list single column on mobile
+
+### Other Changes
+* parallelize tag releases safely
+
 ## [v2.23.4] - 23/03/2026
 
 ### Other Changes
