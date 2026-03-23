@@ -17,6 +17,13 @@
 
 <a id="v2-24-1"></a>
 
+<a id="v2-24-2"></a>
+
+## [v2.24.2] - 23/03/2026
+
+### Fixed
+* validate sqlite native binding during preflight
+
 ## [v2.24.1] - 23/03/2026
 
 ### Added
