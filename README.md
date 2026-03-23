@@ -27,6 +27,8 @@ This means that the ERDB server itself does not permanently store or centrally m
 
 This intentional design allows you to host public ERDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
+Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables direct `myanimelist` ratings, and `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings. When those are not configured, ERDB still falls back to MDBList whenever a `mdblistKey` is present.
+
 ## Live Preview Gallery
 
 These are live requests against production so readers can see current poster, backdrop, and logo output directly inside GitHub.
@@ -44,9 +46,9 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260321refresh1" alt="The Boys poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260321refresh1" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260321refresh1" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh1" alt="The Boys poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh1" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh1" alt="Attack on Titan poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -58,8 +60,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260321refresh1" alt="Game of Thrones backdrop live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260321refresh1" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh1" alt="Game of Thrones backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh1" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -71,8 +73,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260321refresh1" alt="The Boys logo live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260321refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260321refresh1" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh1" alt="The Boys logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh1" alt="Attack on Titan logo live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -233,13 +235,15 @@ Main endpoint:
 | `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `ratingStyle` (or `style`) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
-| `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | **Required** |
+| `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top-bottom`, `left-right` | `top-bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1-20) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` | `center` |
 | `logoRatingsMax` | Logo badge limit | Number (1-20) | `auto` (`6` if omitted) |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
+
+`myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without those optional server side credentials, they still fall back to MDBList when `mdblistKey` is present.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
@@ -361,7 +365,8 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 ### Notes
 - The proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` (types can be toggled in the Addon Proxy UI).
 - The `url` field must point to the original addon's `manifest.json`.
-- `tmdbKey` and `mdblistKey` are required.
+- `tmdbKey` is required.
+- `mdblistKey` is required for MDBList backed ratings and broad fallback coverage.
 - Optional proxy metadata translation can localize `meta.name` / `meta.description` and episode text.
 - `translateMetaMode=fill-missing` is the safe default: keep good addon text and only backfill blanks or placeholders.
 - `translateMetaMode=prefer-upstream` keeps any upstream text that is present, even placeholders like `N/A`.
@@ -413,6 +418,10 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | `PREVIEW_INTERNAL_ORIGIN` | `http://127.0.0.1:3000` | Internal fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
 | `ERDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
 | `ERDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
+| `ERDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
+| `ERDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
+| `ERDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
+| `ERDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
 
 ### Cache TTLs
 
