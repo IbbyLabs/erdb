@@ -547,7 +547,9 @@ function RecentChanges({
 }
 
 export default function Home() {
+  const pageRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
+  const heroRef = useRef<HTMLElement | null>(null);
   const baseUrl = normalizeBaseUrl(useClientOrigin());
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
@@ -693,6 +695,49 @@ export default function Home() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [scrollToHash]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const page = pageRef.current;
+    const hero = heroRef.current;
+    if (!page || !hero) {
+      return;
+    }
+
+    let frame = 0;
+
+    const updateCompactProgress = () => {
+      frame = 0;
+      const maxDistance = Math.max(180, Math.min(320, hero.offsetHeight * 0.45));
+      const progress = Math.min(1, Math.max(0, window.scrollY / maxDistance));
+      page.style.setProperty('--scroll-compact-progress', progress.toFixed(3));
+      page.dataset.compactNav = progress > 0.04 ? 'true' : 'false';
+    };
+
+    const queueUpdate = () => {
+      if (frame) {
+        return;
+      }
+      frame = window.requestAnimationFrame(updateCompactProgress);
+    };
+
+    updateCompactProgress();
+    window.addEventListener('scroll', queueUpdate, { passive: true });
+    window.addEventListener('resize', queueUpdate);
+
+    return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+      window.removeEventListener('scroll', queueUpdate);
+      window.removeEventListener('resize', queueUpdate);
+      page.style.removeProperty('--scroll-compact-progress');
+      delete page.dataset.compactNav;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1396,7 +1441,10 @@ export default function Home() {
   };
 
   return (
-    <div className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
+    <div
+      ref={pageRef}
+      className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30"
+    >
       <nav ref={navRef} className="erdb-chrome sticky top-0 z-50">
         <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4 min-w-0">
@@ -1422,7 +1470,7 @@ export default function Home() {
       </nav>
 
       <main className="erdb-main max-w-7xl mx-auto px-6 py-16 md:py-20">
-        <section className="erdb-hero-section relative">
+        <section ref={heroRef} className="erdb-hero-section relative">
           <div className="erdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
           <div className="erdb-hero-grid">
             <div className="erdb-hero-copy">
@@ -1437,7 +1485,7 @@ export default function Home() {
                   />
                 </div>
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
+              <h1 className="erdb-hero-title font-bold text-white">
                 Stunning Ratings.<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-500 to-violet-600">
                   Stateless API.

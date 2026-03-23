@@ -89,6 +89,7 @@ pre {
 .erdb-page {
 	position: relative;
 	overflow: clip;
+	--scroll-compact-progress: 0;
 }
 
 .erdb-page::before,
@@ -124,35 +125,57 @@ pre {
 	background: color-mix(in srgb, var(--card) 78%, rgba(2, 1, 8, 0.6) 22%);
 	box-shadow: var(--shadow-soft);
 	backdrop-filter: blur(12px);
+	transition: background 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.erdb-page[data-compact-nav="true"] .erdb-chrome {
+	background: color-mix(in srgb, var(--card) 88%, rgba(2, 1, 8, 0.78) 12%);
+	box-shadow: 0 22px 60px -44px rgba(8, 4, 18, 0.98);
 }
 
 .erdb-nav-shell {
 	position: relative;
 	z-index: 2;
+	padding-block: calc(1rem - 0.3rem * var(--scroll-compact-progress));
+	row-gap: calc(1rem - 0.22rem * var(--scroll-compact-progress));
+	transition: padding 0.24s ease, row-gap 0.24s ease;
+}
+
+.erdb-nav-shell > :first-child {
+	gap: calc(1rem - 0.18rem * var(--scroll-compact-progress));
+	transition: gap 0.24s ease;
+}
+
+.erdb-nav-links {
+	gap: calc(0.5rem - 0.08rem * var(--scroll-compact-progress));
+	transition: gap 0.24s ease;
 }
 
 .erdb-brand-tag {
 	display: inline-flex;
 	align-items: center;
-	min-height: 2rem;
-	padding: 0.28rem 0.72rem;
+	min-height: calc(2rem - 0.16rem * var(--scroll-compact-progress));
+	padding: calc(0.28rem - 0.04rem * var(--scroll-compact-progress))
+		calc(0.72rem - 0.08rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 	background: color-mix(in srgb, var(--card) 82%, transparent);
 	color: var(--brand-muted);
-	font-size: 0.74rem;
+	font-size: calc(0.74rem - 0.04rem * var(--scroll-compact-progress));
 	font-weight: 700;
-	letter-spacing: 0.09em;
+	letter-spacing: calc(0.09em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
 	white-space: nowrap;
+	transition: min-height 0.24s ease, padding 0.24s ease, font-size 0.24s ease, letter-spacing 0.24s ease;
 }
 
 .erdb-deployment-pill {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.45rem;
-	min-height: 2rem;
-	padding: 0.34rem 0.74rem;
+	min-height: calc(2rem - 0.16rem * var(--scroll-compact-progress));
+	padding: calc(0.34rem - 0.04rem * var(--scroll-compact-progress))
+		calc(0.74rem - 0.08rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid color-mix(in srgb, rgba(96, 165, 250, 0.72) 58%, var(--border) 42%);
 	background:
@@ -161,6 +184,7 @@ pre {
 	color: color-mix(in srgb, var(--brand-ink) 88%, #dbeafe 12%);
 	box-shadow: 0 16px 32px -24px rgba(56, 189, 248, 0.65);
 	white-space: nowrap;
+	transition: min-height 0.24s ease, padding 0.24s ease, font-size 0.24s ease;
 }
 
 .erdb-version-pill-group {
@@ -171,7 +195,7 @@ pre {
 }
 
 .erdb-deployment-pill-compact {
-	padding-inline: 0.64rem;
+	padding-inline: calc(0.64rem - 0.08rem * var(--scroll-compact-progress));
 }
 
 .erdb-deployment-pill-icon {
@@ -182,26 +206,29 @@ pre {
 }
 
 .erdb-deployment-pill-label {
-	font-size: 0.68rem;
+	font-size: calc(0.68rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 500;
-	letter-spacing: 0.08em;
+	letter-spacing: calc(0.08em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
 	color: color-mix(in srgb, var(--brand-muted) 68%, #dbeafe 32%);
+	transition: font-size 0.24s ease, letter-spacing 0.24s ease;
 }
 
 .erdb-deployment-pill-value {
-	font-size: 0.74rem;
+	font-size: calc(0.74rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 600;
 	letter-spacing: 0.06em;
 	color: #e0f2fe;
+	transition: font-size 0.24s ease;
 }
 
 .erdb-release-pill {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.45rem;
-	min-height: 2rem;
-	padding: 0.34rem 0.74rem;
+	min-height: calc(2rem - 0.16rem * var(--scroll-compact-progress));
+	padding: calc(0.34rem - 0.04rem * var(--scroll-compact-progress))
+		calc(0.74rem - 0.08rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid color-mix(in srgb, rgba(192, 132, 252, 0.76) 60%, var(--border) 40%);
 	background:
@@ -210,6 +237,7 @@ pre {
 	color: color-mix(in srgb, var(--brand-ink) 88%, #ede9fe 12%);
 	box-shadow: 0 16px 32px -24px rgba(192, 132, 252, 0.58);
 	white-space: nowrap;
+	transition: min-height 0.24s ease, padding 0.24s ease, font-size 0.24s ease;
 }
 
 .erdb-release-pill-link {
@@ -229,7 +257,7 @@ pre {
 }
 
 .erdb-release-pill-compact {
-	padding-inline: 0.64rem;
+	padding-inline: calc(0.64rem - 0.08rem * var(--scroll-compact-progress));
 }
 
 .erdb-release-pill-icon {
@@ -240,36 +268,47 @@ pre {
 }
 
 .erdb-release-pill-label {
-	font-size: 0.68rem;
+	font-size: calc(0.68rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 500;
-	letter-spacing: 0.08em;
+	letter-spacing: calc(0.08em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
 	color: color-mix(in srgb, var(--brand-muted) 66%, #ede9fe 34%);
+	transition: font-size 0.24s ease, letter-spacing 0.24s ease;
 }
 
 .erdb-release-pill-value {
-	font-size: 0.74rem;
+	font-size: calc(0.74rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 600;
 	letter-spacing: 0.06em;
 	color: #f3e8ff;
+	transition: font-size 0.24s ease;
 }
 
 .erdb-nav-link {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 2.2rem;
-	padding: 0.42rem 0.84rem;
+	min-height: calc(2.2rem - 0.2rem * var(--scroll-compact-progress));
+	padding: calc(0.42rem - 0.05rem * var(--scroll-compact-progress))
+		calc(0.84rem - 0.12rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 	background: color-mix(in srgb, var(--card) 86%, transparent);
 	color: color-mix(in srgb, var(--brand-ink) 84%, var(--brand-muted) 16%);
 	text-decoration: none;
-	font-size: 0.76rem;
+	font-size: calc(0.76rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 700;
-	letter-spacing: 0.07em;
+	letter-spacing: calc(0.07em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
-	transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+	transition:
+		border-color 0.2s ease,
+		color 0.2s ease,
+		background-color 0.2s ease,
+		transform 0.2s ease,
+		min-height 0.24s ease,
+		padding 0.24s ease,
+		font-size 0.24s ease,
+		letter-spacing 0.24s ease;
 }
 
 .erdb-nav-link:hover {
@@ -292,6 +331,11 @@ pre {
 	text-decoration: none;
 }
 
+.erdb-chrome .site-brand-lockup {
+	gap: calc(0.78rem - 0.12rem * var(--scroll-compact-progress));
+	transition: gap 0.24s ease;
+}
+
 .site-brand-lockup-compact {
 	gap: 0.6rem;
 }
@@ -309,6 +353,12 @@ pre {
 	width: 2.35rem;
 	height: 2.35rem;
 	object-fit: contain;
+}
+
+.erdb-chrome .site-brand-logo {
+	width: calc(2.35rem - 0.28rem * var(--scroll-compact-progress));
+	height: calc(2.35rem - 0.28rem * var(--scroll-compact-progress));
+	transition: width 0.24s ease, height 0.24s ease;
 }
 
 .site-brand-lockup-compact .site-brand-logo {
@@ -339,6 +389,17 @@ pre {
 	line-height: 1.2;
 	font-weight: 700;
 	color: var(--brand-ink);
+}
+
+.erdb-chrome .site-brand-eyebrow {
+	font-size: calc(0.68rem - 0.03rem * var(--scroll-compact-progress));
+	letter-spacing: calc(0.2em - 0.03em * var(--scroll-compact-progress));
+	transition: font-size 0.24s ease, letter-spacing 0.24s ease;
+}
+
+.erdb-chrome .site-brand-name {
+	font-size: calc(1rem - 0.05rem * var(--scroll-compact-progress));
+	transition: font-size 0.24s ease;
 }
 
 .site-brand-lockup-compact .site-brand-name {
@@ -372,15 +433,16 @@ pre {
 	align-items: center;
 	justify-content: center;
 	gap: 0.44rem;
-	padding: 0.46rem 0.78rem;
+	padding: calc(0.46rem - 0.05rem * var(--scroll-compact-progress))
+		calc(0.78rem - 0.08rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid color-mix(in srgb, var(--border) 72%, rgba(224, 214, 255, 0.42));
 	background: color-mix(in srgb, var(--card) 88%, rgba(129, 92, 214, 0.22) 12%);
 	color: color-mix(in srgb, var(--brand-ink) 88%, white 12%);
 	text-decoration: none;
-	font-size: 0.75rem;
+	font-size: calc(0.75rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 700;
-	letter-spacing: 0.08em;
+	letter-spacing: calc(0.08em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
 	box-shadow: 0 12px 24px -18px rgba(107, 80, 180, 0.95);
 	transition:
@@ -388,7 +450,10 @@ pre {
 		border-color 0.2s ease,
 		background-color 0.2s ease,
 		box-shadow 0.2s ease,
-		color 0.2s ease;
+		color 0.2s ease,
+		padding 0.24s ease,
+		font-size 0.24s ease,
+		letter-spacing 0.24s ease;
 }
 
 .site-status-pill:hover {
@@ -419,7 +484,11 @@ pre {
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
-	padding: 0.46rem 0.84rem 0.46rem 0.54rem;
+	padding:
+		calc(0.46rem - 0.05rem * var(--scroll-compact-progress))
+		calc(0.84rem - 0.08rem * var(--scroll-compact-progress))
+		calc(0.46rem - 0.05rem * var(--scroll-compact-progress))
+		calc(0.54rem - 0.06rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid rgba(240, 221, 255, 0.55);
 	background: linear-gradient(145deg, rgba(92, 58, 160, 0.95), rgba(138, 88, 224, 0.95));
@@ -428,15 +497,18 @@ pre {
 	box-shadow:
 		0 14px 24px -14px rgba(180, 116, 255, 0.95),
 		inset 0 1px 0 rgba(255, 255, 255, 0.28);
-	font-size: 0.75rem;
+	font-size: calc(0.75rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 700;
-	letter-spacing: 0.08em;
+	letter-spacing: calc(0.08em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
 	transition:
 		transform 0.2s ease,
 		box-shadow 0.2s ease,
 		border-color 0.2s ease,
-		filter 0.2s ease;
+		filter 0.2s ease,
+		padding 0.24s ease,
+		font-size 0.24s ease,
+		letter-spacing 0.24s ease;
 }
 
 .site-support-pill:hover {
@@ -468,8 +540,9 @@ pre {
 .site-discord-callout {
 	display: grid;
 	gap: 0.8rem;
-	padding: 1rem 1.05rem;
-	border-radius: 1.2rem;
+	padding: calc(1rem - 0.12rem * var(--scroll-compact-progress))
+		calc(1.05rem - 0.12rem * var(--scroll-compact-progress));
+	border-radius: calc(1.2rem - 0.12rem * var(--scroll-compact-progress));
 	border: 1px solid color-mix(in srgb, #5865f2 38%, var(--border) 62%);
 	background:
 		linear-gradient(180deg, rgba(19, 12, 37, 0.92), rgba(11, 8, 24, 0.84)),
@@ -477,6 +550,7 @@ pre {
 	box-shadow:
 		0 20px 38px -30px rgba(88, 101, 242, 0.78),
 		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+	transition: padding 0.24s ease, border-radius 0.24s ease;
 }
 
 .site-discord-callout-title {
@@ -608,15 +682,20 @@ pre {
 .erdb-hero-section {
 	position: relative;
 	overflow: visible;
-	padding: clamp(1.8rem, 4vw, 2.7rem);
-	border-radius: 2rem;
+	padding: calc(clamp(1.8rem, 4vw, 2.7rem) - 0.85rem * var(--scroll-compact-progress));
+	border-radius: calc(2rem - 0.22rem * var(--scroll-compact-progress));
 	border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
 	background:
 		linear-gradient(180deg, rgba(16, 9, 32, 0.84), rgba(8, 5, 20, 0.66)),
 		radial-gradient(circle at top right, rgba(122, 82, 214, 0.16), transparent 34%);
 	box-shadow: var(--shadow-soft);
 	backdrop-filter: blur(14px);
-	min-height: clamp(24rem, 42vw, 30rem);
+	min-height: calc(clamp(24rem, 42vw, 30rem) - 4.5rem * var(--scroll-compact-progress));
+	transition: padding 0.24s ease, border-radius 0.24s ease, min-height 0.24s ease, box-shadow 0.24s ease;
+}
+
+.erdb-page[data-compact-nav="true"] .erdb-hero-section {
+	box-shadow: 0 26px 60px -46px rgba(8, 4, 18, 0.98);
 }
 
 .erdb-hero-orb {
@@ -635,46 +714,60 @@ pre {
 	z-index: 1;
 	display: grid;
 	grid-template-columns: minmax(0, 1.3fr) minmax(19rem, 0.9fr);
-	gap: clamp(1.5rem, 3vw, 2.5rem);
+	gap: calc(clamp(1.5rem, 3vw, 2.5rem) - 0.6rem * var(--scroll-compact-progress));
 	align-items: stretch;
 	width: 100%;
 	min-width: 0;
+	transition: gap 0.24s ease;
 }
 
 .erdb-hero-copy {
 	display: grid;
 	align-content: center;
-	gap: 1.25rem;
+	gap: calc(1.25rem - 0.2rem * var(--scroll-compact-progress));
 	max-width: 46rem;
 	min-width: 0;
+	transition: gap 0.24s ease;
 }
 
 .erdb-hero-meta {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 0.8rem;
+	gap: calc(0.8rem - 0.12rem * var(--scroll-compact-progress));
+	transition: gap 0.24s ease;
+}
+
+.erdb-hero-title {
+	margin: 0;
+	font-size: calc(clamp(2.45rem, 5.6vw, 4.75rem) - 0.7rem * var(--scroll-compact-progress));
+	line-height: calc(1.02 - 0.05 * var(--scroll-compact-progress));
+	letter-spacing: calc(-0.03em - 0.01em * var(--scroll-compact-progress));
+	transition: font-size 0.24s ease, line-height 0.24s ease, letter-spacing 0.24s ease;
 }
 
 .erdb-hero-subtitle {
 	max-width: 38rem;
 	margin: 0;
-	font-size: 1.08rem;
-	line-height: 1.75;
+	font-size: calc(1.08rem - 0.1rem * var(--scroll-compact-progress));
+	line-height: calc(1.75 - 0.12 * var(--scroll-compact-progress));
+	transition: font-size 0.24s ease, line-height 0.24s ease;
 }
 
 .erdb-hero-version-note {
 	margin: -0.4rem 0 0;
 	max-width: 42rem;
-	font-size: 0.72rem;
+	font-size: calc(0.72rem - 0.03rem * var(--scroll-compact-progress));
 	line-height: 1.6;
-	letter-spacing: 0.04em;
+	letter-spacing: calc(0.04em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
 	color: color-mix(in srgb, var(--brand-muted) 78%, #dbeafe 22%);
+	transition: font-size 0.24s ease, letter-spacing 0.24s ease;
 }
 
 .erdb-hero-actions {
-	padding-top: 0.25rem;
+	padding-top: calc(0.25rem - 0.08rem * var(--scroll-compact-progress));
+	transition: padding-top 0.24s ease;
 }
 
 .erdb-hero-primary,
@@ -682,15 +775,25 @@ pre {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 3.2rem;
-	padding: 0.85rem 1.35rem;
+	min-height: calc(3.2rem - 0.35rem * var(--scroll-compact-progress));
+	padding: calc(0.85rem - 0.08rem * var(--scroll-compact-progress))
+		calc(1.35rem - 0.16rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	text-decoration: none;
-	font-size: 0.85rem;
+	font-size: calc(0.85rem - 0.04rem * var(--scroll-compact-progress));
 	font-weight: 700;
-	letter-spacing: 0.08em;
+	letter-spacing: calc(0.08em - 0.01em * var(--scroll-compact-progress));
 	text-transform: uppercase;
-	transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+	transition:
+		transform 0.2s ease,
+		border-color 0.2s ease,
+		background-color 0.2s ease,
+		color 0.2s ease,
+		box-shadow 0.2s ease,
+		min-height 0.24s ease,
+		padding 0.24s ease,
+		font-size 0.24s ease,
+		letter-spacing 0.24s ease;
 }
 
 .erdb-hero-primary {
@@ -724,22 +827,25 @@ pre {
 .erdb-hero-strip {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 0.65rem;
-	padding-top: 0.2rem;
+	gap: calc(0.65rem - 0.1rem * var(--scroll-compact-progress));
+	padding-top: calc(0.2rem - 0.05rem * var(--scroll-compact-progress));
+	transition: gap 0.24s ease, padding-top 0.24s ease;
 }
 
 .erdb-hero-chip {
 	display: inline-flex;
 	align-items: center;
-	min-height: 2.2rem;
-	padding: 0.38rem 0.82rem;
+	min-height: calc(2.2rem - 0.18rem * var(--scroll-compact-progress));
+	padding: calc(0.38rem - 0.04rem * var(--scroll-compact-progress))
+		calc(0.82rem - 0.08rem * var(--scroll-compact-progress));
 	border-radius: 999px;
 	border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
 	background: color-mix(in srgb, var(--card) 86%, transparent);
 	color: color-mix(in srgb, var(--brand-ink) 84%, var(--brand-muted) 16%);
-	font-size: 0.77rem;
+	font-size: calc(0.77rem - 0.03rem * var(--scroll-compact-progress));
 	font-weight: 600;
 	letter-spacing: 0.03em;
+	transition: min-height 0.24s ease, padding 0.24s ease, font-size 0.24s ease;
 }
 
 .erdb-commit-window-wrap {
@@ -1057,8 +1163,9 @@ pre {
 .erdb-hero-panel {
 	display: grid;
 	align-content: start;
-	padding: 1.35rem;
+	padding: calc(1.35rem - 0.14rem * var(--scroll-compact-progress));
 	min-height: 100%;
+	transition: padding 0.24s ease;
 }
 
 .erdb-hero-panel-stack {
@@ -1076,10 +1183,12 @@ pre {
 	grid-template-columns: auto 1fr;
 	gap: 0.9rem;
 	align-items: start;
-	padding: 0.95rem 1rem;
+	padding: calc(0.95rem - 0.08rem * var(--scroll-compact-progress))
+		calc(1rem - 0.08rem * var(--scroll-compact-progress));
 	border-radius: 1rem;
 	border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 	background: color-mix(in srgb, rgba(255, 255, 255, 0.04) 55%, transparent);
+	transition: padding 0.24s ease;
 }
 
 .erdb-hero-flow-index {
@@ -1240,8 +1349,9 @@ pre {
 	}
 
 	.erdb-hero-section {
-		padding: 1.35rem;
-		border-radius: 1.55rem;
+		padding: calc(1.35rem - 0.35rem * var(--scroll-compact-progress));
+		border-radius: calc(1.55rem - 0.12rem * var(--scroll-compact-progress));
+		min-height: auto;
 	}
 
 	.erdb-section-title {
@@ -1276,7 +1386,8 @@ pre {
 	}
 
 	.erdb-hero-flow-step {
-		padding: 0.85rem 0.9rem;
+		padding: calc(0.85rem - 0.06rem * var(--scroll-compact-progress))
+			calc(0.9rem - 0.06rem * var(--scroll-compact-progress));
 	}
 
 	.site-page-footer-top {
@@ -1290,7 +1401,45 @@ pre {
 
 	.erdb-footer-link,
 	.erdb-nav-link {
-		min-height: 2.35rem;
-		padding-inline: 0.9rem;
+		min-height: calc(2.35rem - 0.18rem * var(--scroll-compact-progress));
+		padding-inline: calc(0.9rem - 0.08rem * var(--scroll-compact-progress));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.erdb-chrome,
+	.erdb-nav-shell,
+	.erdb-nav-shell > :first-child,
+	.erdb-nav-links,
+	.erdb-brand-tag,
+	.erdb-deployment-pill,
+	.erdb-deployment-pill-label,
+	.erdb-deployment-pill-value,
+	.erdb-release-pill,
+	.erdb-release-pill-label,
+	.erdb-release-pill-value,
+	.erdb-nav-link,
+	.erdb-chrome .site-brand-lockup,
+	.erdb-chrome .site-brand-logo,
+	.erdb-chrome .site-brand-eyebrow,
+	.erdb-chrome .site-brand-name,
+	.site-status-pill,
+	.site-support-pill,
+	.site-discord-callout,
+	.erdb-hero-section,
+	.erdb-hero-grid,
+	.erdb-hero-copy,
+	.erdb-hero-meta,
+	.erdb-hero-title,
+	.erdb-hero-subtitle,
+	.erdb-hero-version-note,
+	.erdb-hero-actions,
+	.erdb-hero-primary,
+	.erdb-hero-secondary,
+	.erdb-hero-strip,
+	.erdb-hero-chip,
+	.erdb-hero-panel,
+	.erdb-hero-flow-step {
+		transition: none;
 	}
 }
