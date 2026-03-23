@@ -34,6 +34,7 @@ import {
 import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 import { resolveReverseMappedAnimeImageTarget } from '@/lib/animeReverseMapping';
+import { normalizeAnimeMappingSeason } from '@/lib/animeMapping';
 import {
   buildObjectStorageImageKey,
   buildObjectStorageSourceImageKey,
@@ -42,6 +43,7 @@ import {
   putCachedImageToObjectStorage,
 } from '@/lib/objectStorage';
 import { getMetadata, setMetadata } from '@/lib/metadataCache';
+import { formatDisplayRatingValue, formatRatingNumber } from '@/lib/ratingDisplay';
 
 export const runtime = 'nodejs';
 
@@ -112,7 +114,7 @@ const normalizeOptionalBadgeCount = (value?: string | null) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return Math.min(POSTER_RATINGS_MAX_PER_SIDE_MAX, normalized);
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v39';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v40';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -203,6 +205,7 @@ type CachedJsonResponse = {
   status: number;
   data: any;
 };
+type JsonFetchImpl = (input: string, init?: RequestInit) => Promise<Response>;
 type CachedJsonNetworkObserver = {
   onNetworkResponse?: (input: {
     key: string;
@@ -376,24 +379,7 @@ const createImageHttpResponse = (
       'X-ERDB-Cache': cacheStatus,
     },
   });
-const PERCENTAGE_RATING_PROVIDERS = new Set<RatingPreference>([
-  'mdblist',
-  'tomatoes',
-  'tomatoesaudience',
-  'metacritic',
-  'trakt',
-  'anilist',
-  'kitsu',
-]);
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
-const SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, string>> = {
-  tmdb: '/10',
-  imdb: '/10',
-  metacriticuser: '/10',
-  letterboxd: '/5',
-  myanimelist: '/10',
-  rogerebert: '/4',
-};
 type RatingBadge = {
   key: BadgeKey;
   label: string;
@@ -458,6 +444,8 @@ const LOGO_BASE_HEIGHT = 320;
 const LOGO_FALLBACK_ASPECT_RATIO = 2.5;
 const LOGO_MIN_WIDTH = 360;
 const LOGO_MAX_WIDTH = 2200;
+const BROWSER_LIKE_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
 
 const buildProviderMonogram = (label: string) => {
   const cleaned = label.replace(/[^A-Za-z0-9]+/g, ' ').trim();
@@ -651,7 +639,7 @@ const fetchTorrentioBadges = async (input: {
             return await undiciFetch(torrentioUrl, {
               signal: controller.signal,
               headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'User-Agent': BROWSER_LIKE_USER_AGENT,
               },
               ...(torrentioDispatcher ? { dispatcher: torrentioDispatcher } : {}),
             }) as unknown as Response;
@@ -687,44 +675,6 @@ const fetchTorrentioBadges = async (input: {
     setMetadata(cacheKey, { flags }, targetTtl);
     return { badges: buildStreamBadgesFromFlags(flags), cacheTtlMs: targetTtl };
   });
-};
-
-const formatRatingNumber = (value: number) => {
-  const rounded = value.toFixed(1);
-  return rounded === '10.0' ? '10' : rounded;
-};
-
-const formatDisplayRatingValue = (
-  provider: RatingPreference,
-  baseValue: string,
-  imageType?: 'poster' | 'backdrop' | 'logo'
-) => {
-  if (baseValue === 'N/A') return baseValue;
-
-  if (PERCENTAGE_RATING_PROVIDERS.has(provider)) {
-    if (imageType === 'poster' || imageType === 'backdrop' || imageType === 'logo') {
-      const numericValue = Number(baseValue.replace('%', '').replace(',', '.').trim());
-      if (!Number.isNaN(numericValue) && Number.isFinite(numericValue)) {
-        return formatRatingNumber(numericValue / 10);
-      }
-    }
-    return baseValue.endsWith('%') ? baseValue : `${baseValue}%`;
-  }
-
-  const suffix = SCALE_SUFFIX_RATING_PROVIDERS[provider];
-  if (imageType === 'poster' || imageType === 'backdrop' || imageType === 'logo') {
-    const numericValue = Number(baseValue.replace(',', '.').trim());
-    if (!Number.isNaN(numericValue) && Number.isFinite(numericValue)) {
-      if (suffix === '/10') return formatRatingNumber(numericValue);
-      if (suffix === '/5') return formatRatingNumber(numericValue * 2);
-      if (suffix === '/4') return formatRatingNumber(numericValue * 2.5);
-    }
-  }
-  if (suffix && !baseValue.includes('/') && !baseValue.endsWith('%')) {
-    return `${baseValue}${suffix}`;
-  }
-
-  return baseValue;
 };
 
 const shouldRenderRatingValue = (value: string | null | undefined) => {
@@ -1147,7 +1097,7 @@ const fetchAnimeReverseMappingPayload = async ({
   const normalizedExternalId = externalId.trim();
   if (!normalizedExternalId) return null;
 
-  const normalizedSeason = (season || '').trim();
+  const normalizedSeason = normalizeAnimeMappingSeason(season);
   const seasonQuery = normalizedSeason ? `?s=${encodeURIComponent(normalizedSeason)}` : '';
   const cacheKey = `anime:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`;
   const url = `https://animemapping.stremio.dpdns.org/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
@@ -1243,7 +1193,7 @@ const fetchTmdbIdFromReverseMapping = async ({
   const normalizedExternalId = externalId.trim();
   if (!normalizedExternalId) return null;
 
-  const normalizedSeason = (season || '').trim();
+  const normalizedSeason = normalizeAnimeMappingSeason(season);
   const seasonQuery = normalizedSeason ? `?s=${encodeURIComponent(normalizedSeason)}` : '';
   const cacheKey = `tmdb:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`;
   const url = `https://animemapping.stremio.dpdns.org/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
@@ -1503,8 +1453,12 @@ const fetchTraktRating = async ({
           'content-type': 'application/json',
           'trakt-api-version': '2',
           'trakt-api-key': TRAKT_CLIENT_ID,
+          'user-agent': BROWSER_LIKE_USER_AGENT,
+          'accept-language': 'en-US,en;q=0.9',
         },
-      }
+      },
+      undefined,
+      undiciFetch as unknown as JsonFetchImpl
     );
     if (!response.ok) return null;
 
@@ -1521,7 +1475,8 @@ const fetchJsonCached = async (
   phases: PhaseDurations,
   phase: keyof PhaseDurations,
   init?: RequestInit,
-  observer?: CachedJsonNetworkObserver
+  observer?: CachedJsonNetworkObserver,
+  fetchImpl: JsonFetchImpl = fetch
 ): Promise<CachedJsonResponse> => {
 
 
@@ -1541,7 +1496,7 @@ const fetchJsonCached = async (
     let response: Response;
     try {
       response = await measurePhase(phases, phase, () =>
-        fetch(url, {
+        fetchImpl(url, {
           cache: 'no-store',
           ...init,
         })

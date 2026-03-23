@@ -1,0 +1,76 @@
+import type { RatingPreference } from './ratingPreferences';
+
+const PERCENTAGE_RATING_PROVIDERS = new Set<RatingPreference>([
+  'mdblist',
+  'tomatoes',
+  'tomatoesaudience',
+  'metacritic',
+  'anilist',
+  'kitsu',
+]);
+
+const SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, string>> = {
+  tmdb: '/10',
+  imdb: '/10',
+  metacriticuser: '/10',
+  letterboxd: '/5',
+  myanimelist: '/10',
+  rogerebert: '/4',
+};
+
+const isImageOutput = (imageType?: 'poster' | 'backdrop' | 'logo') =>
+  imageType === 'poster' || imageType === 'backdrop' || imageType === 'logo';
+
+const parseNumericRatingValue = (value: string) => {
+  const numericValue = Number(value.replace('%', '').replace(',', '.').trim());
+  return Number.isNaN(numericValue) || !Number.isFinite(numericValue) ? null : numericValue;
+};
+
+export const formatRatingNumber = (value: number) => {
+  const rounded = value.toFixed(1);
+  return rounded === '10.0' ? '10' : rounded;
+};
+
+export const formatDisplayRatingValue = (
+  provider: RatingPreference,
+  baseValue: string,
+  imageType?: 'poster' | 'backdrop' | 'logo'
+) => {
+  if (baseValue === 'N/A') return baseValue;
+
+  const numericValue = parseNumericRatingValue(baseValue);
+
+  if (provider === 'trakt') {
+    if (isImageOutput(imageType) && numericValue !== null) {
+      return formatRatingNumber(numericValue > 10 ? numericValue / 10 : numericValue);
+    }
+    if (numericValue !== null) {
+      if (numericValue > 10) {
+        return baseValue.endsWith('%') ? baseValue : `${baseValue}%`;
+      }
+      if (!baseValue.includes('/') && !baseValue.endsWith('%')) {
+        return `${baseValue}/10`;
+      }
+    }
+    return baseValue;
+  }
+
+  if (PERCENTAGE_RATING_PROVIDERS.has(provider)) {
+    if (isImageOutput(imageType) && numericValue !== null) {
+      return formatRatingNumber(numericValue / 10);
+    }
+    return baseValue.endsWith('%') ? baseValue : `${baseValue}%`;
+  }
+
+  const suffix = SCALE_SUFFIX_RATING_PROVIDERS[provider];
+  if (isImageOutput(imageType) && numericValue !== null) {
+    if (suffix === '/10') return formatRatingNumber(numericValue);
+    if (suffix === '/5') return formatRatingNumber(numericValue * 2);
+    if (suffix === '/4') return formatRatingNumber(numericValue * 2.5);
+  }
+  if (suffix && !baseValue.includes('/') && !baseValue.endsWith('%')) {
+    return `${baseValue}${suffix}`;
+  }
+
+  return baseValue;
+};

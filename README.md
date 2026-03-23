@@ -46,9 +46,9 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh1" alt="The Boys poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh1" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh1" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh2" alt="The Boys poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh2" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh2" alt="Attack on Titan poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -60,8 +60,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh1" alt="Game of Thrones backdrop live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh1" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh2" alt="Game of Thrones backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh2" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -73,8 +73,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh1" alt="The Boys logo live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh1" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh2" alt="The Boys logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh2" alt="Attack on Titan logo live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -246,6 +246,8 @@ Main endpoint:
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without those optional server side credentials, they still fall back to MDBList when `mdblistKey` is present.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
+
+Poster layouts also cap how many badges can appear: `top` and `bottom` show up to `3`, while `top-bottom` shows up to `6`. To show more than `3` poster ratings, use `top-bottom`, `left`, `right`, or `left-right`.
 
 ### Supported ID Formats
 
