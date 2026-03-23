@@ -5,6 +5,7 @@ import {
   RATING_PROVIDER_OPTIONS,
   orderRatingPreferencesForRender,
   parseRatingPreferencesAllowEmpty,
+  normalizeRatingPreference,
   selectAvailableRatingPreferences,
 } from '../lib/ratingPreferences.ts';
 
@@ -64,4 +65,9 @@ test('kitsu uses the embedded logo source instead of a remote fallback icon', ()
 
   assert.ok(kitsu);
   assert.match(kitsu.iconUrl, /^data:image\/png;base64,/);
+});
+
+test('rating preference normalization accepts anilist.co aliases', () => {
+  assert.equal(normalizeRatingPreference('AniList.co'), 'anilist');
+  assert.equal(normalizeRatingPreference('ani.list_co'), 'anilist');
 });

@@ -105,11 +105,12 @@ const ALIASES: Record<string, RatingPreference> = {
   myanimelist: 'myanimelist',
   mal: 'myanimelist',
   anilist: 'anilist',
+  anilistco: 'anilist',
   kitsu: 'kitsu',
 };
 
 export const normalizeRatingPreference = (value: string): RatingPreference | null => {
-  const normalized = value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  const normalized = value.trim().toLowerCase().replace(/[\s._-]+/g, '');
   if (!normalized) return null;
   return ALIASES[normalized] || null;
 };

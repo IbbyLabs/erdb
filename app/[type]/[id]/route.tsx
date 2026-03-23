@@ -118,6 +118,7 @@ const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
 const MYANIMELIST_CLIENT_ID =
   process.env.ERDB_MAL_CLIENT_ID?.trim() || process.env.MAL_CLIENT_ID?.trim() || '';
+const JIKAN_API_BASE_URL = process.env.ERDB_JIKAN_API_BASE_URL?.trim() || 'https://api.jikan.moe/v4';
 const TRAKT_API_BASE_URL =
   process.env.ERDB_TRAKT_API_BASE_URL?.trim() || 'https://api.trakt.tv';
 const TRAKT_CLIENT_ID =
@@ -1400,25 +1401,45 @@ const fetchAniListRating = async (aniListId: string, phases: PhaseDurations) => 
 
 const fetchMyAnimeListRating = async (malId: string, phases: PhaseDurations) => {
   const normalizedMalId = normalizeMalId(malId);
-  if (!normalizedMalId || !MYANIMELIST_CLIENT_ID) return null;
+  if (!normalizedMalId) return null;
+
+  if (MYANIMELIST_CLIENT_ID) {
+    try {
+      const response = await fetchJsonCached(
+        `mal:anime:${normalizedMalId}:rating:${sha1Hex(MYANIMELIST_CLIENT_ID)}`,
+        `${MYANIMELIST_API_BASE_URL}/anime/${encodeURIComponent(normalizedMalId)}?fields=mean`,
+        KITSU_CACHE_TTL_MS,
+        phases,
+        'mdb',
+        {
+          headers: {
+            accept: 'application/json',
+            'X-MAL-CLIENT-ID': MYANIMELIST_CLIENT_ID,
+          },
+        }
+      );
+      if (response.ok) {
+        const rating = normalizeRatingValue(response.data?.mean);
+        if (rating) {
+          return rating;
+        }
+      }
+    } catch {
+      // Fall through to the public Jikan fallback.
+    }
+  }
 
   try {
     const response = await fetchJsonCached(
-      `mal:anime:${normalizedMalId}:rating:${sha1Hex(MYANIMELIST_CLIENT_ID)}`,
-      `${MYANIMELIST_API_BASE_URL}/anime/${encodeURIComponent(normalizedMalId)}?fields=mean`,
+      `jikan:anime:${normalizedMalId}:score`,
+      `${JIKAN_API_BASE_URL}/anime/${encodeURIComponent(normalizedMalId)}`,
       KITSU_CACHE_TTL_MS,
       phases,
-      'mdb',
-      {
-        headers: {
-          accept: 'application/json',
-          'X-MAL-CLIENT-ID': MYANIMELIST_CLIENT_ID,
-        },
-      }
+      'mdb'
     );
     if (!response.ok) return null;
 
-    return normalizeRatingValue(response.data?.mean);
+    return normalizeRatingValue(response.data?.data?.score);
   } catch {
     return null;
   }

@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -14,10 +15,15 @@ import {
 } from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff } from 'lucide-react';
 import {
-  RATING_PROVIDER_OPTIONS,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from '@/lib/ratingPreferences';
+import {
+  buildDefaultRatingRows,
+  enabledOrderedToRows,
+  rowsToEnabledOrdered,
+  type RatingProviderRow,
+} from '@/lib/ratingRows';
 import {
   BACKDROP_RATING_LAYOUT_OPTIONS,
   DEFAULT_BACKDROP_RATING_LAYOUT,
@@ -55,6 +61,16 @@ import {
   type MetadataTranslationMode,
 } from '@/lib/metadataTranslation';
 
+const RatingProviderSortableList = dynamic(
+  () =>
+    import('@/components/rating-provider-sortable-list').then((module) => ({
+      default: module.RatingProviderSortableList,
+    })),
+  {
+    ssr: false,
+  }
+);
+
 const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'it', label: 'Italian', flag: '🇮🇹' },
@@ -67,10 +83,6 @@ const SUPPORTED_LANGUAGES = [
   { code: 'zh', label: 'Chinese', flag: '🇨🇳' },
   { code: 'tr', label: 'Turkish', flag: '🇹🇷' },
 ];
-const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
-const DEFAULT_RATING_PREFERENCES: RatingPreference[] = RATING_PROVIDER_OPTIONS.map(
-  (provider) => provider.id
-);
 const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
 type ProxyType = (typeof PROXY_TYPES)[number];
 type ProxyEnabledTypes = Record<ProxyType, boolean>;
@@ -190,7 +202,7 @@ PER TYPE SETTINGS
 poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
-Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
+Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
 Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 
 URL BUILD
@@ -473,15 +485,9 @@ export default function Home() {
   const [lang, setLang] = useState('en');
   const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
   const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [posterRatingPreferences, setPosterRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [backdropRatingPreferences, setBackdropRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
-  const [logoRatingPreferences, setLogoRatingPreferences] = useState<RatingPreference[]>(
-    DEFAULT_RATING_PREFERENCES
-  );
+  const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
+  const [backdropRatingRows, setBackdropRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
+  const [logoRatingRows, setLogoRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
   const [posterStreamBadges, setPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [backdropStreamBadges, setBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
@@ -525,6 +531,18 @@ export default function Home() {
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
 
   const [copied, setCopied] = useState(false);
+  const posterRatingPreferences = useMemo(
+    () => rowsToEnabledOrdered(posterRatingRows),
+    [posterRatingRows]
+  );
+  const backdropRatingPreferences = useMemo(
+    () => rowsToEnabledOrdered(backdropRatingRows),
+    [backdropRatingRows]
+  );
+  const logoRatingPreferences = useMemo(
+    () => rowsToEnabledOrdered(logoRatingRows),
+    [logoRatingRows]
+  );
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
   const shouldShowPosterQualityBadgesPosition =
     posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom';
@@ -676,9 +694,9 @@ export default function Home() {
       setLang(normalized.settings.lang);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
-      setPosterRatingPreferences(normalized.settings.posterRatingPreferences);
-      setBackdropRatingPreferences(normalized.settings.backdropRatingPreferences);
-      setLogoRatingPreferences(normalized.settings.logoRatingPreferences);
+      setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
+      setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
+      setLogoRatingRows(enabledOrderedToRows(normalized.settings.logoRatingPreferences));
       setPosterStreamBadges(normalized.settings.posterStreamBadges);
       setBackdropStreamBadges(normalized.settings.backdropStreamBadges);
       setQualityBadgesSide(normalized.settings.qualityBadgesSide);
@@ -1054,27 +1072,54 @@ export default function Home() {
     ? (showProxyUrl ? proxyUrl : maskSensitiveText(proxyUrl))
     : '';
 
-  const updateRatingPreferencesForType = (
+  const updateRatingRowsForType = (
     type: 'poster' | 'backdrop' | 'logo',
-    updater: (current: RatingPreference[]) => RatingPreference[]
+    updater: (current: RatingProviderRow[]) => RatingProviderRow[]
   ) => {
     if (type === 'poster') {
-      setPosterRatingPreferences(updater);
+      setPosterRatingRows(updater);
       return;
     }
     if (type === 'backdrop') {
-      setBackdropRatingPreferences(updater);
+      setBackdropRatingRows(updater);
       return;
     }
-    setLogoRatingPreferences(updater);
+    setLogoRatingRows(updater);
   };
 
   const toggleRatingPreference = (rating: RatingPreference) => {
-    updateRatingPreferencesForType(previewType, (current) =>
-      current.includes(rating)
-        ? current.filter((item) => item !== rating)
-        : [...current, rating]
+    updateRatingRowsForType(previewType, (current) =>
+      current.map((row) =>
+        row.id === rating
+          ? {
+              ...row,
+              enabled: !row.enabled,
+            }
+          : row
+      )
     );
+  };
+
+  const reorderRatingPreference = (fromIndex: number, toIndex: number) => {
+    updateRatingRowsForType(previewType, (current) => {
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= current.length ||
+        toIndex >= current.length
+      ) {
+        return current;
+      }
+
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      if (!moved) {
+        return current;
+      }
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
   };
 
   const handleCopyConfig = useCallback(() => {
@@ -1193,12 +1238,12 @@ export default function Home() {
       : previewType === 'backdrop'
         ? 'Backdrop Providers'
         : 'Logo Providers';
-  const activeRatingPreferences =
+  const ratingProviderRows =
     previewType === 'poster'
-      ? posterRatingPreferences
+      ? posterRatingRows
       : previewType === 'backdrop'
-        ? backdropRatingPreferences
-        : logoRatingPreferences;
+        ? backdropRatingRows
+        : logoRatingRows;
 
   const setRatingStyleForType = (value: RatingStyle) => {
     if (previewType === 'poster') {
@@ -1620,15 +1665,23 @@ export default function Home() {
                 )}
 
                 <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">{providersLabel}</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {VISIBLE_RATING_PROVIDER_OPTIONS.map(provider => (
-                      <label key={provider.id} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] cursor-pointer select-none transition-colors ${activeRatingPreferences.includes(provider.id as RatingPreference) ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                        <input type="checkbox" checked={activeRatingPreferences.includes(provider.id as RatingPreference)} onChange={() => toggleRatingPreference(provider.id as RatingPreference)} className="h-3 w-3 accent-violet-500" />
-                        <span>{provider.label}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
+                    {providersLabel} · drag to reorder
+                  </span>
+                  <p className="text-[10px] leading-4 text-zinc-500">
+                    ERDB respects this order when rendering badges. Disabled providers stay available but are skipped.
+                  </p>
+                  {previewType === 'poster' ? (
+                    <p className="text-[10px] leading-4 text-zinc-500/90">
+                      Poster layouts flow top to bottom in the left column first, then continue on the right.
+                    </p>
+                  ) : null}
+                  <RatingProviderSortableList
+                    rows={ratingProviderRows}
+                    onReorder={reorderRatingPreference}
+                    onToggle={toggleRatingPreference}
+                    fillDirection={previewType === 'poster' ? 'column' : 'row'}
+                  />
                 </div>
               </div>
 
