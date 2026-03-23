@@ -2,9 +2,11 @@
 
 ERDB generates poster/backdrop/logo images with dynamic ratings on the fly.
 
-- browse the [full changelog](CHANGELOG.md)
 <!-- changelog-links:start -->
-- jump straight to the [latest changelog entry](CHANGELOG.md#v2-23-2)
+
+> [!TIP]
+> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v2-23-2).
+
 <!-- changelog-links:end -->
 
 ## Quick Start

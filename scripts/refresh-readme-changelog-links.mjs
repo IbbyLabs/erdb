@@ -28,7 +28,12 @@ if (!markerPattern.test(readme)) {
 
 const updatedReadme = readme.replace(
   markerPattern,
-  `$1- jump straight to the [latest changelog entry](CHANGELOG.md#${anchor})$3`,
+  [
+    '$1',
+    '> [!TIP]',
+    `> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#${anchor}).`,
+    '$3',
+  ].join('\n'),
 );
 
 if (updatedReadme !== readme) {
