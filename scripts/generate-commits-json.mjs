@@ -5,7 +5,7 @@ import { normalizeCommitForDisplay } from './commit-display-utils.mjs';
 
 const COMMIT_LIMIT = 120;
 const prettyFormat = '%H%x1f%h%x1f%an%x1f%ae%x1f%cI%x1f%s%x1f%b%x1e';
-const output = execSync(`git log -n ${COMMIT_LIMIT} --date=iso-strict --pretty=format:${prettyFormat}`, {
+const output = execSync(`git log --first-parent -n ${COMMIT_LIMIT} --date=iso-strict --pretty=format:${prettyFormat}`, {
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],
 });

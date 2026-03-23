@@ -82,6 +82,42 @@ test('normalizes upstream merge copy for user facing surfaces', () => {
   assert.equal(normalized.body, null);
 });
 
+test('normalizes upstream synchronize copy for user facing surfaces', () => {
+  const normalized = normalizeCommitForDisplay({
+    subject: 'chore: synchronize with upstream/main to clear behind status',
+    body: '',
+    files: [],
+  });
+
+  assert.equal(normalized.type, 'chore');
+  assert.equal(normalized.title, 'sync upstream changes');
+  assert.equal(normalized.body, null);
+});
+
+test('normalizes pull request merge copy for user facing surfaces', () => {
+  const normalized = normalizeCommitForDisplay({
+    subject: 'Merge pull request #3 from qwertyuiop8899/patch-1',
+    body: '',
+    files: [],
+  });
+
+  assert.equal(normalized.type, 'chore');
+  assert.equal(normalized.title, 'merge contributor changes');
+  assert.equal(normalized.body, null);
+});
+
+test('normalizes conventional pull request merge copy for user facing surfaces', () => {
+  const normalized = normalizeCommitForDisplay({
+    subject: 'chore: merge pull request #3 from qwertyuiop8899/patch 1',
+    body: '',
+    files: [],
+  });
+
+  assert.equal(normalized.type, 'chore');
+  assert.equal(normalized.title, 'merge contributor changes');
+  assert.equal(normalized.body, null);
+});
+
 test('rewrites low signal conventional titles into area based copy', () => {
   const normalized = normalizeCommitForDisplay({
     subject: 'docs: update README.md (Upstream change - video link)',

@@ -111,7 +111,7 @@ The compose file includes a reverse proxy (Caddy) to handle app scaling.
 
 Pushing a version tag that matches `v*` now starts two independent workflows:
 
-- publishes a GitHub release with generated release notes
+- publishes a GitHub release with notes sourced from the matching changelog entry
 - pushes a multi architecture container image to GHCR as `ghcr.io/ibbylabs/erdb`
 
 The GitHub release is no longer blocked on the Docker publish job finishing.

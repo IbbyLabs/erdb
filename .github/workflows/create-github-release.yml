@@ -18,9 +18,23 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate release notes from changelog
+        run: node scripts/generate-github-release-notes.mjs "${{ github.event.workflow_run.head_branch }}" .github/release-notes.md
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.workflow_run.head_branch }}
-          generate_release_notes: true
+          body_path: .github/release-notes.md
           make_latest: true

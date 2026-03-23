@@ -7,12 +7,29 @@ const pkgPath = path.resolve('package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const currentVersion = `v${pkg.version}`;
 const today = new Date().toLocaleDateString('en-GB');
+const RELEASE_TAG_RE = /^v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
 const prettyFormat = '%H%x1f%s%x1f%b%x1e';
 
+function isReleaseTag(tag) {
+  return RELEASE_TAG_RE.test(String(tag || '').trim());
+}
+
+function isReleaseCommitSubject(subject) {
+  return /^chore(?:\(release\))?:\s*(?:release|cut)\s+v?\d+\.\d+\.\d+\b/i.test(String(subject || '').trim());
+}
+
+function getVersionAnchor(version) {
+  return String(version || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function getCommits(range) {
   try {
-    return execSync(`git log ${range} --no-merges --pretty=format:${prettyFormat}`, { encoding: 'utf8' })
+    return execSync(`git log --first-parent ${range} --pretty=format:${prettyFormat}`, { encoding: 'utf8' })
       .split('\x1e')
       .map(entry => entry.trim())
       .filter(Boolean)
@@ -30,7 +47,29 @@ function getCommits(range) {
 }
 
 function formatEntries(entries) {
-  return entries.map(m => {
+  const orderedEntries = [];
+  const entryCounts = new Map();
+
+  for (const entry of entries) {
+    const normalizedEntry = String(entry || '').trim();
+    if (!normalizedEntry) continue;
+    if (!entryCounts.has(normalizedEntry)) {
+      orderedEntries.push(normalizedEntry);
+      entryCounts.set(normalizedEntry, 0);
+    }
+    entryCounts.set(normalizedEntry, (entryCounts.get(normalizedEntry) || 0) + 1);
+  }
+
+  return orderedEntries.map(entry => {
+    const count = entryCounts.get(entry) || 1;
+    const message =
+      count > 1
+        ? entry.includes('\n')
+          ? `${entry.slice(0, entry.indexOf('\n'))} (${count} commits)${entry.slice(entry.indexOf('\n'))}`
+          : `${entry} (${count} commits)`
+        : entry;
+
+    const m = message;
     if (m.includes('\n')) {
       const lines = m.split('\n');
       return `* ${lines[0]}\n${lines.slice(1).map(l => `  ${l}`).join('\n')}`;
@@ -54,9 +93,8 @@ function generateSection(version, date, commits) {
 
   for (const commit of commits) {
     const { subject } = commit;
-    const lower = subject.toLowerCase();
     
-    if (lower.startsWith('chore: release') || lower.includes('synchronize with upstream')) {
+    if (isReleaseCommitSubject(subject)) {
       continue;
     }
 
@@ -72,7 +110,7 @@ function generateSection(version, date, commits) {
     else groups.other.push(message);
   }
 
-  let section = `## [${version}] - ${date}\n\n`;
+  let section = `<a id="${getVersionAnchor(version)}"></a>\n\n## [${version}] - ${date}\n\n`;
 
   if (groups.feat.length) section += `### Added\n${formatEntries(groups.feat)}\n\n`;
   if (groups.fix.length) section += `### Fixed\n${formatEntries(groups.fix)}\n\n`;
@@ -87,7 +125,8 @@ function generateSection(version, date, commits) {
 
 function lastTag() {
   try {
-    return execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
+    const tag = execSync('git describe --tags --abbrev=0 --first-parent --match "v[0-9]*"', { encoding: 'utf8' }).trim();
+    return isReleaseTag(tag) ? tag : null;
   } catch {
     return null;
   }
@@ -95,10 +134,10 @@ function lastTag() {
 
 function getAllTags() {
   try {
-    return execSync('git tag --sort=creatordate', { encoding: 'utf8' })
+    return execSync('git tag --list "v[0-9]*" --sort=version:refname', { encoding: 'utf8' })
       .split('\n')
       .map(t => t.trim())
-      .filter(Boolean);
+      .filter(isReleaseTag);
   } catch {
     return [];
   }

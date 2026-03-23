@@ -392,10 +392,19 @@ export function normalizeCommitForDisplay(commit) {
       ? buildGenericTitle(inferGenericAction(conventional.title) || 'update', buildAreaSummary(files))
       : conventional.title;
 
-    if (/^merge upstream\/main(?:\s*\(ours\))?$/i.test(conventional.title)) {
+    if (/^(?:merge upstream\/main(?:.*)?|synchroni[sz]e with upstream\/main(?:.*)?)$/i.test(conventional.title)) {
       return {
         type: conventional.type,
         title: removeUserFacingHyphens('sync upstream changes'),
+        body: sanitizeDisplayBody(body),
+        files,
+      };
+    }
+
+    if (/^merge pull request #\d+\s+from\s+/i.test(conventional.title)) {
+      return {
+        type: conventional.type,
+        title: removeUserFacingHyphens('merge contributor changes'),
         body: sanitizeDisplayBody(body),
         files,
       };
@@ -413,6 +422,15 @@ export function normalizeCommitForDisplay(commit) {
     return {
       type: 'chore',
       title: removeUserFacingHyphens('bootstrap ERDB project'),
+      body: sanitizeDisplayBody(body),
+      files,
+    };
+  }
+
+  if (/^merge pull request #\d+\s+from\s+/i.test(subject)) {
+    return {
+      type: 'chore',
+      title: removeUserFacingHyphens('merge contributor changes'),
       body: sanitizeDisplayBody(body),
       files,
     };
