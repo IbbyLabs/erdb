@@ -9,7 +9,8 @@ import sharp from 'sharp';
 
 const ROOT_DIR = fileURLToPath(new URL('..', import.meta.url));
 const DOCS_IMAGES_DIR = path.join(ROOT_DIR, 'docs', 'images');
-const LOCAL_ORIGIN = process.env.DOC_SCREENSHOT_ORIGIN || 'http://127.0.0.1:3000';
+const RENDER_ORIGIN_OVERRIDE = process.env.DOC_SCREENSHOT_ORIGIN || '';
+const RENDER_NEXT_PORT = Number.parseInt(process.env.DOC_RENDER_PORT || '3216', 10);
 const FIXTURE_NEXT_PORT = Number.parseInt(process.env.DOC_METADATA_FIXTURE_PORT || '3217', 10);
 const CAPTURE_DATE = 'March 23, 2026';
 
@@ -120,8 +121,8 @@ const fetchBuffer = async (url) => {
   return Buffer.from(await response.arrayBuffer());
 };
 
-const buildRenderUrl = ({ type, id, params }) => {
-  const url = new URL(`/${type}/${encodeURIComponent(id)}.jpg`, LOCAL_ORIGIN);
+const buildRenderUrl = ({ origin, type, id, params }) => {
+  const url = new URL(`/${type}/${encodeURIComponent(id)}.jpg`, origin);
   url.searchParams.set('tmdbKey', tmdbKey);
   if (mdblistKey) {
     url.searchParams.set('mdblistKey', mdblistKey);
@@ -247,6 +248,46 @@ const waitForHttp = async (url, attempts = 90) => {
     await delay(500);
   }
   throw new Error(`Timed out waiting for ${url}`);
+};
+
+const startNextDevServer = async ({
+  port,
+  env = {},
+}) => {
+  const nextProcess = spawn(
+    process.platform === 'win32' ? 'npx.cmd' : 'npx',
+    ['next', 'dev', '-p', String(port), '-H', '127.0.0.1'],
+    {
+      cwd: ROOT_DIR,
+      env: {
+        ...process.env,
+        ...env,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+
+  let nextLogs = '';
+  nextProcess.stdout.on('data', (chunk) => {
+    nextLogs += String(chunk);
+  });
+  nextProcess.stderr.on('data', (chunk) => {
+    nextLogs += String(chunk);
+  });
+
+  const origin = `http://127.0.0.1:${port}`;
+  try {
+    await waitForHttp(origin);
+  } catch (error) {
+    await terminateProcess(nextProcess);
+    throw new Error(`${String(error)}\n\n${nextLogs}`);
+  }
+
+  return {
+    origin,
+    nextProcess,
+    getLogs: () => nextLogs,
+  };
 };
 
 const terminateProcess = async (child) => {
@@ -655,37 +696,20 @@ const generateMetadataExamples = async () => {
   const mockAddress = mockServer.address();
   const mockPort = typeof mockAddress === 'object' && mockAddress ? mockAddress.port : 0;
   const upstreamManifestUrl = `http://127.0.0.1:${mockPort}/upstream/manifest.json`;
-
-  const nextProcess = spawn(
-    process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['next', 'dev', '-p', String(FIXTURE_NEXT_PORT), '-H', '127.0.0.1'],
-    {
-      cwd: ROOT_DIR,
-      env: {
-        ...process.env,
-        ERDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
-        ERDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
-        ERDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
-        ERDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
-        ERDB_ANILIST_GRAPHQL_URL: `http://127.0.0.1:${mockPort}/anilist`,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
+  const nextServer = await startNextDevServer({
+    port: FIXTURE_NEXT_PORT,
+    env: {
+      ERDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
+      ERDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
+      ERDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
+      ERDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
+      ERDB_ANILIST_GRAPHQL_URL: `http://127.0.0.1:${mockPort}/anilist`,
     },
-  );
-
-  let nextLogs = '';
-  nextProcess.stdout.on('data', (chunk) => {
-    nextLogs += String(chunk);
-  });
-  nextProcess.stderr.on('data', (chunk) => {
-    nextLogs += String(chunk);
   });
 
   try {
-    await waitForHttp(`http://127.0.0.1:${FIXTURE_NEXT_PORT}`);
-
     const buildProxyUrl = (resourcePath, params = {}) => {
-      const url = new URL(`http://127.0.0.1:${FIXTURE_NEXT_PORT}/proxy/${resourcePath}`);
+      const url = new URL(`/proxy/${resourcePath}`, nextServer.origin);
       url.searchParams.set('url', upstreamManifestUrl);
       url.searchParams.set('tmdbKey', 'fixture-tmdb-key');
       url.searchParams.set('mdblistKey', 'fixture-mdblist-key');
@@ -755,9 +779,9 @@ const generateMetadataExamples = async () => {
       ),
     });
   } catch (error) {
-    throw new Error(`${String(error)}\n\n${nextLogs}`);
+    throw new Error(`${String(error)}\n\n${nextServer.getLogs()}`);
   } finally {
-    await terminateProcess(nextProcess);
+    await terminateProcess(nextServer.nextProcess);
     await new Promise((resolve, reject) => {
       mockServer.close((error) => (error ? reject(error) : resolve()));
     });
@@ -765,219 +789,243 @@ const generateMetadataExamples = async () => {
 };
 
 const generateComparisonBoards = async () => {
-  const posterCards = [
-    {
-      title: 'Glass poster stack',
-      caption: 'Original text, top-bottom layout, TMDB plus IMDb, stream badges on.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'poster',
-          id: 'tt15239678',
-          params: {
-            lang: 'en',
-            posterRatings: 'tmdb,imdb',
-            posterRatingsLayout: 'top bottom',
-            posterStreamBadges: 'on',
-            ratingStyle: 'glass',
-            imageText: 'original',
-          },
-        }),
-      ),
-    },
-    {
-      title: 'Square split layout',
-      caption: 'Clean text, left-right stack, TMDB only, stream badges off.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'poster',
-          id: 'tt15239678',
-          params: {
-            lang: 'en',
-            posterRatings: 'tmdb',
-            posterRatingsLayout: 'left right',
-            posterStreamBadges: 'off',
-            posterQualityBadgesStyle: 'square',
-            ratingStyle: 'square',
-            imageText: 'clean',
-          },
-        }),
-      ),
-    },
-    {
-      title: 'Plain capped stack',
-      caption:
-        'Top layout, plain badges, max 2 ratings, quality badges pinned right with cap 2.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'poster',
-          id: 'tt15239678',
-          params: {
-            lang: 'en',
-            posterRatings: 'tmdb,imdb',
-            posterRatingsLayout: 'top',
-            posterRatingsMaxPerSide: '2',
-            posterStreamBadges: 'on',
-            posterQualityBadgesStyle: 'plain',
-            posterQualityBadgesPosition: 'right',
-            posterQualityBadgesMax: '2',
-            ratingStyle: 'plain',
-            imageText: 'original',
-          },
-        }),
-      ),
-    },
-  ];
+  const renderServer = RENDER_ORIGIN_OVERRIDE
+    ? {
+        origin: RENDER_ORIGIN_OVERRIDE,
+        nextProcess: null,
+        getLogs: () => '',
+      }
+    : await startNextDevServer({ port: RENDER_NEXT_PORT });
 
-  await createBoard({
-    outputPath: path.join(DOCS_IMAGES_DIR, 'render-comparisons', 'movie-poster-comparison.png'),
-    width: 1900,
-    height: 1700,
-    title: 'Movie Poster Comparison',
-    subtitle: 'Dune Part Two poster with three current settings mixes',
-    stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
-    cards: posterCards,
-    imageHeight: 720,
-    imageFit: 'cover',
-  });
+  try {
+    const posterCards = [
+      {
+        title: 'Glass poster stack',
+        caption: 'Original text, top bottom layout, TMDB plus IMDb, stream badges on.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'poster',
+            id: 'tt15239678',
+            params: {
+              lang: 'en',
+              posterRatings: 'tmdb,imdb',
+              posterRatingsLayout: 'top bottom',
+              posterStreamBadges: 'on',
+              ratingStyle: 'glass',
+              imageText: 'original',
+            },
+          }),
+        ),
+      },
+      {
+        title: 'Square split layout',
+        caption: 'Clean text, left right stack, TMDB only, stream badges off.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'poster',
+            id: 'tt15239678',
+            params: {
+              lang: 'en',
+              posterRatings: 'tmdb',
+              posterRatingsLayout: 'left right',
+              posterStreamBadges: 'off',
+              posterQualityBadgesStyle: 'square',
+              ratingStyle: 'square',
+              imageText: 'clean',
+            },
+          }),
+        ),
+      },
+      {
+        title: 'Plain capped stack',
+        caption:
+          'Top layout, plain badges, max 2 ratings, quality badges pinned right with cap 2.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'poster',
+            id: 'tt15239678',
+            params: {
+              lang: 'en',
+              posterRatings: 'tmdb,imdb',
+              posterRatingsLayout: 'top',
+              posterRatingsMaxPerSide: '2',
+              posterStreamBadges: 'on',
+              posterQualityBadgesStyle: 'plain',
+              posterQualityBadgesPosition: 'right',
+              posterQualityBadgesMax: '2',
+              ratingStyle: 'plain',
+              imageText: 'original',
+            },
+          }),
+        ),
+      },
+    ];
 
-  const backdropCards = [
-    {
-      title: 'Center glass layout',
-      caption: 'Clean text, center ratings, TMDB plus IMDb, no stream badges.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'backdrop',
-          id: 'tt0944947',
-          params: {
-            lang: 'en',
-            backdropRatings: 'tmdb,imdb',
-            backdropRatingsLayout: 'center',
-            backdropStreamBadges: 'off',
-            ratingStyle: 'glass',
-            imageText: 'clean',
-          },
-        }),
-      ),
-    },
-    {
-      title: 'Right vertical square',
-      caption: 'Clean text, right vertical ratings, square badges, stream badges on, cap 2.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'backdrop',
-          id: 'tt0944947',
-          params: {
-            lang: 'en',
-            backdropRatings: 'tmdb,imdb',
-            backdropRatingsLayout: 'right vertical',
-            backdropStreamBadges: 'on',
-            backdropQualityBadgesStyle: 'square',
-            backdropQualityBadgesMax: '2',
-            ratingStyle: 'square',
-            imageText: 'clean',
-          },
-        }),
-      ),
-    },
-    {
-      title: 'Right plain layout',
-      caption: 'Original text, right ratings, TMDB only, plain style, max 1 quality badge.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'backdrop',
-          id: 'tt0944947',
-          params: {
-            lang: 'en',
-            backdropRatings: 'tmdb',
-            backdropRatingsLayout: 'right',
-            backdropStreamBadges: 'on',
-            backdropQualityBadgesStyle: 'plain',
-            backdropQualityBadgesMax: '1',
-            ratingStyle: 'plain',
-            imageText: 'original',
-          },
-        }),
-      ),
-    },
-  ];
+    await createBoard({
+      outputPath: path.join(DOCS_IMAGES_DIR, 'render-comparisons', 'movie-poster-comparison.png'),
+      width: 1900,
+      height: 1700,
+      title: 'Movie Poster Comparison',
+      subtitle: 'Dune Part Two poster with three current settings mixes',
+      stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
+      cards: posterCards,
+      imageHeight: 720,
+      imageFit: 'cover',
+    });
 
-  await createBoard({
-    outputPath: path.join(DOCS_IMAGES_DIR, 'render-comparisons', 'show-backdrop-comparison.png'),
-    width: 1900,
-    height: 1500,
-    title: 'Show Backdrop Comparison',
-    subtitle: 'Game of Thrones backdrop with three current settings mixes',
-    stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
-    cards: backdropCards,
-    imageHeight: 290,
-    imageFit: 'cover',
-  });
+    const backdropCards = [
+      {
+        title: 'Center glass layout',
+        caption: 'Clean text, center ratings, TMDB plus IMDb, no stream badges.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'backdrop',
+            id: 'tt0944947',
+            params: {
+              lang: 'en',
+              backdropRatings: 'tmdb,imdb',
+              backdropRatingsLayout: 'center',
+              backdropStreamBadges: 'off',
+              ratingStyle: 'glass',
+              imageText: 'clean',
+            },
+          }),
+        ),
+      },
+      {
+        title: 'Right vertical square',
+        caption: 'Clean text, right vertical ratings, square badges, stream badges on, cap 2.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'backdrop',
+            id: 'tt0944947',
+            params: {
+              lang: 'en',
+              backdropRatings: 'tmdb,imdb',
+              backdropRatingsLayout: 'right vertical',
+              backdropStreamBadges: 'on',
+              backdropQualityBadgesStyle: 'square',
+              backdropQualityBadgesMax: '2',
+              ratingStyle: 'square',
+              imageText: 'clean',
+            },
+          }),
+        ),
+      },
+      {
+        title: 'Right plain layout',
+        caption: 'Original text, right ratings, TMDB only, plain style, max 1 quality badge.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'backdrop',
+            id: 'tt0944947',
+            params: {
+              lang: 'en',
+              backdropRatings: 'tmdb',
+              backdropRatingsLayout: 'right',
+              backdropStreamBadges: 'on',
+              backdropQualityBadgesStyle: 'plain',
+              backdropQualityBadgesMax: '1',
+              ratingStyle: 'plain',
+              imageText: 'original',
+            },
+          }),
+        ),
+      },
+    ];
 
-  const logoCards = [
-    {
-      title: 'Transparent plain logo',
-      caption: 'Transparent background, plain badges, TMDB plus AniList plus Kitsu.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'logo',
-          id: 'mal:16498',
-          params: {
-            lang: 'ja',
-            logoRatings: 'tmdb,anilist,kitsu',
-            logoBackground: 'transparent',
-            logoRatingsMax: '3',
-            ratingStyle: 'plain',
-          },
-        }),
-      ),
-    },
-    {
-      title: 'Dark glass logo',
-      caption: 'Dark background, glass badges, TMDB plus AniList plus Kitsu.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'logo',
-          id: 'mal:16498',
-          params: {
-            lang: 'ja',
-            logoRatings: 'tmdb,anilist,kitsu',
-            logoBackground: 'dark',
-            logoRatingsMax: '3',
-            ratingStyle: 'glass',
-          },
-        }),
-      ),
-    },
-    {
-      title: 'Dark square logo',
-      caption: 'Dark background, square badges, current logo rating cap set to 1.',
-      image: await fetchBuffer(
-        buildRenderUrl({
-          type: 'logo',
-          id: 'mal:16498',
-          params: {
-            lang: 'ja',
-            logoRatings: 'tmdb,anilist,kitsu',
-            logoBackground: 'dark',
-            logoRatingsMax: '1',
-            ratingStyle: 'square',
-          },
-        }),
-      ),
-    },
-  ];
+    await createBoard({
+      outputPath: path.join(DOCS_IMAGES_DIR, 'render-comparisons', 'show-backdrop-comparison.png'),
+      width: 1900,
+      height: 1500,
+      title: 'Show Backdrop Comparison',
+      subtitle: 'Game of Thrones backdrop with three current settings mixes',
+      stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
+      cards: backdropCards,
+      imageHeight: 290,
+      imageFit: 'cover',
+    });
 
-  await createBoard({
-    outputPath: path.join(DOCS_IMAGES_DIR, 'render-comparisons', 'anime-logo-comparison.png'),
-    width: 1900,
-    height: 1300,
-    title: 'Anime Logo Comparison',
-    subtitle: 'Attack on Titan logo with three current settings mixes',
-    stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
-    cards: logoCards,
-    imageHeight: 230,
-    imageFit: 'contain',
-  });
+    const logoCards = [
+      {
+        title: 'Transparent plain logo',
+        caption: 'Transparent background, plain badges, TMDB plus AniList plus Kitsu.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'logo',
+            id: 'mal:16498',
+            params: {
+              lang: 'ja',
+              logoRatings: 'tmdb,anilist,kitsu',
+              logoBackground: 'transparent',
+              logoRatingsMax: '3',
+              ratingStyle: 'plain',
+            },
+          }),
+        ),
+      },
+      {
+        title: 'Transparent glass logo',
+        caption:
+          'Transparent background, glass badges, TMDB plus AniList plus Kitsu with the neutral Kitsu chip.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'logo',
+            id: 'mal:16498',
+            params: {
+              lang: 'ja',
+              logoRatings: 'tmdb,anilist,kitsu',
+              logoBackground: 'transparent',
+              logoRatingsMax: '3',
+              ratingStyle: 'glass',
+            },
+          }),
+        ),
+      },
+      {
+        title: 'Dark square logo',
+        caption: 'Dark background, square badges, current logo rating cap set to 1.',
+        image: await fetchBuffer(
+          buildRenderUrl({
+            origin: renderServer.origin,
+            type: 'logo',
+            id: 'mal:16498',
+            params: {
+              lang: 'ja',
+              logoRatings: 'tmdb,anilist,kitsu',
+              logoBackground: 'dark',
+              logoRatingsMax: '1',
+              ratingStyle: 'square',
+            },
+          }),
+        ),
+      },
+    ];
+
+    await createBoard({
+      outputPath: path.join(DOCS_IMAGES_DIR, 'render-comparisons', 'anime-logo-comparison.png'),
+      width: 1900,
+      height: 1300,
+      title: 'Anime Logo Comparison',
+      subtitle: 'Attack on Titan logo with transparent and dark badge settings mixes',
+      stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
+      cards: logoCards,
+      imageHeight: 230,
+      imageFit: 'contain',
+    });
+  } catch (error) {
+    throw new Error(`${String(error)}\n\n${renderServer.getLogs()}`);
+  } finally {
+    await terminateProcess(renderServer.nextProcess);
+  }
 };
 
 const main = async () => {

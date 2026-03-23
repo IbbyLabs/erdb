@@ -874,7 +874,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesSide</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">left, right (poster top-bottom only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">left, right (poster top bottom only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">left</td>
                       </tr>
                       <tr>
@@ -909,8 +909,8 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatingsLayout</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">top, bottom, left, right, top-bottom, left-right</td>
-                        <td className="px-5 py-2 text-slate-500 text-xs">top-bottom</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">top, bottom, left, right, top bottom, left right</td>
+                        <td className="px-5 py-2 text-slate-500 text-xs">top bottom</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatingsMaxPerSide</td>
@@ -919,7 +919,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropRatingsLayout</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">center, right, right-vertical</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">center, right, right vertical</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">center</td>
                       </tr>
                       <tr>
@@ -934,6 +934,9 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                <div className="border-t border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-6 text-slate-400">
+                  Transparent provider icons stay transparent across <span className="font-semibold text-slate-200">glass</span>, <span className="font-semibold text-slate-200">square</span>, and <span className="font-semibold text-slate-200">plain</span>. In <span className="font-semibold text-slate-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                 </div>
               </div>
 
@@ -965,7 +968,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                         <td className="px-5 py-2 text-slate-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
-                            <div>top, bottom, left, right, top-bottom, left-right</div>
+                            <div>top, bottom, left, right, top bottom, left right</div>
                             <div>1-20 (auto if omitted)</div>
                           </div>
                         </td>
@@ -981,7 +984,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                         <td className="px-5 py-2 text-slate-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
-                            <div>center, right, right-vertical</div>
+                            <div>center, right, right vertical</div>
                           </div>
                         </td>
                       </tr>
@@ -1152,16 +1155,16 @@ lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, e
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster top-bottom only)                                 | left
+qualityBadgesSide       | left, right (poster top bottom only)                                 | left
 posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
-posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
+posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1-20)                                                        | auto
-backdropRatingsLayout   | center, right, right-vertical                                        | center
+backdropRatingsLayout   | center, right, right vertical                                        | center
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 
@@ -1173,12 +1176,12 @@ TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can col
 3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
 4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
 
---- PER-TYPE SETTINGS ---
+--- PER TYPE SETTINGS ---
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
-Ratings providers can be set per-type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
-Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
+Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
+Quality badges style can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
@@ -1196,7 +1199,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
                   <div className="text-orange-200/70 truncate bg-white/[0.04] p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
                   <div className="text-slate-600 font-bold mt-4">{'Backdrop (TMDB)'}</div>
-                  <div className="text-orange-200/70 truncate bg-white/[0.04] p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=right-vertical`}</div>
+                  <div className="text-orange-200/70 truncate bg-white/[0.04] p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}`}</div>
 
                 </pre>
               </div>

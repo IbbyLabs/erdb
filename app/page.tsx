@@ -185,6 +185,7 @@ tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                  
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
+STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 
 INTEGRATION REQUIREMENTS
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -2134,6 +2135,9 @@ export default function Home() {
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
+                  Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, and <span className="font-semibold text-zinc-200">plain</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                 </div>
               </div>
 

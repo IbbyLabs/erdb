@@ -35,7 +35,7 @@ These are live requests against production so readers can see current poster, ba
 
 The gallery is intended to use the optional server side preview env vars `ERDB_README_PREVIEW_TMDB_KEY` and `ERDB_README_PREVIEW_MDBLIST_KEY` so the README does not need to expose a raw API key.
 
-Each preview URL includes a `cb` cache buster token. Change that token when you want GitHub to fetch a fresh preview again.
+Each preview URL includes a `cb` cache buster token. The release flow refreshes those tokens automatically so GitHub fetches a fresh set of live previews on each tagged release.
 
 ### Posters
 
@@ -46,9 +46,9 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readmePreviewTheBoysPoster20260323refresh2" alt="The Boys poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readmePreviewDunePoster20260323refresh2" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readmePreviewAttackOnTitanPoster20260323refresh2" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-23-0" alt="The Boys poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-23-0" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-23-0" alt="Attack on Titan poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -60,8 +60,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readmePreviewGameOfThronesBackdrop20260323refresh2" alt="Game of Thrones backdrop live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readmePreviewStrangerThingsBackdrop20260323refresh2" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-23-0" alt="Game of Thrones backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-23-0" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -73,8 +73,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
     <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readmePreviewTheBoysLogo20260323refresh2" alt="The Boys logo live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh2"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readmePreviewAttackOnTitanLogo20260323refresh2" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-23-0" alt="The Boys logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-23-0"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-23-0" alt="Attack on Titan logo live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -82,6 +82,8 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
 ## Rendering Option Comparisons
 
 These static comparison boards highlight the newer rendering controls that are easier to evaluate side by side than in a single live card. They cover `logoBackground`, `logoRatingsMax`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, and a few layout and style combinations from the local March 23, 2026 build.
+
+Transparent provider icons now stay transparent across every badge style. In `glass`, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
 
 ### Movie Poster Options
 
@@ -98,7 +100,7 @@ These static comparison boards highlight the newer rendering controls that are e
 ### Anime Logo Options
 
 <p align="center">
-  <img src="docs/images/render-comparisons/anime-logo-comparison.png" alt="Anime logo comparison showing transparent and dark logo backgrounds with different rating styles and limits" width="920">
+  <img src="docs/images/render-comparisons/anime-logo-comparison.png" alt="Anime logo comparison showing transparent plain, transparent glass with a neutral Kitsu chip, and dark square settings" width="920">
 </p>
 
 ## Scalability & Docker
@@ -238,15 +240,17 @@ Main endpoint:
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
-| `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top-bottom` / `top bottom`, `left-right` / `left right` | `top-bottom` |
+| `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top bottom`, `left right` | `top bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
-| `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` / `right vertical` | `center` |
+| `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right vertical` | `center` |
 | `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
 
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without the MAL client id, ERDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, ERDB still falls back to MDBList when `mdblistKey` is present.
 
 Prefer `tmdb:movie:id` or `tmdb:tv:id` when you already know the media type. Bare `tmdb:id` still works, but explicit TMDB IDs avoid movie vs TV collisions.
+
+Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, ERDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
@@ -330,6 +334,7 @@ tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                  
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
+STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
