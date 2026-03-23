@@ -3,6 +3,11 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
+## [v2.22.1] - 23/03/2026
+
+### Fixed
+* restore missing translated anime art and direct trakt scale
+
 ## [v2.22.0] - 23/03/2026
 
 ### Added
