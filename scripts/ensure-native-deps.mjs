@@ -1,16 +1,36 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const NATIVE_PACKAGE_NAME = 'better-sqlite3';
-const VERIFY_ARGS = ['-e', `require(${JSON.stringify(NATIVE_PACKAGE_NAME)});`];
+const DEFAULT_PACKAGE_JSON_PATH = fileURLToPath(new URL('../package.json', import.meta.url));
+
+export function getVerifyScript(packageName = NATIVE_PACKAGE_NAME) {
+  return [
+    `const Database = require(${JSON.stringify(packageName)});`,
+    `const db = new Database(':memory:');`,
+    'db.close();',
+  ].join('\n');
+}
+
+const VERIFY_ARGS = ['-e', getVerifyScript()];
 
 export function isNativeAbiMismatch(output) {
   const text = String(output || '');
   return text.includes(NATIVE_PACKAGE_NAME) && text.includes('NODE_MODULE_VERSION');
 }
 
-export function getRebuildCommand({ userAgent = '' } = {}) {
-  if (String(userAgent).startsWith('pnpm/')) {
+export function getDeclaredPackageManager({ packageJsonPath = DEFAULT_PACKAGE_JSON_PATH } = {}) {
+  try {
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    return typeof packageJson.packageManager === 'string' ? packageJson.packageManager : '';
+  } catch {
+    return '';
+  }
+}
+
+export function getRebuildCommand({ userAgent = '', packageManager = '' } = {}) {
+  if (String(userAgent).startsWith('pnpm/') || String(packageManager).startsWith('pnpm@')) {
     return {
       command: 'pnpm',
       args: ['rebuild', NATIVE_PACKAGE_NAME],
@@ -55,6 +75,9 @@ export function ensureNativeDeps({ env = process.env, log = console } = {}) {
 
   const { command, args } = getRebuildCommand({
     userAgent: env.npm_config_user_agent,
+    packageManager: env.npm_package_json
+      ? getDeclaredPackageManager({ packageJsonPath: env.npm_package_json })
+      : '',
   });
 
   log.warn(
