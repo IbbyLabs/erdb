@@ -19,6 +19,13 @@
 
 <a id="v2-24-2"></a>
 
+<a id="v2-24-3"></a>
+
+## [v2.24.3] - 23/03/2026
+
+### Fixed
+* track latest published GitHub release
+
 ## [v2.24.2] - 23/03/2026
 
 ### Fixed
