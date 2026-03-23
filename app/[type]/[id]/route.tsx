@@ -112,7 +112,7 @@ const normalizeOptionalBadgeCount = (value?: string | null) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return normalized;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v41';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v42';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -2079,6 +2079,77 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
   });
 };
 
+const decodeDataUriBuffer = (dataUri: string) => {
+  const normalized = dataUri.trim();
+  const match = normalized.match(/^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,([\s\S]+)$/i);
+  if (!match) return null;
+  const payload = match[3] || '';
+  if (match[2]) {
+    try {
+      return Buffer.from(payload, 'base64');
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    return Buffer.from(decodeURIComponent(payload), 'utf8');
+  } catch {
+    return null;
+  }
+};
+
+const shouldUseNeutralGlassPlateForIcon = async (iconDataUri: string | null) => {
+  const normalizedIconDataUri = String(iconDataUri || '').trim();
+  if (!normalizedIconDataUri.startsWith('data:')) return false;
+
+  const sourceBuffer = decodeDataUriBuffer(normalizedIconDataUri);
+  if (!sourceBuffer) return false;
+
+  try {
+    const sharp = await getSharpFactory();
+    const { data, info } = await sharp(sourceBuffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    if (!info.width || !info.height || info.channels < 4) {
+      return false;
+    }
+
+    let minX = info.width;
+    let minY = info.height;
+    let maxX = -1;
+    let maxY = -1;
+    let visiblePixelCount = 0;
+
+    for (let y = 0; y < info.height; y += 1) {
+      for (let x = 0; x < info.width; x += 1) {
+        const alpha = data[(y * info.width + x) * info.channels + 3];
+        if (alpha < 40) continue;
+        visiblePixelCount += 1;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+
+    if (visiblePixelCount === 0 || maxX < minX || maxY < minY) {
+      return false;
+    }
+
+    const boundsWidth = maxX - minX + 1;
+    const boundsHeight = maxY - minY + 1;
+    const boundsArea = boundsWidth * boundsHeight;
+    if (boundsArea <= 0) return false;
+
+    const visibleCoverage = visiblePixelCount / boundsArea;
+    return visibleCoverage < 0.82;
+  } catch {
+    return false;
+  }
+};
+
 const escapeXml = (value: string) =>
   value
     .replace(/&/g, '&amp;')
@@ -2764,6 +2835,7 @@ const buildBadgeSvg = ({
   iconKey,
   value,
   ratingStyle,
+  preferNeutralGlassPlate = false,
   compactText = false,
 }: {
   width: number;
@@ -2778,6 +2850,7 @@ const buildBadgeSvg = ({
   iconKey?: BadgeKey;
   value: string;
   ratingStyle: RatingStyle;
+  preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
 }) => {
   const radius = getBadgeOuterRadius(height, ratingStyle);
@@ -2802,12 +2875,15 @@ const buildBadgeSvg = ({
     : `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
   const valueLetterSpacing = compactText ? ' letter-spacing="-0.04em"' : '';
   const iconY = Math.round((height - iconSize) / 2);
+  const useNeutralGlassPlate = ratingStyle === 'glass' && preferNeutralGlassPlate;
   const iconShape =
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
         ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, iconSize - 1.5)}" height="${Math.max(0, iconSize - 1.5)}" rx="${iconRadius}" fill="rgb(10,10,10)" />`
-        : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
+        : useNeutralGlassPlate
+          ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="1.5" />`
+          : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
   const iconClipPath =
     ratingStyle === 'plain'
       ? ''
@@ -2819,39 +2895,34 @@ const buildBadgeSvg = ({
       ? ''
       : ratingStyle === 'square'
         ? ''
-        : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="none" stroke="rgba(255,255,255,0.45)" />`;
+        : useNeutralGlassPlate
+          ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 0.75)}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.75" />`
+          : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="none" stroke="rgba(255,255,255,0.45)" />`;
   const outerRect =
     ratingStyle === 'plain'
       ? ''
       : `<rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${ratingStyle === 'square' ? '1.5' : '1'}" />`;
-  const monogramFill = ratingStyle === 'glass' ? 'white' : accentColor;
-  const plainIconPlate =
-    ratingStyle === 'plain' && iconKey === 'kitsu'
-      ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.round(iconSize / 2) + 4}" fill="rgb(255,255,255)" stroke="rgba(15,23,42,0.14)" stroke-width="1" />`
-      : '';
-  const plainIconClipPath =
-    ratingStyle === 'plain' && iconKey === 'kitsu'
-      ? `<defs><clipPath id="plain-icon-clip"><circle cx="${iconCx}" cy="${iconCy}" r="${Math.round(iconSize / 2) + 1}" /></clipPath></defs>`
-      : '';
-  const textShadowFilter =
+  const monogramFill = ratingStyle === 'glass' && !useNeutralGlassPlate ? 'white' : accentColor;
+  const plainBadgeDefs =
     ratingStyle === 'plain'
-      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter></defs>`
+      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter></defs>`
       : '';
+  const plainIconFilter = ratingStyle === 'plain' ? ' filter="url(#plain-icon-shadow)"' : '';
   const iconImage =
     !iconDataUri
       ? ''
       : ratingStyle === 'plain'
-        ? `${plainIconClipPath}${plainIconPlate}<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet"${iconKey === 'kitsu' ? ' clip-path="url(#plain-icon-clip)"' : ''} />`
+        ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet"${plainIconFilter} />`
         : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)" />${iconBorder}`;
   const monogramText =
     iconDataUri
       ? ''
-      : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}">${escapeXml(monogram)}</text>${iconBorder}`;
+      : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}"${plainIconFilter}>${escapeXml(monogram)}</text>${iconBorder}`;
   const valueFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
   const valueNumericStyle =
     ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-${textShadowFilter}
+${plainBadgeDefs}
 ${outerRect}
 ${iconShape}
 ${iconImage}
@@ -2887,16 +2958,20 @@ const renderWithSharp = async (
       .toBuffer();
     overlays.push({ input: resizedImageBuffer, top: 0, left: imageLeft });
 
-    const iconByProvider = new Map<BadgeKey, string | null>();
+    const iconRenderStateByProvider = new Map<
+      BadgeKey,
+      { dataUri: string | null; preferNeutralGlassPlate: boolean }
+    >();
     if (input.badges.length > 0) {
       const iconEntries = await Promise.all(
         input.badges.map(async (badge) => {
           const iconDataUri = await getProviderIconDataUri(badge.iconUrl);
-          return [badge.key, iconDataUri] as const;
+          const preferNeutralGlassPlate = await shouldUseNeutralGlassPlateForIcon(iconDataUri);
+          return [badge.key, { dataUri: iconDataUri, preferNeutralGlassPlate }] as const;
         })
       );
-      for (const [providerKey, iconDataUri] of iconEntries) {
-        iconByProvider.set(providerKey, iconDataUri);
+      for (const [providerKey, iconRenderState] of iconEntries) {
+        iconRenderStateByProvider.set(providerKey, iconRenderState);
       }
     }
 
@@ -3079,10 +3154,12 @@ const renderWithSharp = async (
           gap: input.badgeGap,
           accentColor: entry.badge.accentColor,
           monogram,
-          iconDataUri: iconByProvider.get(entry.badge.key) || null,
+          iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
           iconKey: entry.badge.key,
           value: entry.badge.value,
           ratingStyle: input.ratingStyle,
+          preferNeutralGlassPlate:
+            iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
           compactText: compactPosterRowText,
         });
         overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: clampedX });
@@ -3123,10 +3200,12 @@ const renderWithSharp = async (
                 gap: input.badgeGap,
                 accentColor: entry.badge.accentColor,
                 monogram,
-                iconDataUri: iconByProvider.get(entry.badge.key) || null,
+                iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
                 iconKey: entry.badge.key,
                 value: entry.badge.value,
                 ratingStyle: input.ratingStyle,
+                preferNeutralGlassPlate:
+                  iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
                 compactText: compactPosterRowText,
               });
               overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: positions[index] });
@@ -3159,10 +3238,12 @@ const renderWithSharp = async (
               gap: input.badgeGap,
               accentColor: entry.badge.accentColor,
               monogram,
-              iconDataUri: iconByProvider.get(entry.badge.key) || null,
+              iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
               iconKey: entry.badge.key,
               value: entry.badge.value,
               ratingStyle: input.ratingStyle,
+              preferNeutralGlassPlate:
+                iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
               compactText: compactPosterRowText,
             });
             overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: positions[index] });
@@ -3207,10 +3288,12 @@ const renderWithSharp = async (
           gap: input.badgeGap,
           accentColor: entry.badge.accentColor,
           monogram,
-          iconDataUri: iconByProvider.get(entry.badge.key) || null,
+          iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
           iconKey: entry.badge.key,
           value: entry.badge.value,
           ratingStyle: input.ratingStyle,
+          preferNeutralGlassPlate:
+            iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
           compactText: compactPosterRowText,
         });
         overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
@@ -3278,10 +3361,12 @@ const renderWithSharp = async (
         gap: input.badgeGap,
         accentColor: badge.accentColor,
         monogram,
-        iconDataUri: iconByProvider.get(badge.key) || null,
+        iconDataUri: iconRenderStateByProvider.get(badge.key)?.dataUri || null,
         iconKey: badge.key,
         value: badge.value,
         ratingStyle: input.ratingStyle,
+        preferNeutralGlassPlate:
+          iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
       });
       overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
     };
