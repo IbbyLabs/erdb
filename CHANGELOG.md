@@ -15,6 +15,16 @@
 
 <a id="v2-24-0"></a>
 
+<a id="v2-24-1"></a>
+
+## [v2.24.1] - 23/03/2026
+
+### Added
+* shrink navbar and hero on scroll
+
+### Other Changes
+* sync upstream changes
+
 ## [v2.24.0] - 23/03/2026
 
 ### Added
