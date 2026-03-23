@@ -18,6 +18,8 @@ git clone https://github.com/IbbyLabs/erdb
 cd erdb
 ```
 
+Use Node 22.x locally. The repo now includes `.nvmrc` and `.node-version` so native packages such as `better-sqlite3` stay aligned with CI and release scripts.
+
 1. Install dependencies: `sudo npm install`
 2. Build: `npm run build`
 3. Start the app: `npm run start`
