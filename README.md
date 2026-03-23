@@ -81,7 +81,7 @@ Each preview URL includes a `cb` cache buster token. Change that token when you 
 
 ## Rendering Option Comparisons
 
-These static comparison boards highlight the newer rendering controls that are easier to evaluate side by side than in a single live card. They cover `logoBackground`, `logoRatingsMax`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, and a few layout and style combinations from the local March 22, 2026 build.
+These static comparison boards highlight the newer rendering controls that are easier to evaluate side by side than in a single live card. They cover `logoBackground`, `logoRatingsMax`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, and a few layout and style combinations from the local March 23, 2026 build.
 
 ### Movie Poster Options
 
@@ -211,19 +211,20 @@ Main endpoint:
 
 ### Examples
 - **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en`
-- **Minimal backdrop**: `/backdrop/tmdb:603.jpg?ratings=mdblist&style=plain`
+- **Minimal backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
 
 ### Supported Query Parameters
 
 | Parameter | Description | Supported Values | Default |
 |-----------|-------------|------------------|---------|
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` | - |
-| `id` | Media ID (Path) | IMDb (tt...), TMDB (tmdb:...), Kitsu (kitsu:...) | - |
+| `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123` or `mal:456` | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
 | `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
-| `qualityBadgesSide` | Quality badges side (poster only) | `left`, `right` | `left` |
+| `qualityBadgesSide` | Quality badges side (poster `top bottom` layout only) | `left`, `right` | `left` |
+| `posterQualityBadgesPosition` | Quality badges side for poster `top` or `bottom` layouts | `auto`, `left`, `right` | `auto` |
 | `qualityBadgesStyle` | Quality badges style (global fallback) | `glass`, `square`, `plain` | `glass` |
 | `posterQualityBadgesStyle` | Poster quality badges style | `glass`, `square`, `plain` | `glass` |
 | `backdropQualityBadgesStyle` | Backdrop quality badges style | `glass`, `square`, `plain` | `glass` |
@@ -237,13 +238,15 @@ Main endpoint:
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
-| `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top-bottom`, `left-right` | `top-bottom` |
+| `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top-bottom` / `top bottom`, `left-right` / `left right` | `top-bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
-| `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` | `center` |
+| `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` / `right vertical` | `center` |
 | `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
 
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without the MAL client id, ERDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, ERDB still falls back to MDBList when `mdblistKey` is present.
+
+Prefer `tmdb:movie:id` or `tmdb:tv:id` when you already know the media type. Bare `tmdb:id` still works, but explicit TMDB IDs avoid movie vs TV collisions.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
@@ -254,7 +257,7 @@ When no explicit max is set, ERDB now renders all badges that fit the layout ins
 ERDB supports multiple formats to identify media:
 
 - **IMDb**: `tt0133093` (standard `tt` + numbers)
-- **TMDB**: `tmdb:603` (prefix `tmdb:` followed by the ID)
+- **TMDB**: `tmdb:603` or explicit `tmdb:movie:603` / `tmdb:tv:1399`
 - **Kitsu**: `kitsu:1` (prefix `kitsu:` followed by the ID)
 - **Anime Mappings**: `provider:id` (e.g. `anilist:123`, `myanimelist:456`)
 
@@ -262,14 +265,16 @@ ERDB supports multiple formats to identify media:
 
 To integrate ERDB into your addon:
 
-1. **Config String**: use a single `erdbConfig` string (base64url) generated by the ERDB configurator. It contains base URL, TMDB key, MDBList key, and all parameters (ratings with per type overrides, lang, quality badges with per type overrides, side, style, per type style, per type text, per type max limits, and logo background).
+1. **Config String**: use a single `erdbConfig` string (base64url) generated by the ERDB configurator. It contains `baseUrl`, `tmdbKey`, `mdblistKey`, the per type style/text/layout fields, and any optional overrides currently enabled. Defaults are usually omitted.
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call ERDB for that type).
 4. **Decode**: decode `erdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: `{baseUrl}/{type}/{id}.jpg?tmdbKey=...&mdblistKey=...&ratings=...&posterRatings=...&backdropRatings=...&logoRatings=...&lang=...&streamBadges=...&posterStreamBadges=...&backdropStreamBadges=...&qualityBadgesSide=...&qualityBadgesStyle=...&posterQualityBadgesStyle=...&backdropQualityBadgesStyle=...&posterQualityBadgesMax=...&backdropQualityBadgesMax=...&ratingStyle=...&imageText=...&logoRatingsMax=...&logoBackground=...` using the per type config fields:
+5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, and `logoBackground`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
    - `logo`: `logoRatingStyle`, `logoBackground` (omit `imageText`)
+
+The generated configurator payload usually emits the per type fields and omits unchanged defaults. Global fallback params such as `ratings`, `streamBadges`, or `qualityBadgesStyle` are still supported if you build configs manually.
 
 ### AI Integration Prompt
 
@@ -307,7 +312,8 @@ lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, e
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
-qualityBadgesSide       | left, right (poster only)                                            | left
+qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
+posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
 qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
 posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
@@ -315,13 +321,15 @@ posterQualityBadgesMax  | Number (1+)                                           
 backdropQualityBadgesMax| Number (1+)                                                          | auto
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
-posterRatingsLayout     | top, bottom, left, right, top-bottom, left-right                     | top-bottom
+posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
-backdropRatingsLayout   | center, right, right-vertical                                        | center
+backdropRatingsLayout   | center, right, right vertical                                        | center
 logoRatingsMax          | Number (1+)                                                          | auto
 logoBackground          | transparent, dark                                                    | transparent
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
+
+TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -335,12 +343,13 @@ backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImage
 logo     -> ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
 Quality badges can be set per type via cfg.posterStreamBadges / cfg.backdropStreamBadges (fallback to cfg.streamBadges).
+Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badges style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}
+${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}
 
 Omit imageText when type=logo.
 
@@ -364,8 +373,18 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 
 `{config}` is created automatically by the site based on the inserted parameters.
 
+### Direct Query Proxy Mode (Advanced)
+
+For scripts, testing, or non generated integrations, ERDB also exposes a direct manifest rewrite route:
+
+```text
+https://YOUR_ERDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...
+```
+
+The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The encoded `/proxy/{config}/manifest.json` form is still the normal Stremio install URL.
+
 ### Notes
-- The proxy rewrites enabled `meta.poster`, `meta.background`, `meta.logo` (types can be toggled in the Addon Proxy UI).
+- The proxy rewrites `meta.poster`, `meta.background`, and `meta.logo` to ERDB URLs.
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` is required.
 - `mdblistKey` is required for MDBList backed ratings and broad fallback coverage.
@@ -439,15 +458,15 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, ERDB
 
 ### Metadata Translation In Action
 
-These screenshots were captured against the live deployment at `https://erdb.ibbylabs.dev` on `2026-03-21`.
+These screenshots were regenerated from the local March 23, 2026 codebase using deterministic proxy fixtures.
 
-To make each merge mode visible on demand, the production proxy was exercised against a temporary public test addon that returned controlled upstream metadata for three real IDs:
+To make each merge mode visible on demand, a local fixture addon returned controlled upstream metadata for three real IDs:
 
 1. `tt0133093` (`The Matrix`) with placeholder movie text (`N/A`, blank overview)
 2. `tt0944947` (`Game of Thrones`) with good top level upstream text plus mixed episode text
 3. `mal:16498` (`Attack on Titan`) with blank anime text so TMDB and anime fallback behavior are both observable
 
-That addon was only used to create deterministic before and after cases. The proxy requests still resolved real TMDB, AniList, and Kitsu data through the live ERDB deployment.
+The fixture environment also mocked the TMDB, anime mapping, AniList, and Kitsu lookups needed for those cases so the screenshots stay reproducible and do not expose live API keys in the captured output.
 
 #### Settings Panel
 
@@ -476,11 +495,15 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ERDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
-| `ERDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = reflect incoming `Origin` header |
+| `ERDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
 | `ERDB_BIND_HOST` | `0.0.0.0` | Docker only helper variable that maps to the container `HOSTNAME` bind address for standalone Next.js |
 | `PREVIEW_INTERNAL_ORIGIN` | `http://127.0.0.1:3000` | Internal fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
 | `ERDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
 | `ERDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
+| `ERDB_TMDB_API_BASE_URL` | `https://api.themoviedb.org/3` | Optional TMDB API base URL override |
+| `ERDB_ANILIST_GRAPHQL_URL` | `https://graphql.anilist.co` | Optional AniList GraphQL endpoint override |
+| `ERDB_ANIME_MAPPING_BASE_URL` | `https://animemapping.stremio.dpdns.org` | Optional anime mapping service base URL override |
+| `ERDB_KITSU_API_BASE_URL` | `https://kitsu.io/api/edge` | Optional Kitsu API base URL override |
 | `ERDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
 | `ERDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
 | `ERDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
@@ -500,6 +523,21 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | `ERDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Extended cache for old media |
 | `ERDB_MDBLIST_OLD_MOVIE_AGE_DAYS` | 365 | 30 | 3,650 | Age threshold for "old media" logic |
 | `ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS` | 1 day | 30 sec | 7 days | Cooldown after MDBList rate limit |
+
+### IMDb Dataset Sync
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ERDB_IMDB_DATASET_AUTO_DOWNLOAD` | `true` | Automatically download the IMDb ratings dataset when it is missing or stale |
+| `ERDB_IMDB_DATASET_AUTO_IMPORT` | `true` | Automatically import downloaded IMDb ratings into the local SQLite cache |
+| `ERDB_IMDB_RATINGS_DATASET_PATH` | `./data/imdb/title.ratings.tsv.gz` | Local path for the IMDb ratings dataset |
+| `ERDB_IMDB_DATASET_REFRESH_MS` | `259200000` | Refresh interval for the IMDb dataset sync job |
+| `ERDB_IMDB_DATASET_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide whether a refresh is due |
+| `ERDB_IMDB_DATASET_BASE_URL` | `https://datasets.imdbws.com` | Base URL used for ratings dataset downloads |
+| `ERDB_IMDB_RATINGS_DATASET_URL` | `https://datasets.imdbws.com/title.ratings.tsv.gz` | Override URL for the IMDb ratings dataset |
+| `ERDB_IMDB_DATASET_IMPORT_BATCH` | `5000` | Batch size used during SQLite imports |
+| `ERDB_IMDB_DATASET_IMPORT_PROGRESS` | `0` | Optional persisted import progress marker for resumable imports |
+| `ERDB_IMDB_DATASET_LOG` | `false` | Enable verbose IMDb dataset sync logging |
 
 ### Torrentio
 

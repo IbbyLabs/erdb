@@ -15,6 +15,7 @@ import {
 } from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff } from 'lucide-react';
 import {
+  ALL_RATING_PREFERENCES,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from '@/lib/ratingPreferences';
@@ -124,6 +125,7 @@ const UI_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.uiConfig.settings.v1';
 const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
 const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
+const RATING_PROVIDER_DOC_VALUES = ALL_RATING_PREFERENCES.join(', ');
 const TMDB_LANGUAGE_DOC_COPY = 'Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)';
 const TMDB_LANGUAGE_HELP_COPY = 'All TMDB ISO 639-1 codes are supported (en, it, fr, es, de, etc.). Default: en.';
 const POSTER_LAYOUT_DOC_VALUES = 'top, bottom, left, right, top bottom, left right';
@@ -157,18 +159,10 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | none
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | none
-ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (global fallback)                                     |
-posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (poster only)                                         |
-backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (backdrop only)                                       |
-logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (logo only)                                           |
+ratings                 | ${RATING_PROVIDER_DOC_VALUES} (global fallback)                      | all
+posterRatings           | ${RATING_PROVIDER_DOC_VALUES} (poster only)                          | all
+backdropRatings         | ${RATING_PROVIDER_DOC_VALUES} (backdrop only)                        | all
+logoRatings             | ${RATING_PROVIDER_DOC_VALUES} (logo only)                            | all
 lang                    | ${TMDB_LANGUAGE_DOC_COPY}                                             | en
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
@@ -203,6 +197,7 @@ poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
+Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 
 URL BUILD
@@ -2019,27 +2014,27 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratings</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{RATING_PROVIDER_DOC_VALUES} (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatings</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{RATING_PROVIDER_DOC_VALUES} (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatings</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (backdrop only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{RATING_PROVIDER_DOC_VALUES} (backdrop only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatings</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (logo only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{RATING_PROVIDER_DOC_VALUES} (logo only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">lang</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{SUPPORTED_LANGUAGES.map(l => l.code).join(', ')}</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{TMDB_LANGUAGE_DOC_COPY}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">en</td>
                       </tr>
                       <tr>
@@ -2061,6 +2056,11 @@ export default function Home() {
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesSide</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">left, right (poster top bottom layout only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">left</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgesPosition</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">auto, left, right (poster top or bottom only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesStyle</td>
@@ -2159,6 +2159,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>imageText</div>
                             <div>posterRatingsLayout</div>
+                            <div>posterQualityBadgesPosition</div>
                             <div>posterRatingsMaxPerSide</div>
                             <div>posterQualityBadgesMax</div>
                           </div>
@@ -2167,6 +2168,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
+                            <div>auto, left, right (top or bottom layouts only)</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                           </div>
@@ -2208,7 +2210,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type and the per type max settings only when you want to explicitly tighten badge counts.
+                  Direct image URLs support shared fallbacks like ratings, lang, ratingStyle, streamBadges, and qualityBadgesStyle. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
                 </div>
               </div>
 
@@ -2290,7 +2292,7 @@ export default function Home() {
                     </div>
                     <div className="flex gap-2">
                       <span className="text-violet-500 font-bold shrink-0">id (required):</span>
-                      <span className="text-zinc-400">IMDb ID (tt...), TMDB ID (tmdb:...), or Kitsu ID (kitsu:...).</span>
+                      <span className="text-zinc-400">IMDb ID (tt...), TMDB ID (prefer tmdb:movie:id or tmdb:tv:id), or Kitsu ID (kitsu:...).</span>
                     </div>
                     <div className="flex gap-2">
                       <span className="text-violet-500 font-bold shrink-0">tmdbKey (required):</span>
@@ -2344,7 +2346,7 @@ export default function Home() {
                   <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
                   <div className="text-zinc-600 font-bold mt-4">Backdrop (TMDB)</div>
-                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}`}</div>
+                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:movie:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}`}</div>
 
                 </pre>
               </div>
