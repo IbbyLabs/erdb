@@ -37,6 +37,10 @@ import {
   hasAggregateRatingProvidersForSource,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
+  resolveBackdropRatingLayoutForPresentation,
+  resolveLogoRatingsMaxForPresentation,
+  resolvePosterRatingLayoutForPresentation,
+  resolvePosterRatingsMaxPerSideForPresentation,
   selectAggregateRatingProviders,
   type AggregateRatingSource,
   type RatingPresentation,
@@ -6721,15 +6725,24 @@ export async function GET(
         ratingPresentation === 'minimal' || ratingPresentation === 'average';
       const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
       const effectivePosterRatingsLayout =
-        usePosterBadgeLayout && useBlockbusterPresentation ? 'left-right' : posterRatingsLayout;
+        usePosterBadgeLayout
+          ? resolvePosterRatingLayoutForPresentation(ratingPresentation, posterRatingsLayout)
+          : posterRatingsLayout;
       const effectivePosterRatingsMaxPerSide =
-        usePosterBadgeLayout && useBlockbusterPresentation ? null : posterRatingsMaxPerSide;
+        usePosterBadgeLayout
+          ? resolvePosterRatingsMaxPerSideForPresentation(
+              ratingPresentation,
+              posterRatingsMaxPerSide,
+            )
+          : posterRatingsMaxPerSide;
       const effectiveBackdropRatingsLayout =
-        useBackdropBadgeLayout && useBlockbusterPresentation
-          ? ('right-vertical' as BackdropRatingLayout)
+        useBackdropBadgeLayout
+          ? resolveBackdropRatingLayoutForPresentation(ratingPresentation, backdropRatingsLayout)
           : backdropRatingsLayout;
       const effectiveLogoRatingsMax =
-        useLogoBadgeLayout && useBlockbusterPresentation ? null : logoRatingsMax;
+        useLogoBadgeLayout
+          ? resolveLogoRatingsMaxForPresentation(ratingPresentation, logoRatingsMax)
+          : logoRatingsMax;
       const posterRatingLimit = usePosterBadgeLayout
         ? getPosterRatingLayoutMaxBadges(effectivePosterRatingsLayout, effectivePosterRatingsMaxPerSide)
         : null;

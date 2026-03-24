@@ -47,6 +47,7 @@ import {
   AGGREGATE_RATING_SOURCE_OPTIONS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
+  preservesSelectedRatingLayout,
   RATING_PRESENTATION_OPTIONS,
   usesAggregateRatingSource,
   type AggregateRatingSource,
@@ -1539,6 +1540,13 @@ export default function Home() {
         ? backdropRatingRows
         : logoRatingRows;
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
+  const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
+  const layoutPlacementHelp =
+    previewType === 'poster'
+      ? 'top, bottom, left, or right'
+      : previewType === 'backdrop'
+        ? 'center, right, or right vertical'
+        : null;
 
   const setRatingStyleForType = (value: RatingStyle) => {
     if (previewType === 'poster') {
@@ -1895,9 +1903,17 @@ export default function Home() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[11px] leading-relaxed text-zinc-500">
-                    Modes are additive. The existing style, layout, provider, and badge controls stay available below.
-                  </p>
+                  {layoutPlacementHelp ? (
+                    <p className="text-[11px] leading-relaxed text-zinc-500">
+                      {activePresentationPreservesLayout
+                        ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
+                        : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] leading-relaxed text-zinc-500">
+                      Logo presentation keeps the output controls below available.
+                    </p>
+                  )}
                   {showsAggregateRatingSource && (
                     <div
                       className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
@@ -2573,6 +2589,8 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
+                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span> and <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>. Query values remain unchanged.
+                  <br />
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, and <span className="font-semibold text-zinc-200">plain</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                 </div>
               </div>

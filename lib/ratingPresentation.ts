@@ -1,3 +1,5 @@
+import type { BackdropRatingLayout } from './backdropRatingLayout.ts';
+import type { PosterRatingLayout } from './posterRatingLayout.ts';
 import type { RatingPreference } from './ratingPreferences.ts';
 
 export type RatingPresentation = 'standard' | 'minimal' | 'average' | 'blockbuster';
@@ -18,13 +20,13 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
   },
   {
     id: 'minimal',
-    label: 'Minimal',
-    description: 'One clean score chip with the selected average source.',
+    label: 'Compact Average',
+    description: 'One compact score chip using AVG, CRT, or AUD.',
   },
   {
     id: 'average',
-    label: 'Average',
-    description: 'One labeled average score for overall, critics, or audience.',
+    label: 'Labeled Average',
+    description: 'One average badge labeled Overall, Critics, or Audience.',
   },
   {
     id: 'blockbuster',
@@ -103,6 +105,29 @@ export const normalizeAggregateRatingSource = (
 
 export const usesAggregateRatingSource = (presentation: RatingPresentation) =>
   presentation === 'minimal' || presentation === 'average';
+
+export const preservesSelectedRatingLayout = (presentation: RatingPresentation) =>
+  presentation !== 'blockbuster';
+
+export const resolvePosterRatingLayoutForPresentation = (
+  presentation: RatingPresentation,
+  layout: PosterRatingLayout,
+): PosterRatingLayout => (preservesSelectedRatingLayout(presentation) ? layout : 'left-right');
+
+export const resolveBackdropRatingLayoutForPresentation = (
+  presentation: RatingPresentation,
+  layout: BackdropRatingLayout,
+): BackdropRatingLayout => (preservesSelectedRatingLayout(presentation) ? layout : 'right-vertical');
+
+export const resolvePosterRatingsMaxPerSideForPresentation = (
+  presentation: RatingPresentation,
+  maxPerSide: number | null,
+) => (preservesSelectedRatingLayout(presentation) ? maxPerSide : null);
+
+export const resolveLogoRatingsMaxForPresentation = (
+  presentation: RatingPresentation,
+  maxRatings: number | null,
+) => (preservesSelectedRatingLayout(presentation) ? maxRatings : null);
 
 export const getAggregateRatingSourceLabel = (source: AggregateRatingSource) => {
   if (source === 'critics') return 'Critics';

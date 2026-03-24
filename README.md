@@ -224,7 +224,7 @@ Main endpoint:
 
 ### Examples
 - **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en`
-- **Minimal backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
+- **Plain backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
 
 ### Supported Query Parameters
 
@@ -258,6 +258,8 @@ Main endpoint:
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right vertical` | `center` |
 | `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
+
+In the configurator UI, `minimal` is labeled as `Compact Average` and `average` is labeled as `Labeled Average`. The underlying query values stay `minimal` and `average`.
 
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without the MAL client id, ERDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, ERDB still falls back to MDBList when `mdblistKey` is present.
 
