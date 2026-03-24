@@ -21,6 +21,24 @@
 
 <a id="v2-24-3"></a>
 
+<a id="v2-25-0"></a>
+
+## [v2.25.0] - 24/03/2026
+
+### Added
+* add configurable genre badges
+* add aggregate rating presentations and blockbuster poster collages
+  
+  • add per type rating presentation and aggregate source controls across the UI, proxy config, and docs
+  • render minimal and average aggregate badges with source aware accents, outlines, and fallback logic
+  • add blockbuster poster collages with quote blurbs, source callouts, density tuning, anti collision placement, and near vertical review cards
+
+### Fixed
+* clarify rating presentation behavior
+
+### Other Changes
+* update project internals
+
 ## [v2.24.3] - 23/03/2026
 
 ### Fixed
