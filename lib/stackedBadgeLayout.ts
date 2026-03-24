@@ -1,4 +1,5 @@
 export const STACKED_BADGE_MIN_VALUE_GAP = 6;
+export const STACKED_BADGE_MIN_RAIL_GAP = 8;
 
 export const getStackedBadgeHeight = ({
   iconSize,
@@ -10,7 +11,7 @@ export const getStackedBadgeHeight = ({
   paddingY: number;
 }) => {
   const baseHeight = iconSize + paddingY * 2;
-  return baseHeight + Math.max(14, Math.round(fontSize * 1.05) + Math.round(paddingY * 0.8));
+  return baseHeight + Math.max(18, Math.round(fontSize * 1.15) + Math.round(paddingY * 1.1));
 };
 
 export const computeStackedBadgeLayout = ({
@@ -30,10 +31,11 @@ export const computeStackedBadgeLayout = ({
   const accentRailWidth = Math.max(18, Math.round(width * 0.42));
   const accentRailHeight = Math.max(4, Math.round(height * 0.08));
   const accentRailX = Math.round((width - accentRailWidth) / 2);
-  const accentRailY = Math.max(5, Math.round(height * 0.09));
-  const iconPlateY = Math.max(accentRailY + accentRailHeight + 5, Math.round(height * 0.15));
+  const accentRailY = Math.max(4, Math.round(height * 0.07));
+  const railToIconGap = Math.max(STACKED_BADGE_MIN_RAIL_GAP, Math.round(height * 0.1));
+  const iconPlateY = Math.max(accentRailY + accentRailHeight + railToIconGap, Math.round(height * 0.18));
   const valueGap = Math.max(STACKED_BADGE_MIN_VALUE_GAP, Math.round(height * 0.07));
-  const bottomPadding = Math.max(8, Math.round(height * 0.12));
+  const bottomPadding = Math.max(10, Math.round(height * 0.15));
   let valueFontSize = Math.max(11, Math.min(fontSize, Math.round(height * 0.22)));
   const minIconPlateSize = Math.max(renderIconSize + 4, 18);
   const desiredIconPlateSize = Math.max(renderIconSize + 6, Math.round(height * 0.34));

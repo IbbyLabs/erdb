@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   computeStackedBadgeLayout,
   getStackedBadgeHeight,
+  STACKED_BADGE_MIN_RAIL_GAP,
   STACKED_BADGE_MIN_VALUE_GAP,
 } from '../lib/stackedBadgeLayout.ts';
 
@@ -23,7 +24,9 @@ test('stacked badge layout keeps the value below the icon plate with breathing r
 
   const iconPlateBottom = layout.iconPlateY + layout.iconPlateSize;
   const valueBottom = layout.valueTopY + layout.valueFontSize;
+  const railBottom = layout.accentRailY + layout.accentRailHeight;
 
+  assert.ok(layout.iconPlateY - railBottom >= STACKED_BADGE_MIN_RAIL_GAP);
   assert.ok(layout.valueTopY - iconPlateBottom >= STACKED_BADGE_MIN_VALUE_GAP);
   assert.ok(valueBottom <= height - layout.bottomPadding);
   assert.ok(layout.iconPlateSize >= 20);

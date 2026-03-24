@@ -199,7 +199,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v70';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v71';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -8315,7 +8315,16 @@ export async function GET(
         useLogoBadgeLayout && cappedRatingBadges.length > 0
           ? Math.ceil(cappedRatingBadges.length / Math.max(1, logoBadgesPerRow))
           : 0;
-      const logoBadgeItemHeight = badgeIconSize + badgePaddingY * 2;
+      const logoBadgeItemHeight = getBadgeHeightFromMetrics(
+        {
+          iconSize: badgeIconSize,
+          fontSize: badgeFontSize,
+          paddingX: badgePaddingX,
+          paddingY: badgePaddingY,
+          gap: badgeGap,
+        },
+        ratingStyle,
+      );
       const estimatedLogoWidth = logoImageWidth;
       const logoBadgeContainerMaxWidth = Math.max(0, finalOutputWidth - 24);
       const logoBadgeMaxWidth = Math.min(
@@ -8326,7 +8335,12 @@ export async function GET(
         )
       );
       const logoBadgeBandHeight = useLogoBadgeLayout && cappedRatingBadges.length > 0
-        ? Math.max(170, logoBadgeRows * logoBadgeItemHeight + Math.max(0, logoBadgeRows - 1) * badgeGap + 68)
+        ? Math.max(
+            ratingStyle === 'stacked' ? 196 : 170,
+            logoBadgeRows * logoBadgeItemHeight +
+              Math.max(0, logoBadgeRows - 1) * badgeGap +
+              (ratingStyle === 'stacked' ? 92 : 68)
+          )
         : 0;
       const finalOutputHeight = useLogoBadgeLayout ? logoImageHeight + logoBadgeBandHeight : outputHeight;
       const renderedRatingCacheKeys = usesAggregatePresentation
