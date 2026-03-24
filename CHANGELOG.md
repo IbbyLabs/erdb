@@ -35,6 +35,15 @@
 
 <a id="v2-29-2"></a>
 
+<a id="v2-29-3"></a>
+
+## [v2.29.3] - 24/03/2026
+
+### Added
+* added a new poster preset
+  
+  fix: fixed a bug in the stacked badge layout
+
 ## [v2.29.2] - 24/03/2026
 
 ### Fixed
