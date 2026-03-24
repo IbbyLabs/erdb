@@ -1,0 +1,37 @@
+name: Notify Discord On Release
+
+"on":
+  release:
+    types:
+      - published
+
+jobs:
+  discord-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check Discord webhook secret
+        id: webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "${WEBHOOK_URL}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "WEBHOOK_URL secret is not configured. Skipping Discord release notification."
+          fi
+
+      - name: Post release to Discord
+        if: ${{ steps.webhook.outputs.enabled == 'true' }}
+        uses: SethCohen/github-releases-to-discord@b96a33520f8ad5e6dcdecee6f1212bdf88b16550
+        with:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          username: ERDB Releases
+          avatar_url: https://raw.githubusercontent.com/IbbyLabs/erdb/main/public/favicon-96x96.png
+          footer_title: IbbyLabs ERDB
+          footer_timestamp: true
+          reduce_headings: true
+          remove_github_reference_links: true
