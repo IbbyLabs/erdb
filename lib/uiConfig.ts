@@ -71,8 +71,23 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
-export type ArtworkSource = 'tmdb' | 'fanart';
+export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta';
 export type LogoBackground = 'transparent' | 'dark';
+export type AiometadataIdSource =
+  | 'imdb'
+  | 'tmdb'
+  | 'tvdb'
+  | 'mal'
+  | 'kitsu'
+  | 'anilist'
+  | 'anidb';
+
+export type AiometadataUrlPatterns = {
+  posterUrlPattern: string;
+  backgroundUrlPattern: string;
+  logoUrlPattern: string;
+  episodeThumbnailUrlPattern: string;
+};
 
 export type SharedErdbSettings = {
   tmdbKey: string;
@@ -150,7 +165,7 @@ const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>(
   'clean',
   'alternative',
 ]);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -779,6 +794,138 @@ export const buildConfigString = (baseUrl: string, settings: SharedErdbSettings)
     return '';
   }
   return encodeBase64Url(JSON.stringify(payload));
+};
+
+const AIO_TMDB_KEY_PLACEHOLDER = '{tmdb_key}';
+const AIO_MDBLIST_KEY_PLACEHOLDER = '{mdblist_key}';
+const AIO_FANART_KEY_PLACEHOLDER = '{fanart_key}';
+
+const AIO_ID_PATH_BY_SOURCE: Record<AiometadataIdSource, string> = {
+  imdb: '{imdb_id}',
+  tmdb: 'tmdb:{tmdb_id}',
+  tvdb: 'tvdb:{tvdb_id}',
+  mal: 'mal:{mal_id}',
+  kitsu: 'kitsu:{kitsu_id}',
+  anilist: 'anilist:{anilist_id}',
+  anidb: 'anidb:{anidb_id}',
+};
+
+const AIO_EPISODE_ID_PATH_BY_SOURCE: Record<AiometadataIdSource, string> = {
+  imdb: '{imdb_id}:{season}:{episode}',
+  tmdb: 'tmdb:{tmdb_id}:{season}:{episode}',
+  tvdb: 'tvdb:{tvdb_id}:{season}:{episode}',
+  mal: 'mal:{mal_id}:{season}:{episode}',
+  kitsu: 'kitsu:{kitsu_id}:{episode}',
+  anilist: 'anilist:{anilist_id}:{season}:{episode}',
+  anidb: 'anidb:{anidb_id}:{season}:{episode}',
+};
+
+const restoreAiometadataPlaceholders = (value: string) => {
+  const placeholders = [
+    AIO_TMDB_KEY_PLACEHOLDER,
+    AIO_MDBLIST_KEY_PLACEHOLDER,
+    AIO_FANART_KEY_PLACEHOLDER,
+    '{imdb_id}',
+    '{tmdb_id}',
+    '{tvdb_id}',
+    '{mal_id}',
+    '{kitsu_id}',
+    '{anilist_id}',
+    '{anidb_id}',
+    '{season}',
+    '{episode}',
+    '{language}',
+    '{language_short}',
+    '{thumbnail}',
+    '{blur}',
+    '{type}',
+  ];
+
+  return placeholders.reduce(
+    (normalized, placeholder) =>
+      normalized.replaceAll(encodeURIComponent(placeholder), placeholder),
+    value,
+  );
+};
+
+const chooseAiometadataCredentialValue = ({
+  value,
+  placeholder,
+  hideCredentials,
+  forcePlaceholder = false,
+}: {
+  value: string;
+  placeholder: string;
+  hideCredentials: boolean;
+  forcePlaceholder?: boolean;
+}) => {
+  const trimmed = value.trim();
+  if (hideCredentials || forcePlaceholder) {
+    return placeholder;
+  }
+  return trimmed || placeholder;
+};
+
+export const buildAiometadataUrlPatterns = (
+  baseUrl: string,
+  settings: SharedErdbSettings,
+  options?: {
+    hideCredentials?: boolean;
+    idSource?: AiometadataIdSource;
+  },
+): AiometadataUrlPatterns | null => {
+  const origin = normalizeBaseUrl(baseUrl);
+  if (!origin) {
+    return null;
+  }
+
+  const hideCredentials = options?.hideCredentials ?? true;
+  const idSource = options?.idSource ?? 'imdb';
+  const needsFanartKey =
+    settings.posterArtworkSource === 'fanart' ||
+    settings.backdropArtworkSource === 'fanart' ||
+    settings.logoArtworkSource === 'fanart';
+
+  const exportSettings: SharedErdbSettings = {
+    ...settings,
+    tmdbKey: chooseAiometadataCredentialValue({
+      value: settings.tmdbKey,
+      placeholder: AIO_TMDB_KEY_PLACEHOLDER,
+      hideCredentials,
+    }),
+    mdblistKey: chooseAiometadataCredentialValue({
+      value: settings.mdblistKey,
+      placeholder: AIO_MDBLIST_KEY_PLACEHOLDER,
+      hideCredentials,
+    }),
+    fanartKey: needsFanartKey
+      ? chooseAiometadataCredentialValue({
+          value: settings.fanartKey,
+          placeholder: AIO_FANART_KEY_PLACEHOLDER,
+          hideCredentials,
+        })
+      : settings.fanartKey.trim(),
+  };
+
+  const payload = buildSharedPayload(exportSettings);
+  if (!payload) {
+    return null;
+  }
+
+  const queryString = restoreAiometadataPlaceholders(
+    new URLSearchParams(
+      Object.entries(payload).map(([key, value]) => [key, String(value)]),
+    ).toString(),
+  );
+  const idPath = AIO_ID_PATH_BY_SOURCE[idSource];
+  const episodeIdPath = AIO_EPISODE_ID_PATH_BY_SOURCE[idSource];
+
+  return {
+    posterUrlPattern: `${origin}/poster/${idPath}.jpg?${queryString}`,
+    backgroundUrlPattern: `${origin}/backdrop/${idPath}.jpg?${queryString}`,
+    logoUrlPattern: `${origin}/logo/${idPath}.jpg?${queryString}`,
+    episodeThumbnailUrlPattern: `${origin}/backdrop/${episodeIdPath}.jpg?${queryString}`,
+  };
 };
 
 export const buildProxyPayload = (

@@ -20,20 +20,43 @@ export const computeStackedBadgeLayout = ({
   paddingX,
   fontSize,
   renderIconSize,
+  accentLineVisible = true,
+  accentLineWidthPercent = 100,
+  accentLineHeightPercent = 100,
+  accentLineGapPercent = 100,
 }: {
   width: number;
   height: number;
   paddingX: number;
   fontSize: number;
   renderIconSize: number;
+  accentLineVisible?: boolean;
+  accentLineWidthPercent?: number;
+  accentLineHeightPercent?: number;
+  accentLineGapPercent?: number;
 }) => {
   const outerPadding = Math.max(8, Math.round(paddingX * 0.82));
-  const accentRailWidth = Math.max(18, Math.round(width * 0.42));
-  const accentRailHeight = Math.max(4, Math.round(height * 0.08));
+  const lineWidthScale = Math.max(0.4, Math.min(1.6, accentLineWidthPercent / 100));
+  const lineHeightScale = Math.max(0.5, Math.min(2.2, accentLineHeightPercent / 100));
+  const lineGapScale = Math.max(0, Math.min(2.2, accentLineGapPercent / 100));
+  const baseAccentRailWidth = Math.max(18, Math.round(width * 0.42));
+  const accentRailWidth = accentLineVisible
+    ? Math.max(
+        12,
+        Math.min(width - outerPadding * 2, Math.round(baseAccentRailWidth * lineWidthScale)),
+      )
+    : 0;
+  const accentRailHeight = accentLineVisible
+    ? Math.max(3, Math.round(Math.max(4, Math.round(height * 0.08)) * lineHeightScale))
+    : 0;
   const accentRailX = Math.round((width - accentRailWidth) / 2);
-  const accentRailY = Math.max(4, Math.round(height * 0.07));
-  const railToIconGap = Math.max(STACKED_BADGE_MIN_RAIL_GAP, Math.round(height * 0.1));
-  const iconPlateY = Math.max(accentRailY + accentRailHeight + railToIconGap, Math.round(height * 0.18));
+  const accentRailY = accentLineVisible ? Math.max(4, Math.round(height * 0.07)) : outerPadding;
+  const railToIconGap = accentLineVisible
+    ? Math.max(0, Math.round(Math.max(STACKED_BADGE_MIN_RAIL_GAP, Math.round(height * 0.1)) * lineGapScale))
+    : 0;
+  const iconPlateY = accentLineVisible
+    ? Math.max(accentRailY + accentRailHeight + railToIconGap, Math.round(height * 0.18))
+    : Math.max(outerPadding, Math.round(height * 0.13));
   const valueGap = Math.max(STACKED_BADGE_MIN_VALUE_GAP, Math.round(height * 0.07));
   const bottomPadding = Math.max(10, Math.round(height * 0.15));
   let valueFontSize = Math.max(11, Math.min(fontSize, Math.round(height * 0.22)));
@@ -61,6 +84,7 @@ export const computeStackedBadgeLayout = ({
   const valueAvailableWidth = Math.max(0, width - outerPadding * 2);
 
   return {
+    showAccentRail: accentLineVisible && accentRailWidth > 0 && accentRailHeight > 0,
     accentRailWidth,
     accentRailHeight,
     accentRailX,

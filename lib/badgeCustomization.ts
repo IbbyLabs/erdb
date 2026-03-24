@@ -12,11 +12,24 @@ export const MAX_BADGE_SCALE_PERCENT = 150;
 export const DEFAULT_PROVIDER_ICON_SCALE_PERCENT = 100;
 export const MIN_PROVIDER_ICON_SCALE_PERCENT = 70;
 export const MAX_PROVIDER_ICON_SCALE_PERCENT = 145;
+export const DEFAULT_STACKED_LINE_WIDTH_PERCENT = 100;
+export const MIN_STACKED_LINE_WIDTH_PERCENT = 40;
+export const MAX_STACKED_LINE_WIDTH_PERCENT = 160;
+export const DEFAULT_STACKED_LINE_HEIGHT_PERCENT = 100;
+export const MIN_STACKED_LINE_HEIGHT_PERCENT = 50;
+export const MAX_STACKED_LINE_HEIGHT_PERCENT = 220;
+export const DEFAULT_STACKED_LINE_GAP_PERCENT = 100;
+export const MIN_STACKED_LINE_GAP_PERCENT = 0;
+export const MAX_STACKED_LINE_GAP_PERCENT = 220;
 
 export type RatingProviderAppearanceOverride = {
   iconUrl?: string;
   accentColor?: string;
   iconScalePercent?: number;
+  stackedLineVisible?: boolean;
+  stackedLineWidthPercent?: number;
+  stackedLineHeightPercent?: number;
+  stackedLineGapPercent?: number;
 };
 
 export type RatingProviderAppearanceOverrides = Partial<
@@ -26,7 +39,7 @@ export type RatingProviderAppearanceOverrides = Partial<
 export const QUALITY_BADGE_OPTIONS: Array<{ id: MediaFeatureBadgeKey; label: string }> = [
   { id: 'certification', label: 'Age Rating' },
   { id: '4k', label: '4K' },
-  { id: 'bluray', label: 'Blu-ray' },
+  { id: 'bluray', label: 'Bluray' },
   { id: 'hdr', label: 'HDR' },
   { id: 'dolbyvision', label: 'Dolby Vision' },
   { id: 'dolbyatmos', label: 'Dolby Atmos' },
@@ -118,6 +131,55 @@ export const normalizeProviderIconScalePercent = (
   );
 };
 
+const normalizeBoundedPercent = (
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+) => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(numericValue)));
+};
+
+export const normalizeStackedLineWidthPercent = (
+  value: unknown,
+  fallback = DEFAULT_STACKED_LINE_WIDTH_PERCENT,
+) =>
+  normalizeBoundedPercent(
+    value,
+    fallback,
+    MIN_STACKED_LINE_WIDTH_PERCENT,
+    MAX_STACKED_LINE_WIDTH_PERCENT,
+  );
+
+export const normalizeStackedLineHeightPercent = (
+  value: unknown,
+  fallback = DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
+) =>
+  normalizeBoundedPercent(
+    value,
+    fallback,
+    MIN_STACKED_LINE_HEIGHT_PERCENT,
+    MAX_STACKED_LINE_HEIGHT_PERCENT,
+  );
+
+export const normalizeStackedLineGapPercent = (
+  value: unknown,
+  fallback = DEFAULT_STACKED_LINE_GAP_PERCENT,
+) =>
+  normalizeBoundedPercent(
+    value,
+    fallback,
+    MIN_STACKED_LINE_GAP_PERCENT,
+    MAX_STACKED_LINE_GAP_PERCENT,
+  );
+
 export const normalizeHexColor = (value: unknown) => {
   if (typeof value !== 'string') return undefined;
   const normalized = value.trim().replace(/^#/, '');
@@ -196,6 +258,19 @@ export const normalizeRatingProviderAppearanceOverrides = (
       accentColor?: unknown;
       iconScalePercent?: unknown;
       iconScale?: unknown;
+      stackedLineVisible?: unknown;
+      showStackedLine?: unknown;
+      stackedRailVisible?: unknown;
+      stackedRailEnabled?: unknown;
+      stackedLineWidthPercent?: unknown;
+      stackedLineWidth?: unknown;
+      stackedRailWidthPercent?: unknown;
+      stackedLineHeightPercent?: unknown;
+      stackedLineHeight?: unknown;
+      stackedRailHeightPercent?: unknown;
+      stackedLineGapPercent?: unknown;
+      stackedLineGap?: unknown;
+      stackedRailGapPercent?: unknown;
     };
     const iconUrl =
       typeof candidate.iconUrl === 'string' && candidate.iconUrl.trim()
@@ -206,11 +281,55 @@ export const normalizeRatingProviderAppearanceOverrides = (
       candidate.iconScalePercent ?? candidate.iconScale,
       DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
     );
+    const stackedLineVisible =
+      typeof candidate.stackedLineVisible === 'boolean'
+        ? candidate.stackedLineVisible
+        : typeof candidate.showStackedLine === 'boolean'
+          ? candidate.showStackedLine
+          : typeof candidate.stackedRailVisible === 'boolean'
+            ? candidate.stackedRailVisible
+            : typeof candidate.stackedRailEnabled === 'boolean'
+              ? candidate.stackedRailEnabled
+              : undefined;
+    const stackedLineWidthPercent = normalizeStackedLineWidthPercent(
+      candidate.stackedLineWidthPercent ??
+        candidate.stackedLineWidth ??
+        candidate.stackedRailWidthPercent,
+      DEFAULT_STACKED_LINE_WIDTH_PERCENT,
+    );
+    const stackedLineHeightPercent = normalizeStackedLineHeightPercent(
+      candidate.stackedLineHeightPercent ??
+        candidate.stackedLineHeight ??
+        candidate.stackedRailHeightPercent,
+      DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
+    );
+    const stackedLineGapPercent = normalizeStackedLineGapPercent(
+      candidate.stackedLineGapPercent ??
+        candidate.stackedLineGap ??
+        candidate.stackedRailGapPercent,
+      DEFAULT_STACKED_LINE_GAP_PERCENT,
+    );
     const override = compactObject({
       iconUrl,
       accentColor,
       iconScalePercent:
         iconScalePercent !== DEFAULT_PROVIDER_ICON_SCALE_PERCENT ? iconScalePercent : undefined,
+      stackedLineVisible:
+        typeof stackedLineVisible === 'boolean' && stackedLineVisible === false
+          ? false
+          : undefined,
+      stackedLineWidthPercent:
+        stackedLineWidthPercent !== DEFAULT_STACKED_LINE_WIDTH_PERCENT
+          ? stackedLineWidthPercent
+          : undefined,
+      stackedLineHeightPercent:
+        stackedLineHeightPercent !== DEFAULT_STACKED_LINE_HEIGHT_PERCENT
+          ? stackedLineHeightPercent
+          : undefined,
+      stackedLineGapPercent:
+        stackedLineGapPercent !== DEFAULT_STACKED_LINE_GAP_PERCENT
+          ? stackedLineGapPercent
+          : undefined,
     }) as RatingProviderAppearanceOverride;
 
     return Object.keys(override).length > 0 ? [[provider, override] as const] : [];

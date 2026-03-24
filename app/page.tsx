@@ -24,13 +24,25 @@ import {
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  DEFAULT_STACKED_LINE_GAP_PERCENT,
+  DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
+  DEFAULT_STACKED_LINE_WIDTH_PERCENT,
   MAX_BADGE_SCALE_PERCENT,
   MAX_PROVIDER_ICON_SCALE_PERCENT,
+  MAX_STACKED_LINE_GAP_PERCENT,
+  MAX_STACKED_LINE_HEIGHT_PERCENT,
+  MAX_STACKED_LINE_WIDTH_PERCENT,
   MIN_BADGE_SCALE_PERCENT,
   MIN_PROVIDER_ICON_SCALE_PERCENT,
+  MIN_STACKED_LINE_GAP_PERCENT,
+  MIN_STACKED_LINE_HEIGHT_PERCENT,
+  MIN_STACKED_LINE_WIDTH_PERCENT,
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
   normalizeProviderIconScalePercent,
+  normalizeStackedLineGapPercent,
+  normalizeStackedLineHeightPercent,
+  normalizeStackedLineWidthPercent,
   type RatingProviderAppearanceOverride,
   type RatingProviderAppearanceOverrides,
 } from '@/lib/badgeCustomization';
@@ -71,6 +83,7 @@ import {
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
 import {
+  buildAiometadataUrlPatterns,
   buildConfigString,
   buildProxyUrl,
   normalizeSavedUiConfig,
@@ -78,6 +91,7 @@ import {
   serializeSavedUiConfig,
   normalizeBaseUrl,
   normalizeManifestUrl,
+  type AiometadataIdSource,
   type ArtworkSource,
   type BackdropImageTextPreference,
   type LogoBackground,
@@ -141,13 +155,30 @@ const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   { id: 'clean', label: 'Clean', description: 'Prefer TMDB art with less embedded text when available.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
 ];
-const ARTWORK_SOURCE_OPTIONS: Array<{
+const POSTER_ARTWORK_SOURCE_OPTIONS: Array<{
   id: ArtworkSource;
   label: string;
   description: string;
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean poster selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv artwork when a fanart key is available, then fall back to TMDB.' },
+  { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta poster when an IMDb ID is available, then fall back to TMDB.' },
+];
+const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{
+  id: Exclude<ArtworkSource, 'cinemeta'>;
+  label: string;
+  description: string;
+}> = [
+  { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean backdrop selection.' },
+  { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv backdrop art when a fanart key is available, then fall back to TMDB.' },
+];
+const LOGO_ARTWORK_SOURCE_OPTIONS: Array<{
+  id: Exclude<ArtworkSource, 'cinemeta'>;
+  label: string;
+  description: string;
+}> = [
+  { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB logo selection.' },
+  { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv logo assets when a fanart key is available, then fall back to TMDB.' },
 ];
 const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   id: BackdropImageTextPreference;
@@ -182,6 +213,19 @@ const QUALITY_BADGE_POSITION_OPTIONS: Array<{ id: PosterQualityBadgesPosition; l
   { id: 'auto', label: 'Auto' },
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
+];
+const AIOMETADATA_ID_SOURCE_OPTIONS: Array<{
+  id: AiometadataIdSource;
+  label: string;
+  description: string;
+}> = [
+  { id: 'imdb', label: 'IMDb', description: 'Best default for general movie and series libraries.' },
+  { id: 'tvdb', label: 'TVDB', description: 'Useful when your AIO setup is TVDB first.' },
+  { id: 'anilist', label: 'AniList', description: 'Good for anime setups built around AniList IDs.' },
+  { id: 'mal', label: 'MAL', description: 'Good for anime setups built around MyAnimeList IDs.' },
+  { id: 'anidb', label: 'AniDB', description: 'Useful if your library already tracks AniDB IDs.' },
+  { id: 'kitsu', label: 'Kitsu', description: 'Episode thumb patterns use the Kitsu episode form here.' },
+  { id: 'tmdb', label: 'TMDB', description: 'Works, but bare TMDB IDs can collide between movie and TV items.' },
 ];
 const SAMPLE_GENRE_BADGE_MODE_DEFAULT: GenreBadgeMode = 'both';
 type RecentCommitType = 'feat' | 'fix' | 'chore' | 'refactor' | 'perf' | 'test' | 'build' | 'ci' | 'style' | 'revert';
@@ -327,7 +371,7 @@ logoRatingBadgeScale   | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PE
 posterQualityBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
 backdropQualityBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})     | 100
 imageText               | original, clean, alternative                                         | original
-posterArtworkSource     | tmdb, fanart (poster artwork source)                                 | tmdb
+posterArtworkSource     | tmdb, fanart, cinemeta (poster artwork source)                       | tmdb
 backdropArtworkSource   | tmdb, fanart (backdrop artwork source)                               | tmdb
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMax        | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
@@ -347,7 +391,7 @@ TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can col
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
 FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
-POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. posterArtworkSource=cinemeta uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB.
 BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
 LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
 FUTURE NOTE: season aware fanart support is a strong next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
@@ -375,7 +419,7 @@ Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBad
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge size uses cfg.genreBadgeScale.
 Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale.
-Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116}}.
+Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedLineVisible":false,"stackedLineWidthPercent":88}}.
 Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0-100 vertical anchor.
 
 URL BUILD
@@ -803,8 +847,12 @@ export default function Home() {
   const [proxyDebugMetaTranslation, setProxyDebugMetaTranslation] = useState(false);
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
+  const [aiometadataCopied, setAiometadataCopied] = useState(false);
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
+  const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
+  const [aiometadataIdSource, setAiometadataIdSource] =
+    useState<AiometadataIdSource>('imdb');
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
   const [previewErrorDetails, setPreviewErrorDetails] = useState('');
   const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
@@ -1700,6 +1748,15 @@ export default function Home() {
     [baseUrl, currentUiConfig]
   );
 
+  const aiometadataPatterns = useMemo(
+    () =>
+      buildAiometadataUrlPatterns(baseUrl, currentUiConfig.settings, {
+        hideCredentials: hideAiometadataCredentials,
+        idSource: aiometadataIdSource,
+      }),
+    [baseUrl, currentUiConfig, hideAiometadataCredentials, aiometadataIdSource]
+  );
+
   const proxyUrl = useMemo(
     () => buildProxyUrl(baseUrl, currentUiConfig.proxy, currentUiConfig.settings),
     [baseUrl, currentUiConfig]
@@ -1719,6 +1776,37 @@ export default function Home() {
   const displayedProxyUrl = proxyUrl
     ? (showProxyUrl ? proxyUrl : maskSensitiveText(proxyUrl))
     : '';
+  const aiometadataPatternRows = aiometadataPatterns
+    ? [
+        {
+          key: 'poster',
+          label: 'Poster URL Pattern',
+          value: aiometadataPatterns.posterUrlPattern,
+          description: 'Use this in the poster override field.',
+        },
+        {
+          key: 'background',
+          label: 'Background URL Pattern',
+          value: aiometadataPatterns.backgroundUrlPattern,
+          description: 'Use this in the background override field.',
+        },
+        {
+          key: 'logo',
+          label: 'Logo URL Pattern',
+          value: aiometadataPatterns.logoUrlPattern,
+          description: 'Use this in the logo override field.',
+        },
+        {
+          key: 'episode',
+          label: 'Episode Thumbnail URL Pattern',
+          value: aiometadataPatterns.episodeThumbnailUrlPattern,
+          description: 'This uses the ERDB backdrop renderer so wide episode thumbs stay readable.',
+        },
+      ]
+    : [];
+  const aiometadataCopyBlock = aiometadataPatternRows
+    .map((row) => `${row.label}\n${row.value}`)
+    .join('\n\n');
 
   const updateRatingRowsForType = (
     type: 'poster' | 'backdrop' | 'logo',
@@ -1800,6 +1888,18 @@ export default function Home() {
           nextOverride.iconScalePercent,
           DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
         );
+        const normalizedStackedLineWidth = normalizeStackedLineWidthPercent(
+          nextOverride.stackedLineWidthPercent,
+          DEFAULT_STACKED_LINE_WIDTH_PERCENT,
+        );
+        const normalizedStackedLineHeight = normalizeStackedLineHeightPercent(
+          nextOverride.stackedLineHeightPercent,
+          DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
+        );
+        const normalizedStackedLineGap = normalizeStackedLineGapPercent(
+          nextOverride.stackedLineGapPercent,
+          DEFAULT_STACKED_LINE_GAP_PERCENT,
+        );
         const compactOverride: RatingProviderAppearanceOverride = {};
         if (trimmedIconUrl) {
           compactOverride.iconUrl = trimmedIconUrl;
@@ -1809,6 +1909,18 @@ export default function Home() {
         }
         if (normalizedScale !== DEFAULT_PROVIDER_ICON_SCALE_PERCENT) {
           compactOverride.iconScalePercent = normalizedScale;
+        }
+        if (nextOverride.stackedLineVisible === false) {
+          compactOverride.stackedLineVisible = false;
+        }
+        if (normalizedStackedLineWidth !== DEFAULT_STACKED_LINE_WIDTH_PERCENT) {
+          compactOverride.stackedLineWidthPercent = normalizedStackedLineWidth;
+        }
+        if (normalizedStackedLineHeight !== DEFAULT_STACKED_LINE_HEIGHT_PERCENT) {
+          compactOverride.stackedLineHeightPercent = normalizedStackedLineHeight;
+        }
+        if (normalizedStackedLineGap !== DEFAULT_STACKED_LINE_GAP_PERCENT) {
+          compactOverride.stackedLineGapPercent = normalizedStackedLineGap;
         }
 
         const next = { ...current };
@@ -1836,6 +1948,13 @@ export default function Home() {
     setProxyCopied(true);
     setTimeout(() => setProxyCopied(false), 2000);
   }, [proxyUrl]);
+
+  const handleCopyAiometadata = useCallback(() => {
+    if (!aiometadataCopyBlock) return;
+    navigator.clipboard.writeText(aiometadataCopyBlock);
+    setAiometadataCopied(true);
+    setTimeout(() => setAiometadataCopied(false), 2000);
+  }, [aiometadataCopyBlock]);
 
   const handleSaveWorkspaceConfig = useCallback(() => {
     persistUiConfig(true);
@@ -1943,11 +2062,13 @@ export default function Home() {
     previewType === 'backdrop' ? BACKDROP_IMAGE_TEXT_OPTIONS : POSTER_IMAGE_TEXT_OPTIONS;
   const activeImageTextOptionMeta =
     activeImageTextOptions.find((option) => option.id === activeImageText) || null;
+  const activeArtworkSourceOptions =
+    previewType === 'backdrop' ? BACKDROP_ARTWORK_SOURCE_OPTIONS : POSTER_ARTWORK_SOURCE_OPTIONS;
   const activeArtworkSource = previewType === 'backdrop' ? backdropArtworkSource : posterArtworkSource;
   const activeArtworkSourceOptionMeta =
-    ARTWORK_SOURCE_OPTIONS.find((option) => option.id === activeArtworkSource) || null;
+    activeArtworkSourceOptions.find((option) => option.id === activeArtworkSource) || null;
   const activeLogoSourceOptionMeta =
-    ARTWORK_SOURCE_OPTIONS.find((option) => option.id === logoArtworkSource) || null;
+    LOGO_ARTWORK_SOURCE_OPTIONS.find((option) => option.id === logoArtworkSource) || null;
   const shouldShowSideRatingPlacement =
     previewType === 'poster'
       ? isVerticalPosterRatingLayout(posterRatingsLayout) || activeRatingPresentation === 'blockbuster'
@@ -1981,6 +2102,7 @@ export default function Home() {
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
   const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
   const isEditorialPresentation = activeRatingPresentation === 'editorial';
+  const usesStackedRatingStyle = activeRatingStyle === 'stacked';
   const layoutPlacementHelp =
     previewType === 'poster'
       ? 'top, bottom, left, or right'
@@ -2499,7 +2621,7 @@ export default function Home() {
                     <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
                       <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {ARTWORK_SOURCE_OPTIONS.map((option) => (
+                        {activeArtworkSourceOptions.map((option) => (
                           <button
                             key={option.id}
                             onClick={() => {
@@ -2679,7 +2801,7 @@ export default function Home() {
                           <div>
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Artwork Source</span>
                             <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {ARTWORK_SOURCE_OPTIONS.map((option) => (
+                              {LOGO_ARTWORK_SOURCE_OPTIONS.map((option) => (
                                 <button
                                   key={option.id}
                                   onClick={() => setLogoArtworkSource(option.id)}
@@ -2876,14 +2998,14 @@ export default function Home() {
                   />
                   <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                          Provider Styling
+                        <div>
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                            Provider Styling
+                          </div>
+                          <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                          Customise the icon URL, accent colour, icon size, and stacked accent line behavior per source. Leave a field blank to keep the default ERDB art.
+                          </p>
                         </div>
-                        <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                          Customise the icon URL, accent colour, and icon size per source. Leave a field blank to keep the default ERDB art.
-                        </p>
-                      </div>
                       <button
                         type="button"
                         onClick={() =>
@@ -2978,6 +3100,126 @@ export default function Home() {
                               </div>
                             </div>
                           </div>
+                          <div className="rounded-xl border border-white/10 bg-zinc-950/50 p-3 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                                  Stacked Accent Line
+                                </div>
+                                <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                                  Applies when the current rating style is stacked. Turn the line off entirely or fine tune its width, thickness, and gap for this source.
+                                </p>
+                              </div>
+                              <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-[11px] font-medium text-zinc-300">
+                                <input
+                                  type="checkbox"
+                                  checked={activeProviderAppearanceOverride.stackedLineVisible !== false}
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      stackedLineVisible: event.target.checked ? undefined : false,
+                                    }))
+                                  }
+                                  className="h-3.5 w-3.5 accent-violet-500"
+                                />
+                                <span>{activeProviderAppearanceOverride.stackedLineVisible === false ? 'Hidden' : 'Visible'}</span>
+                              </label>
+                            </div>
+                            <div className={`grid gap-3 ${usesStackedRatingStyle ? 'md:grid-cols-3' : 'md:grid-cols-3 opacity-75'}`}>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Width</span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    {activeProviderAppearanceOverride.stackedLineWidthPercent ||
+                                      DEFAULT_STACKED_LINE_WIDTH_PERCENT}
+                                    %
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={MIN_STACKED_LINE_WIDTH_PERCENT}
+                                  max={MAX_STACKED_LINE_WIDTH_PERCENT}
+                                  step={1}
+                                  value={
+                                    activeProviderAppearanceOverride.stackedLineWidthPercent ||
+                                    DEFAULT_STACKED_LINE_WIDTH_PERCENT
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      stackedLineWidthPercent: normalizeStackedLineWidthPercent(
+                                        event.target.value,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-2 w-full accent-violet-500"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Thickness</span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    {activeProviderAppearanceOverride.stackedLineHeightPercent ||
+                                      DEFAULT_STACKED_LINE_HEIGHT_PERCENT}
+                                    %
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={MIN_STACKED_LINE_HEIGHT_PERCENT}
+                                  max={MAX_STACKED_LINE_HEIGHT_PERCENT}
+                                  step={1}
+                                  value={
+                                    activeProviderAppearanceOverride.stackedLineHeightPercent ||
+                                    DEFAULT_STACKED_LINE_HEIGHT_PERCENT
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      stackedLineHeightPercent: normalizeStackedLineHeightPercent(
+                                        event.target.value,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-2 w-full accent-violet-500"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Gap</span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    {activeProviderAppearanceOverride.stackedLineGapPercent ||
+                                      DEFAULT_STACKED_LINE_GAP_PERCENT}
+                                    %
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={MIN_STACKED_LINE_GAP_PERCENT}
+                                  max={MAX_STACKED_LINE_GAP_PERCENT}
+                                  step={1}
+                                  value={
+                                    activeProviderAppearanceOverride.stackedLineGapPercent ||
+                                    DEFAULT_STACKED_LINE_GAP_PERCENT
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      stackedLineGapPercent: normalizeStackedLineGapPercent(
+                                        event.target.value,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-2 w-full accent-violet-500"
+                                />
+                              </div>
+                            </div>
+                            {!usesStackedRatingStyle ? (
+                              <p className="text-[11px] leading-relaxed text-zinc-500">
+                                You can set these now and they will apply the moment this output switches to stacked badges.
+                              </p>
+                            ) : null}
+                          </div>
                           <div>
                             <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
                               Custom Icon URL
@@ -3024,7 +3266,7 @@ export default function Home() {
                                 {activeProviderMeta.label}
                               </div>
                               <div className="text-[11px] text-zinc-500">
-                                Per-source overrides apply across poster, backdrop, and logo renders.
+                                Per-source overrides apply across poster, backdrop, and logo renders, including stacked line tweaks.
                               </div>
                             </div>
                           </div>
@@ -3088,6 +3330,113 @@ export default function Home() {
                     Add TMDB key and MDBList key to generate a valid config string.
                   </p>
                 )}
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        AIOMetadata URLs
+                      </div>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                        Ready to paste URL patterns for the AIOMetadata art override fields.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyAiometadata}
+                      disabled={!aiometadataPatternRows.length}
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                        aiometadataPatternRows.length
+                          ? aiometadataCopied
+                            ? 'bg-green-500 text-white'
+                            : 'bg-violet-500 text-white hover:bg-violet-400'
+                          : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {aiometadataCopied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>COPIED</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clipboard className="w-3.5 h-3.5" />
+                          <span>COPY ALL</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-3 text-[11px] leading-5 text-zinc-500">
+                    Pick the placeholder source you want AIOMetadata to use, then copy the poster, background, logo, and episode thumb patterns straight from here.
+                  </p>
+                  <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Primary ID Placeholder</div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {AIOMETADATA_ID_SOURCE_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setAiometadataIdSource(option.id)}
+                              className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                                aiometadataIdSource === option.id
+                                  ? 'border-violet-500/60 bg-zinc-800 text-white'
+                                  : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                              }`}
+                              title={option.description}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+                          {AIOMETADATA_ID_SOURCE_OPTIONS.find((option) => option.id === aiometadataIdSource)?.description}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={hideAiometadataCredentials}
+                            onChange={(event) => setHideAiometadataCredentials(event.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                          />
+                          <span className="space-y-1">
+                            <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
+                            <span className="block text-[11px] leading-5 text-zinc-500">
+                              Replaces live keys with placeholders such as <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
+                            </span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {aiometadataPatternRows.map((row) => (
+                        <div key={row.key} className="rounded-xl border border-white/10 bg-black/60 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-[11px] font-semibold text-zinc-200">{row.label}</div>
+                              <div className="mt-1 text-[11px] leading-5 text-zinc-500">{row.description}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(row.value);
+                              }}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all">
+                            {row.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3535,7 +3884,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">providerAppearance</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, and iconScalePercent</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, iconScalePercent, and stacked line controls</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                       <tr>
@@ -3595,7 +3944,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterArtworkSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart (poster artwork source)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, cinemeta (poster artwork source)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
@@ -3682,7 +4031,7 @@ export default function Home() {
                   <br />
                   <span className="font-mono text-zinc-200">fanartKey</span> is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span> when the server has one.
                   <br />
-                  Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+                  Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. <span className="font-mono text-zinc-200">posterArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB.
                   <br />
                   Backdrop <span className="font-mono text-zinc-200">backdropArtworkSource=fanart</span> uses fanart.tv backdrop art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. <span className="font-mono text-zinc-200">logoArtworkSource=fanart</span> uses fanart.tv HD or clear logo assets for logo output.
                   <br />
@@ -3729,7 +4078,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
-                            <div>tmdb, fanart</div>
+                            <div>tmdb, fanart, cinemeta</div>
                             <div>standard, minimal, average, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
@@ -3911,7 +4260,7 @@ export default function Home() {
                     </div>
                     <div className="flex gap-2 md:col-span-2">
                       <span className="text-violet-500 font-bold shrink-0">providerAppearance:</span>
-                      <span className="text-zinc-400">Accepts base64url or raw JSON overrides for iconUrl, accentColor, and iconScalePercent. Keep the help text visible while editing so users can paste custom provider art without losing the format reference.</span>
+                      <span className="text-zinc-400">Accepts base64url or raw JSON overrides for iconUrl, accentColor, iconScalePercent, and stacked line controls such as stackedLineVisible or stackedLineWidthPercent. Keep the help text visible while editing so users can paste custom provider art without losing the format reference.</span>
                     </div>
                     <div className="flex gap-2 md:col-span-2">
                       <span className="text-violet-500 font-bold shrink-0">posterQualityBadges / backdropQualityBadges:</span>

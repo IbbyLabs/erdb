@@ -10,6 +10,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
     mdblist: {
       accentColor: '#22c55e',
       iconScalePercent: 112,
+      stackedLineWidthPercent: 88,
     },
   };
   const uiConfig = normalizeSavedUiConfig({
@@ -108,6 +109,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       iconUrl: 'https://cdn.example.com/trakt-custom.svg',
       accentColor: '#7c3aed',
       iconScalePercent: 116,
+      stackedLineVisible: false,
     },
   };
   const uiConfig = normalizeSavedUiConfig({
@@ -223,6 +225,41 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadgesStyle'), 'media');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadgeScale'), '106');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingBadgeScale'), '109');
+});
+
+test('proxy image rewrites preserve cinemeta as a poster artwork source', () => {
+  const uiConfig = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterImageText: 'clean',
+      posterArtworkSource: 'cinemeta',
+      posterRatingPreferences: ['imdb'],
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+
+  const decodedProxyConfig = decodeProxyConfig(encodedConfig);
+  assert.ok(decodedProxyConfig);
+
+  const rewrittenPosterUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/movie/example.json'),
+      imageType: 'poster',
+      erdbId: 'tt0133093',
+      tmdbKey: decodedProxyConfig.tmdbKey,
+      mdblistKey: decodedProxyConfig.mdblistKey,
+      config: decodedProxyConfig,
+    }),
+  );
+
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'cinemeta');
 });
 
 test('proxy image rewrites upgrade legacy clean source params to artwork source params', () => {

@@ -105,6 +105,9 @@ import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons'
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  DEFAULT_STACKED_LINE_GAP_PERCENT,
+  DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
+  DEFAULT_STACKED_LINE_WIDTH_PERCENT,
   normalizeBadgeScalePercent,
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
@@ -121,7 +124,7 @@ import {
 export const runtime = 'nodejs';
 
 type PosterTextPreference = 'original' | 'clean' | 'alternative';
-type ArtworkSource = 'tmdb' | 'fanart';
+type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -140,7 +143,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anidb',
 ]);
 const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta']);
 const parseApiKeyList = (...values: Array<string | undefined>) => {
   const result: string[] = [];
   const seen = new Set<string>();
@@ -514,6 +517,10 @@ type RatingBadge = {
   iconUrl: string;
   accentColor: string;
   iconScalePercent?: number;
+  stackedLineVisible?: boolean;
+  stackedLineWidthPercent?: number;
+  stackedLineHeightPercent?: number;
+  stackedLineGapPercent?: number;
   variant?: 'standard' | 'minimal' | 'summary';
 };
 type GenreBadgeSpec = {
@@ -565,7 +572,7 @@ const EDITORIAL_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
   comedy: 'Comedy',
   romance: 'Romance',
   action: 'Action',
-  scifi: 'Sci-Fi',
+  scifi: 'Sci Fi',
   fantasy: 'Fantasy',
   crime: 'Crime',
   documentary: 'Doc',
@@ -2764,6 +2771,9 @@ const buildTmdbImageUrl = (
   return `https://image.tmdb.org/t/p/${size}${imgPath}`;
 };
 
+const buildCinemetaPosterUrl = (imdbId: string) =>
+  `https://images.metahub.space/poster/medium/${encodeURIComponent(imdbId)}/img`;
+
 const fetchSourceImageUncached = async (
   imgUrl: string,
   fallbackTtlMs: number
@@ -4290,6 +4300,10 @@ const buildBadgeSvg = ({
   badgeVariant = 'standard',
   ratingStyle,
   iconScalePercent = DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  stackedLineVisible = true,
+  stackedLineWidthPercent = DEFAULT_STACKED_LINE_WIDTH_PERCENT,
+  stackedLineHeightPercent = DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
+  stackedLineGapPercent = DEFAULT_STACKED_LINE_GAP_PERCENT,
   preferNeutralGlassPlate = false,
   compactText = false,
 }: {
@@ -4308,6 +4322,10 @@ const buildBadgeSvg = ({
   badgeVariant?: 'standard' | 'minimal' | 'summary';
   ratingStyle: RatingStyle;
   iconScalePercent?: number;
+  stackedLineVisible?: boolean;
+  stackedLineWidthPercent?: number;
+  stackedLineHeightPercent?: number;
+  stackedLineGapPercent?: number;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
 }) => {
@@ -4450,6 +4468,10 @@ ${variantChrome}
       paddingX,
       fontSize,
       renderIconSize,
+      accentLineVisible: stackedLineVisible,
+      accentLineWidthPercent: stackedLineWidthPercent,
+      accentLineHeightPercent: stackedLineHeightPercent,
+      accentLineGapPercent: stackedLineGapPercent,
     });
     const valueTextWidth = estimateBadgeTextWidth(value, stackedLayout.valueFontSize, compactText);
     const valueAvailableWidth = stackedLayout.valueAvailableWidth;
@@ -4480,7 +4502,7 @@ ${variantChrome}
 ${stackedDefs}
 <rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,0.90)" stroke="rgba(255,255,255,0.22)" stroke-width="1.15" />
 <rect x="${stackedInnerInset}" y="${stackedInnerInset}" width="${stackedInnerWidth}" height="${stackedInnerHeight}" rx="${Math.max(10, radius - 3)}" fill="url(#stacked-surface-fill)" />
-<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="${accentColor}" />
+${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="${accentColor}" />` : ''}
 <rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
 ${iconImage}
 ${monogramText}
@@ -5313,6 +5335,10 @@ const renderWithSharp = async (
         badgeVariant: badge.variant || 'standard',
         ratingStyle: input.ratingStyle,
         iconScalePercent: badge.iconScalePercent,
+        stackedLineVisible: badge.stackedLineVisible,
+        stackedLineWidthPercent: badge.stackedLineWidthPercent,
+        stackedLineHeightPercent: badge.stackedLineHeightPercent,
+        stackedLineGapPercent: badge.stackedLineGapPercent,
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
         compactText,
@@ -7652,6 +7678,27 @@ export async function GET(
           }
 
           if (type === 'poster') {
+            if (posterArtworkSource === 'cinemeta') {
+              let imdbId: string | null = isImdbId(mediaId) ? mediaId : null;
+              if (!imdbId) {
+                imdbId = media?.imdb_id || mappedImdbId || null;
+                if (!imdbId && detailsBundlePromise) {
+                  const bundle = await detailsBundlePromise;
+                  if (bundle?.bundledExternalIds?.imdb_id) {
+                    imdbId = bundle.bundledExternalIds.imdb_id;
+                  }
+                }
+              }
+              if (imdbId) {
+                return {
+                  imgPath: '',
+                  imgUrlOverride: buildCinemetaPosterUrl(imdbId),
+                  logoAspectRatio: null,
+                  logoPath,
+                  posterIsTextless: false,
+                };
+              }
+            }
             if (posterArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
               const fanartArtwork = await getFanartArtwork();
               const fanartPosterUrl = pickFanartUrlByPreference(
@@ -7977,6 +8024,11 @@ export async function GET(
           accentColor: providerAppearance?.accentColor || appearance.accentColor,
           iconScalePercent:
             providerAppearance?.iconScalePercent || DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+          stackedLineVisible:
+            providerAppearance?.stackedLineVisible === false ? false : undefined,
+          stackedLineWidthPercent: providerAppearance?.stackedLineWidthPercent,
+          stackedLineHeightPercent: providerAppearance?.stackedLineHeightPercent,
+          stackedLineGapPercent: providerAppearance?.stackedLineGapPercent,
           variant: 'standard',
         });
       }

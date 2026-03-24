@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { decodeProxyConfig, normalizeErdbId } from '../lib/addonProxy.ts';
 import { encodeRatingProviderAppearanceOverrides } from '../lib/badgeCustomization.ts';
 import {
+  buildAiometadataUrlPatterns,
   buildConfigString,
   buildProxyUrl,
   decodeBase64Url,
@@ -17,9 +18,12 @@ const SAMPLE_PROVIDER_APPEARANCE = {
     iconUrl: 'https://cdn.example.com/trakt-custom.svg',
     accentColor: '#7c3aed',
     iconScalePercent: 118,
+    stackedLineVisible: false,
+    stackedLineWidthPercent: 86,
   },
   imdb: {
     accentColor: '#facc15',
+    stackedLineHeightPercent: 124,
   },
 };
 
@@ -295,6 +299,69 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
   });
 });
 
+test('AIOMetadata export builds masked patterns with placeholders', () => {
+  const config = buildSampleSettings();
+
+  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+    hideCredentials: true,
+    idSource: 'imdb',
+  });
+
+  assert.equal(patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'), true);
+  assert.equal(
+    patterns?.backgroundUrlPattern.startsWith('https://erdb.example.com/backdrop/{imdb_id}.jpg?'),
+    true,
+  );
+  assert.equal(patterns?.logoUrlPattern.startsWith('https://erdb.example.com/logo/{imdb_id}.jpg?'), true);
+  assert.equal(
+    patterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://erdb.example.com/backdrop/{imdb_id}:{season}:{episode}.jpg?',
+    ),
+    true,
+  );
+
+  for (const value of Object.values(patterns ?? {})) {
+    assert.match(value, /tmdbKey=\{tmdb_key\}/);
+    assert.match(value, /mdblistKey=\{mdblist_key\}/);
+    assert.match(value, /fanartKey=\{fanart_key\}/);
+    assert.match(value, /posterRatings=imdb%2Ctmdb/);
+    assert.match(value, /backdropRatings=mdblist/);
+    assert.match(value, /lang=fr/);
+    assert.match(value, /qualityBadgesSide=right/);
+    assert.match(value, /posterRatingsLayout=top-bottom/);
+    assert.match(value, /backdropRatingsLayout=right-vertical/);
+    assert.match(
+      value,
+      new RegExp(`providerAppearance=${encodeRatingProviderAppearanceOverrides(SAMPLE_PROVIDER_APPEARANCE)}`),
+    );
+    assert.equal(value.includes('%7Btmdb_key%7D'), false);
+    assert.equal(value.includes('%7Bmdblist_key%7D'), false);
+    assert.equal(value.includes('%7Bfanart_key%7D'), false);
+  }
+});
+
+test('AIOMetadata export can keep live credentials and use Kitsu episode ids', () => {
+  const config = buildSampleSettings();
+
+  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+    hideCredentials: false,
+    idSource: 'kitsu',
+  });
+
+  assert.equal(
+    patterns?.posterUrlPattern.startsWith(
+      'https://erdb.example.com/poster/kitsu:{kitsu_id}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+    ),
+    true,
+  );
+  assert.equal(
+    patterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://erdb.example.com/backdrop/kitsu:{kitsu_id}:{episode}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+    ),
+    true,
+  );
+});
+
 test('proxy manifest generation stops when required inputs are missing', () => {
   const config = buildSampleSettings();
 
@@ -343,6 +410,20 @@ test('workspace normalization maps legacy fanart poster mode into artwork source
   assert.equal(config.settings.backdropImageText, 'clean');
   assert.equal(config.settings.posterArtworkSource, 'fanart');
   assert.equal(config.settings.backdropArtworkSource, 'fanart');
+});
+
+test('workspace normalization accepts cinemeta as a poster artwork source', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterArtworkSource: 'cinemeta',
+      backdropArtworkSource: 'cinemeta',
+      logoArtworkSource: 'cinemeta',
+    },
+  });
+
+  assert.equal(config.settings.posterArtworkSource, 'cinemeta');
+  assert.equal(config.settings.backdropArtworkSource, 'cinemeta');
+  assert.equal(config.settings.logoArtworkSource, 'cinemeta');
 });
 
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {

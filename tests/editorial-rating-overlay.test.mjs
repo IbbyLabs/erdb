@@ -10,7 +10,7 @@ test('editorial overlay keeps the score below the eyebrow and inside the poster 
   const layout = computeEditorialRatingOverlayLayout({
     outputWidth: 500,
     outputHeight: 750,
-    eyebrowText: 'Sci-Fi',
+    eyebrowText: 'Sci Fi',
     valueText: '8.3',
     accentColor: '#22d3ee',
   });
