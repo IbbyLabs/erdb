@@ -1,4 +1,8 @@
 import type { RatingPreference } from './ratingPreferences.ts';
+import {
+  METACRITIC_LOGO_DATA_URI,
+  TRAKT_LOGO_DATA_URI,
+} from './ratingProviderBrandAssets.ts';
 
 export type RatingProviderBadgeAppearance = {
   iconUrl: string;
@@ -61,30 +65,12 @@ ${spilled ? `<g transform="translate(10 6) rotate(-14 38 46)">` : '<g>'}
 ${spilled ? '<circle cx="67" cy="69" r="6" fill="#fff7d6"/><circle cx="78" cy="61" r="5" fill="#fff7d6"/><circle cx="80" cy="74" r="4" fill="#fff7d6"/>' : ''}
 </svg>`;
 
-const buildMetacriticIconSvg = ({
-  plateColor,
-  iconColor = 'white',
-  showStar = false,
-}: {
-  plateColor: string;
-  iconColor?: string;
-  showStar?: boolean;
-}) => `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-<rect x="16" y="16" width="64" height="64" rx="16" fill="${plateColor}"/>
-<text x="48" y="61" text-anchor="middle" font-family="'Arial Black','Noto Sans',Arial,sans-serif" font-size="42" font-weight="900" fill="${iconColor}">m</text>
-${showStar ? '<path d="M75 22 78 30 87 30 80 35 83 43 75 38 67 43 70 35 63 30 72 30Z" fill="#facc15"/>' : ''}
-</svg>`;
-
 const buildMetacriticUserIconSvg = ({ plateColor }: { plateColor: string }) => `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
 <circle cx="48" cy="48" r="32" fill="${plateColor}"/>
 <circle cx="48" cy="39" r="11" fill="white"/>
 <path d="M28 71c3-12 13-18 20-18s17 6 20 18" fill="white"/>
 <path d="M64 25h10v8H64Z" fill="rgba(17,24,39,0.2)"/>
 <path d="M69 24h4v18h-4Z" fill="rgba(17,24,39,0.2)"/>
-</svg>`;
-
-const buildTraktIconSvg = () => `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48">
-<path fill="#fff" d="M30.17 30.22 28.71 28.76 47.87 9.59a9 9 0 0 0-.23-1.15L27.33 28.77l2.16 2.16-1.46 1.46-3.62-3.62L46.85 6.29a11 11 0 0 0-.5-.88L23.02 28.76l4.31 4.31-1.46 1.46-14.39-14.4 1.46-1.46 8.62 8.62L45.1 3.72A11.22 11.22 0 0 0 36.73 0H11.27A11.28 11.28 0 0 0 0 11.27v25.48A11.27 11.27 0 0 0 11.27 48h25.47A11.27 11.27 0 0 0 48 36.75V12.38L30.17 30.22ZM21.54 25.91l-7.91-7.93 1.46-1.46L23 24.44l-1.46 1.47Zm2.15-2.17-7.91-7.92 1.46-1.46 7.92 7.92-1.47 1.46ZM43.4 35.12a8.29 8.29 0 0 1-8.28 8.28H12.88a8.29 8.29 0 0 1-8.28-8.28V12.88A8.29 8.29 0 0 1 12.88 4.6h20.78v2.08H12.88a6.21 6.21 0 0 0-6.2 6.2v22.23a6.21 6.21 0 0 0 6.2 6.21h22.24a6.21 6.21 0 0 0 6.2-6.21V31.6h2.08v3.51Z"/>
 </svg>`;
 
 const resolveTomatoesAppearance = (sourceValue: string | null | undefined) => {
@@ -142,34 +128,34 @@ const resolveMetacriticAppearance = (sourceValue: string | null | undefined) => 
   const numericValue = parseNumericRatingValue(sourceValue);
   if (numericValue === null) {
     return {
-      iconUrl: buildSvgDataUri(buildMetacriticIconSvg({ plateColor: '#66cc33' })),
+      iconUrl: METACRITIC_LOGO_DATA_URI,
       accentColor: '#66cc33',
       label: 'Metacritic',
     };
   }
   if (numericValue >= 81) {
     return {
-      iconUrl: buildSvgDataUri(buildMetacriticIconSvg({ plateColor: '#65a30d', showStar: true })),
+      iconUrl: METACRITIC_LOGO_DATA_URI,
       accentColor: '#65a30d',
       label: 'Metacritic',
     };
   }
   if (numericValue >= 61) {
     return {
-      iconUrl: buildSvgDataUri(buildMetacriticIconSvg({ plateColor: '#66cc33' })),
+      iconUrl: METACRITIC_LOGO_DATA_URI,
       accentColor: '#66cc33',
       label: 'Metacritic',
     };
   }
   if (numericValue >= 40) {
     return {
-      iconUrl: buildSvgDataUri(buildMetacriticIconSvg({ plateColor: '#f59e0b', iconColor: '#111827' })),
+      iconUrl: METACRITIC_LOGO_DATA_URI,
       accentColor: '#f59e0b',
       label: 'Metacritic',
     };
   }
   return {
-    iconUrl: buildSvgDataUri(buildMetacriticIconSvg({ plateColor: '#ef4444' })),
+    iconUrl: METACRITIC_LOGO_DATA_URI,
     accentColor: '#ef4444',
     label: 'Metacritic',
   };
@@ -213,7 +199,7 @@ const resolveMetacriticUserAppearance = (sourceValue: string | null | undefined)
 };
 
 const resolveTraktAppearance = () => ({
-  iconUrl: buildSvgDataUri(buildTraktIconSvg()),
+  iconUrl: TRAKT_LOGO_DATA_URI,
   accentColor: '#8b5cf6',
   label: 'Trakt',
 });

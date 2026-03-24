@@ -35,7 +35,9 @@ const buildSampleSettings = () =>
       posterArtworkSource: 'fanart',
       backdropArtworkSource: 'fanart',
       logoArtworkSource: 'fanart',
+      ratingValueMode: 'normalized',
       genreBadgeMode: 'both',
+      genreBadgeScale: 118,
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
       logoRatingPreferences: [],
@@ -56,7 +58,7 @@ const buildSampleSettings = () =>
       sideRatingsOffset: 62,
       posterRatingStyle: 'square',
       backdropRatingStyle: 'plain',
-      logoRatingStyle: 'glass',
+      logoRatingStyle: 'stacked',
       posterRatingBadgeScale: 114,
       backdropRatingBadgeScale: 108,
       logoRatingBadgeScale: 96,
@@ -99,7 +101,9 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterArtworkSource: 'fanart',
       backdropArtworkSource: 'fanart',
       logoArtworkSource: 'fanart',
+      ratingValueMode: 'normalized',
       genreBadgeMode: 'both',
+      genreBadgeScale: 118,
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
       logoRatingPreferences: [],
@@ -121,7 +125,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       sideRatingsOffset: 62,
       posterRatingStyle: 'square',
       backdropRatingStyle: 'plain',
-      logoRatingStyle: 'glass',
+      logoRatingStyle: 'stacked',
       posterRatingBadgeScale: 114,
       backdropRatingBadgeScale: 108,
       logoRatingBadgeScale: 96,
@@ -188,7 +192,9 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropRatings: 'mdblist',
     logoRatings: '',
     lang: 'fr',
+    ratingValueMode: 'normalized',
     genreBadge: 'both',
+    genreBadgeScale: 118,
     posterStreamBadges: 'on',
     backdropStreamBadges: 'off',
     qualityBadgesSide: 'right',
@@ -200,7 +206,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropQualityBadgesMax: 3,
     posterRatingStyle: 'square',
     backdropRatingStyle: 'plain',
-    logoRatingStyle: 'glass',
+    logoRatingStyle: 'stacked',
     posterRatingBadgeScale: 114,
     backdropRatingBadgeScale: 108,
     logoRatingBadgeScale: 96,
@@ -246,7 +252,9 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropRatings: 'mdblist',
     logoRatings: '',
     lang: 'fr',
+    ratingValueMode: 'normalized',
     genreBadge: 'both',
+    genreBadgeScale: '118',
     posterStreamBadges: 'on',
     backdropStreamBadges: 'off',
     qualityBadgesSide: 'right',
@@ -260,7 +268,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropQualityBadgesMax: '3',
     posterRatingStyle: 'square',
     backdropRatingStyle: 'plain',
-    logoRatingStyle: 'glass',
+    logoRatingStyle: 'stacked',
     posterRatingBadgeScale: '114',
     backdropRatingBadgeScale: '108',
     logoRatingBadgeScale: '96',
@@ -340,6 +348,10 @@ test('workspace normalization maps legacy fanart poster mode into artwork source
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {
   assert.equal(normalizeErdbId('mal:456', 'series'), 'mal:456');
   assert.equal(normalizeErdbId('myanimelist:456', 'series'), 'mal:456');
-  assert.equal(normalizeErdbId('anilist:123', 'series'), 'anilist:123');
+  assert.equal(normalizeErdbId('anilist:123:2', 'series'), 'anilist:123:2');
+  assert.equal(normalizeErdbId('tvdb:789:3', 'series'), 'tvdb:789:3');
   assert.equal(normalizeErdbId('anidb:789', 'series'), 'anidb:789');
+  assert.equal(normalizeErdbId('tt0944947:2', 'series'), 'tt0944947:2');
+  assert.equal(normalizeErdbId('imdb:tt0944947:2', 'series'), 'imdb:tt0944947:2');
+  assert.equal(normalizeErdbId('tmdb:tv:1399:2', 'series'), 'tmdb:tv:1399:2');
 });

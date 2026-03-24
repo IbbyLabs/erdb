@@ -18,9 +18,11 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
       lang: 'en',
+      ratingValueMode: 'normalized',
       genreBadgeMode: 'text',
+      genreBadgeScale: 112,
       logoRatingPreferences: ['mdblist', 'tomatoes', 'letterboxd'],
-      logoRatingStyle: 'plain',
+      logoRatingStyle: 'stacked',
       logoRatingPresentation: 'average',
       logoAggregateRatingSource: 'audience',
       logoRatingsMax: 3,
@@ -61,7 +63,9 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.searchParams.get('mdblistKey'), 'mdblist-key-456');
   assert.equal(rewrittenLogoUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenLogoUrl.searchParams.get('lang'), 'en');
+  assert.equal(rewrittenLogoUrl.searchParams.get('ratingValueMode'), 'normalized');
   assert.equal(rewrittenLogoUrl.searchParams.get('genreBadge'), 'text');
+  assert.equal(rewrittenLogoUrl.searchParams.get('genreBadgeScale'), '112');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatings'), 'mdblist,tomatoes,letterboxd');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingsMax'), '3');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoBackground'), 'dark');
@@ -73,7 +77,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
     rewrittenLogoUrl.searchParams.get('providerAppearance'),
     encodeRatingProviderAppearanceOverrides(providerAppearance),
   );
-  assert.equal(rewrittenLogoUrl.searchParams.get('ratingStyle'), 'plain');
+  assert.equal(rewrittenLogoUrl.searchParams.get('ratingStyle'), 'stacked');
 });
 
 test('proxy image rewrites upgrade legacy logo source params to artwork source params', () => {
@@ -115,6 +119,8 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       posterArtworkSource: 'fanart',
       backdropImageText: 'clean',
       backdropArtworkSource: 'fanart',
+      ratingValueMode: 'normalized',
+      genreBadgeScale: 116,
       posterRatingPreferences: ['imdb', 'trakt', 'metacritic'],
       posterRatingsLayout: 'left-right',
       posterRatingsMax: 3,
@@ -151,6 +157,8 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,trakt,metacritic');
   assert.equal(rewrittenPosterUrl.searchParams.get('fanartKey'), 'fanart-key-789');
+  assert.equal(rewrittenPosterUrl.searchParams.get('ratingValueMode'), 'normalized');
+  assert.equal(rewrittenPosterUrl.searchParams.get('genreBadgeScale'), '116');
   assert.equal(rewrittenPosterUrl.searchParams.get('imageText'), 'clean');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'fanart');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsLayout'), 'left-right');
@@ -175,6 +183,7 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
       fanartKey: 'fanart-key-789',
       backdropImageText: 'clean',
       backdropArtworkSource: 'fanart',
+      genreBadgeScale: 122,
       backdropRatingPreferences: ['imdb'],
       backdropRatingsMax: 2,
       backdropQualityBadgePreferences: ['4k', 'dolbyatmos'],
@@ -207,6 +216,7 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
 
   assert.equal(rewrittenBackdropUrl.searchParams.get('imageText'), 'clean');
   assert.equal(rewrittenBackdropUrl.searchParams.get('fanartKey'), 'fanart-key-789');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('genreBadgeScale'), '122');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropArtworkSource'), 'fanart');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingsMax'), '2');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadges'), '4k,dolbyatmos');

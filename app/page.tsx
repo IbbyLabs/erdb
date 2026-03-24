@@ -104,6 +104,11 @@ import {
   SIDE_RATING_POSITION_OPTIONS,
   type SideRatingPosition,
 } from '@/lib/sideRatingPosition';
+import {
+  DEFAULT_RATING_VALUE_MODE,
+  RATING_VALUE_MODE_OPTIONS,
+  type RatingValueMode,
+} from '@/lib/ratingDisplay';
 
 const RatingProviderSortableList = dynamic(
   () =>
@@ -209,6 +214,7 @@ const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
 const SIDE_RATING_POSITION_DOC_VALUES = 'top, middle, bottom, custom';
 const SIDE_RATING_OFFSET_DOC_COPY = '0-100';
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
+const RATING_VALUE_MODE_DOC_VALUES = 'native, normalized';
 const AGGREGATE_SOURCE_ACCENT_BY_ID: Record<AggregateRatingSource, string> = {
   overall: '#a78bfa',
   critics: '#fb923c',
@@ -290,7 +296,7 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | none
-id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | none
+id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL, TVDB, AniDB | none
 ratings                 | ${RATING_PROVIDER_DOC_VALUES} (global fallback)                      | all
 posterRatings           | ${RATING_PROVIDER_DOC_VALUES} (poster only)                          | all
 backdropRatings         | ${RATING_PROVIDER_DOC_VALUES} (backdrop only)                        | all
@@ -312,7 +318,9 @@ backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})               
 providerAppearance     | base64url or JSON provider overrides                                 | none
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
-ratingStyle             | glass, square, plain                                                 | glass
+ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
+ratingStyle             | glass, square, plain, stacked                                        | glass
+genreBadgeScale         | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
 posterRatingBadgeScale | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
 backdropRatingBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
 logoRatingBadgeScale   | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
@@ -359,11 +367,12 @@ poster artwork source : use cfg.posterArtworkSource for poster original, clean, 
 backdrop artwork source : use cfg.backdropArtworkSource for backdrop original, clean, or alternative
 logo artwork source : use cfg.logoArtworkSource when rendering logo output
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
+Use cfg.ratingValueMode to keep provider native scales or normalize everything to ten point values.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
-Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale.
+Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge size uses cfg.genreBadgeScale.
 Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale.
 Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116}}.
 Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0-100 vertical anchor.
@@ -371,7 +380,7 @@ Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeScale=\${cfg.genreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -721,7 +730,9 @@ export default function Home() {
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
   const [posterArtworkSource, setPosterArtworkSource] = useState<ArtworkSource>('tmdb');
   const [backdropArtworkSource, setBackdropArtworkSource] = useState<ArtworkSource>('tmdb');
+  const [ratingValueMode, setRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
   const [genreBadgeMode, setGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
+  const [genreBadgeScale, setGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
   const [backdropRatingRows, setBackdropRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -1091,7 +1102,9 @@ export default function Home() {
       setBackdropImageText(normalized.settings.backdropImageText);
       setPosterArtworkSource(normalized.settings.posterArtworkSource);
       setBackdropArtworkSource(normalized.settings.backdropArtworkSource);
+      setRatingValueMode(normalized.settings.ratingValueMode);
       setGenreBadgeMode(normalized.settings.genreBadgeMode);
+      setGenreBadgeScale(normalized.settings.genreBadgeScale);
       setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
       setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
       setLogoRatingRows(enabledOrderedToRows(normalized.settings.logoRatingPreferences));
@@ -1151,7 +1164,9 @@ export default function Home() {
         backdropImageText,
         posterArtworkSource,
         backdropArtworkSource,
+        ratingValueMode,
         genreBadgeMode,
+        genreBadgeScale,
         posterRatingPreferences,
         backdropRatingPreferences,
         logoRatingPreferences,
@@ -1207,7 +1222,9 @@ export default function Home() {
       backdropImageText,
       posterArtworkSource,
       backdropArtworkSource,
+      ratingValueMode,
       genreBadgeMode,
+      genreBadgeScale,
       posterRatingPreferences,
       backdropRatingPreferences,
       logoRatingPreferences,
@@ -1398,8 +1415,14 @@ export default function Home() {
       ratingStyle: ratingStyleForType,
       lang,
     });
+    if (ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
+      query.set('ratingValueMode', ratingValueMode);
+    }
     if (genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
       query.set('genreBadge', genreBadgeMode);
+    }
+    if (genreBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
+      query.set('genreBadgeScale', String(genreBadgeScale));
     }
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
       query.set(
@@ -1546,7 +1569,9 @@ export default function Home() {
     backdropImageText,
     posterArtworkSource,
     backdropArtworkSource,
+    ratingValueMode,
     genreBadgeMode,
+    genreBadgeScale,
     posterRatingPreferences,
     backdropRatingPreferences,
     logoRatingPreferences,
@@ -2424,6 +2449,23 @@ export default function Home() {
                       </div>
                     )}
                     <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Rating Values</span>
+                      <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                        {RATING_VALUE_MODE_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => setRatingValueMode(option.id)}
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                              ratingValueMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                            }`}
+                            title={option.description}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
                       <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                         {GENRE_BADGE_MODE_OPTIONS.map((option) => (
@@ -2442,6 +2484,7 @@ export default function Home() {
                     </div>
                   </div>
                   <p className="text-[11px] leading-relaxed text-zinc-500">
+                    {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
                     Genre badges use a small curated bucket set. Clear genres such as horror, comedy, sci fi, fantasy, crime, documentary, and anime resolve; fuzzy cases stay off.
                   </p>
                   {(previewType === 'poster' || previewType === 'backdrop') ? (
@@ -2668,7 +2711,7 @@ export default function Home() {
 
                     <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Sizing</div>
-                      <div className={`grid gap-3 ${previewType === 'logo' ? '' : 'md:grid-cols-2'}`}>
+                      <div className={`grid gap-3 ${previewType === 'logo' ? '' : 'md:grid-cols-3'}`}>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating badges</span>
@@ -2686,6 +2729,25 @@ export default function Home() {
                             className="h-2 w-full accent-violet-500"
                           />
                         </div>
+                        {previewType !== 'logo' && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre badge</span>
+                              <span className="text-[11px] text-zinc-400">{genreBadgeScale}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={MIN_BADGE_SCALE_PERCENT}
+                              max={MAX_BADGE_SCALE_PERCENT}
+                              step={1}
+                              value={genreBadgeScale}
+                              onChange={(event) =>
+                                setGenreBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                              }
+                              className="h-2 w-full accent-violet-500"
+                            />
+                          </div>
+                        )}
                         {previewType !== 'logo' && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between gap-3">
@@ -2707,7 +2769,7 @@ export default function Home() {
                         )}
                       </div>
                       <p className="text-[11px] leading-relaxed text-zinc-500">
-                        These sliders let people increase tag legibility without forcing a new layout. ERDB will still fit the final output back into the selected poster, backdrop, or logo frame.
+                        These sliders let people increase badge and tag legibility without forcing a new layout. ERDB will still fit the final output back into the selected poster, backdrop, or logo frame.
                       </p>
                     </div>
                   </div>
@@ -3479,9 +3541,19 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">overall</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingValueMode</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{RATING_VALUE_MODE_DOC_VALUES}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">native</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, stacked</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass (poster/backdrop), plain (logo)</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">genreBadgeScale</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingBadgeScale</td>
@@ -3596,7 +3668,7 @@ export default function Home() {
                   <br />
                   Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve; ambiguous combinations stay off.
                   <br />
-                  Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, and <span className="font-semibold text-zinc-200">plain</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
+                  Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, <span className="font-semibold text-zinc-200">plain</span>, and <span className="font-semibold text-zinc-200">stacked</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                   <br />
                   Media quality badges use local asset based artwork for <span className="font-semibold text-zinc-200">4K</span>, <span className="font-semibold text-zinc-200">Bluray</span>, <span className="font-semibold text-zinc-200">HDR10</span>, <span className="font-semibold text-zinc-200">Dolby Vision</span>, and <span className="font-semibold text-zinc-200">Dolby Atmos</span>. Certification badges include a small <span className="font-semibold text-zinc-200">AGE</span> label above the rating.
                   <br />
@@ -3727,7 +3799,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Direct image URLs support shared fallbacks like ratings, lang, genreBadge, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
+                  Direct image URLs support shared fallbacks like ratings, lang, ratingValueMode, genreBadge, genreBadgeScale, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
                 </div>
               </div>
 
@@ -3765,7 +3837,7 @@ export default function Home() {
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">Anime</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">provider:id</td>
-                        <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">anilist:123, mal:456</td>
+                        <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">anilist:123, mal:456, tvdb:12345, anidb:6789</td>
                       </tr>
                     </tbody>
                   </table>

@@ -1,3 +1,5 @@
+import { METACRITIC_LOGO_DATA_URI, TRAKT_LOGO_DATA_URI } from './ratingProviderBrandAssets.ts';
+
 export const RATING_PROVIDER_OPTIONS = [
   {
     id: 'tmdb',
@@ -39,20 +41,20 @@ export const RATING_PROVIDER_OPTIONS = [
   {
     id: 'metacritic',
     label: 'Metacritic',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=metacritic.com&sz=64',
+    iconUrl: METACRITIC_LOGO_DATA_URI,
     accentColor: '#66cc33',
   },
   {
     id: 'metacriticuser',
     label: 'Metacritic User',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=metacritic.com&sz=64',
+    iconUrl: METACRITIC_LOGO_DATA_URI,
     accentColor: '#4caf50',
   },
   {
     id: 'trakt',
     label: 'Trakt',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=trakt.tv&sz=64',
-    accentColor: '#ed1c24',
+    iconUrl: TRAKT_LOGO_DATA_URI,
+    accentColor: '#8b5cf6',
   },
   {
     id: 'rogerebert',

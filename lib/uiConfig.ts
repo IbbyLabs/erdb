@@ -34,6 +34,11 @@ import {
   ALL_RATING_PREFERENCES,
 } from './ratingPreferences.ts';
 import {
+  DEFAULT_RATING_VALUE_MODE,
+  normalizeRatingValueMode,
+  type RatingValueMode,
+} from './ratingDisplay.ts';
+import {
   DEFAULT_METADATA_TRANSLATION_MODE,
   normalizeMetadataTranslationMode,
   type MetadataTranslationMode,
@@ -79,7 +84,9 @@ export type SharedErdbSettings = {
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
+  ratingValueMode: RatingValueMode;
   genreBadgeMode: GenreBadgeMode;
+  genreBadgeScale: number;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
   logoRatingPreferences: RatingPreference[];
@@ -171,7 +178,9 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterArtworkSource: 'tmdb',
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
+  ratingValueMode: DEFAULT_RATING_VALUE_MODE,
   genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
+  genreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -414,7 +423,9 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.logoArtworkSource ?? candidate.logoSource,
       defaults.logoArtworkSource
     ),
+    ratingValueMode: normalizeRatingValueMode(candidate.ratingValueMode, defaults.ratingValueMode),
     genreBadgeMode: normalizeGenreBadgeMode(candidate.genreBadgeMode, defaults.genreBadgeMode),
+    genreBadgeScale: normalizeBadgeScalePercent(candidate.genreBadgeScale, defaults.genreBadgeScale),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences,
       defaults.posterRatingPreferences,
@@ -494,7 +505,8 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     logoRatingStyle:
       candidate.logoRatingStyle === 'glass' ||
       candidate.logoRatingStyle === 'plain' ||
-      candidate.logoRatingStyle === 'square'
+      candidate.logoRatingStyle === 'square' ||
+      candidate.logoRatingStyle === 'stacked'
         ? (candidate.logoRatingStyle as RatingStyle)
         : 'plain',
     posterRatingBadgeScale: normalizeBadgeScalePercent(
@@ -608,8 +620,14 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   if (settings.lang) {
     payload.lang = settings.lang;
   }
+  if (settings.ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
+    payload.ratingValueMode = settings.ratingValueMode;
+  }
   if (settings.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
     payload.genreBadge = settings.genreBadgeMode;
+  }
+  if (settings.genreBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
+    payload.genreBadgeScale = settings.genreBadgeScale;
   }
   if (settings.posterStreamBadges !== 'auto') {
     payload.posterStreamBadges = settings.posterStreamBadges;

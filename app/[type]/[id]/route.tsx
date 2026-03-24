@@ -71,7 +71,11 @@ import { getMetadata, setMetadata } from '@/lib/metadataCache';
 import {
   formatDisplayRatingValue,
   formatRatingNumber,
+  normalizeRatingToTenPointValue,
+  normalizeRatingValueMode,
   parseNumericRatingValue,
+  DEFAULT_RATING_VALUE_MODE,
+  type RatingValueMode,
 } from '@/lib/ratingDisplay';
 import {
   DEFAULT_GENRE_BADGE_MODE,
@@ -109,7 +113,7 @@ export const runtime = 'nodejs';
 
 type PosterTextPreference = 'original' | 'clean' | 'alternative';
 type ArtworkSource = 'tmdb' | 'fanart';
-type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
+type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
 type QualityBadgesSide = 'left' | 'right';
@@ -123,6 +127,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anilist',
   'imdb',
   'tmdb',
+  'tvdb',
   'anidb',
 ]);
 const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
@@ -260,6 +265,17 @@ const TORRENTIO_CACHE_TTL_MS = parseCacheTtlMs(
   10 * 60 * 1000,
   7 * 24 * 60 * 60 * 1000
 );
+const TORRENTIO_RATE_LIMIT_COOLDOWN_MS = parseCacheTtlMs(
+  process.env.ERDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS,
+  15 * 60 * 1000,
+  60 * 1000,
+  24 * 60 * 60 * 1000
+);
+const TORRENTIO_CONCURRENCY = (() => {
+  const rawValue = Number(process.env.ERDB_TORRENTIO_CONCURRENCY);
+  if (!Number.isFinite(rawValue) || rawValue <= 0) return 2;
+  return Math.max(1, Math.min(4, Math.floor(rawValue)));
+})();
 const TORRENTIO_BASE_URL = process.env.ERDB_TORRENTIO_BASE_URL || 'https://torrentio.strem.fun';
 const TORRENTIO_PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy || null;
 const torrentioDispatcher = TORRENTIO_PROXY_URL ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
@@ -339,6 +355,7 @@ const metadataInFlight = new Map<string, Promise<CachedJsonResponse>>();
 const providerIconInFlight = new Map<string, Promise<string | null>>();
 const torrentioInFlight = new Map<string, Promise<TorrentioBadgeResult>>();
 const mdbListRateLimitedUntil = new Map<string, number>();
+let torrentioRateLimitedUntil = 0;
 let mdbListApiKeyCursor = 0;
 const sha1Hex = (value: string) => createHash('sha1').update(value).digest('hex');
 const safeCompareText = (left: string, right: string) => {
@@ -389,6 +406,23 @@ const getCacheTtlMsFromCacheControl = (value: string | null | undefined, fallbac
   return fallbackMs;
 };
 
+const parseRetryAfterMs = (value: string | null | undefined, fallbackMs: number) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return fallbackMs;
+
+  const seconds = Number(normalized);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return Math.max(30 * 1000, Math.round(seconds * 1000));
+  }
+
+  const retryTimestamp = Date.parse(normalized);
+  if (Number.isFinite(retryTimestamp)) {
+    return Math.max(30 * 1000, retryTimestamp - Date.now());
+  }
+
+  return fallbackMs;
+};
+
 
 
 const withDedupe = async <T,>(
@@ -423,7 +457,7 @@ const createConcurrencyLimit = (concurrency: number) => {
   };
 };
 
-const torrentioConcurrencyLimit = createConcurrencyLimit(3);
+const torrentioConcurrencyLimit = createConcurrencyLimit(TORRENTIO_CONCURRENCY);
 
 const measurePhase = async <T,>(phases: PhaseDurations, phase: keyof PhaseDurations, fn: () => Promise<T>) => {
   const start = performance.now();
@@ -478,6 +512,7 @@ type GenreBadgeSpec = {
   label: string;
   accentColor: string;
   mode: GenreBadgeMode;
+  scalePercent?: number;
 };
 type BlockbusterBlurb = {
   text: string;
@@ -626,9 +661,11 @@ const buildAggregateRatingBadge = ({
       : requestedSource;
 
   const numericValues = selectedProviders
-    .map((provider) => ratingBadgeByProvider.get(provider))
-    .filter((badge): badge is RatingBadge => badge !== undefined)
-    .map((badge) => parseDisplayRatingNumber(badge.value))
+    .map((provider) => ({ provider, badge: ratingBadgeByProvider.get(provider) }))
+    .filter((entry): entry is { provider: RatingPreference; badge: RatingBadge } => entry.badge !== undefined)
+    .map(({ provider, badge }) =>
+      normalizeRatingToTenPointValue(provider, String(badge.sourceValue || badge.value || '').trim())
+    )
     .filter((value): value is number => value !== null);
 
   if (numericValues.length === 0) return null;
@@ -1345,6 +1382,12 @@ const fetchTorrentioBadges = async (input: {
     typeof input.cacheTtlMs === 'number' && Number.isFinite(input.cacheTtlMs) && input.cacheTtlMs > 0
       ? input.cacheTtlMs
       : getDeterministicTtlMs(TORRENTIO_CACHE_TTL_MS, cacheKey);
+  const now = Date.now();
+  if (torrentioRateLimitedUntil > now) {
+    const cooldownTtlMs = Math.max(30 * 1000, torrentioRateLimitedUntil - now);
+    setMetadata(cacheKey, { flags: collectMediaFeatureFlags([]) }, Math.min(ttlMs, cooldownTtlMs));
+    return { badges: [], cacheTtlMs: cooldownTtlMs };
+  }
   const cached = getMetadata<TorrentioBadgeCache>(cacheKey);
   if (cached) {
     return { badges: buildFeatureBadgesFromFlags(cached.flags), cacheTtlMs: ttlMs };
@@ -1399,7 +1442,17 @@ const fetchTorrentioBadges = async (input: {
     if (filenames.length === 0) {
       console.warn(`[ERDB] Torrentio returned 0 streams for ${torrentioUrl}`);
     }
+    const isRateLimited = response.status === 429 || response.status === 403;
     const targetTtl = response.ok ? ttlMs : Math.min(ttlMs, 2 * 60 * 1000);
+    if (isRateLimited) {
+      const cooldownMs = parseRetryAfterMs(
+        response.headers.get('retry-after'),
+        TORRENTIO_RATE_LIMIT_COOLDOWN_MS,
+      );
+      torrentioRateLimitedUntil = Date.now() + cooldownMs;
+      setMetadata(cacheKey, { flags }, Math.min(targetTtl, cooldownMs));
+      return { badges: buildFeatureBadgesFromFlags(flags), cacheTtlMs: cooldownMs };
+    }
     setMetadata(cacheKey, { flags }, targetTtl);
     return { badges: buildFeatureBadgesFromFlags(flags), cacheTtlMs: targetTtl };
   });
@@ -3341,11 +3394,18 @@ const estimateBadgeWidth = (
   paddingX: number,
   iconSize: number,
   gap: number,
-  compactText = false
+  compactText = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   const textWidth = estimateBadgeTextWidth(value, fontSize, compactText);
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
   const innerGap = outerPadding;
+  if (ratingStyle === 'stacked') {
+    return Math.max(
+      Math.round(fontSize * 2.45),
+      outerPadding * 2 + Math.max(textWidth, Math.round(iconSize * 0.92)),
+    );
+  }
   return Math.max(
     outerPadding + iconSize + innerGap + textWidth + outerPadding,
     outerPadding + iconSize + innerGap + outerPadding + Math.round(fontSize * (compactText ? 1.12 : 1.25))
@@ -3390,11 +3450,12 @@ const estimateRenderedBadgeWidth = (
   paddingX: number,
   iconSize: number,
   gap: number,
-  compactText = false
+  compactText = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   const variant = badge.variant || 'standard';
   if (variant === 'standard') {
-    return estimateBadgeWidth(badge.value, fontSize, paddingX, iconSize, gap, compactText);
+    return estimateBadgeWidth(badge.value, fontSize, paddingX, iconSize, gap, compactText, ratingStyle);
   }
 
   const outerPadding = Math.max(10, Math.round(paddingX * (variant === 'minimal' ? 1.05 : 0.95)));
@@ -3420,13 +3481,19 @@ const getMinimumCompressedBadgeWidth = (
   paddingX: number,
   iconSize: number,
   gap: number,
-  compactText = false
+  compactText = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) =>
-  Math.max(6, Math.round(paddingX * 0.7)) +
-  iconSize +
-  Math.max(6, Math.round(paddingX * 0.7)) +
-  Math.max(6, Math.round(paddingX * 0.7)) +
-  Math.round(fontSize * (compactText ? 0.82 : 0.92));
+  ratingStyle === 'stacked'
+    ? Math.max(
+        Math.round(fontSize * 1.9),
+        Math.max(6, Math.round(paddingX * 0.7)) * 2 + Math.round(iconSize * 0.78),
+      )
+    : Math.max(6, Math.round(paddingX * 0.7)) +
+      iconSize +
+      Math.max(6, Math.round(paddingX * 0.7)) +
+      Math.max(6, Math.round(paddingX * 0.7)) +
+      Math.round(fontSize * (compactText ? 0.82 : 0.92));
 
 const getMinimumCompressedRenderedBadgeWidth = (
   badge: RatingBadge,
@@ -3434,11 +3501,20 @@ const getMinimumCompressedRenderedBadgeWidth = (
   paddingX: number,
   iconSize: number,
   gap: number,
-  compactText = false
+  compactText = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   const variant = badge.variant || 'standard';
   if (variant === 'standard') {
-    return getMinimumCompressedBadgeWidth(badge.value, fontSize, paddingX, iconSize, gap, compactText);
+    return getMinimumCompressedBadgeWidth(
+      badge.value,
+      fontSize,
+      paddingX,
+      iconSize,
+      gap,
+      compactText,
+      ratingStyle,
+    );
   }
 
   if (variant === 'minimal') {
@@ -3461,7 +3537,8 @@ const getMinimumCompressedRenderedBadgeWidth = (
 const measureBadgeRowWidth = (
   rowBadges: RatingBadge[],
   metrics: BadgeLayoutMetrics,
-  compactText = false
+  compactText = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   if (rowBadges.length === 0) return 0;
   return (
@@ -3474,7 +3551,8 @@ const measureBadgeRowWidth = (
           metrics.paddingX,
           metrics.iconSize,
           metrics.gap,
-          compactText
+          compactText,
+          ratingStyle,
         ),
       0
     ) +
@@ -3502,14 +3580,15 @@ const splitBadgesIntoFittingRows = (
   badges: RatingBadge[],
   maxRowWidth: number,
   metrics: BadgeLayoutMetrics,
-  compactText = false
+  compactText = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   if (badges.length === 0) return [];
   if (maxRowWidth <= 0) return badges.map((badge) => [badge]);
 
   for (let rowCount = 1; rowCount <= badges.length; rowCount += 1) {
     const rows = splitBadgesAcrossRowCount(badges, rowCount);
-    if (rows.every((row) => measureBadgeRowWidth(row, metrics, compactText) <= maxRowWidth)) {
+    if (rows.every((row) => measureBadgeRowWidth(row, metrics, compactText, ratingStyle) <= maxRowWidth)) {
       return rows;
     }
   }
@@ -3523,13 +3602,17 @@ const fitPosterBadgeMetricsToWidth = (
   initialMetrics: BadgeLayoutMetrics,
   minMetrics: BadgeLayoutMetrics = DEFAULT_BADGE_MIN_METRICS,
   compactText = false,
-  preserveContent = false
+  preserveContent = false,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   const maxRowWidth = Math.max(0, outputWidth - 24);
   const metrics: BadgeLayoutMetrics = { ...initialMetrics };
 
   const measureWidestRow = () =>
-    rows.reduce((maxWidth, row) => Math.max(maxWidth, measureBadgeRowWidth(row, metrics, compactText)), 0);
+    rows.reduce(
+      (maxWidth, row) => Math.max(maxWidth, measureBadgeRowWidth(row, metrics, compactText, ratingStyle)),
+      0,
+    );
 
   let widestRow = measureWidestRow();
   let attempts = 0;
@@ -3750,10 +3833,18 @@ const getBackdropBadgeRegion = (
 };
 
 const getBadgeOuterRadius = (height: number, ratingStyle: RatingStyle) =>
-  ratingStyle === 'square' ? Math.max(10, Math.round(height * 0.24)) : Math.round(height / 2);
+  ratingStyle === 'square'
+    ? Math.max(10, Math.round(height * 0.24))
+    : ratingStyle === 'stacked'
+      ? Math.max(12, Math.round(height * 0.28))
+      : Math.round(height / 2);
 
 const getBadgeIconRadius = (iconSize: number, ratingStyle: RatingStyle) =>
-  ratingStyle === 'square' ? Math.max(6, Math.round(iconSize * 0.22)) : Math.round(iconSize / 2);
+  ratingStyle === 'square'
+    ? Math.max(6, Math.round(iconSize * 0.22))
+    : ratingStyle === 'stacked'
+      ? Math.max(7, Math.round(iconSize * 0.26))
+      : Math.round(iconSize / 2);
 
 const buildCenteredBadgeAssetImage = ({
   dataUri,
@@ -4083,12 +4174,14 @@ const buildGenreBadgeSvg = (
   genreBadge: GenreBadgeSpec,
   imageType: 'poster' | 'backdrop' | 'logo',
 ) => {
-  const height =
+  const baseHeight =
     imageType === 'logo'
       ? 38
       : imageType === 'backdrop'
         ? 44
         : 40;
+  const scaleRatio = Math.max(0.7, (genreBadge.scalePercent ?? DEFAULT_BADGE_SCALE_PERCENT) / 100);
+  const height = Math.max(30, Math.round(baseHeight * scaleRatio));
   const radius = Math.round(height / 2);
   const strokeWidth = imageType === 'backdrop' ? 1.5 : 1.4;
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
@@ -4286,6 +4379,72 @@ ${variantChrome}
 <rect x="${chipX}" y="${chipY}" width="${chipWidth}" height="${chipHeight}" rx="${chipRadius}" fill="${accentColor}" fill-opacity="0.94" />
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}>${escapeXml(summaryLabel)}</text>
 <text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+</svg>`;
+  }
+  if (ratingStyle === 'stacked') {
+    const stackedOuterInset = 0.9;
+    const stackedOuterWidth = Math.max(0, width - stackedOuterInset * 2);
+    const stackedOuterHeight = Math.max(0, height - stackedOuterInset * 2);
+    const stackedInnerInset = 1.8;
+    const stackedInnerWidth = Math.max(0, width - stackedInnerInset * 2);
+    const stackedInnerHeight = Math.max(0, height - stackedInnerInset * 2);
+    const accentRailWidth = Math.max(18, Math.round(width * 0.42));
+    const accentRailHeight = Math.max(4, Math.round(height * 0.08));
+    const accentRailX = Math.round((width - accentRailWidth) / 2);
+    const accentRailY = Math.max(5, Math.round(height * 0.11));
+    const outerPadding = Math.max(6, Math.round(paddingX * 0.68));
+    const renderIconSize = resolveBadgeIconRenderSize({
+      iconSlotSize: Math.max(16, Math.round(iconSize * 0.88)),
+      badgeHeight: Math.max(20, Math.round(height * 0.42)),
+      iconScalePercent,
+    });
+    const iconPlateSize = Math.max(renderIconSize + 8, Math.round(height * 0.42));
+    const iconPlateX = Math.round((width - iconPlateSize) / 2);
+    const iconPlateY = Math.max(accentRailY + accentRailHeight + 4, Math.round(height * 0.18));
+    const iconX = iconPlateX + Math.round((iconPlateSize - renderIconSize) / 2);
+    const iconY = iconPlateY + Math.round((iconPlateSize - renderIconSize) / 2);
+    const iconCenterX = Math.round(width / 2);
+    const iconCenterY = iconPlateY + Math.round(iconPlateSize / 2);
+    const iconRadius = Math.max(9, Math.round(iconPlateSize * 0.32));
+    const iconFontSize = Math.max(11, Math.round(renderIconSize * 0.44));
+    const valueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
+    const valueAvailableWidth = Math.max(0, width - outerPadding * 2);
+    const valueTextLength =
+      valueTextWidth > valueAvailableWidth
+        ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
+        : '';
+    const valueY = Math.max(
+      Math.round(height * 0.68),
+      Math.min(height - 8, iconPlateY + iconPlateSize + Math.round(fontSize * 0.95)),
+    );
+    const valueNumericStyle =
+      ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
+    const iconSurfaceFill = hexColorToRgba(accentColor, 0.22, 'rgba(167,139,250,0.22)');
+    const iconSurfaceStroke = hexColorToRgba(accentColor, 0.54, 'rgba(167,139,250,0.54)');
+    const stackedDefs = `<defs>
+<linearGradient id="stacked-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="${accentColor}" stop-opacity="0.14" />
+<stop offset="100%" stop-color="${accentColor}" stop-opacity="0.04" />
+</linearGradient>
+<clipPath id="stacked-icon-clip">
+<rect x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" rx="${Math.max(6, iconRadius - 4)}" />
+</clipPath>
+</defs>`;
+    const iconImage = iconDataUri
+      ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#stacked-icon-clip)" />`
+      : '';
+    const monogramText = iconDataUri
+      ? ''
+      : `<text x="${iconCenterX}" y="${Math.round(iconCenterY + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${accentColor}">${escapeXml(monogram)}</text>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${stackedDefs}
+<rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,0.90)" stroke="rgba(255,255,255,0.22)" stroke-width="1.15" />
+<rect x="${stackedInnerInset}" y="${stackedInnerInset}" width="${stackedInnerWidth}" height="${stackedInnerHeight}" rx="${Math.max(10, radius - 3)}" fill="url(#stacked-surface-fill)" />
+<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(2, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />
+<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="${Math.max(10, Math.round(iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
+${iconImage}
+${monogramText}
+<text x="${Math.round(width / 2)}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" fill="white"${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
@@ -4863,7 +5022,8 @@ const renderWithSharp = async (
           input.badgePaddingX,
           input.badgeIconSize,
           input.badgeGap,
-          compactPosterRowText
+          compactPosterRowText,
+          input.ratingStyle
         );
         const minBadgeWidth = getMinimumCompressedRenderedBadgeWidth(
           badge,
@@ -4871,7 +5031,8 @@ const renderWithSharp = async (
           input.badgePaddingX,
           input.badgeIconSize,
           input.badgeGap,
-          compactPosterRowText
+          compactPosterRowText,
+          input.ratingStyle
         );
         return { badge, badgeWidth, minBadgeWidth };
       });
@@ -5335,7 +5496,9 @@ const renderWithSharp = async (
         input.badgeFontSize,
         input.badgePaddingX,
         input.badgeIconSize,
-        input.badgeGap
+        input.badgeGap,
+        false,
+        input.ratingStyle
       );
       const badgeWidth = Math.min(estimatedWidth, maxBadgeWidth);
       const rowX =
@@ -5845,7 +6008,10 @@ const renderWithSharp = async (
                 ? input.backdropRows
                 : [input.topBadges, input.bottomBadges].filter((row) => row.length > 0);
             const ratingBlockWidth = backdropRows.reduce((maxWidth, row) => {
-              const rowWidth = Math.min(measureBadgeRowWidth(row, metrics), effectiveMaxWidth);
+              const rowWidth = Math.min(
+                measureBadgeRowWidth(row, metrics, false, input.ratingStyle),
+                effectiveMaxWidth,
+              );
               return Math.max(maxWidth, rowWidth);
             }, 0);
             const ratingCenterX = backdropRegion.left + backdropRegion.width / 2;
@@ -5940,7 +6106,15 @@ export async function GET(
   const cleanId = id.replace('.jpg', '');
 
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
+  const ratingValueMode = normalizeRatingValueMode(
+    request.nextUrl.searchParams.get('ratingValueMode'),
+    DEFAULT_RATING_VALUE_MODE,
+  );
   const genreBadgeMode = normalizeGenreBadgeMode(request.nextUrl.searchParams.get('genreBadge'));
+  const genreBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('genreBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
   const globalRatings = request.nextUrl.searchParams.get('ratings');
   const posterRatings = request.nextUrl.searchParams.get('posterRatings') ?? globalRatings;
   const backdropRatings = request.nextUrl.searchParams.get('backdropRatings') ?? globalRatings;
@@ -6261,7 +6435,9 @@ export async function GET(
     imageType === 'poster' ? blockbusterDensity : '-',
     aggregateRatingSource,
     ratingStyle,
+    ratingValueMode,
     genreBadgeMode,
+    String(genreBadgeScale),
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
@@ -6404,8 +6580,8 @@ export async function GET(
             throw new HttpError('TMDB ID not found for Kitsu ID', 404);
           }
           useRawKitsuFallback = true;
-          allowAnimeOnlyRatings = false;
-          hasConfirmedAnimeMapping = false;
+          allowAnimeOnlyRatings = true;
+          hasConfirmedAnimeMapping = true;
         } else {
           const mappedMediaTypeCandidates: Array<'movie' | 'tv'> =
             mappingSubtype === 'movie' ? ['movie', 'tv'] : ['tv', 'movie'];
@@ -6434,8 +6610,8 @@ export async function GET(
               throw new HttpError('Movie/Show not found on TMDB', 404);
             }
             useRawKitsuFallback = true;
-            allowAnimeOnlyRatings = false;
-            hasConfirmedAnimeMapping = false;
+            allowAnimeOnlyRatings = true;
+            hasConfirmedAnimeMapping = true;
           }
         }
       } else if (
@@ -6477,14 +6653,16 @@ export async function GET(
         if (reverseMappedAnimeTarget.kind === 'tmdb') {
           media = reverseMappedAnimeTarget.media;
           mediaType = reverseMappedAnimeTarget.mediaType;
+          allowAnimeOnlyRatings = true;
+          hasConfirmedAnimeMapping = true;
         } else if (reverseMappedAnimeTarget.kind === 'kitsu-fallback') {
           rawFallbackImageUrl = reverseMappedAnimeTarget.fallbackAsset.imageUrl || null;
           rawFallbackKitsuRating = reverseMappedAnimeTarget.fallbackAsset.rating || null;
           rawFallbackTitle = reverseMappedAnimeTarget.fallbackAsset.title || null;
           rawFallbackLogoAspectRatio = reverseMappedAnimeTarget.fallbackAsset.logoAspectRatio ?? null;
           useRawKitsuFallback = true;
-          allowAnimeOnlyRatings = false;
-          hasConfirmedAnimeMapping = false;
+          allowAnimeOnlyRatings = true;
+          hasConfirmedAnimeMapping = true;
         } else if (!reverseMappedAnimeTarget.tmdbId) {
           throw new HttpError('TMDB ID not found for anime mapping ID', 404);
         }
@@ -6530,6 +6708,7 @@ export async function GET(
           label: family.label,
           accentColor: family.accentColor,
           mode: genreBadgeMode,
+          scalePercent: genreBadgeScale,
         };
       };
       let genreBadge = buildResolvedGenreBadge(
@@ -6562,7 +6741,7 @@ export async function GET(
       const hasMdbListApiKey = MDBLIST_API_KEYS.length > 0;
       const shouldRenderRawKitsuFallbackRating =
         useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
-      const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
+      const shouldRenderRatings = shouldApplyRatings;
       const shouldRenderStreamBadges = shouldApplyStreamBadges && !isAnimeContent;
       const shouldRenderBadges =
         shouldRenderRatings ||
@@ -6571,6 +6750,8 @@ export async function GET(
         Boolean(genreBadge);
       const releaseDateForCache =
         mediaType === 'movie' ? media?.release_date : mediaType === 'tv' ? media?.first_air_date : null;
+      const resolvedRatingMediaType: 'movie' | 'tv' =
+        mediaType === 'tv' || (mediaType !== 'movie' && season !== null) ? 'tv' : 'movie';
       const tmdbIdForCache =
         media?.id != null
           ? String(media.id)
@@ -6585,10 +6766,10 @@ export async function GET(
         torrentioIdForCache = `tmdb:${tmdbIdForCache}`;
       }
       const streamBadgesWindowTtlMs = shouldRenderStreamBadges
-        ? mediaType && torrentioIdForCache
+          ? mediaType && torrentioIdForCache
           ? getRatingCacheTtlMs({
             id: torrentioIdForCache,
-            mediaType: mediaType as 'movie' | 'tv',
+            mediaType: resolvedRatingMediaType,
             releaseDate: releaseDateForCache,
             defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
             oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -6659,7 +6840,6 @@ export async function GET(
         : null;
       const providerRatingsPromise =
         shouldRenderRatings &&
-          !useRawKitsuFallback &&
           needsExternalRatings &&
           (
             mdblistKey ||
@@ -6843,7 +7023,7 @@ export async function GET(
                 try {
                   mdbListCacheTtlMs = getMdbListCacheTtlMs({
                     imdbId: resolvedImdbId,
-                    mediaType: mediaType as 'movie' | 'tv',
+                    mediaType: resolvedRatingMediaType,
                     releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                   });
                   mdbRatings = await fetchMdbListRatings({
@@ -6890,7 +7070,7 @@ export async function GET(
                 try {
                   const kitsuCacheTtlMs = getRatingCacheTtlMs({
                     id: kitsuId,
-                    mediaType: mediaType as 'movie' | 'tv',
+                    mediaType: resolvedRatingMediaType,
                     releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                     defaultTtlMs: KITSU_CACHE_TTL_MS,
                     oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -6914,7 +7094,7 @@ export async function GET(
                 try {
                   const aniListCacheTtlMs = getRatingCacheTtlMs({
                     id: `anilist:${aniListId}`,
-                    mediaType: mediaType as 'movie' | 'tv',
+                    mediaType: resolvedRatingMediaType,
                     releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                     defaultTtlMs: KITSU_CACHE_TTL_MS,
                     oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -6938,7 +7118,7 @@ export async function GET(
                 try {
                   const malCacheTtlMs = getRatingCacheTtlMs({
                     id: `mal:${malId}`,
-                    mediaType: mediaType as 'movie' | 'tv',
+                    mediaType: resolvedRatingMediaType,
                     releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                     defaultTtlMs: KITSU_CACHE_TTL_MS,
                     oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -6963,14 +7143,14 @@ export async function GET(
                 try {
                   const traktCacheTtlMs = getRatingCacheTtlMs({
                     id: `trakt:${resolvedImdbId}`,
-                    mediaType: mediaType as 'movie' | 'tv',
+                    mediaType: resolvedRatingMediaType,
                     releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                     defaultTtlMs: MDBLIST_CACHE_TTL_MS,
                     oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
                   });
                   const traktRating = await fetchTraktRating({
                     imdbId: resolvedImdbId,
-                    mediaType: mediaType as 'movie' | 'tv',
+                    mediaType: resolvedRatingMediaType,
                     phases,
                   });
                   if (traktRating) {
@@ -7061,7 +7241,9 @@ export async function GET(
                 if (renderableCount >= shortCircuitLimit) break;
                 const baseValue = await resolveProvider(provider);
                 if (!shouldRenderRatingValue(baseValue)) continue;
-                const formattedValue = formatDisplayRatingValue(provider, baseValue as string, imageType);
+                const formattedValue = formatDisplayRatingValue(provider, baseValue as string, {
+                  valueMode: ratingValueMode,
+                });
                 if (!shouldRenderRatingValue(formattedValue)) continue;
                 renderableCount += 1;
               }
@@ -7073,7 +7255,7 @@ export async function GET(
               try {
                 const mdbListCacheTtlMs = getMdbListCacheTtlMs({
                   imdbId,
-                  mediaType: mediaType as 'movie' | 'tv',
+                  mediaType: resolvedRatingMediaType,
                   releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                 });
                 const mdbRatings = await fetchMdbListRatings({
@@ -7113,7 +7295,7 @@ export async function GET(
               try {
                 const aniListCacheTtlMs = getRatingCacheTtlMs({
                   id: `anilist:${aniListId}`,
-                  mediaType: mediaType as 'movie' | 'tv',
+                  mediaType: resolvedRatingMediaType,
                   releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                   defaultTtlMs: KITSU_CACHE_TTL_MS,
                   oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -7131,7 +7313,7 @@ export async function GET(
               try {
                 const malCacheTtlMs = getRatingCacheTtlMs({
                   id: `mal:${malId}`,
-                  mediaType: mediaType as 'movie' | 'tv',
+                  mediaType: resolvedRatingMediaType,
                   releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                   defaultTtlMs: KITSU_CACHE_TTL_MS,
                   oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -7149,7 +7331,7 @@ export async function GET(
               try {
                 const kitsuCacheTtlMs = getRatingCacheTtlMs({
                   id: kitsuId,
-                  mediaType: mediaType as 'movie' | 'tv',
+                  mediaType: resolvedRatingMediaType,
                   releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                   defaultTtlMs: KITSU_CACHE_TTL_MS,
                   oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -7167,14 +7349,14 @@ export async function GET(
               try {
                 const traktCacheTtlMs = getRatingCacheTtlMs({
                   id: `trakt:${imdbId}`,
-                  mediaType: mediaType as 'movie' | 'tv',
+                  mediaType: resolvedRatingMediaType,
                   releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
                   defaultTtlMs: MDBLIST_CACHE_TTL_MS,
                   oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
                 });
                 const traktRating = await fetchTraktRating({
                   imdbId,
-                  mediaType: mediaType as 'movie' | 'tv',
+                  mediaType: resolvedRatingMediaType,
                   phases,
                 });
                 if (traktRating) {
@@ -7219,7 +7401,7 @@ export async function GET(
             const torrentioId = torrentioType === 'series' ? `${baseTorrentioId}:1:1` : baseTorrentioId;
             const torrentioCacheTtlMs = getRatingCacheTtlMs({
               id: baseTorrentioId,
-              mediaType: mediaType as 'movie' | 'tv',
+              mediaType: resolvedRatingMediaType,
               releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
               defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
               oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -7670,25 +7852,30 @@ export async function GET(
             : explicitRatingBadgeLimit
           : resolvedRatingBadgeLimit;
       const ratingBadgeByProvider = new Map<RatingPreference, RatingBadge>();
-      const renderableRatingPreferences = useRawKitsuFallback
-        ? (shouldRenderRawKitsuFallbackRating ? (['kitsu'] as RatingPreference[]) : [])
-        : orderRatingPreferencesForRender(
-            effectiveRatingPreferences.filter(
-              (provider) => allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
-            ),
-            {
-              prioritizeAnimeRatings: allowAnimeOnlyRatings,
-              preserveInputOrder: hasExplicitRatingOrder,
-            }
-          );
+      const renderableRatingPreferences = orderRatingPreferencesForRender(
+        effectiveRatingPreferences.filter(
+          (provider) =>
+            provider === 'kitsu'
+              ? shouldRenderRawKitsuFallbackRating || allowAnimeOnlyRatings
+              : allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
+        ),
+        {
+          prioritizeAnimeRatings: allowAnimeOnlyRatings,
+          preserveInputOrder: hasExplicitRatingOrder,
+        }
+      );
       for (const provider of renderableRatingPreferences) {
         const meta = RATING_PROVIDER_META.get(provider);
         if (!meta) continue;
 
         const baseValue = provider === 'tmdb' ? tmdbRating : providerRatings.get(provider) || null;
         if (!shouldRenderRatingValue(baseValue)) continue;
-        const value = formatDisplayRatingValue(provider, baseValue as string, imageType);
-        const sourceValue = formatDisplayRatingValue(provider, baseValue as string);
+        const value = formatDisplayRatingValue(provider, baseValue as string, {
+          valueMode: ratingValueMode,
+        });
+        const sourceValue = formatDisplayRatingValue(provider, baseValue as string, {
+          valueMode: 'native',
+        });
         if (!shouldRenderRatingValue(value)) continue;
         const appearance = resolveRatingProviderBadgeAppearance({
           provider,
@@ -7920,7 +8107,7 @@ export async function GET(
             paddingX: badgePaddingX,
             paddingY: badgePaddingY,
             gap: badgeGap,
-          }, posterMinMetrics);
+          }, posterMinMetrics, false, false, ratingStyle);
           fittedPosterMetrics = fitPosterBadgeMetricsToHeight(
             posterColumns,
             outputHeight,
@@ -7970,34 +8157,39 @@ export async function GET(
             },
             posterMinMetrics,
             usePosterRowLayout,
-            false
+            false,
+            ratingStyle
           );
           if (effectivePosterRatingsLayout === 'top') {
             posterTopRows = splitBadgesIntoFittingRows(
               topRatingBadges,
               posterRowFitWidth,
               fittedPosterMetrics,
-              usePosterRowLayout
+              usePosterRowLayout,
+              ratingStyle
             );
           } else if (effectivePosterRatingsLayout === 'bottom') {
             posterBottomRows = splitBadgesIntoFittingRows(
               bottomRatingBadges,
               posterRowFitWidth,
               fittedPosterMetrics,
-              usePosterRowLayout
+              usePosterRowLayout,
+              ratingStyle
             );
           } else if (effectivePosterRatingsLayout === 'top-bottom') {
             posterTopRows = splitBadgesIntoFittingRows(
               topRatingBadges,
               posterRowFitWidth,
               fittedPosterMetrics,
-              usePosterRowLayout
+              usePosterRowLayout,
+              ratingStyle
             );
             posterBottomRows = splitBadgesIntoFittingRows(
               bottomRatingBadges,
               posterRowFitWidth,
               fittedPosterMetrics,
-              usePosterRowLayout
+              usePosterRowLayout,
+              ratingStyle
             );
           }
         }
@@ -8019,7 +8211,11 @@ export async function GET(
               paddingX: badgePaddingX,
               paddingY: badgePaddingY,
               gap: badgeGap,
-            }
+            },
+            DEFAULT_BADGE_MIN_METRICS,
+            false,
+            false,
+            ratingStyle
           );
           fittedBackdropMetrics = fitPosterBadgeMetricsToHeight(
             [rightRatingBadges],
@@ -8047,7 +8243,11 @@ export async function GET(
               paddingX: badgePaddingX,
               paddingY: badgePaddingY,
               gap: badgeGap,
-            }
+            },
+            DEFAULT_BADGE_MIN_METRICS,
+            false,
+            false,
+            ratingStyle
           );
         }
         badgeIconSize = fittedBackdropMetrics.iconSize;
@@ -8070,7 +8270,7 @@ export async function GET(
               paddingX: badgePaddingX,
               paddingY: badgePaddingY,
               gap: badgeGap,
-            });
+            }, false, ratingStyle);
             return Math.max(maxWidth, rowWidth);
           }, 0)
         : 0;

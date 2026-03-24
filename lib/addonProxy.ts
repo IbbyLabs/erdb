@@ -8,7 +8,9 @@ const ERDB_OPTIONAL_PARAMS = [
   'fanartKey',
   'ratings',
   'lang',
+  'ratingValueMode',
   'genreBadge',
+  'genreBadgeScale',
   'streamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
@@ -130,7 +132,9 @@ export type ProxyConfig = {
   backdropRatings?: string;
   logoRatings?: string;
   lang?: string;
+  ratingValueMode?: string;
   genreBadge?: string;
+  genreBadgeScale?: string;
   streamBadges?: string;
   posterStreamBadges?: string;
   backdropStreamBadges?: string;
@@ -193,7 +197,9 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'backdropRatings',
   'logoRatings',
   'lang',
+  'ratingValueMode',
   'genreBadge',
+  'genreBadgeScale',
   'streamBadges',
   'posterStreamBadges',
   'backdropStreamBadges',
@@ -255,7 +261,7 @@ const PROXY_OPTIONAL_BOOLEAN_KEYS = [
 ] as const satisfies readonly (keyof ProxyConfig)[];
 type ProxyOptionalBooleanKey = (typeof PROXY_OPTIONAL_BOOLEAN_KEYS)[number];
 
-const SUPPORTED_PREFIXES = new Set(['tmdb', 'kitsu', 'anilist', 'anidb', 'myanimelist', 'mal']);
+const SUPPORTED_PREFIXES = new Set(['tmdb', 'kitsu', 'anilist', 'anidb', 'tvdb', 'myanimelist', 'mal']);
 const IMDB_RE = /^tt\d+$/i;
 
 export const buildProxyId = (manifestUrl: string, configSeed?: string) => {
@@ -301,33 +307,37 @@ export const normalizeErdbId = (
 
   const parts = trimmed.split(':');
   const head = parts[0];
-  if (IMDB_RE.test(head)) return head;
+  if (IMDB_RE.test(head)) return trimmed;
 
   const prefix = head.toLowerCase();
   if (prefix === 'imdb' && parts.length >= 2 && IMDB_RE.test(parts[1])) {
-    return parts[1];
+    if (parts.length === 2) {
+      return parts[1];
+    }
+    return `imdb:${parts.slice(1).join(':')}`;
   }
 
   if (prefix === 'tmdb') {
     const explicitTypeCandidate = (parts[1] || '').trim().toLowerCase();
     if ((explicitTypeCandidate === 'movie' || explicitTypeCandidate === 'tv') && parts.length >= 3 && parts[2]) {
-      return `tmdb:${explicitTypeCandidate}:${parts[2]}`;
+      return `tmdb:${explicitTypeCandidate}:${parts.slice(2).join(':')}`;
     }
 
     if (parts.length >= 2 && parts[1]) {
       const inferredType = normalizeStremioType(mediaType);
       if (inferredType) {
-        return `tmdb:${inferredType}:${parts[1]}`;
+        return `tmdb:${inferredType}:${parts.slice(1).join(':')}`;
       }
-      return `tmdb:${parts[1]}`;
+      return `tmdb:${parts.slice(1).join(':')}`;
     }
   }
 
   if (SUPPORTED_PREFIXES.has(prefix) && parts.length >= 2 && parts[1]) {
+    const normalizedTail = parts.slice(1).join(':');
     if (prefix === 'mal' || prefix === 'myanimelist') {
-      return `mal:${parts[1]}`;
+      return `mal:${normalizedTail}`;
     }
-    return `${prefix}:${parts[1]}`;
+    return `${prefix}:${normalizedTail}`;
   }
 
   return null;

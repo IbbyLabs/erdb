@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import sharp from 'sharp';
 
 import { RATING_PROVIDER_OPTIONS } from '../lib/ratingPreferences.ts';
+import { METACRITIC_LOGO_DATA_URI, TRAKT_LOGO_DATA_URI } from '../lib/ratingProviderBrandAssets.ts';
 import { resolveRatingProviderBadgeAppearance } from '../lib/ratingProviderIcons.ts';
 
 test('kitsu embedded icon keeps transparent corners for plain badge rendering', async () => {
@@ -33,6 +34,15 @@ test('kitsu embedded icon keeps transparent corners for plain badge rendering', 
 });
 
 test('smart provider icons switch embedded art for rotten tomatoes, metacritic, and trakt', () => {
+  assert.equal(
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'metacritic')?.iconUrl,
+    METACRITIC_LOGO_DATA_URI,
+  );
+  assert.equal(
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'trakt')?.iconUrl,
+    TRAKT_LOGO_DATA_URI,
+  );
+
   const rtFresh = resolveRatingProviderBadgeAppearance({
     provider: 'tomatoes',
     label: 'Rotten Tomatoes',
