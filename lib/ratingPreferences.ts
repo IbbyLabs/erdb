@@ -181,8 +181,6 @@ export const selectAvailableRatingPreferences = (
   for (const provider of preferences) {
     if (!availableSet.has(provider)) continue;
     selected.push(provider);
-    // Apply the explicit max before any later layout splitting so side stacks
-    // cannot silently grow past the requested provider count.
     if (normalizedMaxCount !== null && selected.length >= normalizedMaxCount) {
       break;
     }
