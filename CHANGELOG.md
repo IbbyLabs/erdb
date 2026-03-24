@@ -33,6 +33,13 @@
 
 <a id="v2-29-1"></a>
 
+<a id="v2-29-2"></a>
+
+## [v2.29.2] - 24/03/2026
+
+### Fixed
+* adjusted badges. layout and sizing
+
 ## [v2.29.1] - 24/03/2026
 
 ### Fixed
