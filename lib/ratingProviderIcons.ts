@@ -83,10 +83,8 @@ const buildMetacriticUserIconSvg = ({ plateColor }: { plateColor: string }) => `
 <path d="M69 24h4v18h-4Z" fill="rgba(17,24,39,0.2)"/>
 </svg>`;
 
-const buildTraktIconSvg = () => `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-<rect x="14" y="14" width="68" height="68" rx="18" fill="#111827"/>
-<path d="M30 30h36v10H54v28H42V40H30Z" fill="#ed1c24"/>
-<path d="M58 30h8v38h-8Z" fill="#ed1c24"/>
+const buildTraktIconSvg = () => `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48">
+<path fill="#fff" d="M30.17 30.22 28.71 28.76 47.87 9.59a9 9 0 0 0-.23-1.15L27.33 28.77l2.16 2.16-1.46 1.46-3.62-3.62L46.85 6.29a11 11 0 0 0-.5-.88L23.02 28.76l4.31 4.31-1.46 1.46-14.39-14.4 1.46-1.46 8.62 8.62L45.1 3.72A11.22 11.22 0 0 0 36.73 0H11.27A11.28 11.28 0 0 0 0 11.27v25.48A11.27 11.27 0 0 0 11.27 48h25.47A11.27 11.27 0 0 0 48 36.75V12.38L30.17 30.22ZM21.54 25.91l-7.91-7.93 1.46-1.46L23 24.44l-1.46 1.47Zm2.15-2.17-7.91-7.92 1.46-1.46 7.92 7.92-1.47 1.46ZM43.4 35.12a8.29 8.29 0 0 1-8.28 8.28H12.88a8.29 8.29 0 0 1-8.28-8.28V12.88A8.29 8.29 0 0 1 12.88 4.6h20.78v2.08H12.88a6.21 6.21 0 0 0-6.2 6.2v22.23a6.21 6.21 0 0 0 6.2 6.21h22.24a6.21 6.21 0 0 0 6.2-6.21V31.6h2.08v3.51Z"/>
 </svg>`;
 
 const resolveTomatoesAppearance = (sourceValue: string | null | undefined) => {
@@ -216,7 +214,7 @@ const resolveMetacriticUserAppearance = (sourceValue: string | null | undefined)
 
 const resolveTraktAppearance = () => ({
   iconUrl: buildSvgDataUri(buildTraktIconSvg()),
-  accentColor: '#ed1c24',
+  accentColor: '#8b5cf6',
   label: 'Trakt',
 });
 

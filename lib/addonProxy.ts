@@ -13,34 +13,51 @@ const ERDB_OPTIONAL_PARAMS = [
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
   'qualityBadgesStyle',
+  'providerAppearance',
   'ratingPresentation',
   'aggregateRatingSource',
   'posterRatingsLayout',
+  'posterRatingsMax',
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
+  'backdropRatingsMax',
   'sideRatingsPosition',
   'sideRatingsOffset',
 ];
 const ERDB_TYPE_OPTIONAL_PARAMS = {
   poster: [
     'posterStreamBadges',
+    'posterQualityBadges',
     'posterQualityBadgesStyle',
+    'posterQualityBadgeScale',
     'posterQualityBadgesMax',
     'posterRatings',
+    'posterRatingBadgeScale',
     'posterRatingPresentation',
     'posterAggregateRatingSource',
     'posterArtworkSource',
   ],
   backdrop: [
     'backdropStreamBadges',
+    'backdropQualityBadges',
     'backdropQualityBadgesStyle',
+    'backdropQualityBadgeScale',
     'backdropQualityBadgesMax',
     'backdropRatings',
+    'backdropRatingBadgeScale',
     'backdropRatingPresentation',
     'backdropAggregateRatingSource',
     'backdropArtworkSource',
   ],
-  logo: ['logoRatings', 'logoRatingsMax', 'logoBackground', 'logoRatingPresentation', 'logoAggregateRatingSource', 'logoArtworkSource'],
+  logo: [
+    'logoRatings',
+    'logoRatingsMax',
+    'logoBackground',
+    'logoRatingPresentation',
+    'logoAggregateRatingSource',
+    'logoArtworkSource',
+    'logoRatingBadgeScale',
+  ],
 } as const;
 const ERDB_OPTIONAL_PARAM_KEYS = [
   ...ERDB_OPTIONAL_PARAMS,
@@ -120,14 +137,22 @@ export type ProxyConfig = {
   qualityBadgesSide?: string;
   posterQualityBadgesPosition?: string;
   qualityBadgesStyle?: string;
+  providerAppearance?: string;
   ratingPresentation?: string;
   aggregateRatingSource?: string;
+  posterQualityBadges?: string;
   posterQualityBadgesStyle?: string;
+  posterQualityBadgeScale?: string;
+  backdropQualityBadges?: string;
   backdropQualityBadgesStyle?: string;
+  backdropQualityBadgeScale?: string;
   posterQualityBadgesMax?: string;
   backdropQualityBadgesMax?: string;
   ratingStyle?: string;
   imageText?: string;
+  posterRatingBadgeScale?: string;
+  backdropRatingBadgeScale?: string;
+  logoRatingBadgeScale?: string;
   posterRatingStyle?: string;
   backdropRatingStyle?: string;
   logoRatingStyle?: string;
@@ -145,8 +170,10 @@ export type ProxyConfig = {
   posterCleanSource?: string;
   backdropCleanSource?: string;
   posterRatingsLayout?: string;
+  posterRatingsMax?: string;
   posterRatingsMaxPerSide?: string;
   backdropRatingsLayout?: string;
+  backdropRatingsMax?: string;
   sideRatingsPosition?: string;
   sideRatingsOffset?: string;
   logoRatingsMax?: string;
@@ -173,14 +200,22 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
   'qualityBadgesStyle',
+  'providerAppearance',
   'ratingPresentation',
   'aggregateRatingSource',
+  'posterQualityBadges',
   'posterQualityBadgesStyle',
+  'posterQualityBadgeScale',
+  'backdropQualityBadges',
   'backdropQualityBadgesStyle',
+  'backdropQualityBadgeScale',
   'posterQualityBadgesMax',
   'backdropQualityBadgesMax',
   'ratingStyle',
   'imageText',
+  'posterRatingBadgeScale',
+  'backdropRatingBadgeScale',
+  'logoRatingBadgeScale',
   'posterRatingStyle',
   'backdropRatingStyle',
   'logoRatingStyle',
@@ -198,8 +233,10 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'posterCleanSource',
   'backdropCleanSource',
   'posterRatingsLayout',
+  'posterRatingsMax',
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
+  'backdropRatingsMax',
   'sideRatingsPosition',
   'sideRatingsOffset',
   'logoRatingsMax',

@@ -97,6 +97,13 @@ import {
   type MediaBadgeAssetId,
 } from '@/lib/mediaBadgeAssets';
 import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons';
+import {
+  DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  normalizeBadgeScalePercent,
+  parseQualityBadgePreferencesAllowEmpty,
+  parseRatingProviderAppearanceOverrides,
+} from '@/lib/badgeCustomization';
 
 export const runtime = 'nodejs';
 
@@ -463,6 +470,7 @@ type RatingBadge = {
   sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  iconScalePercent?: number;
   variant?: 'standard' | 'minimal' | 'summary';
 };
 type GenreBadgeSpec = {
@@ -2470,6 +2478,7 @@ type FastRenderInput = {
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   qualityBadgesStyle: QualityBadgeStyle;
+  qualityBadgeScalePercent: number;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
@@ -3238,6 +3247,33 @@ const DEFAULT_BADGE_MIN_METRICS: BadgeLayoutMetrics = {
   paddingY: 6,
   gap: 6,
 };
+const scaleBadgeMetrics = (
+  metrics: BadgeLayoutMetrics,
+  scalePercent: number = DEFAULT_BADGE_SCALE_PERCENT,
+): BadgeLayoutMetrics => {
+  const ratio = Math.max(0.7, scalePercent / 100);
+  return {
+    iconSize: Math.max(18, Math.round(metrics.iconSize * ratio)),
+    fontSize: Math.max(14, Math.round(metrics.fontSize * ratio)),
+    paddingX: Math.max(6, Math.round(metrics.paddingX * ratio)),
+    paddingY: Math.max(5, Math.round(metrics.paddingY * ratio)),
+    gap: Math.max(4, Math.round(metrics.gap * ratio)),
+  };
+};
+
+const resolveBadgeIconRenderSize = ({
+  iconSlotSize,
+  badgeHeight,
+  iconScalePercent = DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+}: {
+  iconSlotSize: number;
+  badgeHeight: number;
+  iconScalePercent?: number;
+}) => {
+  const ratio = Math.max(0.7, Math.min(1.45, iconScalePercent / 100));
+  const scaledSize = Math.round(iconSlotSize * ratio);
+  return Math.max(16, Math.min(badgeHeight - 4, scaledSize));
+};
 const getBadgeTextRightInset = (
   value: string,
   fontSize: number,
@@ -3876,8 +3912,10 @@ ${buildMediaPlate(width, {
 </svg>`,
     };
   };
-  const buildPlainQualityRect = (width: number) =>
-    `<rect x="1" y="1" width="${Math.max(0, width - 2)}" height="${Math.max(0, h - 2)}" rx="${Math.max(8, Math.round(h * 0.22))}" fill="rgba(0,0,0,0.08)" stroke="rgba(255,255,255,0.82)" stroke-width="2" />`;
+  const buildPlainQualityShadowDefs = (filterId: string) =>
+    `<defs><filter id="${filterId}" x="-28%" y="-34%" width="156%" height="188%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="3.6" flood-color="#020617" flood-opacity="0.72" /><feDropShadow dx="0" dy="0" stdDeviation="2.1" flood-color="#020617" flood-opacity="0.34" /></filter></defs>`;
+  const buildPlainQualitySurface = (width: number, filterId: string) =>
+    `<rect x="5" y="7" width="${Math.max(0, width - 10)}" height="${Math.max(0, h - 14)}" rx="${Math.max(8, Math.round(h * 0.24))}" fill="rgba(2,6,23,0.10)" filter="url(#${filterId})" />`;
   const buildAssetBackedBadgeSvg = (
     assetKey: MediaBadgeAssetId,
     variant: 'media' | 'standard',
@@ -3897,10 +3935,10 @@ ${buildMediaPlate(width, {
             highlightOpacity: assetKey === 'bluray' ? 0.035 : 0.05,
           })
         : isPlainStandard
-          ? buildPlainQualityRect(width)
+          ? buildPlainQualitySurface(width, 'quality-badge-plain-shadow')
           : buildRect(width, standardAssetStrokeByKey[assetKey] || '#e5e7eb');
     const defs = isPlainStandard
-      ? `<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
+      ? `${buildPlainQualityShadowDefs('quality-badge-plain-shadow')}<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
       : '';
     return {
       width,
@@ -3947,9 +3985,10 @@ ${buildCenteredBadgeAssetImage({
     const filter = style === 'plain' ? ' filter="url(#quality-badge-text-shadow)"' : '';
     const defs =
       style === 'plain'
-        ? `<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
+        ? `${buildPlainQualityShadowDefs('quality-badge-text-surface')}<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
         : '';
-    const plainStroke = style === 'plain' ? buildPlainQualityRect(width) : '';
+    const plainStroke =
+      style === 'plain' ? buildPlainQualitySurface(width, 'quality-badge-text-surface') : '';
     return {
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${defs}
@@ -4106,6 +4145,7 @@ const buildBadgeSvg = ({
   value,
   badgeVariant = 'standard',
   ratingStyle,
+  iconScalePercent = DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
   preferNeutralGlassPlate = false,
   compactText = false,
 }: {
@@ -4123,6 +4163,7 @@ const buildBadgeSvg = ({
   value: string;
   badgeVariant?: 'standard' | 'minimal' | 'summary';
   ratingStyle: RatingStyle;
+  iconScalePercent?: number;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
 }) => {
@@ -4136,28 +4177,58 @@ const buildBadgeSvg = ({
       ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter></defs>`
       : '';
   const valueFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
-  const iconRadius = getBadgeIconRadius(iconSize, ratingStyle);
   if (badgeVariant !== 'standard') {
     const valueNumericStyle =
       ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
     const centerX = Math.round(width / 2);
     const centerY = Math.round(height / 2);
-    const accentStrokeOpacity =
-      ratingStyle === 'plain' ? 0.96 : ratingStyle === 'square' ? 0.9 : 0.86;
-    const accentTintStartOpacity = ratingStyle === 'plain' ? 0.22 : ratingStyle === 'square' ? 0.18 : 0.16;
-    const accentTintEndOpacity = ratingStyle === 'plain' ? 0.08 : ratingStyle === 'square' ? 0.06 : 0.05;
+    if (ratingStyle === 'plain') {
+      const plainDefs = `<defs><filter id="plain-variant-text-shadow" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.64" /></filter><filter id="plain-variant-surface-shadow" x="-30%" y="-45%" width="160%" height="200%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="3.6" flood-color="#020617" flood-opacity="0.74" /></filter></defs>`;
+      if (badgeVariant === 'minimal') {
+        const accentRailWidth = Math.max(28, Math.round(width * 0.42));
+        const accentRailHeight = Math.max(5, Math.round(height * 0.12));
+        const accentRailX = Math.round((width - accentRailWidth) / 2);
+        const accentRailY = Math.max(6, Math.round(height * 0.16));
+        const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
+        const valueY = Math.round(centerY + 1);
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${plainDefs}
+<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(2, Math.round(accentRailHeight / 2))}" fill="${accentColor}" fill-opacity="0.78" filter="url(#plain-variant-surface-shadow)" />
+<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
+</svg>`;
+      }
+
+      const {
+        summaryLabel,
+        summaryLabelFontSize,
+        sideInset,
+      } = getSummaryBadgeHorizontalMetrics(labelText || '', fontSize, paddingX);
+      const labelX = sideInset;
+      const labelY = Math.max(
+        Math.round(height * 0.38),
+        Math.round(centerY - summaryLabelFontSize * 0.25),
+      );
+      const valueX = width - sideInset;
+      const valueY = Math.round(centerY + fontSize * 0.22);
+      const accentRailWidth = Math.max(24, Math.round(width * 0.14));
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${plainDefs}
+<rect x="${sideInset}" y="${Math.max(6, Math.round(height * 0.16))}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />
+<text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="start" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
+</svg>`;
+    }
+    const accentStrokeOpacity = ratingStyle === 'square' ? 0.9 : 0.86;
+    const accentTintStartOpacity = ratingStyle === 'square' ? 0.18 : 0.16;
+    const accentTintEndOpacity = ratingStyle === 'square' ? 0.06 : 0.05;
     const baseFill =
       ratingStyle === 'square'
         ? 'rgb(5,5,5)'
-        : ratingStyle === 'glass'
-          ? 'rgb(11,17,28)'
-          : 'rgb(8,12,22)';
-    const baseFillOpacity =
-      ratingStyle === 'square' ? 0.96 : ratingStyle === 'glass' ? 0.82 : 0.9;
+        : 'rgb(11,17,28)';
+    const baseFillOpacity = ratingStyle === 'square' ? 0.96 : 0.82;
     const innerStroke = 'rgb(255,255,255)';
-    const innerStrokeOpacity = ratingStyle === 'plain' ? 0.1 : 0.16;
-    const strokeWidth =
-      ratingStyle === 'plain' ? 1.8 : ratingStyle === 'square' ? 1.7 : 1.45;
+    const innerStrokeOpacity = 0.16;
+    const strokeWidth = ratingStyle === 'square' ? 1.7 : 1.45;
     const variantOuterInset = 0.9;
     const variantOuterWidth = Math.max(0, width - variantOuterInset * 2);
     const variantOuterHeight = Math.max(0, height - variantOuterInset * 2);
@@ -4170,14 +4241,13 @@ const buildBadgeSvg = ({
     const variantStrokeHeight = Math.max(0, height - variantStrokeInset * 2);
     const variantStrokeRadius = Math.max(2, radius - 2);
     const variantDefs = `<defs>
-${ratingStyle === 'plain' ? `<filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="variant-shadow" x="-25%" y="-35%" width="150%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="4.2" flood-color="#020617" flood-opacity="0.62" /><feDropShadow dx="0" dy="0" stdDeviation="2.6" flood-color="${accentColor}" flood-opacity="0.18" /></filter>` : ''}
 <linearGradient id="variant-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%">
 <stop offset="0%" stop-color="${accentColor}" stop-opacity="${accentTintStartOpacity}" />
 <stop offset="100%" stop-color="${accentColor}" stop-opacity="${accentTintEndOpacity}" />
 </linearGradient>
 </defs>`;
     const variantChrome = `
-<rect x="${variantOuterInset}" y="${variantOuterInset}" width="${variantOuterWidth}" height="${variantOuterHeight}" rx="${radius}" fill="${baseFill}" fill-opacity="${baseFillOpacity}" stroke="${accentColor}" stroke-opacity="${accentStrokeOpacity}" stroke-width="${strokeWidth}"${ratingStyle === 'plain' ? ' filter="url(#variant-shadow)"' : ''} />
+<rect x="${variantOuterInset}" y="${variantOuterInset}" width="${variantOuterWidth}" height="${variantOuterHeight}" rx="${radius}" fill="${baseFill}" fill-opacity="${baseFillOpacity}" stroke="${accentColor}" stroke-opacity="${accentStrokeOpacity}" stroke-width="${strokeWidth}" />
 <rect x="${variantInnerInset}" y="${variantInnerInset}" width="${variantInnerWidth}" height="${variantInnerHeight}" rx="${variantInnerRadius}" fill="url(#variant-surface-fill)" />
 <rect x="${variantStrokeInset}" y="${variantStrokeInset}" width="${variantStrokeWidth}" height="${variantStrokeHeight}" rx="${variantStrokeRadius}" fill="none" stroke="${innerStroke}" stroke-opacity="${innerStrokeOpacity}" stroke-width="0.85" />`;
 
@@ -4220,11 +4290,18 @@ ${variantChrome}
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
   const innerGap = outerPadding;
-  const iconX = outerPadding;
-  const iconCx = iconX + Math.round(iconSize / 2);
+  const renderIconSize = resolveBadgeIconRenderSize({
+    iconSlotSize: iconSize,
+    badgeHeight: height,
+    iconScalePercent,
+  });
+  const iconRadius = getBadgeIconRadius(renderIconSize, ratingStyle);
+  const iconSlotX = outerPadding;
+  const iconX = iconSlotX + Math.round((iconSize - renderIconSize) / 2);
+  const iconCx = iconSlotX + Math.round(iconSize / 2);
   const iconCy = Math.round(height / 2);
-  const iconFontSize = Math.max(12, Math.round(iconSize * 0.42));
-  const valueX = iconX + iconSize + innerGap;
+  const iconFontSize = Math.max(12, Math.round(renderIconSize * 0.42));
+  const valueX = iconSlotX + iconSize + innerGap;
   const valueY = Math.round(height / 2 + fontSize * 0.36);
   const valueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
   const valueRightInset = outerPadding;
@@ -4237,13 +4314,13 @@ ${variantChrome}
     ? `'Noto Sans','DejaVu Sans','Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
     : `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
   const valueLetterSpacing = compactText ? ' letter-spacing="-0.04em"' : '';
-  const iconY = Math.round((height - iconSize) / 2);
+  const iconY = Math.round((height - renderIconSize) / 2);
   const useNeutralGlassPlate = ratingStyle === 'glass' && preferNeutralGlassPlate;
   const iconShape =
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, iconSize - 1.5)}" height="${Math.max(0, iconSize - 1.5)}" rx="${iconRadius}" fill="rgb(10,10,10)" />`
+        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${iconRadius}" fill="rgb(10,10,10)" />`
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="1.5" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
@@ -4251,7 +4328,7 @@ ${variantChrome}
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, iconSize - 3)}" height="${Math.max(0, iconSize - 3)}" rx="${Math.max(4, iconRadius - 1)}" />`
+        ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconRadius - 1)}" />`
         : `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 1)}" />`;
   const iconBorder =
     ratingStyle === 'plain'
@@ -4267,8 +4344,8 @@ ${variantChrome}
     !iconDataUri
       ? ''
       : ratingStyle === 'plain'
-        ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet"${plainIconFilter} />`
-        : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)" />${iconBorder}`;
+        ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet"${plainIconFilter} />`
+        : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)" />${iconBorder}`;
   const monogramText =
     iconDataUri
       ? ''
@@ -4341,6 +4418,7 @@ const renderWithSharp = async (
     }
 
     const badgeHeight = input.badgeIconSize + input.badgePaddingY * 2;
+    const qualityBadgeScaleRatio = Math.max(0.7, input.qualityBadgeScalePercent / 100);
     const sideColumnMetrics: BadgeLayoutMetrics = {
       iconSize: input.badgeIconSize,
       fontSize: input.badgeFontSize,
@@ -4441,7 +4519,10 @@ const renderWithSharp = async (
 
       const protectionPad = 18;
       if (posterQualityBadgePlacement === 'bottom') {
-        const bottomQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        const bottomQualityHeight = Math.max(
+          36,
+          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+        );
         const bottomY = Math.max(
           input.badgeTopOffset,
           input.outputHeight - input.badgeBottomOffset - bottomQualityHeight
@@ -4457,7 +4538,10 @@ const renderWithSharp = async (
       }
 
       if (posterQualityBadgePlacement === 'top') {
-        const topQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        const topQualityHeight = Math.max(
+          36,
+          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+        );
         return [
           {
             left: 0,
@@ -4468,7 +4552,7 @@ const renderWithSharp = async (
         ];
       }
 
-      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25));
+      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio));
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
@@ -5014,6 +5098,7 @@ const renderWithSharp = async (
         value: badge.value,
         badgeVariant: badge.variant || 'standard',
         ratingStyle: input.ratingStyle,
+        iconScalePercent: badge.iconScalePercent,
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
         compactText,
@@ -5285,7 +5370,7 @@ const renderWithSharp = async (
       side: QualityBadgesSide
     ) => {
       if (columnBadges.length === 0) return;
-      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25));
+      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio));
       const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
       const uniformBadgeWidth = useIntrinsicWidths
         ? null
@@ -5323,7 +5408,10 @@ const renderWithSharp = async (
       if (rowBadges.length === 0) return;
       const maxRowWidth = Math.max(0, input.outputWidth - 24);
       const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
-      let qualityHeight = Math.max(36, Math.round(baseHeight ?? badgeHeight * 1.05));
+      let qualityHeight = Math.max(
+        36,
+        Math.round((baseHeight ?? badgeHeight * 1.05) * qualityBadgeScaleRatio),
+      );
       let badgeWidth =
         useIntrinsicWidths
           ? null
@@ -5624,16 +5712,25 @@ const renderWithSharp = async (
         paddingY: input.badgePaddingY,
         gap: input.badgeGap,
       };
-      const qualityBadgeHeight = Math.max(44, Math.round(badgeHeight * 1.25));
+      const qualityBadgeHeight = Math.max(
+        44,
+        Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio),
+      );
       if (qualityPlacement === 'bottom') {
-        const bottomQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        const bottomQualityHeight = Math.max(
+          36,
+          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+        );
         const bottomY = Math.max(
           input.badgeTopOffset,
           input.outputHeight - input.badgeBottomOffset - bottomQualityHeight
         );
         composeQualityBadgeRow(input.qualityBadges, bottomY, bottomQualityHeight);
       } else if (qualityPlacement === 'top') {
-        const topQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        const topQualityHeight = Math.max(
+          36,
+          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+        );
         const topY = input.badgeTopOffset;
         composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight);
       } else {
@@ -5671,7 +5768,7 @@ const renderWithSharp = async (
     }
 
     if (input.imageType === 'backdrop' && input.qualityBadges.length > 0) {
-      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25));
+      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio));
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
@@ -5940,6 +6037,12 @@ export async function GET(
   const posterQualityBadgesPosition = normalizePosterQualityBadgesPosition(
     request.nextUrl.searchParams.get('posterQualityBadgesPosition')
   );
+  const posterQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+    request.nextUrl.searchParams.get('posterQualityBadges'),
+  );
+  const backdropQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+    request.nextUrl.searchParams.get('backdropQualityBadges'),
+  );
   const globalQualityBadgesStyle = normalizeQualityBadgesStyle(
     request.nextUrl.searchParams.get('qualityBadgesStyle')
   );
@@ -5957,6 +6060,12 @@ export async function GET(
   const backdropQualityBadgesMax = normalizeOptionalBadgeCount(
     request.nextUrl.searchParams.get('backdropQualityBadgesMax')
   );
+  const posterRatingsMax = normalizeOptionalBadgeCount(
+    request.nextUrl.searchParams.get('posterRatingsMax')
+  );
+  const backdropRatingsMax = normalizeOptionalBadgeCount(
+    request.nextUrl.searchParams.get('backdropRatingsMax')
+  );
   const qualityBadgesStyle =
     imageType === 'poster'
       ? posterQualityBadgesStyle
@@ -5969,6 +6078,12 @@ export async function GET(
       : imageType === 'backdrop'
         ? backdropQualityBadgesMax
         : null;
+  const qualityBadgePreferences =
+    imageType === 'poster'
+      ? posterQualityBadgePreferences
+      : imageType === 'backdrop'
+        ? backdropQualityBadgePreferences
+        : [];
   const ratingStyleParam =
     request.nextUrl.searchParams.get('ratingStyle') || request.nextUrl.searchParams.get('style');
   const ratingStyle = ratingStyleParam
@@ -5977,6 +6092,29 @@ export async function GET(
       ? 'plain'
       : DEFAULT_RATING_STYLE;
   const logoBackground = normalizeLogoBackground(request.nextUrl.searchParams.get('logoBackground'));
+  const providerAppearanceOverrides = parseRatingProviderAppearanceOverrides(
+    request.nextUrl.searchParams.get('providerAppearance'),
+  );
+  const posterRatingBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('posterRatingBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
+  const backdropRatingBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('backdropRatingBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
+  const logoRatingBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('logoRatingBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
+  const posterQualityBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('posterQualityBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
+  const backdropQualityBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('backdropQualityBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
   const mdblistKey = request.nextUrl.searchParams.get('mdblistKey') || request.nextUrl.searchParams.get('mdblist_key');
   const tmdbKey = request.nextUrl.searchParams.get('tmdbKey') || request.nextUrl.searchParams.get('tmdb_key');
 
@@ -7470,6 +7608,16 @@ export async function GET(
           ...streamBadges,
         ];
       }
+      if (imageType !== 'logo') {
+        const enabledQualityBadgeSet = new Set(qualityBadgePreferences);
+        streamBadges = MEDIA_FEATURE_BADGE_ORDER.flatMap((badgeKey) => {
+          if (!enabledQualityBadgeSet.has(badgeKey)) {
+            return [];
+          }
+          const match = streamBadges.find((badge) => badge.key === badgeKey);
+          return match ? [match] : [];
+        });
+      }
       if (shouldRenderRawKitsuFallbackRating) {
         providerRatings.set('kitsu', rawFallbackKitsuRating as string);
         renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);
@@ -7503,10 +7651,24 @@ export async function GET(
         ? getPosterRatingLayoutMaxBadges(effectivePosterRatingsLayout, effectivePosterRatingsMaxPerSide)
         : null;
       const logoRatingLimit = useLogoBadgeLayout ? effectiveLogoRatingsMax : null;
+      const explicitRatingBadgeLimit =
+        imageType === 'poster'
+          ? posterRatingsMax
+          : imageType === 'backdrop'
+            ? backdropRatingsMax
+            : effectiveLogoRatingsMax;
       const resolvedRatingBadgeLimit =
         !usesAggregatePresentation && (usePosterBadgeLayout || useLogoBadgeLayout)
           ? (posterRatingLimit ?? logoRatingLimit ?? null)
-          : null;
+          : !usesAggregatePresentation && useBackdropBadgeLayout
+            ? explicitRatingBadgeLimit
+            : null;
+      const effectiveResolvedRatingBadgeLimit =
+        typeof explicitRatingBadgeLimit === 'number' && explicitRatingBadgeLimit > 0
+          ? typeof resolvedRatingBadgeLimit === 'number' && resolvedRatingBadgeLimit > 0
+            ? Math.min(resolvedRatingBadgeLimit, explicitRatingBadgeLimit)
+            : explicitRatingBadgeLimit
+          : resolvedRatingBadgeLimit;
       const ratingBadgeByProvider = new Map<RatingPreference, RatingBadge>();
       const renderableRatingPreferences = useRawKitsuFallback
         ? (shouldRenderRawKitsuFallbackRating ? (['kitsu'] as RatingPreference[]) : [])
@@ -7535,13 +7697,16 @@ export async function GET(
           accentColor: meta.accentColor,
           sourceValue,
         });
+        const providerAppearance = providerAppearanceOverrides[provider];
         ratingBadgeByProvider.set(provider, {
           key: provider,
           label: appearance.label,
           value,
           sourceValue,
-          iconUrl: appearance.iconUrl,
-          accentColor: appearance.accentColor,
+          iconUrl: providerAppearance?.iconUrl || appearance.iconUrl,
+          accentColor: providerAppearance?.accentColor || appearance.accentColor,
+          iconScalePercent:
+            providerAppearance?.iconScalePercent || DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
           variant: 'standard',
         });
       }
@@ -7560,7 +7725,7 @@ export async function GET(
         : selectAvailableRatingPreferences(
             renderableRatingPreferences,
             ratingBadgeByProvider.keys(),
-            resolvedRatingBadgeLimit,
+            effectiveResolvedRatingBadgeLimit,
           )
             .map((provider) => ratingBadgeByProvider.get(provider) || null)
             .filter((badge): badge is RatingBadge => badge !== null);
@@ -7698,6 +7863,29 @@ export async function GET(
         badgePaddingX = 32;
         badgeGap = 18;
       }
+      const ratingBadgeScalePercent =
+        imageType === 'poster'
+          ? posterRatingBadgeScale
+          : imageType === 'backdrop'
+            ? backdropRatingBadgeScale
+            : logoRatingBadgeScale;
+      const qualityBadgeScalePercent =
+        imageType === 'backdrop' ? backdropQualityBadgeScale : posterQualityBadgeScale;
+      const scaledBadgeMetrics = scaleBadgeMetrics(
+        {
+          iconSize: badgeIconSize,
+          fontSize: badgeFontSize,
+          paddingX: badgePaddingX,
+          paddingY: badgePaddingY,
+          gap: badgeGap,
+        },
+        ratingBadgeScalePercent,
+      );
+      badgeIconSize = scaledBadgeMetrics.iconSize;
+      badgeFontSize = scaledBadgeMetrics.fontSize;
+      badgePaddingX = scaledBadgeMetrics.paddingX;
+      badgePaddingY = scaledBadgeMetrics.paddingY;
+      badgeGap = scaledBadgeMetrics.gap;
 
       if (usePosterBadgeLayout && cappedRatingBadges.length > 0) {
         let fittedPosterMetrics: BadgeLayoutMetrics;
@@ -7966,6 +8154,7 @@ export async function GET(
           qualityBadgesSide,
           posterQualityBadgesPosition,
           qualityBadgesStyle,
+          qualityBadgeScalePercent,
           posterRatingsLayout: effectivePosterRatingsLayout,
           posterRatingsMaxPerSide: effectivePosterRatingsMaxPerSide,
           backdropRatingsLayout: effectiveBackdropRatingsLayout,

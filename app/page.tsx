@@ -17,9 +17,23 @@ import {
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff, Tag } from 'lucide-react';
 import {
   ALL_RATING_PREFERENCES,
+  RATING_PROVIDER_OPTIONS,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from '@/lib/ratingPreferences';
+import {
+  DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  MAX_BADGE_SCALE_PERCENT,
+  MAX_PROVIDER_ICON_SCALE_PERCENT,
+  MIN_BADGE_SCALE_PERCENT,
+  MIN_PROVIDER_ICON_SCALE_PERCENT,
+  QUALITY_BADGE_OPTIONS,
+  normalizeBadgeScalePercent,
+  normalizeProviderIconScalePercent,
+  type RatingProviderAppearanceOverride,
+  type RatingProviderAppearanceOverrides,
+} from '@/lib/badgeCustomization';
 import {
   buildDefaultRatingRows,
   enabledOrderedToRows,
@@ -184,6 +198,7 @@ const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
 const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
 const RATING_PROVIDER_DOC_VALUES = ALL_RATING_PREFERENCES.join(', ');
+const QUALITY_BADGE_DOC_VALUES = QUALITY_BADGE_OPTIONS.map((option) => option.id).join(', ');
 const TMDB_LANGUAGE_DOC_COPY = 'Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)';
 const TMDB_LANGUAGE_HELP_COPY = 'All TMDB ISO 639-1 codes are supported (en, it, fr, es, de, etc.). Default: en.';
 const POSTER_LAYOUT_DOC_VALUES = 'top, bottom, left, right, top bottom, left right';
@@ -287,20 +302,30 @@ posterStreamBadges      | auto, on, off (poster only)                           
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
 qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
 posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
+posterQualityBadges    | ${QUALITY_BADGE_DOC_VALUES} (poster only, empty string disables all) | all
+backdropQualityBadges  | ${QUALITY_BADGE_DOC_VALUES} (backdrop only, empty string disables all)| all
 qualityBadgesStyle      | glass, square, plain, media (global fallback)                        | glass
 posterQualityBadgesStyle| glass, square, plain, media (poster only)                            | glass
 backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
+providerAppearance     | base64url or JSON provider overrides                                 | none
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
+posterRatingBadgeScale | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
+backdropRatingBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
+logoRatingBadgeScale   | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
+posterQualityBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
+backdropQualityBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})     | 100
 imageText               | original, clean, alternative                                         | original
 posterArtworkSource     | tmdb, fanart (poster artwork source)                                 | tmdb
 backdropArtworkSource   | tmdb, fanart (backdrop artwork source)                               | tmdb
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
+posterRatingsMax        | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
+backdropRatingsMax      | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 sideRatingsPosition     | ${SIDE_RATING_POSITION_DOC_VALUES}                                    | top
 sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
@@ -337,17 +362,20 @@ Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRating
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
-Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
+Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
+Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale.
+Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale.
+Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116}}.
 Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0-100 vertical anchor.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
-Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable providers.`;
+Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable rating providers. Keep empty posterQualityBadges/backdropQualityBadges to hide all quality badges.`;
 
 const subscribeToNothing = () => () => {};
 
@@ -705,10 +733,16 @@ export default function Home() {
     useState<PosterQualityBadgesPosition>('auto');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [posterQualityBadgePreferences, setPosterQualityBadgePreferences] =
+    useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
+  const [backdropQualityBadgePreferences, setBackdropQualityBadgePreferences] =
+    useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
   const [posterQualityBadgesMax, setPosterQualityBadgesMax] = useState<number | null>(null);
   const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
+  const [posterRatingsMax, setPosterRatingsMax] = useState<number | null>(null);
+  const [backdropRatingsMax, setBackdropRatingsMax] = useState<number | null>(null);
   const [sideRatingsPosition, setSideRatingsPosition] =
     useState<SideRatingPosition>('top');
   const [sideRatingsOffset, setSideRatingsOffset] =
@@ -716,6 +750,16 @@ export default function Home() {
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
+  const [posterRatingBadgeScale, setPosterRatingBadgeScale] =
+    useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [backdropRatingBadgeScale, setBackdropRatingBadgeScale] =
+    useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [logoRatingBadgeScale, setLogoRatingBadgeScale] =
+    useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [posterQualityBadgeScale, setPosterQualityBadgeScale] =
+    useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [backdropQualityBadgeScale, setBackdropQualityBadgeScale] =
+    useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [posterRatingPresentation, setPosterRatingPresentation] =
     useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
   const [backdropRatingPresentation, setBackdropRatingPresentation] =
@@ -732,6 +776,10 @@ export default function Home() {
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
   const [logoArtworkSource, setLogoArtworkSource] = useState<ArtworkSource>('tmdb');
+  const [ratingProviderAppearanceOverrides, setRatingProviderAppearanceOverrides] =
+    useState<RatingProviderAppearanceOverrides>({});
+  const [activeProviderEditorId, setActiveProviderEditorId] =
+    useState<RatingPreference>('tmdb');
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
@@ -791,6 +839,28 @@ export default function Home() {
     previewType === 'backdrop' ? backdropQualityBadgesMax : posterQualityBadgesMax;
   const setActiveQualityBadgesMax =
     previewType === 'backdrop' ? setBackdropQualityBadgesMax : setPosterQualityBadgesMax;
+  const activeQualityBadgePreferences =
+    previewType === 'backdrop' ? backdropQualityBadgePreferences : posterQualityBadgePreferences;
+  const setActiveQualityBadgePreferences =
+    previewType === 'backdrop'
+      ? setBackdropQualityBadgePreferences
+      : setPosterQualityBadgePreferences;
+  const activeRatingBadgeScale =
+    previewType === 'poster'
+      ? posterRatingBadgeScale
+      : previewType === 'backdrop'
+        ? backdropRatingBadgeScale
+        : logoRatingBadgeScale;
+  const setActiveRatingBadgeScale =
+    previewType === 'poster'
+      ? setPosterRatingBadgeScale
+      : previewType === 'backdrop'
+        ? setBackdropRatingBadgeScale
+        : setLogoRatingBadgeScale;
+  const activeQualityBadgeScale =
+    previewType === 'backdrop' ? backdropQualityBadgeScale : posterQualityBadgeScale;
+  const setActiveQualityBadgeScale =
+    previewType === 'backdrop' ? setBackdropQualityBadgeScale : setPosterQualityBadgeScale;
 
   const scrollToHash = useCallback((hash: string, behavior: ScrollBehavior = 'smooth') => {
     if (typeof window === 'undefined') return;
@@ -1029,17 +1099,26 @@ export default function Home() {
       setBackdropStreamBadges(normalized.settings.backdropStreamBadges);
       setQualityBadgesSide(normalized.settings.qualityBadgesSide);
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
+      setPosterQualityBadgePreferences(normalized.settings.posterQualityBadgePreferences);
+      setBackdropQualityBadgePreferences(normalized.settings.backdropQualityBadgePreferences);
       setPosterQualityBadgesStyle(normalized.settings.posterQualityBadgesStyle);
       setBackdropQualityBadgesStyle(normalized.settings.backdropQualityBadgesStyle);
       setPosterQualityBadgesMax(normalized.settings.posterQualityBadgesMax);
       setBackdropQualityBadgesMax(normalized.settings.backdropQualityBadgesMax);
       setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
       setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
+      setPosterRatingsMax(normalized.settings.posterRatingsMax);
+      setBackdropRatingsMax(normalized.settings.backdropRatingsMax);
       setSideRatingsPosition(normalized.settings.sideRatingsPosition);
       setSideRatingsOffset(normalized.settings.sideRatingsOffset);
       setPosterRatingStyle(normalized.settings.posterRatingStyle);
       setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
+      setPosterRatingBadgeScale(normalized.settings.posterRatingBadgeScale);
+      setBackdropRatingBadgeScale(normalized.settings.backdropRatingBadgeScale);
+      setLogoRatingBadgeScale(normalized.settings.logoRatingBadgeScale);
+      setPosterQualityBadgeScale(normalized.settings.posterQualityBadgeScale);
+      setBackdropQualityBadgeScale(normalized.settings.backdropQualityBadgeScale);
       setPosterRatingPresentation(normalized.settings.posterRatingPresentation);
       setBackdropRatingPresentation(normalized.settings.backdropRatingPresentation);
       setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
@@ -1050,6 +1129,7 @@ export default function Home() {
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
       setLogoArtworkSource(normalized.settings.logoArtworkSource);
+      setRatingProviderAppearanceOverrides(normalized.settings.ratingProviderAppearanceOverrides);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
       setProxyTranslateMeta(normalized.proxy.translateMeta);
       setProxyTranslateMetaMode(normalized.proxy.translateMetaMode);
@@ -1079,17 +1159,26 @@ export default function Home() {
         backdropStreamBadges,
         qualityBadgesSide,
         posterQualityBadgesPosition,
+        posterQualityBadgePreferences,
+        backdropQualityBadgePreferences,
         posterQualityBadgesStyle,
         backdropQualityBadgesStyle,
         posterQualityBadgesMax,
         backdropQualityBadgesMax,
         posterRatingsLayout,
         backdropRatingsLayout,
+        posterRatingsMax,
+        backdropRatingsMax,
         sideRatingsPosition,
         sideRatingsOffset,
         posterRatingStyle,
         backdropRatingStyle,
         logoRatingStyle,
+        posterRatingBadgeScale,
+        backdropRatingBadgeScale,
+        logoRatingBadgeScale,
+        posterQualityBadgeScale,
+        backdropQualityBadgeScale,
         posterRatingPresentation,
         backdropRatingPresentation,
         logoRatingPresentation,
@@ -1100,6 +1189,7 @@ export default function Home() {
         logoRatingsMax,
         logoBackground,
         logoArtworkSource,
+        ratingProviderAppearanceOverrides,
       },
       proxy: {
         manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
@@ -1125,17 +1215,26 @@ export default function Home() {
       backdropStreamBadges,
       qualityBadgesSide,
       posterQualityBadgesPosition,
+      posterQualityBadgePreferences,
+      backdropQualityBadgePreferences,
       posterQualityBadgesStyle,
       backdropQualityBadgesStyle,
       posterQualityBadgesMax,
       backdropQualityBadgesMax,
       posterRatingsLayout,
       backdropRatingsLayout,
+      posterRatingsMax,
+      backdropRatingsMax,
       sideRatingsPosition,
       sideRatingsOffset,
       posterRatingStyle,
       backdropRatingStyle,
       logoRatingStyle,
+      posterRatingBadgeScale,
+      backdropRatingBadgeScale,
+      logoRatingBadgeScale,
+      posterQualityBadgeScale,
+      backdropQualityBadgeScale,
       posterRatingPresentation,
       backdropRatingPresentation,
       logoRatingPresentation,
@@ -1146,6 +1245,7 @@ export default function Home() {
       logoRatingsMax,
       logoBackground,
       logoArtworkSource,
+      ratingProviderAppearanceOverrides,
       proxyManifestUrl,
       proxyTranslateMeta,
       proxyTranslateMetaMode,
@@ -1278,6 +1378,22 @@ export default function Home() {
     const streamBadgesForType = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
     const qualityBadgesStyleForType =
       previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
+    const qualityBadgePreferencesForType =
+      previewType === 'backdrop' ? backdropQualityBadgePreferences : posterQualityBadgePreferences;
+    const ratingBadgeScaleForType =
+      previewType === 'poster'
+        ? posterRatingBadgeScale
+        : previewType === 'backdrop'
+          ? backdropRatingBadgeScale
+          : logoRatingBadgeScale;
+    const qualityBadgeScaleForType =
+      previewType === 'backdrop' ? backdropQualityBadgeScale : posterQualityBadgeScale;
+    const ratingsMaxForType =
+      previewType === 'poster'
+        ? posterRatingsMax
+        : previewType === 'backdrop'
+          ? backdropRatingsMax
+          : logoRatingsMax;
     const query = new URLSearchParams({
       ratingStyle: ratingStyleForType,
       lang,
@@ -1327,6 +1443,12 @@ export default function Home() {
         qualityBadgesStyleForType
       );
     }
+    if (previewType !== 'logo') {
+      query.set(
+        previewType === 'backdrop' ? 'backdropQualityBadges' : 'posterQualityBadges',
+        qualityBadgePreferencesForType.join(','),
+      );
+    }
     if (previewType !== 'logo' && activeQualityBadgesMax !== null) {
       query.set(
         previewType === 'backdrop' ? 'backdropQualityBadgesMax' : 'posterQualityBadgesMax',
@@ -1357,14 +1479,20 @@ export default function Home() {
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
+      if (ratingsMaxForType !== null) {
+        query.set('posterRatingsMax', String(ratingsMaxForType));
+      }
       if (isVerticalPosterRatingLayout(posterRatingsLayout) && posterRatingsMaxPerSide !== null) {
         query.set('posterRatingsMaxPerSide', String(posterRatingsMaxPerSide));
       }
     } else if (previewType === 'backdrop') {
       query.set('backdropRatingsLayout', backdropRatingsLayout);
+      if (ratingsMaxForType !== null) {
+        query.set('backdropRatingsMax', String(ratingsMaxForType));
+      }
     } else {
-      if (logoRatingsMax !== null) {
-        query.set('logoRatingsMax', String(logoRatingsMax));
+      if (ratingsMaxForType !== null) {
+        query.set('logoRatingsMax', String(ratingsMaxForType));
       }
       if (logoBackground !== 'transparent') {
         query.set('logoBackground', logoBackground);
@@ -1372,6 +1500,28 @@ export default function Home() {
       if (logoArtworkSource !== 'tmdb') {
         query.set('logoArtworkSource', logoArtworkSource);
       }
+    }
+    if (ratingBadgeScaleForType !== DEFAULT_BADGE_SCALE_PERCENT) {
+      query.set(
+        previewType === 'poster'
+          ? 'posterRatingBadgeScale'
+          : previewType === 'backdrop'
+            ? 'backdropRatingBadgeScale'
+            : 'logoRatingBadgeScale',
+        String(ratingBadgeScaleForType),
+      );
+    }
+    if (previewType !== 'logo' && qualityBadgeScaleForType !== DEFAULT_BADGE_SCALE_PERCENT) {
+      query.set(
+        previewType === 'backdrop' ? 'backdropQualityBadgeScale' : 'posterQualityBadgeScale',
+        String(qualityBadgeScaleForType),
+      );
+    }
+    const activeProviderAppearance = Object.fromEntries(
+      Object.entries(ratingProviderAppearanceOverrides).filter(([, override]) => Boolean(override)),
+    );
+    if (Object.keys(activeProviderAppearance).length > 0) {
+      query.set('providerAppearance', JSON.stringify(activeProviderAppearance));
     }
     const usesVerticalSideRatings =
       (previewType === 'poster' &&
@@ -1407,11 +1557,20 @@ export default function Home() {
     sideRatingsPosition,
     sideRatingsOffset,
     activeQualityBadgesMax,
+    posterQualityBadgePreferences,
+    backdropQualityBadgePreferences,
     backdropRatingsLayout,
+    posterRatingsMax,
+    backdropRatingsMax,
     qualityBadgesSide,
     posterQualityBadgesPosition,
     posterQualityBadgesStyle,
     backdropQualityBadgesStyle,
+    posterRatingBadgeScale,
+    backdropRatingBadgeScale,
+    logoRatingBadgeScale,
+    posterQualityBadgeScale,
+    backdropQualityBadgeScale,
     posterRatingStyle,
     backdropRatingStyle,
     logoRatingStyle,
@@ -1424,6 +1583,7 @@ export default function Home() {
     logoRatingsMax,
     logoBackground,
     logoArtworkSource,
+    ratingProviderAppearanceOverrides,
     baseUrl,
     shouldShowQualityBadgesSide,
     shouldShowQualityBadgesPosition,
@@ -1584,6 +1744,59 @@ export default function Home() {
     });
   };
 
+  const toggleQualityBadgePreference = useCallback(
+    (badgeId: (typeof QUALITY_BADGE_OPTIONS)[number]['id']) => {
+      setActiveQualityBadgePreferences((current) => {
+        return current.includes(badgeId)
+          ? current.filter((entry) => entry !== badgeId)
+          : [...current, badgeId];
+      });
+    },
+    [setActiveQualityBadgePreferences]
+  );
+
+  const updateProviderAppearanceOverride = useCallback(
+    (
+      providerId: RatingPreference,
+      updater: (current: RatingProviderAppearanceOverride) => RatingProviderAppearanceOverride
+    ) => {
+      setRatingProviderAppearanceOverrides((current) => {
+        const nextOverride = updater(current[providerId] || {});
+        const trimmedIconUrl =
+          typeof nextOverride.iconUrl === 'string' && nextOverride.iconUrl.trim()
+            ? nextOverride.iconUrl.trim()
+            : undefined;
+        const normalizedColor =
+          typeof nextOverride.accentColor === 'string' && nextOverride.accentColor.trim()
+            ? nextOverride.accentColor.trim()
+            : undefined;
+        const normalizedScale = normalizeProviderIconScalePercent(
+          nextOverride.iconScalePercent,
+          DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+        );
+        const compactOverride: RatingProviderAppearanceOverride = {};
+        if (trimmedIconUrl) {
+          compactOverride.iconUrl = trimmedIconUrl;
+        }
+        if (normalizedColor) {
+          compactOverride.accentColor = normalizedColor;
+        }
+        if (normalizedScale !== DEFAULT_PROVIDER_ICON_SCALE_PERCENT) {
+          compactOverride.iconScalePercent = normalizedScale;
+        }
+
+        const next = { ...current };
+        if (Object.keys(compactOverride).length === 0) {
+          delete next[providerId];
+        } else {
+          next[providerId] = compactOverride;
+        }
+        return next;
+      });
+    },
+    []
+  );
+
   const handleCopyConfig = useCallback(() => {
     if (!configString) return;
     navigator.clipboard.writeText(configString);
@@ -1734,6 +1947,11 @@ export default function Home() {
       : previewType === 'backdrop'
         ? backdropRatingRows
         : logoRatingRows;
+  const activeProviderMeta =
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === activeProviderEditorId) ||
+    RATING_PROVIDER_OPTIONS[0];
+  const activeProviderAppearanceOverride =
+    (activeProviderMeta && ratingProviderAppearanceOverrides[activeProviderMeta.id]) || {};
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
   const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
   const layoutPlacementHelp =
@@ -1742,6 +1960,13 @@ export default function Home() {
       : previewType === 'backdrop'
         ? 'center, right, or right vertical'
         : null;
+
+  useEffect(() => {
+    if (ratingProviderRows.some((row) => row.id === activeProviderEditorId)) {
+      return;
+    }
+    setActiveProviderEditorId(ratingProviderRows[0]?.id || 'tmdb');
+  }, [activeProviderEditorId, ratingProviderRows]);
 
   const setRatingStyleForType = (value: RatingStyle) => {
     if (previewType === 'poster') {
@@ -2282,7 +2507,27 @@ export default function Home() {
                               <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                             </div>
                           )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
+                            <input
+                              type="number"
+                              value={posterRatingsMax ?? ''}
+                              onChange={(e) => setPosterRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))}
+                              placeholder="Auto"
+                              min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
+                              className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <button
+                              onClick={() => setPosterRatingsMax(null)}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                            >
+                              Auto
+                            </button>
+                          </div>
                         </div>
+                        <p className="text-[11px] leading-relaxed text-zinc-500">
+                          Use this to cap how many rating badges render after ordering. Keep the provider list below enabled for the sources you still want available.
+                        </p>
                       </div>
                     )}
 
@@ -2294,6 +2539,26 @@ export default function Home() {
                             <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
                           ))}
                         </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
+                          <input
+                            type="number"
+                            value={backdropRatingsMax ?? ''}
+                            onChange={(e) => setBackdropRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))}
+                            placeholder="Auto"
+                            min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
+                            className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                          />
+                          <button
+                            onClick={() => setBackdropRatingsMax(null)}
+                            className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                          >
+                            Auto
+                          </button>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-zinc-500">
+                          Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.
+                        </p>
                       </div>
                     )}
 
@@ -2400,6 +2665,51 @@ export default function Home() {
                         ) : null}
                       </div>
                     )}
+
+                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Sizing</div>
+                      <div className={`grid gap-3 ${previewType === 'logo' ? '' : 'md:grid-cols-2'}`}>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating badges</span>
+                            <span className="text-[11px] text-zinc-400">{activeRatingBadgeScale}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={MIN_BADGE_SCALE_PERCENT}
+                            max={MAX_BADGE_SCALE_PERCENT}
+                            step={1}
+                            value={activeRatingBadgeScale}
+                            onChange={(event) =>
+                              setActiveRatingBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                            }
+                            className="h-2 w-full accent-violet-500"
+                          />
+                        </div>
+                        {previewType !== 'logo' && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Quality badges</span>
+                              <span className="text-[11px] text-zinc-400">{activeQualityBadgeScale}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={MIN_BADGE_SCALE_PERCENT}
+                              max={MAX_BADGE_SCALE_PERCENT}
+                              step={1}
+                              value={activeQualityBadgeScale}
+                              onChange={(event) =>
+                                setActiveQualityBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                              }
+                              className="h-2 w-full accent-violet-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-zinc-500">
+                        These sliders let people increase tag legibility without forcing a new layout. ERDB will still fit the final output back into the selected poster, backdrop, or logo frame.
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -2430,6 +2740,27 @@ export default function Home() {
                       <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
                       <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
                     </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                        Visible Quality Badges
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {QUALITY_BADGE_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => toggleQualityBadgePreference(option.id)}
+                            className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                              activeQualityBadgePreferences.includes(option.id)
+                                ? 'border-violet-500/60 bg-zinc-800 text-white'
+                                : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     {shouldShowQualityBadgesSide && (
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
@@ -2454,6 +2785,9 @@ export default function Home() {
                         </div>
                       </div>
                     )}
+                    <p className="text-[11px] leading-relaxed text-zinc-500">
+                      Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, and no-background styling without losing context.
+                    </p>
                   </div>
                 )}
 
@@ -2470,6 +2804,164 @@ export default function Home() {
                     onToggle={toggleRatingPreference}
                     fillDirection="row"
                   />
+                  <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                          Provider Styling
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                          Customise the icon URL, accent colour, and icon size per source. Leave a field blank to keep the default ERDB art.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          activeProviderMeta &&
+                          updateProviderAppearanceOverride(activeProviderMeta.id, () => ({}))
+                        }
+                        className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+                      >
+                        Reset {activeProviderMeta?.label}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ratingProviderRows.map((row) => {
+                        const meta = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === row.id);
+                        const isSelected = row.id === activeProviderEditorId;
+                        const hasOverride = Boolean(ratingProviderAppearanceOverrides[row.id]);
+                        return (
+                          <button
+                            key={`provider-editor-${row.id}`}
+                            type="button"
+                            onClick={() => setActiveProviderEditorId(row.id)}
+                            className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                              isSelected
+                                ? 'border-violet-500/60 bg-zinc-800 text-white'
+                                : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {meta?.label || row.id}
+                            {hasOverride ? ' *' : ''}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {activeProviderMeta ? (
+                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.34fr)]">
+                        <div className="space-y-3">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div>
+                              <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                                Accent Colour
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={
+                                    activeProviderAppearanceOverride.accentColor ||
+                                    activeProviderMeta.accentColor
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      accentColor: event.target.value,
+                                    }))
+                                  }
+                                  className="h-10 w-14 rounded-md border border-white/10 bg-black"
+                                />
+                                <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+                                  {activeProviderAppearanceOverride.accentColor ||
+                                    activeProviderMeta.accentColor}
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                                Icon Size
+                              </label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="range"
+                                  min={MIN_PROVIDER_ICON_SCALE_PERCENT}
+                                  max={MAX_PROVIDER_ICON_SCALE_PERCENT}
+                                  step={1}
+                                  value={
+                                    activeProviderAppearanceOverride.iconScalePercent ||
+                                    DEFAULT_PROVIDER_ICON_SCALE_PERCENT
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      iconScalePercent: normalizeProviderIconScalePercent(
+                                        event.target.value,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-2 w-full accent-violet-500"
+                                />
+                                <span className="w-14 text-right text-[11px] text-zinc-400">
+                                  {activeProviderAppearanceOverride.iconScalePercent ||
+                                    DEFAULT_PROVIDER_ICON_SCALE_PERCENT}
+                                  %
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                              Custom Icon URL
+                            </label>
+                            <input
+                              type="url"
+                              value={activeProviderAppearanceOverride.iconUrl || ''}
+                              onChange={(event) =>
+                                updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                  ...current,
+                                  iconUrl: event.target.value,
+                                }))
+                              }
+                              placeholder="https://example.com/logo.svg or data:image/svg+xml,..."
+                              className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                              Paste a direct image URL or a data URI. The expected format stays visible here while you edit so you do not have to remember it after adding a custom logo.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-black/60 p-3">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                            Active Preview
+                          </div>
+                          <div className="mt-3 flex items-center gap-3">
+                            <div
+                              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl"
+                              style={{
+                                backgroundColor:
+                                  activeProviderAppearanceOverride.accentColor ||
+                                  activeProviderMeta.accentColor,
+                              }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={activeProviderAppearanceOverride.iconUrl || activeProviderMeta.iconUrl}
+                                alt={`${activeProviderMeta.label} icon`}
+                                className="max-h-8 max-w-8 object-contain"
+                              />
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold text-white">
+                                {activeProviderMeta.label}
+                              </div>
+                              <div className="text-[11px] text-zinc-500">
+                                Per-source overrides apply across poster, backdrop, and logo renders.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
@@ -2937,6 +3429,16 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadges</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{QUALITY_BADGE_DOC_VALUES} (poster only, empty string disables all)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadges</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{QUALITY_BADGE_DOC_VALUES} (backdrop only, empty string disables all)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">all</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
@@ -2962,6 +3464,11 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">providerAppearance</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, and iconScalePercent</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingPresentation</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, blockbuster</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">standard</td>
@@ -2975,6 +3482,31 @@ export default function Home() {
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass (poster/backdrop), plain (logo)</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingBadgeScale</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingBadgeScale</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatingBadgeScale</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgeScale</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadgeScale</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">imageText</td>
@@ -2997,6 +3529,11 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">{POSTER_LAYOUT_DOC_DEFAULT}</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsMax</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsMaxPerSide</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{POSTER_RATINGS_MAX_DOC_COPY}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
@@ -3005,6 +3542,11 @@ export default function Home() {
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingsLayout</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{BACKDROP_LAYOUT_DOC_VALUES}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">center</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingsMax</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">sideRatingsPosition</td>
@@ -3093,11 +3635,15 @@ export default function Home() {
                             <div>posterRatingPresentation</div>
                             <div>posterAggregateRatingSource</div>
                             <div>posterRatingsLayout</div>
+                            <div>posterRatingsMax</div>
                             <div>sideRatingsPosition</div>
                             <div>sideRatingsOffset</div>
+                            <div>posterQualityBadges</div>
                             <div>posterQualityBadgesPosition</div>
                             <div>posterRatingsMaxPerSide</div>
                             <div>posterQualityBadgesMax</div>
+                            <div>posterRatingBadgeScale</div>
+                            <div>posterQualityBadgeScale</div>
                           </div>
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
@@ -3107,11 +3653,15 @@ export default function Home() {
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
+                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{SIDE_RATING_POSITION_DOC_VALUES} (side layouts only)</div>
                             <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
+                            <div>{QUALITY_BADGE_DOC_VALUES} (empty string hides all)</div>
                             <div>auto, left, right (top or bottom layouts only)</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
+                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
                           </div>
                         </td>
                       </tr>
@@ -3124,9 +3674,13 @@ export default function Home() {
                             <div>backdropRatingPresentation</div>
                             <div>backdropAggregateRatingSource</div>
                             <div>backdropRatingsLayout</div>
+                            <div>backdropRatingsMax</div>
                             <div>sideRatingsPosition</div>
                             <div>sideRatingsOffset</div>
+                            <div>backdropQualityBadges</div>
                             <div>backdropQualityBadgesMax</div>
+                            <div>backdropRatingBadgeScale</div>
+                            <div>backdropQualityBadgeScale</div>
                           </div>
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
@@ -3136,9 +3690,13 @@ export default function Home() {
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
+                            <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{SIDE_RATING_POSITION_DOC_VALUES} (right vertical only)</div>
                             <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
+                            <div>{QUALITY_BADGE_DOC_VALUES} (empty string hides all)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
+                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
                           </div>
                         </td>
                       </tr>
@@ -3151,6 +3709,7 @@ export default function Home() {
                             <div>logoArtworkSource</div>
                             <div>logoRatingPresentation</div>
                             <div>logoAggregateRatingSource</div>
+                            <div>logoRatingBadgeScale</div>
                           </div>
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
@@ -3160,6 +3719,7 @@ export default function Home() {
                             <div>tmdb, fanart</div>
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
+                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
                           </div>
                         </td>
                       </tr>
@@ -3167,7 +3727,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Direct image URLs support shared fallbacks like ratings, lang, genreBadge, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, and qualityBadgesStyle. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
+                  Direct image URLs support shared fallbacks like ratings, lang, genreBadge, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
                 </div>
               </div>
 
@@ -3268,6 +3828,14 @@ export default function Home() {
                     <div className="flex gap-2 md:col-span-2">
                       <span className="text-violet-500 font-bold shrink-0">fanartKey (optional):</span>
                       <span className="text-zinc-400">Recommended when you use fanart sources. Your key is used first, then ERDB can fall back to the service key when one exists.</span>
+                    </div>
+                    <div className="flex gap-2 md:col-span-2">
+                      <span className="text-violet-500 font-bold shrink-0">providerAppearance:</span>
+                      <span className="text-zinc-400">Accepts base64url or raw JSON overrides for iconUrl, accentColor, and iconScalePercent. Keep the help text visible while editing so users can paste custom provider art without losing the format reference.</span>
+                    </div>
+                    <div className="flex gap-2 md:col-span-2">
+                      <span className="text-violet-500 font-bold shrink-0">posterQualityBadges / backdropQualityBadges:</span>
+                      <span className="text-zinc-400">Comma separated badge ids such as certification,hdr,remux. Send an empty string if you want no quality badges rendered for that type.</span>
                     </div>
                   </div>
                 </div>

@@ -2,9 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildErdbImageUrl, decodeProxyConfig } from '../lib/addonProxy.ts';
+import { encodeRatingProviderAppearanceOverrides } from '../lib/badgeCustomization.ts';
 import { buildProxyUrl, normalizeSavedUiConfig } from '../lib/uiConfig.ts';
 
 test('generated proxy manifest carries configurator settings into rewritten logo artwork', () => {
+  const providerAppearance = {
+    mdblist: {
+      accentColor: '#22c55e',
+      iconScalePercent: 112,
+    },
+  };
   const uiConfig = normalizeSavedUiConfig({
     settings: {
       tmdbKey: 'tmdb-key-123',
@@ -19,6 +26,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       logoRatingsMax: 3,
       logoBackground: 'dark',
       logoArtworkSource: 'fanart',
+      logoRatingBadgeScale: 94,
+      ratingProviderAppearanceOverrides: providerAppearance,
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',
@@ -59,6 +68,11 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.searchParams.get('logoArtworkSource'), 'fanart');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingPresentation'), 'average');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoAggregateRatingSource'), 'audience');
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingBadgeScale'), '94');
+  assert.equal(
+    rewrittenLogoUrl.searchParams.get('providerAppearance'),
+    encodeRatingProviderAppearanceOverrides(providerAppearance),
+  );
   assert.equal(rewrittenLogoUrl.searchParams.get('ratingStyle'), 'plain');
 });
 
@@ -85,6 +99,13 @@ test('proxy image rewrites upgrade legacy logo source params to artwork source p
 });
 
 test('proxy image rewrites carry side rating placement for poster layouts', () => {
+  const providerAppearance = {
+    trakt: {
+      iconUrl: 'https://cdn.example.com/trakt-custom.svg',
+      accentColor: '#7c3aed',
+      iconScalePercent: 116,
+    },
+  };
   const uiConfig = normalizeSavedUiConfig({
     settings: {
       tmdbKey: 'tmdb-key-123',
@@ -94,10 +115,16 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       posterArtworkSource: 'fanart',
       backdropImageText: 'clean',
       backdropArtworkSource: 'fanart',
-      posterRatingPreferences: ['imdb', 'metacritic'],
+      posterRatingPreferences: ['imdb', 'trakt', 'metacritic'],
       posterRatingsLayout: 'left-right',
+      posterRatingsMax: 3,
+      posterQualityBadgePreferences: ['certification', 'hdr'],
+      posterQualityBadgesStyle: 'plain',
+      posterQualityBadgeScale: 118,
+      posterRatingBadgeScale: 111,
       sideRatingsPosition: 'custom',
       sideRatingsOffset: 68,
+      ratingProviderAppearanceOverrides: providerAppearance,
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',
@@ -122,13 +149,22 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
     })
   );
 
-  assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,metacritic');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,trakt,metacritic');
   assert.equal(rewrittenPosterUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenPosterUrl.searchParams.get('imageText'), 'clean');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'fanart');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsLayout'), 'left-right');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsMax'), '3');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterQualityBadges'), 'certification,hdr');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterQualityBadgesStyle'), 'plain');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterQualityBadgeScale'), '118');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingBadgeScale'), '111');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsPosition'), 'custom');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsOffset'), '68');
+  assert.equal(
+    rewrittenPosterUrl.searchParams.get('providerAppearance'),
+    encodeRatingProviderAppearanceOverrides(providerAppearance),
+  );
 });
 
 test('proxy image rewrites carry artwork source selection for backdrops', () => {
@@ -140,6 +176,11 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
       backdropImageText: 'clean',
       backdropArtworkSource: 'fanart',
       backdropRatingPreferences: ['imdb'],
+      backdropRatingsMax: 2,
+      backdropQualityBadgePreferences: ['4k', 'dolbyatmos'],
+      backdropQualityBadgesStyle: 'media',
+      backdropQualityBadgeScale: 106,
+      backdropRatingBadgeScale: 109,
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',
@@ -167,6 +208,11 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
   assert.equal(rewrittenBackdropUrl.searchParams.get('imageText'), 'clean');
   assert.equal(rewrittenBackdropUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropArtworkSource'), 'fanart');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingsMax'), '2');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadges'), '4k,dolbyatmos');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadgesStyle'), 'media');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadgeScale'), '106');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingBadgeScale'), '109');
 });
 
 test('proxy image rewrites upgrade legacy clean source params to artwork source params', () => {
