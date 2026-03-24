@@ -29,6 +29,13 @@
 
 <a id="v2-28-0"></a>
 
+<a id="v2-29-0"></a>
+
+## [v2.29.0] - 24/03/2026
+
+### Added
+* add native rating modes and season aware badge fixes
+
 ## [v2.28.0] - 24/03/2026
 
 ### Added
