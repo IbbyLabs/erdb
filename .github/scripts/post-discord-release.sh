@@ -7,6 +7,8 @@ set -euo pipefail
 
 release_tag="${RELEASE_TAG:-}"
 api_url="https://api.github.com/repos/${REPOSITORY}"
+max_lookup_attempts="${RELEASE_LOOKUP_ATTEMPTS:-5}"
+lookup_retry_delay_seconds="${RELEASE_LOOKUP_DELAY_SECONDS:-2}"
 
 if [ -n "${release_tag}" ]; then
   release_endpoint="${api_url}/releases/tags/${release_tag}"
@@ -14,13 +16,29 @@ else
   release_endpoint="${api_url}/releases/latest"
 fi
 
-release_json="$(
-  curl -fsSL \
-    -H "Accept: application/vnd.github+json" \
-    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-    -H "X-GitHub-Api-Version: 2022-11-28" \
-    "${release_endpoint}"
-)"
+attempt=1
+release_json=""
+
+while [ "${attempt}" -le "${max_lookup_attempts}" ]; do
+  if release_json="$(
+    curl -fsSL \
+      -H "Accept: application/vnd.github+json" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      "${release_endpoint}"
+  )"; then
+    break
+  fi
+
+  if [ "${attempt}" -eq "${max_lookup_attempts}" ]; then
+    echo "Unable to fetch release details from ${release_endpoint}" >&2
+    exit 1
+  fi
+
+  echo "Release lookup attempt ${attempt}/${max_lookup_attempts} failed. Retrying in ${lookup_retry_delay_seconds}s." >&2
+  attempt=$((attempt + 1))
+  sleep "${lookup_retry_delay_seconds}"
+done
 
 tag_name="$(printf '%s' "${release_json}" | jq -r '.tag_name // empty')"
 release_name="$(printf '%s' "${release_json}" | jq -r '.name // .tag_name // "ERDB Release"')"
