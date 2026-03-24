@@ -108,6 +108,10 @@ import {
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
 } from '@/lib/badgeCustomization';
+import {
+  computeStackedBadgeLayout,
+  getStackedBadgeHeight,
+} from '@/lib/stackedBadgeLayout';
 
 export const runtime = 'nodejs';
 
@@ -195,7 +199,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v69';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v70';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -3314,6 +3318,14 @@ const scaleBadgeMetrics = (
   };
 };
 
+const getBadgeHeightFromMetrics = (
+  metrics: BadgeLayoutMetrics,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
+) =>
+  ratingStyle === 'stacked'
+    ? getStackedBadgeHeight(metrics)
+    : metrics.iconSize + metrics.paddingY * 2;
+
 const resolveBadgeIconRenderSize = ({
   iconSlotSize,
   badgeHeight,
@@ -3664,9 +3676,13 @@ const fitPosterBadgeMetricsToWidth = (
   return metrics;
 };
 
-const measureBadgeColumnHeight = (columnBadges: RatingBadge[], metrics: BadgeLayoutMetrics) => {
+const measureBadgeColumnHeight = (
+  columnBadges: RatingBadge[],
+  metrics: BadgeLayoutMetrics,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
+) => {
   if (columnBadges.length === 0) return 0;
-  const badgeHeight = metrics.iconSize + metrics.paddingY * 2;
+  const badgeHeight = getBadgeHeightFromMetrics(metrics, ratingStyle);
   return columnBadges.length * badgeHeight + Math.max(0, columnBadges.length - 1) * metrics.gap;
 };
 
@@ -3700,9 +3716,10 @@ const getMaxBadgeColumnCount = (
   metrics: BadgeLayoutMetrics,
   topOffset: number,
   bottomOffset: number,
-  reservedTopRows = 0
+  reservedTopRows = 0,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
-  const badgeHeight = metrics.iconSize + metrics.paddingY * 2;
+  const badgeHeight = getBadgeHeightFromMetrics(metrics, ratingStyle);
   const step = badgeHeight + metrics.gap;
   const reservedTopHeight = reservedTopRows > 0 ? reservedTopRows * step : 0;
   const availableHeight = Math.max(0, outputHeight - topOffset - bottomOffset - reservedTopHeight);
@@ -3717,18 +3734,22 @@ const fitPosterBadgeMetricsToHeight = (
   topOffset: number,
   bottomOffset: number,
   minMetrics: BadgeLayoutMetrics = DEFAULT_BADGE_MIN_METRICS,
-  reservedTopRows = 0
+  reservedTopRows = 0,
+  ratingStyle: RatingStyle = DEFAULT_RATING_STYLE,
 ) => {
   const metrics: BadgeLayoutMetrics = { ...initialMetrics };
   const getMaxColumnHeight = () => {
-    const badgeHeight = metrics.iconSize + metrics.paddingY * 2;
+    const badgeHeight = getBadgeHeightFromMetrics(metrics, ratingStyle);
     const reservedTopHeight =
       reservedTopRows > 0 ? reservedTopRows * (badgeHeight + metrics.gap) : 0;
     return Math.max(0, outputHeight - topOffset - bottomOffset - reservedTopHeight);
   };
 
   const measureTallestColumn = () =>
-    columns.reduce((maxHeight, column) => Math.max(maxHeight, measureBadgeColumnHeight(column, metrics)), 0);
+    columns.reduce(
+      (maxHeight, column) => Math.max(maxHeight, measureBadgeColumnHeight(column, metrics, ratingStyle)),
+      0
+    );
 
   let tallestColumn = measureTallestColumn();
   let attempts = 0;
@@ -4388,35 +4409,24 @@ ${variantChrome}
     const stackedInnerInset = 1.8;
     const stackedInnerWidth = Math.max(0, width - stackedInnerInset * 2);
     const stackedInnerHeight = Math.max(0, height - stackedInnerInset * 2);
-    const accentRailWidth = Math.max(18, Math.round(width * 0.42));
-    const accentRailHeight = Math.max(4, Math.round(height * 0.08));
-    const accentRailX = Math.round((width - accentRailWidth) / 2);
-    const accentRailY = Math.max(5, Math.round(height * 0.11));
-    const outerPadding = Math.max(6, Math.round(paddingX * 0.68));
     const renderIconSize = resolveBadgeIconRenderSize({
-      iconSlotSize: Math.max(16, Math.round(iconSize * 0.88)),
-      badgeHeight: Math.max(20, Math.round(height * 0.42)),
+      iconSlotSize: Math.max(14, Math.round(iconSize * 0.72)),
+      badgeHeight: Math.max(18, Math.round(height * 0.3)),
       iconScalePercent,
     });
-    const iconPlateSize = Math.max(renderIconSize + 8, Math.round(height * 0.42));
-    const iconPlateX = Math.round((width - iconPlateSize) / 2);
-    const iconPlateY = Math.max(accentRailY + accentRailHeight + 4, Math.round(height * 0.18));
-    const iconX = iconPlateX + Math.round((iconPlateSize - renderIconSize) / 2);
-    const iconY = iconPlateY + Math.round((iconPlateSize - renderIconSize) / 2);
-    const iconCenterX = Math.round(width / 2);
-    const iconCenterY = iconPlateY + Math.round(iconPlateSize / 2);
-    const iconRadius = Math.max(9, Math.round(iconPlateSize * 0.32));
-    const iconFontSize = Math.max(11, Math.round(renderIconSize * 0.44));
-    const valueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
-    const valueAvailableWidth = Math.max(0, width - outerPadding * 2);
+    const stackedLayout = computeStackedBadgeLayout({
+      width,
+      height,
+      paddingX,
+      fontSize,
+      renderIconSize,
+    });
+    const valueTextWidth = estimateBadgeTextWidth(value, stackedLayout.valueFontSize, compactText);
+    const valueAvailableWidth = stackedLayout.valueAvailableWidth;
     const valueTextLength =
       valueTextWidth > valueAvailableWidth
         ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
         : '';
-    const valueY = Math.max(
-      Math.round(height * 0.68),
-      Math.min(height - 8, iconPlateY + iconPlateSize + Math.round(fontSize * 0.95)),
-    );
     const valueNumericStyle =
       ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
     const iconSurfaceFill = hexColorToRgba(accentColor, 0.22, 'rgba(167,139,250,0.22)');
@@ -4427,24 +4437,24 @@ ${variantChrome}
 <stop offset="100%" stop-color="${accentColor}" stop-opacity="0.04" />
 </linearGradient>
 <clipPath id="stacked-icon-clip">
-<rect x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" rx="${Math.max(6, iconRadius - 4)}" />
+<rect x="${stackedLayout.iconX}" y="${stackedLayout.iconY}" width="${renderIconSize}" height="${renderIconSize}" rx="${Math.max(6, stackedLayout.iconRadius - 4)}" />
 </clipPath>
 </defs>`;
     const iconImage = iconDataUri
-      ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#stacked-icon-clip)" />`
+      ? `<image href="${iconDataUri}" x="${stackedLayout.iconX}" y="${stackedLayout.iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#stacked-icon-clip)" />`
       : '';
     const monogramText = iconDataUri
       ? ''
-      : `<text x="${iconCenterX}" y="${Math.round(iconCenterY + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${accentColor}">${escapeXml(monogram)}</text>`;
+      : `<text x="${stackedLayout.iconCenterX}" y="${Math.round(stackedLayout.iconCenterY + stackedLayout.iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${stackedLayout.iconFontSize}" font-weight="700" text-anchor="middle" fill="${accentColor}">${escapeXml(monogram)}</text>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${stackedDefs}
 <rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,0.90)" stroke="rgba(255,255,255,0.22)" stroke-width="1.15" />
 <rect x="${stackedInnerInset}" y="${stackedInnerInset}" width="${stackedInnerWidth}" height="${stackedInnerHeight}" rx="${Math.max(10, radius - 3)}" fill="url(#stacked-surface-fill)" />
-<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(2, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />
-<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="${Math.max(10, Math.round(iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
+<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="${accentColor}" />
+<rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
 ${iconImage}
 ${monogramText}
-<text x="${Math.round(width / 2)}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" fill="white"${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${Math.round(width / 2)}" y="${stackedLayout.valueTopY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="hanging" fill="white"${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
@@ -4576,8 +4586,6 @@ const renderWithSharp = async (
       }
     }
 
-    const badgeHeight = input.badgeIconSize + input.badgePaddingY * 2;
-    const qualityBadgeScaleRatio = Math.max(0.7, input.qualityBadgeScalePercent / 100);
     const sideColumnMetrics: BadgeLayoutMetrics = {
       iconSize: input.badgeIconSize,
       fontSize: input.badgeFontSize,
@@ -4585,6 +4593,9 @@ const renderWithSharp = async (
       paddingY: input.badgePaddingY,
       gap: input.badgeGap,
     };
+    const badgeBaseHeight = input.badgeIconSize + input.badgePaddingY * 2;
+    const ratingBadgeHeight = getBadgeHeightFromMetrics(sideColumnMetrics, input.ratingStyle);
+    const qualityBadgeScaleRatio = Math.max(0.7, input.qualityBadgeScalePercent / 100);
     const resolveSideBadgeStartY = (
       columnBadges: RatingBadge[],
       metrics: BadgeLayoutMetrics = sideColumnMetrics,
@@ -4592,7 +4603,7 @@ const renderWithSharp = async (
     ) =>
       resolveVerticalBadgeColumnStartY({
         outputHeight: input.outputHeight,
-        columnHeight: measureBadgeColumnHeight(columnBadges, metrics),
+        columnHeight: measureBadgeColumnHeight(columnBadges, metrics, input.ratingStyle),
         topOffset: input.badgeTopOffset,
         bottomOffset: input.badgeBottomOffset,
         position: input.sideRatingsPosition,
@@ -4635,7 +4646,7 @@ const renderWithSharp = async (
         : [];
     const posterTopBlockBottom =
       posterTopRows.length > 0
-        ? input.badgeTopOffset + posterTopRows.length * (badgeHeight + input.badgeGap)
+        ? input.badgeTopOffset + posterTopRows.length * (ratingBadgeHeight + input.badgeGap)
         : input.badgeTopOffset;
     type BlockbusterPlacementRect = { left: number; top: number; width: number; height: number };
     type BlockbusterScatterMode = 'callout' | 'blurb' | 'score';
@@ -4680,7 +4691,7 @@ const renderWithSharp = async (
       if (posterQualityBadgePlacement === 'bottom') {
         const bottomQualityHeight = Math.max(
           36,
-          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+          Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
         );
         const bottomY = Math.max(
           input.badgeTopOffset,
@@ -4699,7 +4710,7 @@ const renderWithSharp = async (
       if (posterQualityBadgePlacement === 'top') {
         const topQualityHeight = Math.max(
           36,
-          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+          Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
         );
         return [
           {
@@ -4711,7 +4722,7 @@ const renderWithSharp = async (
         ];
       }
 
-      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio));
+      const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
@@ -4735,7 +4746,11 @@ const renderWithSharp = async (
         const sideBadges =
           posterQualityBadgePlacement === 'right' ? input.rightBadges : input.leftBadges;
         if (sideBadges.length > 0) {
-          const sideColumnHeight = measureBadgeColumnHeight(sideBadges, blockbusterSideMetrics);
+          const sideColumnHeight = measureBadgeColumnHeight(
+            sideBadges,
+            blockbusterSideMetrics,
+            input.ratingStyle,
+          );
           if (sideColumnHeight > 0) {
             qualityStartY = Math.max(
               qualityStartY,
@@ -5246,7 +5261,7 @@ const renderWithSharp = async (
       );
       const badgeSvg = buildBadgeSvg({
         width: badgeWidth,
-        height: badgeHeight,
+        height: ratingBadgeHeight,
         iconSize: input.badgeIconSize,
         fontSize: input.badgeFontSize,
         paddingX: input.badgePaddingX,
@@ -5274,7 +5289,7 @@ const renderWithSharp = async (
       }
 
       overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
-      trackGenreCollisionRect(rowX, rowY, badgeWidth, badgeHeight);
+      trackGenreCollisionRect(rowX, rowY, badgeWidth, ratingBadgeHeight);
     };
     const composeBlockbusterPosterCallouts = () => {
       if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return;
@@ -5519,12 +5534,15 @@ const renderWithSharp = async (
         typeof startY === 'number'
           ? Math.max(input.badgeTopOffset, startY)
           : origin === 'bottom'
-          ? Math.max(input.badgeTopOffset, input.outputHeight - input.badgeBottomOffset - badgeHeight)
+          ? Math.max(input.badgeTopOffset, input.outputHeight - input.badgeBottomOffset - ratingBadgeHeight)
           : input.badgeTopOffset;
       for (let index = 0; index < columnBadges.length; index += 1) {
         const badge = columnBadges[index];
         composeEdgeAlignedPosterBadge(badge, rowY, side, maxBadgeWidth);
-        rowY += origin === 'bottom' ? -(badgeHeight + input.badgeGap) : badgeHeight + input.badgeGap;
+        rowY +=
+          origin === 'bottom'
+            ? -(ratingBadgeHeight + input.badgeGap)
+            : ratingBadgeHeight + input.badgeGap;
       }
     };
     const composeQualityBadgeColumn = (
@@ -5533,7 +5551,7 @@ const renderWithSharp = async (
       side: QualityBadgesSide
     ) => {
       if (columnBadges.length === 0) return;
-      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio));
+      const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
       const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
       const uniformBadgeWidth = useIntrinsicWidths
         ? null
@@ -5573,7 +5591,7 @@ const renderWithSharp = async (
       const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
       let qualityHeight = Math.max(
         36,
-        Math.round((baseHeight ?? badgeHeight * 1.05) * qualityBadgeScaleRatio),
+        Math.round((baseHeight ?? badgeBaseHeight * 1.05) * qualityBadgeScaleRatio),
       );
       let badgeWidth =
         useIntrinsicWidths
@@ -5722,13 +5740,13 @@ const renderWithSharp = async (
       if (input.badges.length > 0 && input.logoBadgeBandHeight > 0 && input.logoBadgesPerRow > 0) {
         const rows = chunkBy(input.badges, input.logoBadgesPerRow);
         const rowsTotalHeight =
-          rows.length * badgeHeight + Math.max(0, rows.length - 1) * input.badgeGap;
+          rows.length * ratingBadgeHeight + Math.max(0, rows.length - 1) * input.badgeGap;
         let rowY =
           input.outputHeight +
           Math.max(0, Math.floor((input.logoBadgeBandHeight - rowsTotalHeight) / 2));
         for (const row of rows) {
           composeBadgeRow(row, rowY, { maxRowWidth: input.logoBadgeMaxWidth });
-          rowY += badgeHeight + input.badgeGap;
+          rowY += ratingBadgeHeight + input.badgeGap;
         }
       }
     } else if (
@@ -5757,13 +5775,13 @@ const renderWithSharp = async (
               regionLeft: backdropRegion.left,
               regionWidth: backdropRegion.width,
             });
-            rowY += badgeHeight + input.badgeGap;
+            rowY += ratingBadgeHeight + input.badgeGap;
           }
         }
       } else if (input.imageType === 'poster') {
         const bottomRowY = Math.max(
           input.badgeTopOffset,
-          input.outputHeight - input.badgeBottomOffset - badgeHeight
+          input.outputHeight - input.badgeBottomOffset - ratingBadgeHeight
         );
         if (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.46));
@@ -5810,12 +5828,12 @@ const renderWithSharp = async (
                 : remainingRightBadges,
               sideColumnMetrics,
               input.topBadges.length > 0
-                ? input.badgeTopOffset + badgeHeight + input.badgeGap
+                ? input.badgeTopOffset + ratingBadgeHeight + input.badgeGap
                 : input.badgeTopOffset
             );
           if (remainingLeftBadges.length === remainingRightBadges.length) {
             for (let index = 0; index < remainingLeftBadges.length; index += 1) {
-              const rowY = sideStartY + index * (badgeHeight + input.badgeGap);
+              const rowY = sideStartY + index * (ratingBadgeHeight + input.badgeGap);
               composeEdgeAlignedPosterBadge(remainingLeftBadges[index], rowY, 'left', maxBadgeWidth);
               composeEdgeAlignedPosterBadge(remainingRightBadges[index], rowY, 'right', maxBadgeWidth);
             }
@@ -5832,19 +5850,19 @@ const renderWithSharp = async (
                 regionWidth: posterRowRegionWidth,
                 align: posterRowAlign,
               });
-              topRowY += badgeHeight + input.badgeGap;
+              topRowY += ratingBadgeHeight + input.badgeGap;
             }
           }
           if (posterBottomRows.length > 0) {
             let bottomRowYStart =
-              bottomRowY - (posterBottomRows.length - 1) * (badgeHeight + input.badgeGap);
+              bottomRowY - (posterBottomRows.length - 1) * (ratingBadgeHeight + input.badgeGap);
             for (const row of posterBottomRows) {
               composeBadgeRow(row, bottomRowYStart, {
                 regionLeft: input.posterRowHorizontalInset,
                 regionWidth: posterRowRegionWidth,
                 align: posterRowAlign,
               });
-              bottomRowYStart += badgeHeight + input.badgeGap;
+              bottomRowYStart += ratingBadgeHeight + input.badgeGap;
             }
           }
         }
@@ -5856,7 +5874,7 @@ const renderWithSharp = async (
         }
         const bottomOverlayAnchorY =
           posterBottomRows.length > 0
-            ? bottomRowY - (posterBottomRows.length - 1) * (badgeHeight + input.badgeGap)
+            ? bottomRowY - (posterBottomRows.length - 1) * (ratingBadgeHeight + input.badgeGap)
             : bottomRowY;
         composePosterCleanOverlayAboveBottom(bottomOverlayAnchorY);
       }
@@ -5877,12 +5895,12 @@ const renderWithSharp = async (
       };
       const qualityBadgeHeight = Math.max(
         44,
-        Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio),
+        Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio),
       );
       if (qualityPlacement === 'bottom') {
         const bottomQualityHeight = Math.max(
           36,
-          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+          Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
         );
         const bottomY = Math.max(
           input.badgeTopOffset,
@@ -5892,7 +5910,7 @@ const renderWithSharp = async (
       } else if (qualityPlacement === 'top') {
         const topQualityHeight = Math.max(
           36,
-          Math.round(badgeHeight * 1.05 * qualityBadgeScaleRatio),
+          Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
         );
         const topY = input.badgeTopOffset;
         composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight);
@@ -5916,7 +5934,7 @@ const renderWithSharp = async (
         } else {
           const sideBadges = qualityPlacement === 'right' ? input.rightBadges : input.leftBadges;
           if (sideBadges.length > 0) {
-            const sideColumnHeight = measureBadgeColumnHeight(sideBadges, metrics);
+            const sideColumnHeight = measureBadgeColumnHeight(sideBadges, metrics, input.ratingStyle);
             if (sideColumnHeight > 0) {
               const belowSide =
                 resolveSideBadgeStartY(sideBadges, metrics) +
@@ -5931,7 +5949,7 @@ const renderWithSharp = async (
     }
 
     if (input.imageType === 'backdrop' && input.qualityBadges.length > 0) {
-      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25 * qualityBadgeScaleRatio));
+      const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
@@ -5974,7 +5992,7 @@ const renderWithSharp = async (
                 : (input.topBadges.length > 0 ? 1 : 0) + (input.bottomBadges.length > 0 ? 1 : 0);
           const singleStartY =
             input.backdropRatingsLayout === 'center' && ratingRows > 0
-              ? startY + ratingRows * (badgeHeight + input.badgeGap)
+              ? startY + ratingRows * (ratingBadgeHeight + input.badgeGap)
               : startY;
           renderQualityBadgeColumnAt(
             leftColumn,
@@ -8115,14 +8133,16 @@ export async function GET(
             badgeTopOffset,
             badgeBottomOffset,
             posterMinMetrics,
-            reservedTopRows
+            reservedTopRows,
+            ratingStyle
           );
           const maxPerColumn = getMaxBadgeColumnCount(
             outputHeight,
             fittedPosterMetrics,
             badgeTopOffset,
             badgeBottomOffset,
-            reservedTopRows
+            reservedTopRows,
+            ratingStyle
           );
           const effectiveMaxPerSide =
             effectivePosterRatingsMaxPerSide === null
@@ -8222,13 +8242,18 @@ export async function GET(
             outputHeight,
             fittedBackdropMetrics,
             badgeTopOffset,
-            badgeBottomOffset
+            badgeBottomOffset,
+            DEFAULT_BADGE_MIN_METRICS,
+            0,
+            ratingStyle
           );
           const maxPerColumn = getMaxBadgeColumnCount(
             outputHeight,
             fittedBackdropMetrics,
             badgeTopOffset,
-            badgeBottomOffset
+            badgeBottomOffset,
+            0,
+            ratingStyle
           );
           rightRatingBadges = rightRatingBadges.slice(0, maxPerColumn);
           cappedRatingBadges = [...rightRatingBadges];

@@ -12,7 +12,7 @@ export const RATING_VALUE_MODE_OPTIONS: Array<{
   {
     id: 'native',
     label: 'Provider Default',
-    description: 'Keep every source on its own native scale such as percent, out of 10, out of 5, or out of 4.',
+    description: 'Keep every source on its own native value, so each logo keeps its own score without forcing a shared scale.',
   },
   {
     id: 'normalized',
@@ -96,7 +96,7 @@ const formatNativeProviderValue = (
 
   if (provider === 'trakt') {
     const normalizedTraktValue = numericValue > 10 ? numericValue / 10 : numericValue;
-    return `${formatRatingNumber(normalizedTraktValue)}/10`;
+    return formatRatingNumber(normalizedTraktValue);
   }
 
   if (PERCENTAGE_RATING_PROVIDERS.has(provider)) {
@@ -105,7 +105,7 @@ const formatNativeProviderValue = (
 
   const suffix = NATIVE_SCALE_SUFFIX_RATING_PROVIDERS[provider];
   if (suffix) {
-    return `${formatRatingNumber(numericValue)}${suffix}`;
+    return formatRatingNumber(numericValue);
   }
 
   return formatRatingNumber(numericValue);

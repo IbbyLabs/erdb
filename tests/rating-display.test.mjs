@@ -8,14 +8,14 @@ import {
 } from '../lib/ratingDisplay.ts';
 
 test('provider default rating display keeps native scales by default', () => {
-  assert.equal(formatDisplayRatingValue('trakt', '9.2'), '9.2/10');
-  assert.equal(formatDisplayRatingValue('trakt', '76'), '7.6/10');
-  assert.equal(formatDisplayRatingValue('metacritic', '84'), '84/100');
-  assert.equal(formatDisplayRatingValue('mdblist', '79'), '79/100');
+  assert.equal(formatDisplayRatingValue('trakt', '9.2'), '9.2');
+  assert.equal(formatDisplayRatingValue('trakt', '76'), '7.6');
+  assert.equal(formatDisplayRatingValue('metacritic', '84'), '84');
+  assert.equal(formatDisplayRatingValue('mdblist', '79'), '79');
   assert.equal(formatDisplayRatingValue('tomatoes', '93'), '93%');
   assert.equal(formatDisplayRatingValue('kitsu', '82'), '82%');
-  assert.equal(formatDisplayRatingValue('letterboxd', '3.9'), '3.9/5');
-  assert.equal(formatDisplayRatingValue('rogerebert', '3.5'), '3.5/4');
+  assert.equal(formatDisplayRatingValue('letterboxd', '3.9'), '3.9');
+  assert.equal(formatDisplayRatingValue('rogerebert', '3.5'), '3.5');
 });
 
 test('normalized display mode is opt in', () => {
