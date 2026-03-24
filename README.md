@@ -233,6 +233,7 @@ Main endpoint:
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123` or `mal:456` | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
+| `genreBadge` | Genre badge mode (global) | `off`, `text`, `icon`, `both` | `off` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
 | `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
@@ -267,6 +268,8 @@ Prefer `tmdb:movie:id` or `tmdb:tv:id` when you already know the media type. Bar
 
 Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, ERDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
+Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, sci fi, fantasy, crime, documentary, and anime render; ambiguous combinations stay off.
+
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
 When no explicit max is set, ERDB now renders all badges that fit the layout instead of applying a fixed poster or logo badge cap. Use the max params only when you want to intentionally tighten the visible badge count.
@@ -288,7 +291,7 @@ To integrate ERDB into your addon:
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call ERDB for that type).
 4. **Decode**: decode `erdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, and `logoBackground`. Then apply the per type config fields:
+5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `genreBadge`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, and `logoBackground`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
    - `logo`: `logoRatingStyle`, `logoBackground` (omit `imageText`)
@@ -328,6 +331,7 @@ logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, lette
                         | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
                         | anilist, kitsu (logo only)                                           |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+genreBadge             | off, text, icon, both                                                | off
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
@@ -363,6 +367,7 @@ STYLE NOTE: Transparent provider icons stay transparent in every style. In glass
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     -> ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
+all      -> genreBadge = cfg.genreBadge (optional global genre badge)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
@@ -373,7 +378,7 @@ Quality badges style/max can be set per type via cfg.posterQualityBadgesStyle / 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}
+${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}
 
 Omit imageText when type=logo.
 

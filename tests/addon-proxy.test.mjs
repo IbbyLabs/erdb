@@ -10,6 +10,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       lang: 'en',
+      genreBadgeMode: 'text',
       logoRatingPreferences: ['mdblist', 'tomatoes', 'letterboxd'],
       logoRatingStyle: 'plain',
       logoRatingPresentation: 'average',
@@ -48,6 +49,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.searchParams.get('tmdbKey'), 'tmdb-key-123');
   assert.equal(rewrittenLogoUrl.searchParams.get('mdblistKey'), 'mdblist-key-456');
   assert.equal(rewrittenLogoUrl.searchParams.get('lang'), 'en');
+  assert.equal(rewrittenLogoUrl.searchParams.get('genreBadge'), 'text');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatings'), 'mdblist,tomatoes,letterboxd');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingsMax'), '3');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoBackground'), 'dark');

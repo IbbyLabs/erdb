@@ -62,6 +62,13 @@ import {
   formatRatingNumber,
   parseNumericRatingValue,
 } from '@/lib/ratingDisplay';
+import {
+  DEFAULT_GENRE_BADGE_MODE,
+  normalizeGenreBadgeMode,
+  resolveGenreBadgeFamily,
+  type GenreBadgeFamilyId,
+  type GenreBadgeMode,
+} from '@/lib/genreBadge';
 
 export const runtime = 'nodejs';
 
@@ -145,7 +152,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v61';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v62';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -420,6 +427,12 @@ type RatingBadge = {
   iconUrl: string;
   accentColor: string;
   variant?: 'standard' | 'minimal' | 'summary';
+};
+type GenreBadgeSpec = {
+  familyId: GenreBadgeFamilyId;
+  label: string;
+  accentColor: string;
+  mode: GenreBadgeMode;
 };
 type BlockbusterBlurb = {
   text: string;
@@ -2526,6 +2539,7 @@ type FastRenderInput = {
   posterRowHorizontalInset: number;
   posterTitleText?: string | null;
   posterLogoUrl?: string | null;
+  genreBadge?: GenreBadgeSpec | null;
   badgeIconSize: number;
   badgeFontSize: number;
   badgePaddingX: number;
@@ -3686,6 +3700,108 @@ ${rect}
   return null;
 };
 
+const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
+  const normalized = label.trim().toUpperCase();
+  if (!normalized) return Math.max(fontSize * 2, Math.round(fontSize * 2.2));
+  const baseWidth = estimateSummaryLabelWidth(normalized, fontSize);
+  const letterSpacingWidth = Math.round(Math.max(0, normalized.length - 1) * fontSize * 0.08);
+  const safetyWidth = Math.max(6, Math.round(fontSize * 0.45));
+  return Math.max(Math.round(fontSize * 2.2), baseWidth + letterSpacingWidth + safetyWidth);
+};
+
+const buildGenreBadgeIconMarkup = ({
+  familyId,
+  color,
+}: {
+  familyId: GenreBadgeFamilyId;
+  color: string;
+}) => {
+  if (familyId === 'anime') {
+    return `<path d="M12 2 14.8 9.2 22 12 14.8 14.8 12 22 9.2 14.8 2 12 9.2 9.2Z" fill="${color}" opacity="0.96"/>`;
+  }
+
+  if (familyId === 'horror') {
+    return `<path d="M12 3c4.6 0 8 3.3 8 7.9 0 2.3-.9 4.2-2.4 5.7V20h-3v-2h-1v2h-3v-2H9v2H6v-3.4A7.8 7.8 0 0 1 4 10.9C4 6.3 7.4 3 12 3Z" fill="${color}" opacity="0.96"/><circle cx="9" cy="11" r="1.5" fill="#05070b"/><circle cx="15" cy="11" r="1.5" fill="#05070b"/><rect x="10.4" y="14.6" width="3.2" height="2.2" rx="1.1" fill="#05070b"/>`;
+  }
+
+  if (familyId === 'comedy') {
+    return `<circle cx="12" cy="12" r="8.6" fill="none" stroke="${color}" stroke-width="2.1"/><circle cx="9.1" cy="10.1" r="1.1" fill="${color}"/><circle cx="14.9" cy="10.1" r="1.1" fill="${color}"/><path d="M8 14.3c1.1 1.8 2.4 2.7 4 2.7s2.9-.9 4-2.7" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+  }
+
+  if (familyId === 'romance') {
+    return `<path d="M12 20.2 4.9 13.4C3.7 12.2 3 10.7 3 9.1 3 6 5.3 4 8.2 4c1.7 0 3.2.8 3.8 2.1C12.6 4.8 14.1 4 15.8 4 18.7 4 21 6 21 9.1c0 1.6-.7 3.1-1.9 4.3L12 20.2Z" fill="${color}" opacity="0.97"/>`;
+  }
+
+  if (familyId === 'action') {
+    return `<path d="M13.8 2 6.9 12h4l-1.1 10L17.1 12h-4L13.8 2Z" fill="${color}" opacity="0.97"/>`;
+  }
+
+  if (familyId === 'scifi') {
+    return `<ellipse cx="12" cy="12" rx="8.8" ry="4.4" fill="none" stroke="${color}" stroke-width="1.9" transform="rotate(-24 12 12)"/><circle cx="12" cy="12" r="3.2" fill="${color}" opacity="0.92"/><circle cx="18.2" cy="8.8" r="1.4" fill="${color}"/>`;
+  }
+
+  if (familyId === 'fantasy') {
+    return `<path d="M12 3 15.1 6.1 13.1 8.1v6.8l1.9 1.9-1.2 1.2-1.8-1.8-1.8 1.8-1.2-1.2 1.9-1.9V8.1L8.9 6.1 12 3Z" fill="${color}" opacity="0.96"/><rect x="7" y="13.8" width="10" height="2.2" rx="1.1" fill="${color}"/>`;
+  }
+
+  if (familyId === 'crime') {
+    return `<path d="M12 3 18.3 5.7V11c0 4.2-2.5 7.2-6.3 9.1C8.2 18.2 5.7 15.2 5.7 11V5.7L12 3Z" fill="none" stroke="${color}" stroke-width="2"/><path d="M9 10.2h6M9 13.8h6" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`;
+  }
+
+  return `<rect x="4" y="7" width="12" height="9.5" rx="2" fill="none" stroke="${color}" stroke-width="2"/><rect x="8" y="4.5" width="4.4" height="2.7" rx="1.2" fill="${color}"/><circle cx="10" cy="11.8" r="2.1" fill="${color}"/><path d="M16 9.2 20.5 7.1v9.4L16 14.4Z" fill="${color}" opacity="0.96"/>`;
+};
+
+const buildGenreBadgeSvg = (
+  genreBadge: GenreBadgeSpec,
+  imageType: 'poster' | 'backdrop' | 'logo',
+) => {
+  const height =
+    imageType === 'logo'
+      ? 34
+      : imageType === 'backdrop'
+        ? 36
+        : 34;
+  const radius = Math.round(height / 2);
+  const strokeWidth = 1.3;
+  const iconSize = Math.round(height * 0.48);
+  const fontSize = genreBadge.mode === 'text' ? Math.round(height * 0.39) : Math.round(height * 0.35);
+  const label = genreBadge.label.trim().toUpperCase();
+  const showIcon = genreBadge.mode === 'icon' || genreBadge.mode === 'both';
+  const showText = genreBadge.mode === 'text' || genreBadge.mode === 'both';
+  const paddingX = showText ? (showIcon ? 14 : 16) : 12;
+  const iconGap = showIcon && showText ? 9 : 0;
+  const labelWidth = showText ? estimateGenreBadgeLabelWidth(label, fontSize) : 0;
+  const width = Math.max(
+    height,
+    paddingX * 2 + (showIcon ? iconSize : 0) + iconGap + labelWidth,
+  );
+  const iconX = paddingX;
+  const iconY = Math.round((height - iconSize) / 2);
+  const textX = iconX + (showIcon ? iconSize + iconGap : 0);
+  const textCenterX = textX + Math.round(labelWidth / 2);
+  const textY = Math.round(height * 0.62);
+  const iconMarkup = showIcon
+    ? `<g transform="translate(${iconX} ${iconY}) scale(${iconSize / 24})">${buildGenreBadgeIconMarkup({
+        familyId: genreBadge.familyId,
+        color: genreBadge.accentColor,
+      })}</g>`
+    : '';
+  const textMarkup = showText
+    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}">${escapeXml(label)}</text>`
+    : '';
+
+  return {
+    width,
+    height,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<rect x="${strokeWidth / 2}" y="${strokeWidth / 2}" width="${Math.max(0, width - strokeWidth)}" height="${Math.max(0, height - strokeWidth)}" rx="${radius}" fill="rgba(8,11,16,0.78)" stroke="${genreBadge.accentColor}" stroke-width="${strokeWidth}"/>
+<rect x="${Math.max(2, strokeWidth)}" y="${Math.max(2, strokeWidth)}" width="${Math.max(0, width - Math.max(4, strokeWidth * 2))}" height="${Math.max(0, Math.round(height * 0.45))}" rx="${Math.max(8, radius - 4)}" fill="rgba(255,255,255,0.05)"/>
+${iconMarkup}
+${textMarkup}
+</svg>`,
+  };
+};
+
 const buildBadgeSvg = ({
   width,
   height,
@@ -3897,6 +4013,17 @@ const renderWithSharp = async (
     const sourcePayload = await getSourceImagePayload(input.imgUrl);
     const sourceBuffer = Buffer.from(sourcePayload.body);
     const overlays: Array<{ input: Buffer; top: number; left: number }> = [];
+    type GenreCollisionRect = { left: number; top: number; width: number; height: number };
+    const genreCollisionRects: GenreCollisionRect[] = [];
+    const trackGenreCollisionRect = (left: number, top: number, width: number, height: number) => {
+      if (!(width > 0 && height > 0)) return;
+      genreCollisionRects.push({
+        left: Math.round(left),
+        top: Math.round(top),
+        width: Math.round(width),
+        height: Math.round(height),
+      });
+    };
 
     const preparedImage = input.imageType === 'logo'
       ? sharp(sourceBuffer).trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -4593,6 +4720,7 @@ const renderWithSharp = async (
       }
 
       overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
+      trackGenreCollisionRect(rowX, rowY, badgeWidth, badgeHeight);
     };
     const composeBlockbusterPosterCallouts = () => {
       if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return;
@@ -4658,6 +4786,12 @@ const renderWithSharp = async (
           top: placement.top,
           left: placement.left,
         });
+        trackGenreCollisionRect(
+          placement.left,
+          placement.top,
+          transformedCallout.width,
+          transformedCallout.height
+        );
       }
     };
     const composeBlockbusterReviewBlurbs = () => {
@@ -4726,6 +4860,12 @@ const renderWithSharp = async (
           top: placement.top,
           left: placement.left,
         });
+        trackGenreCollisionRect(
+          placement.left,
+          placement.top,
+          transformedReviewCallout.width,
+          transformedReviewCallout.height
+        );
       }
     };
     const composeBlockbusterScoreTiles = () => {
@@ -4783,6 +4923,12 @@ const renderWithSharp = async (
           top: placement.top,
           left: placement.left,
         });
+        trackGenreCollisionRect(
+          placement.left,
+          placement.top,
+          scaledBadge.width,
+          scaledBadge.height
+        );
       }
     };
     const composeEdgeAlignedPosterBadge = (
@@ -4854,6 +5000,7 @@ const renderWithSharp = async (
             ? Math.max(12, input.outputWidth - badgeWidth - 12)
             : 12;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
+        trackGenreCollisionRect(rowX, rowY, badgeWidth, badgeHeightForRow);
         rowY += badgeHeightForRow + input.badgeGap;
       }
     };
@@ -4898,6 +5045,7 @@ const renderWithSharp = async (
         );
         if (!spec) continue;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
+        trackGenreCollisionRect(rowX, rowY, badgeWidth, spec.height);
         rowX += badgeWidth + rowGap;
       }
     };
@@ -4925,8 +5073,64 @@ const renderWithSharp = async (
         );
         if (!spec) continue;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: clampedX });
+        trackGenreCollisionRect(clampedX, rowY, uniformBadgeWidth, spec.height);
         rowY += spec.height + input.badgeGap;
       }
+    };
+    const composeGenreBadge = () => {
+      if (!input.genreBadge) return;
+      const spec = buildGenreBadgeSvg(input.genreBadge, input.imageType);
+      const maxLeft = Math.max(12, input.outputWidth - spec.width - 12);
+      const maxTop = Math.max(12, input.outputHeight - spec.height - 12);
+      let left = 12;
+      let top = Math.min(maxTop, Math.max(12, input.badgeTopOffset));
+
+      if (input.imageType === 'logo') {
+        top = 12;
+      } else if (input.imageType === 'poster') {
+        let align: 'left' | 'center' | 'right' = 'left';
+        if (input.posterRatingsLayout === 'left') {
+          align = 'right';
+        } else if (input.posterRatingsLayout === 'left-right') {
+          align = 'center';
+        }
+
+        if (posterTopRows.length > 0) {
+          top = Math.min(maxTop, Math.max(12, posterTopBlockBottom));
+          if (input.posterRatingsLayout === 'left-right') {
+            align = 'center';
+          }
+        }
+
+        left =
+          align === 'right'
+            ? maxLeft
+            : align === 'center'
+              ? Math.max(12, Math.min(maxLeft, Math.round((input.outputWidth - spec.width) / 2)))
+              : 12;
+      }
+
+      const collisionPadding = Math.max(8, Math.round(input.badgeGap * 0.9));
+      let adjustedTop = top;
+      for (let pass = 0; pass < genreCollisionRects.length + 2; pass += 1) {
+        let nextTop = adjustedTop;
+        for (const rect of genreCollisionRects) {
+          const overlapsHorizontally =
+            left < rect.left + rect.width + collisionPadding &&
+            left + spec.width > rect.left - collisionPadding;
+          const overlapsVertically =
+            adjustedTop < rect.top + rect.height + collisionPadding &&
+            adjustedTop + spec.height > rect.top - collisionPadding;
+          if (!overlapsHorizontally || !overlapsVertically) continue;
+          nextTop = Math.max(nextTop, rect.top + rect.height + collisionPadding);
+        }
+        const clampedNextTop = Math.min(maxTop, nextTop);
+        if (clampedNextTop === adjustedTop) break;
+        adjustedTop = clampedNextTop;
+      }
+
+      top = adjustedTop;
+      overlays.push({ input: Buffer.from(spec.svg), top, left });
     };
 
     if (input.imageType === 'logo') {
@@ -5219,6 +5423,8 @@ const renderWithSharp = async (
       }
     }
 
+    composeGenreBadge();
+
     const background =
       input.imageType === 'logo'
         ? input.logoBackground === 'dark'
@@ -5283,6 +5489,7 @@ export async function GET(
   const cleanId = id.replace('.jpg', '');
 
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
+  const genreBadgeMode = normalizeGenreBadgeMode(request.nextUrl.searchParams.get('genreBadge'));
   const globalRatings = request.nextUrl.searchParams.get('ratings');
   const posterRatings = request.nextUrl.searchParams.get('posterRatings') ?? globalRatings;
   const backdropRatings = request.nextUrl.searchParams.get('backdropRatings') ?? globalRatings;
@@ -5497,6 +5704,7 @@ export async function GET(
     shouldApplyRatings ||
     shouldApplyStreamBadges ||
     shouldRenderLogoBackground ||
+    genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ||
     (imageType === 'poster' && posterTextPreference === 'clean');
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
@@ -5521,6 +5729,7 @@ export async function GET(
     imageType === 'poster' ? blockbusterDensity : '-',
     aggregateRatingSource,
     ratingStyle,
+    genreBadgeMode,
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
@@ -5754,6 +5963,32 @@ export async function GET(
         allowAnimeOnlyRatings = hasConfirmedAnimeMapping || mediaLooksAnimated;
       }
       const isAnimeContent = hasNativeAnimeInput || hasConfirmedAnimeMapping || mediaLooksAnimated;
+      const buildResolvedGenreBadge = (
+        genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>,
+        genreIds: Array<number | string | null | undefined> = [],
+      ): GenreBadgeSpec | null => {
+        if (genreBadgeMode === DEFAULT_GENRE_BADGE_MODE) {
+          return null;
+        }
+        const family = resolveGenreBadgeFamily({
+          genres,
+          genreIds,
+          isAnimeContent,
+        });
+        if (!family) {
+          return null;
+        }
+        return {
+          familyId: family.id,
+          label: family.label,
+          accentColor: family.accentColor,
+          mode: genreBadgeMode,
+        };
+      };
+      let genreBadge = buildResolvedGenreBadge(
+        Array.isArray(media?.genres) ? media.genres : [],
+        Array.isArray(media?.genre_ids) ? media.genre_ids : [],
+      );
 
       let imgPath = '';
       let imgUrl = rawFallbackImageUrl;
@@ -5781,7 +6016,11 @@ export async function GET(
         useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
       const shouldRenderRatings = shouldApplyRatings && (!useRawKitsuFallback || shouldRenderRawKitsuFallbackRating);
       const shouldRenderStreamBadges = shouldApplyStreamBadges && !isAnimeContent;
-      const shouldRenderBadges = shouldRenderRatings || shouldRenderStreamBadges || shouldRenderLogoBackground;
+      const shouldRenderBadges =
+        shouldRenderRatings ||
+        shouldRenderStreamBadges ||
+        shouldRenderLogoBackground ||
+        Boolean(genreBadge);
       const releaseDateForCache =
         mediaType === 'movie' ? media?.release_date : mediaType === 'tv' ? media?.first_air_date : null;
       const tmdbIdForCache =
@@ -5835,6 +6074,7 @@ export async function GET(
         ratingPresentation,
         aggregateRatingSource,
         ratingStyle,
+        genreBadgeMode,
         imageType === 'logo' ? logoBackground : '-',
         effectiveRatingPreferences.join(',') || 'none',
         streamBadgesCacheKey,
@@ -6476,6 +6716,14 @@ export async function GET(
       if (!useRawKitsuFallback && detailsBundlePromise) {
         const { details, fallbackDetails, bundledImages, tmdbRating: bundledRating } = await detailsBundlePromise;
         tmdbRating = bundledRating;
+        genreBadge = buildResolvedGenreBadge(
+          [
+            ...(Array.isArray(details?.genres) ? details.genres : []),
+            ...(Array.isArray(fallbackDetails?.genres) ? fallbackDetails.genres : []),
+            ...(Array.isArray(media?.genres) ? media.genres : []),
+          ],
+          Array.isArray(media?.genre_ids) ? media.genre_ids : [],
+        );
 
         const selectImagePath = async (input: {
           posters: any[];
@@ -6807,6 +7055,7 @@ export async function GET(
         ratingBadges.length === 0 &&
         streamBadges.length === 0 &&
         !shouldRenderLogoBackground &&
+        !genreBadge &&
         !posterTitleText &&
         !posterLogoUrl
       ) {
@@ -7190,6 +7439,7 @@ export async function GET(
           posterRowHorizontalInset,
           posterTitleText,
           posterLogoUrl,
+          genreBadge,
           badgeIconSize,
           badgeFontSize,
           badgePaddingX,

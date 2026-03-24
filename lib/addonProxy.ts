@@ -7,6 +7,7 @@ import {
 const ERDB_OPTIONAL_PARAMS = [
   'ratings',
   'lang',
+  'genreBadge',
   'streamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
@@ -99,6 +100,7 @@ export type ProxyConfig = {
   backdropRatings?: string;
   logoRatings?: string;
   lang?: string;
+  genreBadge?: string;
   streamBadges?: string;
   posterStreamBadges?: string;
   backdropStreamBadges?: string;
@@ -142,6 +144,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'backdropRatings',
   'logoRatings',
   'lang',
+  'genreBadge',
   'streamBadges',
   'posterStreamBadges',
   'backdropStreamBadges',

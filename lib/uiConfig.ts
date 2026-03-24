@@ -35,6 +35,11 @@ import {
   normalizeMetadataTranslationMode,
   type MetadataTranslationMode,
 } from './metadataTranslation.ts';
+import {
+  DEFAULT_GENRE_BADGE_MODE,
+  normalizeGenreBadgeMode,
+  type GenreBadgeMode,
+} from './genreBadge.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -47,6 +52,7 @@ export type SharedErdbSettings = {
   lang: string;
   posterImageText: ImageTextPreference;
   backdropImageText: ImageTextPreference;
+  genreBadgeMode: GenreBadgeMode;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
   logoRatingPreferences: RatingPreference[];
@@ -112,6 +118,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   lang: 'en',
   posterImageText: 'clean',
   backdropImageText: 'clean',
+  genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -293,6 +300,7 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.backdropImageText,
       defaults.backdropImageText,
     ),
+    genreBadgeMode: normalizeGenreBadgeMode(candidate.genreBadgeMode, defaults.genreBadgeMode),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences,
       defaults.posterRatingPreferences,
@@ -444,6 +452,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
 
   if (settings.lang) {
     payload.lang = settings.lang;
+  }
+  if (settings.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
+    payload.genreBadge = settings.genreBadgeMode;
   }
   if (settings.posterStreamBadges !== 'auto') {
     payload.posterStreamBadges = settings.posterStreamBadges;

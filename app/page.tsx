@@ -72,6 +72,13 @@ import {
   METADATA_TRANSLATION_MODE_OPTIONS,
   type MetadataTranslationMode,
 } from '@/lib/metadataTranslation';
+import {
+  DEFAULT_GENRE_BADGE_MODE,
+  GENRE_BADGE_FAMILY_META,
+  GENRE_BADGE_MODE_OPTIONS,
+  GENRE_BADGE_PREVIEW_SAMPLES,
+  type GenreBadgeMode,
+} from '@/lib/genreBadge';
 
 const RatingProviderSortableList = dynamic(
   () =>
@@ -121,6 +128,7 @@ const QUALITY_BADGE_POSITION_OPTIONS: Array<{ id: PosterQualityBadgesPosition; l
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
 ];
+const SAMPLE_GENRE_BADGE_MODE_DEFAULT: GenreBadgeMode = 'both';
 type RecentCommitType = 'feat' | 'fix' | 'chore' | 'refactor' | 'perf' | 'test' | 'build' | 'ci' | 'style' | 'revert';
 type RecentCommit = {
   hash: string;
@@ -183,6 +191,36 @@ const normalizeOptionalBadgeCountInput = (value: string) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return normalized;
 };
+const buildGenreSamplePreviewUrl = ({
+  baseUrl,
+  tmdbKey,
+  sample,
+  mode,
+}: {
+  baseUrl: string;
+  tmdbKey: string;
+  sample: (typeof GENRE_BADGE_PREVIEW_SAMPLES)[number];
+  mode: GenreBadgeMode;
+}) => {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const normalizedTmdbKey = tmdbKey.trim();
+  if (!normalizedBaseUrl || !normalizedTmdbKey) {
+    return '';
+  }
+
+  const query = new URLSearchParams({
+    tmdbKey: normalizedTmdbKey,
+    lang: sample.lang,
+  });
+  if (mode !== DEFAULT_GENRE_BADGE_MODE) {
+    query.set('genreBadge', mode);
+  }
+  for (const [key, value] of Object.entries(sample.params)) {
+    query.set(key, value);
+  }
+
+  return `${normalizedBaseUrl}/${sample.previewType}/${encodeURIComponent(sample.mediaId)}.jpg?${query.toString()}`;
+};
 const AI_DEVELOPER_PROMPT = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
 CONFIG INPUT
@@ -203,6 +241,7 @@ posterRatings           | ${RATING_PROVIDER_DOC_VALUES} (poster only)           
 backdropRatings         | ${RATING_PROVIDER_DOC_VALUES} (backdrop only)                        | all
 logoRatings             | ${RATING_PROVIDER_DOC_VALUES} (logo only)                            | all
 lang                    | ${TMDB_LANGUAGE_DOC_COPY}                                             | en
+genreBadge             | off, text, icon, both                                                | off
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
@@ -238,6 +277,7 @@ PER TYPE SETTINGS
 poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
+all      : genreBadge = cfg.genreBadge (optional global genre badge)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
@@ -247,7 +287,7 @@ Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / c
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
 
 Omit imageText when type=logo.
 
@@ -595,6 +635,8 @@ export default function Home() {
   const [lang, setLang] = useState('en');
   const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
   const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
+  const [genreBadgeMode, setGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
+  const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
   const [backdropRatingRows, setBackdropRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
   const [logoRatingRows, setLogoRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -912,6 +954,7 @@ export default function Home() {
       setLang(normalized.settings.lang);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
+      setGenreBadgeMode(normalized.settings.genreBadgeMode);
       setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
       setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
       setLogoRatingRows(enabledOrderedToRows(normalized.settings.logoRatingPreferences));
@@ -955,6 +998,7 @@ export default function Home() {
         lang,
         posterImageText,
         backdropImageText,
+        genreBadgeMode,
         posterRatingPreferences,
         backdropRatingPreferences,
         logoRatingPreferences,
@@ -994,6 +1038,7 @@ export default function Home() {
       lang,
       posterImageText,
       backdropImageText,
+      genreBadgeMode,
       posterRatingPreferences,
       backdropRatingPreferences,
       logoRatingPreferences,
@@ -1154,6 +1199,9 @@ export default function Home() {
       ratingStyle: ratingStyleForType,
       lang,
     });
+    if (genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
+      query.set('genreBadge', genreBadgeMode);
+    }
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
       query.set(
         previewType === 'poster'
@@ -1234,6 +1282,7 @@ export default function Home() {
     lang,
     posterImageText,
     backdropImageText,
+    genreBadgeMode,
     posterRatingPreferences,
     backdropRatingPreferences,
     logoRatingPreferences,
@@ -1266,6 +1315,19 @@ export default function Home() {
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
+  const genrePreviewCards = useMemo(
+    () =>
+      GENRE_BADGE_PREVIEW_SAMPLES.map((sample) => ({
+        sample,
+        url: buildGenreSamplePreviewUrl({
+          baseUrl,
+          tmdbKey,
+          sample,
+          mode: genrePreviewMode,
+        }),
+      })),
+    [baseUrl, tmdbKey, genrePreviewMode]
+  );
   const latestReleaseMatchesDeployment = latestReleaseTag && latestReleaseTag === DEPLOYMENT_VERSION;
   const versionStatusNote = isLatestReleaseLoading
     ? 'Checking the latest release on GitHub now.'
@@ -1989,7 +2051,27 @@ export default function Home() {
                         </div>
                       </div>
                     )}
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
+                      <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                        {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => setGenreBadgeMode(option.id)}
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                              genreBadgeMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                            }`}
+                            title={option.description}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
+                  <p className="text-[11px] leading-relaxed text-zinc-500">
+                    Genre badges use a small curated bucket set. Clear genres such as horror, comedy, sci fi, fantasy, crime, documentary, and anime resolve; fuzzy cases stay off.
+                  </p>
                 </div>
 
                 {(previewType === 'poster' || previewType === 'backdrop' || previewType === 'logo') && (
@@ -2233,6 +2315,82 @@ export default function Home() {
                         : tmdbKey.trim()
                           ? 'No preview available.'
                           : 'Add a TMDB key to enable live preview.'}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/60 p-4 space-y-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre Badge Samples</div>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                        Curated movie, show, and anime renders that keep the badge decision fixed while you compare text, icon, and combined modes.
+                      </p>
+                    </div>
+                    <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-zinc-900">
+                      {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                        <button
+                          key={`genre-preview-mode-${option.id}`}
+                          type="button"
+                          onClick={() => setGenrePreviewMode(option.id)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            genrePreviewMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                          }`}
+                          title={option.description}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {tmdbKey.trim() ? (
+                    <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {genrePreviewCards.map(({ sample, url }) => {
+                        const family = GENRE_BADGE_FAMILY_META[sample.familyId];
+                        const accentStyle = {
+                          borderColor: hexToRgbaCss(family.accentColor, 0.45),
+                          backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(family.accentColor, 0.18)}, rgba(24,24,27,0.88) 62%)`,
+                        };
+                        const mediaFrameClass =
+                          sample.previewType === 'poster'
+                            ? 'aspect-[2/3]'
+                            : sample.previewType === 'logo'
+                              ? 'h-40'
+                              : 'aspect-video';
+
+                        return (
+                          <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
+                            <div className="flex min-h-[3.5rem] items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                                  {sample.typeLabel}
+                                </div>
+                                <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
+                              </div>
+                              <span
+                                className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
+                                style={accentStyle}
+                              >
+                                {family.label}
+                              </span>
+                            </div>
+                            <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-black/70 shadow-xl shadow-black/40 ${mediaFrameClass}`}>
+                              <Image
+                                key={url}
+                                src={url}
+                                alt={`${sample.title} ${sample.typeLabel} genre sample`}
+                                unoptimized
+                                fill
+                                className={sample.previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                              />
+                            </div>
+                            <p className="text-[11px] leading-5 text-zinc-400">{sample.decision}</p>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
+                      Add a TMDB key above to load the curated sample board.
                     </div>
                   )}
                 </div>
@@ -2481,6 +2639,11 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">en</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">genreBadge</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">off, text, icon, both (global genre badge)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">off</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">streamBadges</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">auto, on, off (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
@@ -2591,6 +2754,8 @@ export default function Home() {
                 <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
                   In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span> and <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>. Query values remain unchanged.
                   <br />
+                  Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve; ambiguous combinations stay off.
+                  <br />
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, and <span className="font-semibold text-zinc-200">plain</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                 </div>
               </div>
@@ -2680,7 +2845,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Direct image URLs support shared fallbacks like ratings, lang, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, and qualityBadgesStyle. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
+                  Direct image URLs support shared fallbacks like ratings, lang, genreBadge, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, and qualityBadgesStyle. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
                 </div>
               </div>
 
