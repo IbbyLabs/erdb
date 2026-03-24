@@ -239,9 +239,9 @@ Main endpoint:
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
 | `qualityBadgesSide` | Quality badges side (poster `top bottom` layout only) | `left`, `right` | `left` |
 | `posterQualityBadgesPosition` | Quality badges side for poster `top` or `bottom` layouts | `auto`, `left`, `right` | `auto` |
-| `qualityBadgesStyle` | Quality badges style (global fallback) | `glass`, `square`, `plain` | `glass` |
-| `posterQualityBadgesStyle` | Poster quality badges style | `glass`, `square`, `plain` | `glass` |
-| `backdropQualityBadgesStyle` | Backdrop quality badges style | `glass`, `square`, `plain` | `glass` |
+| `qualityBadgesStyle` | Quality badges style (global fallback) | `glass`, `square`, `plain`, `media` | `glass` |
+| `posterQualityBadgesStyle` | Poster quality badges style | `glass`, `square`, `plain`, `media` | `glass` |
+| `backdropQualityBadgesStyle` | Backdrop quality badges style | `glass`, `square`, `plain`, `media` | `glass` |
 | `posterQualityBadgesMax` | Poster quality badge limit | Number (1-20) | `auto` |
 | `backdropQualityBadgesMax` | Backdrop quality badge limit | Number (1-20) | `auto` |
 | `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `blockbuster` | `standard` |
@@ -337,9 +337,9 @@ posterStreamBadges      | auto, on, off (poster only)                           
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
 qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
 posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
-qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
-posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
-backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
+qualityBadgesStyle      | glass, square, plain, media (global fallback)                        | glass
+posterQualityBadgesStyle| glass, square, plain, media (poster only)                            | glass
+backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
 posterQualityBadgesMax  | Number (1+)                                                          | auto
 backdropQualityBadgesMax| Number (1+)                                                          | auto
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard

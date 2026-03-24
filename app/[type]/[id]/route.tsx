@@ -25,8 +25,11 @@ import {
   type PosterRatingLayout,
 } from '@/lib/posterRatingLayout';
 import {
+  DEFAULT_QUALITY_BADGES_STYLE,
   DEFAULT_RATING_STYLE,
+  normalizeQualityBadgeStyle,
   normalizeRatingStyle,
+  type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
 import {
@@ -69,25 +72,29 @@ import {
   type GenreBadgeFamilyId,
   type GenreBadgeMode,
 } from '@/lib/genreBadge';
+import {
+  MEDIA_FEATURE_BADGE_ORDER,
+  buildCertificationBadgeMeta,
+  buildMediaFeatureBadgesFromFlags,
+  collectMediaFeatureFlags,
+  isMediaFeatureBadgeKey,
+  normalizeUserFacingMediaBadgeLabel,
+  resolveMovieCertificationBadge,
+  resolveTvCertificationBadge,
+  type MediaFeatureBadgeKey,
+  type MediaFeatureFlags,
+} from '@/lib/mediaFeatures';
 
 export const runtime = 'nodejs';
 
 type PosterTextPreference = 'original' | 'clean' | 'alternative';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
-type StreamBadgeKey = '4k' | 'hdr' | 'dolbyvision' | 'dolbyatmos' | 'remux';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
-type BadgeKey = RatingPreference | StreamBadgeKey | AggregateBadgeKey;
+type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
 type QualityBadgesSide = 'left' | 'right';
 type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 type LogoBackground = 'transparent' | 'dark';
 type BlockbusterDensity = 'sparse' | 'balanced' | 'packed';
-type StreamQualityFlags = {
-  has4k: boolean;
-  hasHdr: boolean;
-  hasDolbyVision: boolean;
-  hasDolbyAtmos: boolean;
-  hasRemux: boolean;
-};
 const FALLBACK_IMAGE_LANGUAGE = 'en';
 const ALLOWED_IMAGE_TYPES = new Set(['poster', 'backdrop', 'logo']);
 const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
@@ -152,7 +159,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v62';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v65';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -262,7 +269,7 @@ type CachedJsonNetworkObserver = {
   }) => Promise<void> | void;
 };
 type TorrentioBadgeCache = {
-  flags: StreamQualityFlags;
+  flags: MediaFeatureFlags;
 };
 type TorrentioBadgeResult = {
   badges: RatingBadge[];
@@ -442,55 +449,6 @@ type OutputFormat = 'png' | 'jpeg' | 'webp';
 const RATING_PROVIDER_META = new Map(
   RATING_PROVIDER_OPTIONS.map((provider) => [provider.id, provider] as const)
 );
-const STREAM_BADGE_META = new Map<StreamBadgeKey, { label: string; value: string; accentColor: string; iconUrl: string }>([
-  [
-    '4k',
-    {
-      label: '4K',
-      value: '',
-      accentColor: '#f59e0b',
-      iconUrl: '',
-    },
-  ],
-  [
-    'hdr',
-    {
-      label: 'HDR',
-      value: '',
-      accentColor: '#10b981',
-      iconUrl: '',
-    },
-  ],
-  [
-    'dolbyvision',
-    {
-      label: 'Dolby Vision',
-      value: '',
-      accentColor: '#60a5fa',
-      iconUrl: '',
-    },
-  ],
-  [
-    'dolbyatmos',
-    {
-      label: 'Dolby Atmos',
-      value: '',
-      accentColor: '#22d3ee',
-      iconUrl: '',
-    },
-  ],
-  [
-    'remux',
-    {
-      label: 'REMUX',
-      value: '',
-      accentColor: '#ef4444',
-      iconUrl: '',
-    },
-  ],
-]);
-const STREAM_BADGE_ORDER: StreamBadgeKey[] = ['4k', 'hdr', 'dolbyvision', 'dolbyatmos', 'remux'];
-const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const LOGO_BASE_HEIGHT = 320;
 const LOGO_FALLBACK_ASPECT_RATIO = 2.5;
 const LOGO_MIN_WIDTH = 360;
@@ -1296,13 +1254,8 @@ const resolvePosterQualityBadgePlacement = (
   return qualityBadgesSide;
 };
 
-const normalizeQualityBadgesStyle = (value?: string | null): RatingStyle => {
-  const normalized = (value || '').trim().toLowerCase();
-  if (normalized === 'glass' || normalized === 'square' || normalized === 'plain') {
-    return normalized;
-  }
-  return DEFAULT_QUALITY_BADGES_STYLE;
-};
+const normalizeQualityBadgesStyle = (value?: string | null): QualityBadgeStyle =>
+  normalizeQualityBadgeStyle(value);
 
 const normalizeLogoBackground = (value?: string | null): LogoBackground => {
   const normalized = (value || '').trim().toLowerCase();
@@ -1311,43 +1264,6 @@ const normalizeLogoBackground = (value?: string | null): LogoBackground => {
   }
   return 'transparent';
 };
-
-const createEmptyStreamFlags = (): StreamQualityFlags => ({
-  has4k: false,
-  hasHdr: false,
-  hasDolbyVision: false,
-  hasDolbyAtmos: false,
-  hasRemux: false,
-});
-
-const parseStreamFlagsFromFilename = (filename: string): StreamQualityFlags => {
-  const normalized = filename.toUpperCase();
-  const hasDolbyVision =
-    /\bDOVI\b/.test(normalized) || /\bDV\b/.test(normalized) || /DOLBY\s*VISION/.test(normalized);
-  const hasHdr =
-    /\bHDR10\+\b/.test(normalized) ||
-    /\bHDR10\b/.test(normalized) ||
-    /\bHDR\b/.test(normalized) ||
-    /\bHLG\b/.test(normalized) ||
-    hasDolbyVision;
-  const hasDolbyAtmos = /\bATMOS\b/.test(normalized) || /DOLBY\s*ATMOS/.test(normalized);
-  const has4k =
-    /\b2160P\b/.test(normalized) ||
-    /\b2160\b/.test(normalized) ||
-    /\b4K\b/.test(normalized) ||
-    /\bUHD\b/.test(normalized) ||
-    /\bULTRAHD\b/.test(normalized);
-  const hasRemux = /\bREMUX\b/.test(normalized);
-  return { has4k, hasHdr, hasDolbyVision, hasDolbyAtmos, hasRemux };
-};
-
-const mergeStreamFlags = (left: StreamQualityFlags, right: StreamQualityFlags): StreamQualityFlags => ({
-  has4k: left.has4k || right.has4k,
-  hasHdr: left.hasHdr || right.hasHdr,
-  hasDolbyVision: left.hasDolbyVision || right.hasDolbyVision,
-  hasDolbyAtmos: left.hasDolbyAtmos || right.hasDolbyAtmos,
-  hasRemux: left.hasRemux || right.hasRemux,
-});
 
 const extractTorrentioFilenames = (payload: any) => {
   const streams = Array.isArray(payload?.streams) ? payload.streams : [];
@@ -1364,41 +1280,14 @@ const extractTorrentioFilenames = (payload: any) => {
   return filenames;
 };
 
-const collectStreamFlags = (filenames: string[]) => {
-  let flags = createEmptyStreamFlags();
-  for (const filename of filenames) {
-    if (!filename) continue;
-    flags = mergeStreamFlags(flags, parseStreamFlagsFromFilename(filename));
-    if (flags.has4k && flags.hasHdr && flags.hasDolbyVision && flags.hasDolbyAtmos && flags.hasRemux) {
-      break;
-    }
-  }
-  return flags;
-};
-
-const buildStreamBadgesFromFlags = (flags: StreamQualityFlags): RatingBadge[] => {
-  const badges: RatingBadge[] = [];
-  const flagMap: Record<StreamBadgeKey, boolean> = {
-    '4k': flags.has4k,
-    hdr: flags.hasHdr,
-    dolbyvision: flags.hasDolbyVision,
-    dolbyatmos: flags.hasDolbyAtmos,
-    remux: flags.hasRemux,
-  };
-  for (const key of STREAM_BADGE_ORDER) {
-    if (!flagMap[key]) continue;
-    const meta = STREAM_BADGE_META.get(key);
-    if (!meta) continue;
-    badges.push({
-      key,
-      label: meta.label,
-      value: meta.value,
-      iconUrl: meta.iconUrl,
-      accentColor: meta.accentColor,
-    });
-  }
-  return badges;
-};
+const buildFeatureBadgesFromFlags = (flags: MediaFeatureFlags): RatingBadge[] =>
+  buildMediaFeatureBadgesFromFlags(flags).map((badge) => ({
+    key: badge.key,
+    label: badge.label,
+    value: '',
+    iconUrl: '',
+    accentColor: badge.accentColor,
+  }));
 
 const buildTorrentioUrl = (type: 'movie' | 'series', id: string) =>
   `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(id)}.json`;
@@ -1420,13 +1309,13 @@ const fetchTorrentioBadges = async (input: {
       : getDeterministicTtlMs(TORRENTIO_CACHE_TTL_MS, cacheKey);
   const cached = getMetadata<TorrentioBadgeCache>(cacheKey);
   if (cached) {
-    return { badges: buildStreamBadgesFromFlags(cached.flags), cacheTtlMs: ttlMs };
+    return { badges: buildFeatureBadgesFromFlags(cached.flags), cacheTtlMs: ttlMs };
   }
 
   return withDedupe(torrentioInFlight, cacheKey, async () => {
     const warm = getMetadata<TorrentioBadgeCache>(cacheKey);
     if (warm) {
-      return { badges: buildStreamBadgesFromFlags(warm.flags), cacheTtlMs: ttlMs };
+      return { badges: buildFeatureBadgesFromFlags(warm.flags), cacheTtlMs: ttlMs };
     }
 
     let response: Response | null = null;
@@ -1452,7 +1341,7 @@ const fetchTorrentioBadges = async (input: {
     } catch (err) {
       console.warn(`[ERDB] Torrentio fetch failed for ${torrentioUrl}:`, err instanceof Error ? err.message : err);
       const failureTtl = Math.min(ttlMs, 2 * 60 * 1000);
-      setMetadata(cacheKey, { flags: createEmptyStreamFlags() }, failureTtl);
+      setMetadata(cacheKey, { flags: collectMediaFeatureFlags([]) }, failureTtl);
       return { badges: [], cacheTtlMs: failureTtl };
     }
 
@@ -1468,13 +1357,13 @@ const fetchTorrentioBadges = async (input: {
     }
 
     const filenames = extractTorrentioFilenames(payload);
-    const flags = collectStreamFlags(filenames);
+    const flags = collectMediaFeatureFlags(filenames);
     if (filenames.length === 0) {
       console.warn(`[ERDB] Torrentio returned 0 streams for ${torrentioUrl}`);
     }
     const targetTtl = response.ok ? ttlMs : Math.min(ttlMs, 2 * 60 * 1000);
     setMetadata(cacheKey, { flags }, targetTtl);
-    return { badges: buildStreamBadgesFromFlags(flags), cacheTtlMs: targetTtl };
+    return { badges: buildFeatureBadgesFromFlags(flags), cacheTtlMs: targetTtl };
   });
 };
 
@@ -2551,7 +2440,7 @@ type FastRenderInput = {
   qualityBadges: RatingBadge[];
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
-  qualityBadgesStyle: RatingStyle;
+  qualityBadgesStyle: QualityBadgeStyle;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
@@ -3578,11 +3467,16 @@ const getBadgeIconRadius = (iconSize: number, ratingStyle: RatingStyle) =>
   ratingStyle === 'square' ? Math.max(6, Math.round(iconSize * 0.22)) : Math.round(iconSize / 2);
 
 const buildQualityBadgeSvg = (
-  key: StreamBadgeKey,
+  badge: Pick<RatingBadge, 'key' | 'label'>,
   height: number,
   widthOverride?: number,
-  style: RatingStyle = DEFAULT_QUALITY_BADGES_STYLE
+  style: QualityBadgeStyle = DEFAULT_QUALITY_BADGES_STYLE
 ) => {
+  const key = badge.key;
+  if (!isMediaFeatureBadgeKey(String(key))) {
+    return null;
+  }
+  const label = (normalizeUserFacingMediaBadgeLabel(badge.label) || '').toUpperCase();
   const h = Math.max(32, Math.round(height * 0.9));
   const radius = style === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
   const strokeWidth =
@@ -3593,10 +3487,56 @@ const buildQualityBadgeSvg = (
         : Math.max(2, Math.round(h * 0.08));
   const innerPadding = Math.max(10, Math.round(h * 0.16));
   const fontFamily = `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
+  const mediaText = '#f5f5f4';
+  const certStroke = 'rgba(255,247,237,0.94)';
+  const certFill = 'rgba(17,24,39,0.42)';
+  const certText = '#fffaf5';
+  const mediaFrameByKey: Partial<Record<MediaFeatureBadgeKey, { stroke: string; fill: string; text: string }>> = {
+    '4k': {
+      stroke: 'rgba(251,191,36,0.9)',
+      fill: 'rgba(245,158,11,0.16)',
+      text: '#fcd34d',
+    },
+    hdr: {
+      stroke: 'rgba(103,232,249,0.88)',
+      fill: 'rgba(34,211,238,0.12)',
+      text: '#a5f3fc',
+    },
+    remux: {
+      stroke: 'rgba(251,146,60,0.92)',
+      fill: 'rgba(239,68,68,0.16)',
+      text: '#fdba74',
+    },
+  };
   const baseRect = (width: number, stroke: string, fill: string, extra = '') =>
     `<rect x="${strokeWidth / 2}" y="${strokeWidth / 2}" width="${Math.max(0, width - strokeWidth)}" height="${Math.max(0, h - strokeWidth)}" rx="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" ${extra}/>`;
+  const buildMediaPlate = (
+    width: number,
+    input: {
+      stroke: string;
+      fill: string;
+      strokeScale?: number;
+      radiusScale?: number;
+      highlightOpacity?: number;
+    },
+  ) => {
+    const plateStrokeWidth = Math.max(1.35, strokeWidth * (input.strokeScale ?? 0.82));
+    const radiusValue = Math.max(10, Math.round(h * (input.radiusScale ?? 0.26)));
+    const inset = plateStrokeWidth / 2;
+    const innerInset = Math.max(1.5, Math.round(plateStrokeWidth * 0.9));
+    return `<rect x="${inset}" y="${inset}" width="${Math.max(0, width - plateStrokeWidth)}" height="${Math.max(0, h - plateStrokeWidth)}" rx="${radiusValue}" fill="${input.fill}" stroke="${input.stroke}" stroke-width="${plateStrokeWidth}" />
+<rect x="${innerInset}" y="${innerInset}" width="${Math.max(0, width - innerInset * 2)}" height="${Math.max(0, Math.round(h * 0.42))}" rx="${Math.max(8, radiusValue - 4)}" fill="rgba(255,255,255,${input.highlightOpacity ?? 0.06})" />`;
+  };
+  const estimateMediaLabelWidth = (labelText: string, textSize: number, trackingEm = 0, sidePadding = 0) => {
+    const collapsed = labelText.trim().toUpperCase();
+    if (!collapsed) return Math.max(0, sidePadding * 2);
+    const nonSpaceCount = [...collapsed].filter((ch) => ch !== ' ').length;
+    const trackingWidth = Math.max(0, nonSpaceCount - 1) * trackingEm * textSize;
+    const safetyWidth = Math.max(8, Math.round(textSize * 0.46));
+    return Math.round(estimateSummaryLabelWidth(collapsed, textSize) + trackingWidth + sidePadding * 2 + safetyWidth);
+  };
   const resolveChrome = (accentColor: string) => {
-    if (style === 'plain') return null;
+    if (style === 'plain' || style === 'media') return null;
     if (style === 'glass') {
       return {
         stroke: 'rgba(255,255,255,0.45)',
@@ -3610,6 +3550,187 @@ const buildQualityBadgeSvg = (
     if (!chrome) return '';
     return baseRect(width, chrome.stroke, chrome.fill, extra);
   };
+  const buildMediaDolbySvg = (variant: 'VISION' | 'ATMOS') => {
+    const topSize = Math.round(h * 0.19);
+    const bottomSize = Math.round(h * 0.3);
+    const iconWidth = Math.round(h * 0.42);
+    const iconHeight = Math.round(h * 0.28);
+    const sidePadding = Math.round(h * 0.06);
+    const labelBlockWidth = Math.max(
+      Math.round(h * 0.98),
+      estimateMediaLabelWidth(`DOLBY ${variant}`, bottomSize, 0.025, sidePadding),
+    );
+    const width = widthOverride ?? iconWidth + labelBlockWidth + Math.round(h * 0.18);
+    const iconX = sidePadding;
+    const iconY = Math.round(h * 0.31);
+    const textX = iconX + iconWidth + Math.round(h * 0.12);
+    const topY = Math.round(h * 0.42);
+    const bottomY = Math.round(h * 0.72);
+    const icon = `<g transform="translate(${iconX} ${iconY}) scale(${iconWidth / 16} ${iconHeight / 13})">
+<path d="M0 1.8h3.9c2.6 0 4.7 2 4.7 4.7S6.5 11.2 3.9 11.2H0V1.8Zm1.4 1.4v6.6h2.2c1.8 0 3.5-1.4 3.5-3.3S5.4 3.2 3.6 3.2H1.4Z" fill="${mediaText}"/>
+<path d="M15.8 1.8h-3.9c-2.6 0-4.7 2-4.7 4.7s2.1 4.7 4.7 4.7h3.9V1.8Zm-1.4 1.4v6.6h-2.2c-1.8 0-3.5-1.4-3.5-3.3s1.7-3.3 3.5-3.3h2.2Z" fill="${mediaText}"/>
+</g>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${icon}
+<text x="${textX}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" fill="${mediaText}" letter-spacing="0.11em">DOLBY</text>
+<text x="${textX}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" fill="${mediaText}" letter-spacing="0.02em">${variant}</text>
+</svg>`;
+    return { svg, width, height: h };
+  };
+  const buildMediaCertificationSvg = () => {
+    const textSize = Math.round(h * 0.39);
+    const sidePadding = Math.round(h * 0.26);
+    const width = widthOverride ?? Math.max(Math.round(h * 1.22), estimateMediaLabelWidth(label, textSize, 0.012, sidePadding));
+    const textY = Math.round(h * 0.61);
+    return {
+      width,
+      height: h,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${buildMediaPlate(width, {
+  stroke: certStroke,
+  fill: certFill,
+  strokeScale: 0.95,
+  radiusScale: 0.29,
+  highlightOpacity: 0.08,
+})}
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${certText}" letter-spacing="0.012em">${escapeXml(label)}</text>
+</svg>`,
+    };
+  };
+  const buildMediaOutlineTextSvg = (input: {
+    labelText: string;
+    minWidth: number;
+    accentKey?: MediaFeatureBadgeKey;
+    letterSpacing?: string;
+    textScale?: number;
+    sidePaddingScale?: number;
+  }) => {
+    const textSize = Math.round(h * (input.textScale ?? 0.38));
+    const trackingEm = input.letterSpacing ? Number.parseFloat(input.letterSpacing) || 0 : 0;
+    const sidePadding = Math.round(h * (input.sidePaddingScale ?? 0.24));
+    const frame = mediaFrameByKey[input.accentKey || '4k'] || {
+      stroke: 'rgba(255,255,255,0.78)',
+      fill: 'rgba(255,255,255,0.04)',
+      text: mediaText,
+    };
+    const width =
+      widthOverride ??
+      Math.max(input.minWidth, estimateMediaLabelWidth(input.labelText, textSize, trackingEm, sidePadding));
+    const textY = Math.round(h * 0.61);
+    return {
+      width,
+      height: h,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${buildMediaPlate(width, {
+  stroke: frame.stroke,
+  fill: frame.fill,
+  radiusScale: 0.27,
+  highlightOpacity: 0.05,
+})}
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${frame.text}"${input.letterSpacing ? ` letter-spacing="${input.letterSpacing}"` : ''}>${escapeXml(input.labelText)}</text>
+</svg>`,
+    };
+  };
+  const buildMediaBluraySvg = () => {
+    const iconWidth = Math.round(h * 0.8);
+    const sidePadding = Math.round(h * 0.08);
+    const textSize = Math.round(h * 0.24);
+    const trackingEm = 0.09;
+    const textBlockWidth = estimateMediaLabelWidth('BLU RAY', textSize, trackingEm, Math.round(h * 0.08));
+    const width = widthOverride ?? iconWidth + textBlockWidth + sidePadding * 2;
+    const stroke = Math.max(1.05, Math.round(h * 0.044));
+    const iconX = sidePadding;
+    const iconTopY = Math.round(h * 0.26);
+    const textX = iconX + iconWidth + Math.round(h * 0.1);
+    const textY = Math.round(h * 0.62);
+    return {
+      width,
+      height: h,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${buildMediaPlate(width, {
+  stroke: 'rgba(125,211,252,0.34)',
+  fill: 'rgba(15,23,42,0.16)',
+  strokeScale: 0.66,
+  radiusScale: 0.24,
+  highlightOpacity: 0.035,
+})}
+<g transform="translate(${iconX} ${iconTopY})">
+<path d="M0 ${Math.round(h * 0.1)}c${Math.round(h * 0.26)} ${Math.round(-h * 0.06)} ${Math.round(h * 0.48)} ${Math.round(-h * 0.04)} ${iconWidth - Math.round(h * 0.06)} ${Math.round(h * 0.28)}" fill="none" stroke="rgba(147,197,253,0.96)" stroke-width="${stroke}" stroke-linecap="round"/>
+<path d="M${Math.round(h * 0.08)} ${Math.round(h * 0.34)}c${Math.round(h * 0.12)} ${Math.round(-h * 0.02)} ${Math.round(h * 0.26)} 0 ${Math.round(h * 0.44)} ${Math.round(h * 0.12)}" fill="none" stroke="rgba(125,211,252,0.88)" stroke-width="${Math.max(0.9, stroke * 0.68)}" stroke-linecap="round"/>
+</g>
+<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" fill="rgba(191,219,254,0.98)" letter-spacing="${trackingEm}em">BLU RAY</text>
+</svg>`,
+    };
+  };
+
+  if (style === 'media') {
+    if (key === 'certification') {
+      return buildMediaCertificationSvg();
+    }
+    if (key === '4k') {
+      return buildMediaOutlineTextSvg({
+        labelText: '4K',
+        minWidth: Math.round(h * 1.06),
+        accentKey: '4k',
+        textScale: 0.4,
+        sidePaddingScale: 0.24,
+      });
+    }
+    if (key === 'bluray') {
+      return buildMediaBluraySvg();
+    }
+    if (key === 'hdr') {
+      return buildMediaOutlineTextSvg({
+        labelText: 'HDR',
+        minWidth: Math.round(h * 1.26),
+        accentKey: 'hdr',
+        textScale: 0.38,
+        sidePaddingScale: 0.24,
+      });
+    }
+    if (key === 'dolbyvision') {
+      return buildMediaDolbySvg('VISION');
+    }
+    if (key === 'dolbyatmos') {
+      return buildMediaDolbySvg('ATMOS');
+    }
+    if (key === 'remux') {
+      return buildMediaOutlineTextSvg({
+        labelText: 'REMUX',
+        minWidth: Math.round(h * 1.72),
+        accentKey: 'remux',
+        letterSpacing: '0.08em',
+        textScale: 0.36,
+        sidePaddingScale: 0.3,
+      });
+    }
+  }
+
+  if (key === 'certification') {
+    const textSize = Math.round(h * 0.42);
+    const width = widthOverride ?? Math.max(Math.round(h * 1.02), estimateSummaryLabelWidth(label, textSize) + 16);
+    const textY = Math.round(h * 0.62);
+    const rect = buildRect(width, '#e5e7eb');
+    const fill = style === 'plain' ? mediaText : '#e5e7eb';
+    const filter = style === 'plain' ? ' filter="url(#quality-badge-text-shadow)"' : '';
+    const defs =
+      style === 'plain'
+        ? `<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
+        : '';
+    const plainStroke =
+      style === 'plain'
+        ? `<rect x="1" y="1" width="${Math.max(0, width - 2)}" height="${Math.max(0, h - 2)}" rx="${Math.max(8, Math.round(h * 0.22))}" fill="rgba(0,0,0,0.08)" stroke="rgba(255,255,255,0.82)" stroke-width="2" />`
+        : '';
+    return {
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${defs}
+${style === 'plain' ? plainStroke : rect}
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${fill}"${filter}>${escapeXml(label)}</text>
+</svg>`,
+      width,
+      height: h,
+    };
+  }
 
   if (key === '4k') {
     const width = widthOverride ?? Math.round(h * 1.55);
@@ -3650,6 +3771,43 @@ ${rect}
 <text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="0.05em">TRUE COLOR</text>
 </svg>`;
     return { svg, width, height: h };
+  }
+
+  if (key === 'bluray') {
+    const width = widthOverride ?? Math.round(h * 1.72);
+    const color = '#dbeafe';
+    const textSize = Math.round(h * 0.24);
+    const textY = Math.round(h * 0.72);
+    const arcStartX = Math.round(h * 0.18);
+    const arcStartY = Math.round(h * 0.36);
+    const arcEndX = Math.round(h * 0.84);
+    const arcEndY = Math.round(h * 0.74);
+    const innerArcStartX = Math.round(h * 0.24);
+    const innerArcStartY = Math.round(h * 0.55);
+    const innerArcEndX = Math.round(h * 0.64);
+    const innerArcEndY = Math.round(h * 0.65);
+    const stroke = Math.max(1.3, Math.round(h * 0.06));
+    const rect = buildRect(width, color);
+    const plainStroke =
+      style === 'plain'
+        ? `<rect x="1" y="1" width="${Math.max(0, width - 2)}" height="${Math.max(0, h - 2)}" rx="${Math.max(8, Math.round(h * 0.22))}" fill="rgba(0,0,0,0.08)" stroke="rgba(255,255,255,0.82)" stroke-width="2" />`
+        : '';
+    const defs =
+      style === 'plain'
+        ? `<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
+        : '';
+    const filter = style === 'plain' ? ' filter="url(#quality-badge-logo-shadow)"' : '';
+    return {
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${defs}
+${style === 'plain' ? plainStroke : rect}
+<path d="M${arcStartX} ${arcStartY}c${Math.round(h * 0.28)} 0 ${Math.round(h * 0.58)} ${Math.round(h * 0.04)} ${arcEndX - arcStartX} ${arcEndY - arcStartY}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"${filter}/>
+<path d="M${innerArcStartX} ${innerArcStartY}c${Math.round(h * 0.14)} 0 ${Math.round(h * 0.28)} ${Math.round(h * 0.03)} ${innerArcEndX - innerArcStartX} ${innerArcEndY - innerArcStartY}" fill="none" stroke="${color}" stroke-width="${Math.max(1.1, stroke * 0.7)}" stroke-linecap="round"${filter}/>
+<text x="${Math.round(width * 0.64)}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.11em"${filter}>BLU RAY</text>
+</svg>`,
+      width,
+      height: h,
+    };
   }
 
   if (key === 'dolbyvision') {
@@ -4129,7 +4287,7 @@ const renderWithSharp = async (
     const buildPosterQualityProtectedRects = (): BlockbusterPlacementRect[] => {
       if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return [];
       const usableQualityBadges = input.qualityBadges.filter((badge) =>
-        STREAM_BADGE_META.has(badge.key as StreamBadgeKey)
+        isMediaFeatureBadgeKey(String(badge.key))
       );
       if (usableQualityBadges.length === 0 || !posterQualityBadgePlacement) return [];
 
@@ -4978,22 +5136,25 @@ const renderWithSharp = async (
     ) => {
       if (columnBadges.length === 0) return;
       const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25));
-      const uniformBadgeWidth = Math.min(
-        Math.max(72, Math.round(qualityHeight * 1.75)),
-        Math.max(72, input.outputWidth - 24)
-      );
+      const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
+      const uniformBadgeWidth = useIntrinsicWidths
+        ? null
+        : Math.min(
+            Math.max(72, Math.round(qualityHeight * 1.75)),
+            Math.max(72, input.outputWidth - 24)
+          );
       let rowY = Math.max(input.badgeTopOffset, startY);
       for (let index = 0; index < columnBadges.length; index += 1) {
         const badge = columnBadges[index];
-        if (!STREAM_BADGE_META.has(badge.key as StreamBadgeKey)) continue;
         const spec = buildQualityBadgeSvg(
-          badge.key as StreamBadgeKey,
+          badge,
           qualityHeight,
-          uniformBadgeWidth,
+          uniformBadgeWidth ?? undefined,
           input.qualityBadgesStyle
         );
         if (!spec) continue;
-        const badgeWidth = Math.min(spec.width, uniformBadgeWidth);
+        const badgeWidth =
+          uniformBadgeWidth === null ? spec.width : Math.min(spec.width, uniformBadgeWidth);
         const badgeHeightForRow = spec.height;
         const rowX =
           side === 'right'
@@ -5011,42 +5172,63 @@ const renderWithSharp = async (
     ) => {
       if (rowBadges.length === 0) return;
       const maxRowWidth = Math.max(0, input.outputWidth - 24);
+      const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
       let qualityHeight = Math.max(36, Math.round(baseHeight ?? badgeHeight * 1.05));
-      let badgeWidth = Math.min(
-        Math.max(64, Math.round(qualityHeight * 1.75)),
-        Math.max(64, input.outputWidth - 24)
-      );
+      let badgeWidth =
+        useIntrinsicWidths
+          ? null
+          : Math.min(
+              Math.max(64, Math.round(qualityHeight * 1.75)),
+              Math.max(64, input.outputWidth - 24)
+            );
       let rowGap = input.badgeGap;
-      let rowWidth = rowBadges.length * badgeWidth + Math.max(0, rowBadges.length - 1) * rowGap;
-      if (rowWidth > maxRowWidth && rowBadges.length > 1) {
+      let specs = rowBadges
+        .map((badge) =>
+          buildQualityBadgeSvg(
+            badge,
+            qualityHeight,
+            badgeWidth ?? undefined,
+            input.qualityBadgesStyle
+          )
+        )
+        .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec));
+      let rowWidth =
+        specs.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specs.length - 1) * rowGap;
+      if (rowWidth > maxRowWidth && specs.length > 1) {
         const ratio = Math.max(0.45, maxRowWidth / rowWidth);
-        const heightRatio = Math.max(0.75, Math.min(1, ratio));
-        qualityHeight = Math.max(32, Math.floor(qualityHeight * heightRatio));
-        badgeWidth = Math.min(
-          Math.max(60, Math.floor(badgeWidth * ratio)),
-          Math.max(60, input.outputWidth - 24)
-        );
-        rowWidth = rowBadges.length * badgeWidth + Math.max(0, rowBadges.length - 1) * rowGap;
+        const heightRatio = Math.max(0.72, Math.min(1, ratio));
+        qualityHeight = Math.max(30, Math.floor(qualityHeight * heightRatio));
+        if (badgeWidth !== null) {
+          badgeWidth = Math.min(
+            Math.max(58, Math.floor(badgeWidth * ratio)),
+            Math.max(58, input.outputWidth - 24)
+          );
+        }
+        specs = rowBadges
+          .map((badge) =>
+            buildQualityBadgeSvg(
+              badge,
+              qualityHeight,
+              badgeWidth ?? undefined,
+              input.qualityBadgesStyle
+            )
+          )
+          .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec));
+        rowWidth =
+          specs.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specs.length - 1) * rowGap;
         if (rowWidth > maxRowWidth) {
-          const availableForGaps = Math.max(0, maxRowWidth - rowBadges.length * badgeWidth);
-          rowGap = Math.max(0, Math.floor(availableForGaps / (rowBadges.length - 1)));
-          rowWidth = rowBadges.length * badgeWidth + Math.max(0, rowBadges.length - 1) * rowGap;
+          const availableForGaps = Math.max(0, maxRowWidth - specs.reduce((sum, spec) => sum + spec.width, 0));
+          rowGap = specs.length > 1 ? Math.max(0, Math.floor(availableForGaps / (specs.length - 1))) : 0;
+          rowWidth =
+            specs.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specs.length - 1) * rowGap;
         }
       }
       let rowX = Math.floor((input.outputWidth - rowWidth) / 2);
       rowX = Math.max(12, Math.min(rowX, Math.max(12, input.outputWidth - rowWidth - 12)));
-      for (const badge of rowBadges) {
-        if (!STREAM_BADGE_META.has(badge.key as StreamBadgeKey)) continue;
-        const spec = buildQualityBadgeSvg(
-          badge.key as StreamBadgeKey,
-          qualityHeight,
-          badgeWidth,
-          input.qualityBadgesStyle
-        );
-        if (!spec) continue;
+      for (const spec of specs) {
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
-        trackGenreCollisionRect(rowX, rowY, badgeWidth, spec.height);
-        rowX += badgeWidth + rowGap;
+        trackGenreCollisionRect(rowX, rowY, spec.width, spec.height);
+        rowX += spec.width + rowGap;
       }
     };
     const renderQualityBadgeColumnAt = (
@@ -5058,22 +5240,24 @@ const renderWithSharp = async (
     ) => {
       if (columnBadges.length === 0) return;
       let rowY = Math.max(input.badgeTopOffset, startY);
-      const clampedX = Math.max(
-        12,
-        Math.min(Math.round(x), Math.max(12, input.outputWidth - uniformBadgeWidth - 12))
-      );
+      const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
+      const clampedX = Math.round(x);
       for (let index = 0; index < columnBadges.length; index += 1) {
         const badge = columnBadges[index];
-        if (!STREAM_BADGE_META.has(badge.key as StreamBadgeKey)) continue;
         const spec = buildQualityBadgeSvg(
-          badge.key as StreamBadgeKey,
+          badge,
           qualityHeight,
-          uniformBadgeWidth,
+          useIntrinsicWidths ? undefined : uniformBadgeWidth,
           input.qualityBadgesStyle
         );
         if (!spec) continue;
-        overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: clampedX });
-        trackGenreCollisionRect(clampedX, rowY, uniformBadgeWidth, spec.height);
+        const badgeWidth = useIntrinsicWidths ? spec.width : uniformBadgeWidth;
+        const adjustedX = Math.max(
+          12,
+          Math.min(clampedX, Math.max(12, input.outputWidth - badgeWidth - 12))
+        );
+        overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: adjustedX });
+        trackGenreCollisionRect(adjustedX, rowY, badgeWidth, spec.height);
         rowY += spec.height + input.badgeGap;
       }
     };
@@ -5324,7 +5508,7 @@ const renderWithSharp = async (
         Math.max(72, input.outputWidth - 24)
       );
       const usableQualityBadges = input.qualityBadges.filter((badge) =>
-        STREAM_BADGE_META.has(badge.key as StreamBadgeKey)
+        isMediaFeatureBadgeKey(String(badge.key))
       );
       if (usableQualityBadges.length > 0) {
         const leftColumn: RatingBadge[] = [];
@@ -6000,6 +6184,7 @@ export async function GET(
       let selectedLogoAspectRatio: number | null = null;
       let selectedPosterLogoPath: string | null = null;
       let selectedPosterIsTextless = false;
+      let certificationBadgeLabel: string | null = null;
       const requestedExternalRatings = new Set([...selectedRatings]);
       const needsAnimeOnlyRatings = [...requestedExternalRatings].some((provider) =>
         ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
@@ -6094,12 +6279,14 @@ export async function GET(
       }
       const detailsBundlePromise = !useRawKitsuFallback
         ? (async () => {
+          const certificationAppendTarget =
+            mediaType === 'movie' ? 'release_dates' : mediaType === 'tv' ? 'content_ratings' : null;
           const buildDetailsUrl = (language: string) =>
-            `https://api.themoviedb.org/3/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=images,external_ids&include_image_language=${encodeURIComponent(includeImageLanguage)}`;
+            `https://api.themoviedb.org/3/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguage)}`;
 
           const [detailsResponse, fallbackDetailsResponse] = await Promise.all([
             fetchJsonCached(
-              `tmdb:${mediaType}:${media.id}:details:${requestedImageLang}:bundle:${includeImageLanguage}`,
+              `tmdb:${mediaType}:${media.id}:details:${requestedImageLang}:bundle:v2:${includeImageLanguage}`,
               buildDetailsUrl(requestedImageLang),
               TMDB_CACHE_TTL_MS,
               phases,
@@ -6107,7 +6294,7 @@ export async function GET(
             ),
             requestedImageLang !== FALLBACK_IMAGE_LANGUAGE
               ? fetchJsonCached(
-                `tmdb:${mediaType}:${media.id}:details:${FALLBACK_IMAGE_LANGUAGE}:bundle:${includeImageLanguage}`,
+                `tmdb:${mediaType}:${media.id}:details:${FALLBACK_IMAGE_LANGUAGE}:bundle:v2:${includeImageLanguage}`,
                 buildDetailsUrl(FALLBACK_IMAGE_LANGUAGE),
                 TMDB_CACHE_TTL_MS,
                 phases,
@@ -6124,6 +6311,10 @@ export async function GET(
             fallbackDetails,
             bundledImages: details.images || {},
             bundledExternalIds: details.external_ids || {},
+            bundledCertificationPayload:
+              mediaType === 'movie'
+                ? details.release_dates || fallbackDetails.release_dates || null
+                : details.content_ratings || fallbackDetails.content_ratings || null,
             tmdbRating: details.vote_average ? normalizeRatingValue(details.vote_average) || 'N/A' : 'N/A',
           };
         })()
@@ -6714,8 +6905,22 @@ export async function GET(
       }
 
       if (!useRawKitsuFallback && detailsBundlePromise) {
-        const { details, fallbackDetails, bundledImages, tmdbRating: bundledRating } = await detailsBundlePromise;
+        const {
+          details,
+          fallbackDetails,
+          bundledImages,
+          bundledCertificationPayload,
+          tmdbRating: bundledRating,
+        } = await detailsBundlePromise;
         tmdbRating = bundledRating;
+        if (shouldRenderStreamBadges) {
+          certificationBadgeLabel =
+            mediaType === 'movie'
+              ? resolveMovieCertificationBadge(bundledCertificationPayload, requestedImageLang)
+              : mediaType === 'tv'
+                ? resolveTvCertificationBadge(bundledCertificationPayload, requestedImageLang)
+                : null;
+        }
         genreBadge = buildResolvedGenreBadge(
           [
             ...(Array.isArray(details?.genres) ? details.genres : []),
@@ -6961,6 +7166,19 @@ export async function GET(
         const streamBadgeResult = await streamBadgesPromise;
         streamBadges = streamBadgeResult.badges;
         streamBadgesCacheTtlMs = streamBadgeResult.cacheTtlMs;
+      }
+      if (certificationBadgeLabel) {
+        const certificationBadge = buildCertificationBadgeMeta(certificationBadgeLabel);
+        streamBadges = [
+          {
+            key: certificationBadge.key,
+            label: certificationBadge.label,
+            value: '',
+            iconUrl: '',
+            accentColor: certificationBadge.accentColor,
+          },
+          ...streamBadges,
+        ];
       }
       if (shouldRenderRawKitsuFallbackRating) {
         providerRatings.set('kitsu', rawFallbackKitsuRating as string);
@@ -7413,6 +7631,7 @@ export async function GET(
           }
           return renderedRatingTtlByProvider.get(badgeKey) || null;
         }),
+        ...(certificationBadgeLabel ? [TMDB_CACHE_TTL_MS] : []),
         ...(streamBadges.length > 0 ? [streamBadgesCacheTtlMs ?? TORRENTIO_CACHE_TTL_MS] : []),
       ].filter((ttlMs): ttlMs is number => typeof ttlMs === 'number' && Number.isFinite(ttlMs) && ttlMs > 0);
       const finalImageCacheTtlMs =

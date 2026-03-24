@@ -12,8 +12,11 @@ import {
   type PosterRatingLayout,
 } from './posterRatingLayout.ts';
 import {
+  DEFAULT_QUALITY_BADGES_STYLE,
   DEFAULT_RATING_STYLE,
+  normalizeQualityBadgeStyle,
   normalizeRatingStyle,
+  type QualityBadgeStyle,
   type RatingStyle,
 } from './ratingStyle.ts';
 import {
@@ -60,8 +63,8 @@ export type SharedErdbSettings = {
   backdropStreamBadges: StreamBadgesSetting;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
-  posterQualityBadgesStyle: RatingStyle;
-  backdropQualityBadgesStyle: RatingStyle;
+  posterQualityBadgesStyle: QualityBadgeStyle;
+  backdropQualityBadgesStyle: QualityBadgeStyle;
   posterQualityBadgesMax: number | null;
   backdropQualityBadgesMax: number | null;
   posterRatingsLayout: PosterRatingLayout;
@@ -126,8 +129,8 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   backdropStreamBadges: 'auto',
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
-  posterQualityBadgesStyle: DEFAULT_RATING_STYLE,
-  backdropQualityBadgesStyle: DEFAULT_RATING_STYLE,
+  posterQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
+  backdropQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
   posterQualityBadgesMax: null,
   backdropQualityBadgesMax: null,
   posterRatingsLayout: 'bottom',
@@ -329,8 +332,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.posterQualityBadgesPosition,
       defaults.posterQualityBadgesPosition,
     ),
-    posterQualityBadgesStyle: normalizeRatingStyle(candidate.posterQualityBadgesStyle as string | null | undefined),
-    backdropQualityBadgesStyle: normalizeRatingStyle(
+    posterQualityBadgesStyle: normalizeQualityBadgeStyle(
+      candidate.posterQualityBadgesStyle as string | null | undefined,
+    ),
+    backdropQualityBadgesStyle: normalizeQualityBadgeStyle(
       candidate.backdropQualityBadgesStyle as string | null | undefined,
     ),
     posterQualityBadgesMax: normalizeOptionalBadgeCount(candidate.posterQualityBadgesMax),
@@ -471,10 +476,10 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   ) {
     payload.posterQualityBadgesPosition = settings.posterQualityBadgesPosition;
   }
-  if (settings.posterQualityBadgesStyle !== DEFAULT_RATING_STYLE) {
+  if (settings.posterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
     payload.posterQualityBadgesStyle = settings.posterQualityBadgesStyle;
   }
-  if (settings.backdropQualityBadgesStyle !== DEFAULT_RATING_STYLE) {
+  if (settings.backdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
     payload.backdropQualityBadgesStyle = settings.backdropQualityBadgesStyle;
   }
   if (settings.posterQualityBadgesMax !== null) {

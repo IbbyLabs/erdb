@@ -39,8 +39,11 @@ import {
   type PosterRatingLayout,
 } from '@/lib/posterRatingLayout';
 import {
+  DEFAULT_QUALITY_BADGES_STYLE,
   DEFAULT_RATING_STYLE,
+  QUALITY_BADGE_STYLE_OPTIONS,
   RATING_STYLE_OPTIONS,
+  type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
 import {
@@ -105,7 +108,6 @@ const SUPPORTED_LANGUAGES = [
 const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
 type ProxyType = (typeof PROXY_TYPES)[number];
 type ProxyEnabledTypes = Record<ProxyType, boolean>;
-const DEFAULT_QUALITY_BADGES_STYLE: RatingStyle = 'glass';
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
@@ -247,9 +249,9 @@ posterStreamBadges      | auto, on, off (poster only)                           
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
 qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
 posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
-qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
-posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
-backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
+qualityBadgesStyle      | glass, square, plain, media (global fallback)                        | glass
+posterQualityBadgesStyle| glass, square, plain, media (poster only)                            | glass
+backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard
@@ -645,8 +647,8 @@ export default function Home() {
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] =
     useState<PosterQualityBadgesPosition>('auto');
-  const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
-  const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<RatingStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [posterQualityBadgesMax, setPosterQualityBadgesMax] = useState<number | null>(null);
   const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
@@ -2150,7 +2152,7 @@ export default function Home() {
                     <div>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
                       <div className="flex flex-wrap gap-1">
-                      {RATING_STYLE_OPTIONS.map(option => (
+                      {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
                         <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
                           {option.label}
                         </button>
@@ -2670,17 +2672,17 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain (backdrop only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (backdrop only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>

@@ -36,7 +36,9 @@ import {
   type PosterRatingLayout,
 } from '@/lib/posterRatingLayout';
 import {
+  QUALITY_BADGE_STYLE_OPTIONS,
   RATING_STYLE_OPTIONS,
+  type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
 
@@ -94,7 +96,7 @@ type HomePageViewDerived = {
   shouldShowQualityBadgesSide: boolean;
   qualityBadgeTypeLabel: string;
   activeStreamBadges: StreamBadgesSetting;
-  activeQualityBadgesStyle: RatingStyle;
+  activeQualityBadgesStyle: QualityBadgeStyle;
 };
 
 type HomePageViewActions = {
@@ -117,7 +119,7 @@ type HomePageViewActions = {
   setRatingStyleForType: (value: RatingStyle) => void;
   setImageTextForType: (value: 'original' | 'clean' | 'alternative') => void;
   setActiveStreamBadges: Dispatch<SetStateAction<StreamBadgesSetting>>;
-  setActiveQualityBadgesStyle: Dispatch<SetStateAction<RatingStyle>>;
+  setActiveQualityBadgesStyle: Dispatch<SetStateAction<QualityBadgeStyle>>;
   toggleRatingPreference: (rating: RatingPreference) => void;
   updateProxyManifestUrl: (value: string) => void;
   toggleProxyEnabledType: (type: PreviewType) => void;
@@ -532,7 +534,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     <div>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 block mb-1">Quality Badge Style</span>
                       <div className="flex flex-wrap gap-1">
-                      {RATING_STYLE_OPTIONS.map(option => (
+                      {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
                         <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-orange-500/60 bg-[#141b26] text-white' : 'border-white/10 bg-[#0b0f15] text-slate-400 hover:text-white'}`}>
                           {option.label}
                         </button>
@@ -884,17 +886,17 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain (global fallback)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media (global fallback)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain (poster only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media (poster only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain (backdrop only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media (backdrop only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass</td>
                       </tr>
                       <tr>
@@ -1157,9 +1159,9 @@ posterStreamBadges      | auto, on, off (poster only)                           
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
 qualityBadgesSide       | left, right (poster top bottom only)                                 | left
 posterQualityBadgesPosition | auto, left, right (poster top/bottom only)                       | auto
-qualityBadgesStyle      | glass, square, plain (global fallback)                               | glass
-posterQualityBadgesStyle| glass, square, plain (poster only)                                   | glass
-backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
+qualityBadgesStyle      | glass, square, plain, media (global fallback)                        | glass
+posterQualityBadgesStyle| glass, square, plain, media (poster only)                            | glass
+backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
