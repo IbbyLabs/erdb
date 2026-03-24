@@ -17,6 +17,14 @@ import {
   type RatingStyle,
 } from './ratingStyle.ts';
 import {
+  DEFAULT_AGGREGATE_RATING_SOURCE,
+  DEFAULT_RATING_PRESENTATION,
+  normalizeAggregateRatingSource,
+  normalizeRatingPresentation,
+  type AggregateRatingSource,
+  type RatingPresentation,
+} from './ratingPresentation.ts';
+import {
   normalizeRatingPreference,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
@@ -55,6 +63,12 @@ export type SharedErdbSettings = {
   posterRatingStyle: RatingStyle;
   backdropRatingStyle: RatingStyle;
   logoRatingStyle: RatingStyle;
+  posterRatingPresentation: RatingPresentation;
+  backdropRatingPresentation: RatingPresentation;
+  logoRatingPresentation: RatingPresentation;
+  posterAggregateRatingSource: AggregateRatingSource;
+  backdropAggregateRatingSource: AggregateRatingSource;
+  logoAggregateRatingSource: AggregateRatingSource;
   posterRatingsMaxPerSide: number | null;
   logoRatingsMax: number | null;
   logoBackground: LogoBackground;
@@ -114,6 +128,12 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterRatingStyle: DEFAULT_RATING_STYLE,
   backdropRatingStyle: DEFAULT_RATING_STYLE,
   logoRatingStyle: 'plain',
+  posterRatingPresentation: DEFAULT_RATING_PRESENTATION,
+  backdropRatingPresentation: DEFAULT_RATING_PRESENTATION,
+  logoRatingPresentation: DEFAULT_RATING_PRESENTATION,
+  posterAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
+  backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
+  logoAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   logoRatingsMax: null,
   logoBackground: 'transparent',
@@ -313,6 +333,30 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     ),
     posterRatingStyle: normalizeRatingStyle(candidate.posterRatingStyle as string | null | undefined),
     backdropRatingStyle: normalizeRatingStyle(candidate.backdropRatingStyle as string | null | undefined),
+    posterRatingPresentation: normalizeRatingPresentation(
+      candidate.posterRatingPresentation,
+      defaults.posterRatingPresentation,
+    ),
+    backdropRatingPresentation: normalizeRatingPresentation(
+      candidate.backdropRatingPresentation,
+      defaults.backdropRatingPresentation,
+    ),
+    logoRatingPresentation: normalizeRatingPresentation(
+      candidate.logoRatingPresentation,
+      defaults.logoRatingPresentation,
+    ),
+    posterAggregateRatingSource: normalizeAggregateRatingSource(
+      candidate.posterAggregateRatingSource,
+      defaults.posterAggregateRatingSource,
+    ),
+    backdropAggregateRatingSource: normalizeAggregateRatingSource(
+      candidate.backdropAggregateRatingSource,
+      defaults.backdropAggregateRatingSource,
+    ),
+    logoAggregateRatingSource: normalizeAggregateRatingSource(
+      candidate.logoAggregateRatingSource,
+      defaults.logoAggregateRatingSource,
+    ),
     logoRatingStyle:
       candidate.logoRatingStyle === 'glass' ||
       candidate.logoRatingStyle === 'plain' ||
@@ -435,6 +479,24 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   payload.posterImageText = settings.posterImageText;
   payload.backdropImageText = settings.backdropImageText;
   payload.posterRatingsLayout = settings.posterRatingsLayout;
+  if (settings.posterRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
+    payload.posterRatingPresentation = settings.posterRatingPresentation;
+  }
+  if (settings.backdropRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
+    payload.backdropRatingPresentation = settings.backdropRatingPresentation;
+  }
+  if (settings.logoRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
+    payload.logoRatingPresentation = settings.logoRatingPresentation;
+  }
+  if (settings.posterAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
+    payload.posterAggregateRatingSource = settings.posterAggregateRatingSource;
+  }
+  if (settings.backdropAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
+    payload.backdropAggregateRatingSource = settings.backdropAggregateRatingSource;
+  }
+  if (settings.logoAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
+    payload.logoAggregateRatingSource = settings.logoAggregateRatingSource;
+  }
 
   if (
     isVerticalPosterRatingLayout(settings.posterRatingsLayout) &&

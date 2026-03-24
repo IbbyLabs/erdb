@@ -21,7 +21,7 @@ const SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, string>> =
 const isImageOutput = (imageType?: 'poster' | 'backdrop' | 'logo') =>
   imageType === 'poster' || imageType === 'backdrop' || imageType === 'logo';
 
-const parseNumericRatingValue = (value: string) => {
+export const parseNumericRatingValue = (value: string) => {
   const numericValue = Number(value.replace('%', '').replace(',', '.').trim());
   return Number.isNaN(numericValue) || !Number.isFinite(numericValue) ? null : numericValue;
 };
@@ -31,6 +31,31 @@ export const formatRatingNumber = (value: number) => {
   return rounded === '10.0' ? '10' : rounded;
 };
 
+export const normalizeRatingToTenPointValue = (
+  provider: RatingPreference,
+  baseValue: string,
+): number | null => {
+  if (baseValue === 'N/A') return null;
+
+  const numericValue = parseNumericRatingValue(baseValue);
+  if (numericValue === null) return null;
+
+  if (provider === 'trakt') {
+    return numericValue > 10 ? numericValue / 10 : numericValue;
+  }
+
+  if (PERCENTAGE_RATING_PROVIDERS.has(provider)) {
+    return numericValue / 10;
+  }
+
+  const suffix = SCALE_SUFFIX_RATING_PROVIDERS[provider];
+  if (suffix === '/10') return numericValue;
+  if (suffix === '/5') return numericValue * 2;
+  if (suffix === '/4') return numericValue * 2.5;
+
+  return numericValue;
+};
+
 export const formatDisplayRatingValue = (
   provider: RatingPreference,
   baseValue: string,
@@ -38,11 +63,10 @@ export const formatDisplayRatingValue = (
 ) => {
   if (baseValue === 'N/A') return baseValue;
 
-  const numericValue = parseNumericRatingValue(baseValue);
-
   if (provider === 'trakt') {
+    const numericValue = parseNumericRatingValue(baseValue);
     if (isImageOutput(imageType) && numericValue !== null) {
-      return formatRatingNumber(numericValue > 10 ? numericValue / 10 : numericValue);
+      return formatRatingNumber(normalizeRatingToTenPointValue(provider, baseValue) as number);
     }
     if (numericValue !== null) {
       if (numericValue > 10) {
@@ -56,17 +80,17 @@ export const formatDisplayRatingValue = (
   }
 
   if (PERCENTAGE_RATING_PROVIDERS.has(provider)) {
+    const numericValue = parseNumericRatingValue(baseValue);
     if (isImageOutput(imageType) && numericValue !== null) {
-      return formatRatingNumber(numericValue / 10);
+      return formatRatingNumber(normalizeRatingToTenPointValue(provider, baseValue) as number);
     }
     return baseValue.endsWith('%') ? baseValue : `${baseValue}%`;
   }
 
   const suffix = SCALE_SUFFIX_RATING_PROVIDERS[provider];
-  if (isImageOutput(imageType) && numericValue !== null) {
-    if (suffix === '/10') return formatRatingNumber(numericValue);
-    if (suffix === '/5') return formatRatingNumber(numericValue * 2);
-    if (suffix === '/4') return formatRatingNumber(numericValue * 2.5);
+  const normalizedValue = normalizeRatingToTenPointValue(provider, baseValue);
+  if (isImageOutput(imageType) && normalizedValue !== null) {
+    return formatRatingNumber(normalizedValue);
   }
   if (suffix && !baseValue.includes('/') && !baseValue.endsWith('%')) {
     return `${baseValue}${suffix}`;

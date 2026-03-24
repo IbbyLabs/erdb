@@ -12,6 +12,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       lang: 'en',
       logoRatingPreferences: ['mdblist', 'tomatoes', 'letterboxd'],
       logoRatingStyle: 'plain',
+      logoRatingPresentation: 'average',
+      logoAggregateRatingSource: 'audience',
       logoRatingsMax: 3,
       logoBackground: 'dark',
     },
@@ -49,5 +51,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatings'), 'mdblist,tomatoes,letterboxd');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingsMax'), '3');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoBackground'), 'dark');
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingPresentation'), 'average');
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoAggregateRatingSource'), 'audience');
   assert.equal(rewrittenLogoUrl.searchParams.get('ratingStyle'), 'plain');
 });

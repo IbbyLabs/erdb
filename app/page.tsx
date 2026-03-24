@@ -44,6 +44,15 @@ import {
   type RatingStyle,
 } from '@/lib/ratingStyle';
 import {
+  AGGREGATE_RATING_SOURCE_OPTIONS,
+  DEFAULT_AGGREGATE_RATING_SOURCE,
+  DEFAULT_RATING_PRESENTATION,
+  RATING_PRESENTATION_OPTIONS,
+  usesAggregateRatingSource,
+  type AggregateRatingSource,
+  type RatingPresentation,
+} from '@/lib/ratingPresentation';
+import {
   buildConfigString,
   buildProxyUrl,
   normalizeSavedUiConfig,
@@ -138,6 +147,31 @@ const POSTER_RATINGS_MAX_DOC_COPY = '1+';
 const OPTIONAL_BADGE_MAX_DOC_COPY = '1+';
 const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
+const AGGREGATE_SOURCE_ACCENT_BY_ID: Record<AggregateRatingSource, string> = {
+  overall: '#a78bfa',
+  critics: '#fb923c',
+  audience: '#34d399',
+};
+
+const hexToRgbaCss = (value: string, alpha: number) => {
+  const normalized = value.trim().replace(/^#/, '');
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((char) => `${char}${char}`)
+          .join('')
+      : normalized;
+
+  if (!/^[0-9a-f]{6}$/i.test(expanded)) {
+    return `rgba(167,139,250,${alpha})`;
+  }
+
+  const r = Number.parseInt(expanded.slice(0, 2), 16);
+  const g = Number.parseInt(expanded.slice(2, 4), 16);
+  const b = Number.parseInt(expanded.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 const normalizeOptionalBadgeCountInput = (value: string) => {
   const trimmed = value.trim();
@@ -178,6 +212,8 @@ posterQualityBadgesStyle| glass, square, plain (poster only)                    
 backdropQualityBadgesStyle| glass, square, plain (backdrop only)                               | glass
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
+ratingPresentation      | standard, minimal, average, blockbuster                              | standard
+aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
@@ -202,13 +238,15 @@ poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
+Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
+Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
 
 Omit imageText when type=logo.
 
@@ -573,6 +611,18 @@ export default function Home() {
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
+  const [posterRatingPresentation, setPosterRatingPresentation] =
+    useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
+  const [backdropRatingPresentation, setBackdropRatingPresentation] =
+    useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
+  const [logoRatingPresentation, setLogoRatingPresentation] =
+    useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
+  const [posterAggregateRatingSource, setPosterAggregateRatingSource] =
+    useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
+  const [backdropAggregateRatingSource, setBackdropAggregateRatingSource] =
+    useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
+  const [logoAggregateRatingSource, setLogoAggregateRatingSource] =
+    useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
@@ -877,6 +927,12 @@ export default function Home() {
       setPosterRatingStyle(normalized.settings.posterRatingStyle);
       setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
+      setPosterRatingPresentation(normalized.settings.posterRatingPresentation);
+      setBackdropRatingPresentation(normalized.settings.backdropRatingPresentation);
+      setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
+      setPosterAggregateRatingSource(normalized.settings.posterAggregateRatingSource);
+      setBackdropAggregateRatingSource(normalized.settings.backdropAggregateRatingSource);
+      setLogoAggregateRatingSource(normalized.settings.logoAggregateRatingSource);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
@@ -914,6 +970,12 @@ export default function Home() {
         posterRatingStyle,
         backdropRatingStyle,
         logoRatingStyle,
+        posterRatingPresentation,
+        backdropRatingPresentation,
+        logoRatingPresentation,
+        posterAggregateRatingSource,
+        backdropAggregateRatingSource,
+        logoAggregateRatingSource,
         posterRatingsMaxPerSide,
         logoRatingsMax,
         logoBackground,
@@ -947,6 +1009,12 @@ export default function Home() {
       posterRatingStyle,
       backdropRatingStyle,
       logoRatingStyle,
+      posterRatingPresentation,
+      backdropRatingPresentation,
+      logoRatingPresentation,
+      posterAggregateRatingSource,
+      backdropAggregateRatingSource,
+      logoAggregateRatingSource,
       posterRatingsMaxPerSide,
       logoRatingsMax,
       logoBackground,
@@ -1065,6 +1133,18 @@ export default function Home() {
         : previewType === 'backdrop'
           ? backdropRatingStyle
           : logoRatingStyle;
+    const ratingPresentationForType =
+      previewType === 'poster'
+        ? posterRatingPresentation
+        : previewType === 'backdrop'
+          ? backdropRatingPresentation
+          : logoRatingPresentation;
+    const aggregateRatingSourceForType =
+      previewType === 'poster'
+        ? posterAggregateRatingSource
+        : previewType === 'backdrop'
+          ? backdropAggregateRatingSource
+          : logoAggregateRatingSource;
     const imageTextForType = previewType === 'backdrop' ? backdropImageText : posterImageText;
     const streamBadgesForType = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
     const qualityBadgesStyleForType =
@@ -1073,6 +1153,26 @@ export default function Home() {
       ratingStyle: ratingStyleForType,
       lang,
     });
+    if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
+      query.set(
+        previewType === 'poster'
+          ? 'posterRatingPresentation'
+          : previewType === 'backdrop'
+            ? 'backdropRatingPresentation'
+            : 'logoRatingPresentation',
+        ratingPresentationForType
+      );
+    }
+    if (aggregateRatingSourceForType !== DEFAULT_AGGREGATE_RATING_SOURCE) {
+      query.set(
+        previewType === 'poster'
+          ? 'posterAggregateRatingSource'
+          : previewType === 'backdrop'
+            ? 'backdropAggregateRatingSource'
+            : 'logoAggregateRatingSource',
+        aggregateRatingSourceForType
+      );
+    }
     if (previewType === 'poster') {
       query.set('posterRatings', ratingsQuery);
     } else if (previewType === 'backdrop') {
@@ -1149,6 +1249,12 @@ export default function Home() {
     posterRatingStyle,
     backdropRatingStyle,
     logoRatingStyle,
+    posterRatingPresentation,
+    backdropRatingPresentation,
+    logoRatingPresentation,
+    posterAggregateRatingSource,
+    backdropAggregateRatingSource,
+    logoAggregateRatingSource,
     logoRatingsMax,
     logoBackground,
     baseUrl,
@@ -1399,6 +1505,19 @@ export default function Home() {
       : previewType === 'backdrop'
         ? backdropRatingStyle
         : logoRatingStyle;
+  const activeRatingPresentation =
+    previewType === 'poster'
+      ? posterRatingPresentation
+      : previewType === 'backdrop'
+        ? backdropRatingPresentation
+        : logoRatingPresentation;
+  const activeAggregateRatingSource =
+    previewType === 'poster'
+      ? posterAggregateRatingSource
+      : previewType === 'backdrop'
+        ? backdropAggregateRatingSource
+        : logoAggregateRatingSource;
+  const activeAggregateAccent = AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
   const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
   const styleLabel =
     previewType === 'poster'
@@ -1419,6 +1538,7 @@ export default function Home() {
       : previewType === 'backdrop'
         ? backdropRatingRows
         : logoRatingRows;
+  const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
 
   const setRatingStyleForType = (value: RatingStyle) => {
     if (previewType === 'poster') {
@@ -1430,6 +1550,30 @@ export default function Home() {
       return;
     }
     setLogoRatingStyle(value);
+  };
+
+  const setRatingPresentationForType = (value: RatingPresentation) => {
+    if (previewType === 'poster') {
+      setPosterRatingPresentation(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropRatingPresentation(value);
+      return;
+    }
+    setLogoRatingPresentation(value);
+  };
+
+  const setAggregateRatingSourceForType = (value: AggregateRatingSource) => {
+    if (previewType === 'poster') {
+      setPosterAggregateRatingSource(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateRatingSource(value);
+      return;
+    }
+    setLogoAggregateRatingSource(value);
   };
 
   const setImageTextForType = (value: 'original' | 'clean' | 'alternative') => {
@@ -1722,6 +1866,91 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+                  <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {RATING_PRESENTATION_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => setRatingPresentationForType(option.id)}
+                        className={`rounded-xl border p-3 text-left transition-colors ${
+                          activeRatingPresentation === option.id
+                            ? 'border-violet-500/60 bg-violet-500/10 text-white'
+                            : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-semibold">{option.label}</span>
+                          {activeRatingPresentation === option.id && (
+                            <span className="rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                          {option.description}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-zinc-500">
+                    Modes are additive. The existing style, layout, provider, and badge controls stay available below.
+                  </p>
+                  {showsAggregateRatingSource && (
+                    <div
+                      className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
+                      style={{
+                        borderColor: hexToRgbaCss(activeAggregateAccent, 0.24),
+                        backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(activeAggregateAccent, 0.12)}, rgba(24,24,27,0.78) 58%)`,
+                      }}
+                    >
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
+                      <div className="flex flex-wrap gap-1">
+                        {AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => (
+                          (() => {
+                            const accentColor = AGGREGATE_SOURCE_ACCENT_BY_ID[option.id];
+                            const isSelected = activeAggregateRatingSource === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                onClick={() => setAggregateRatingSourceForType(option.id)}
+                                className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                                  isSelected
+                                    ? 'bg-zinc-800 text-white'
+                                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                                }`}
+                                style={
+                                  isSelected
+                                    ? {
+                                        borderColor: hexToRgbaCss(accentColor, 0.7),
+                                        backgroundImage: `linear-gradient(135deg, ${hexToRgbaCss(accentColor, 0.28)}, rgba(24,24,27,0.96))`,
+                                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${hexToRgbaCss(accentColor, 0.12)}`,
+                                      }
+                                    : undefined
+                                }
+                              >
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span
+                                    className="h-2 w-2 rounded-full"
+                                    style={{
+                                      backgroundColor: accentColor,
+                                      boxShadow: `0 0 0 2px ${hexToRgbaCss(accentColor, 0.16)}`,
+                                    }}
+                                  />
+                                  {option.label}
+                                </span>
+                              </button>
+                            );
+                          })()
+                        ))}
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-zinc-500">
+                        {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
@@ -2286,6 +2515,16 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingPresentation</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, blockbuster</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">standard</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">aggregateRatingSource</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">overall, critics, audience</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">overall</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingStyle</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass (poster/backdrop), plain (logo)</td>
@@ -2359,6 +2598,8 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
+                            <div>posterRatingPresentation</div>
+                            <div>posterAggregateRatingSource</div>
                             <div>posterRatingsLayout</div>
                             <div>posterQualityBadgesPosition</div>
                             <div>posterRatingsMaxPerSide</div>
@@ -2368,6 +2609,8 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
+                            <div>standard, minimal, average, blockbuster</div>
+                            <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>auto, left, right (top or bottom layouts only)</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
@@ -2380,6 +2623,8 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
+                            <div>backdropRatingPresentation</div>
+                            <div>backdropAggregateRatingSource</div>
                             <div>backdropRatingsLayout</div>
                             <div>backdropQualityBadgesMax</div>
                           </div>
@@ -2387,6 +2632,8 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
+                            <div>standard, minimal, average, blockbuster</div>
+                            <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                           </div>
@@ -2398,12 +2645,16 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>logoRatingsMax</div>
                             <div>logoBackground</div>
+                            <div>logoRatingPresentation</div>
+                            <div>logoAggregateRatingSource</div>
                           </div>
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
+                            <div>standard, minimal, average, blockbuster</div>
+                            <div>overall, critics, audience</div>
                           </div>
                         </td>
                       </tr>
@@ -2411,7 +2662,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Direct image URLs support shared fallbacks like ratings, lang, ratingStyle, streamBadges, and qualityBadgesStyle. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
+                  Direct image URLs support shared fallbacks like ratings, lang, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, and qualityBadgesStyle. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
                 </div>
               </div>
 

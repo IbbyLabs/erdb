@@ -29,6 +29,18 @@ import {
   normalizeRatingStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
+import {
+  DEFAULT_AGGREGATE_RATING_SOURCE,
+  DEFAULT_RATING_PRESENTATION,
+  getAggregateRatingSourceLabel,
+  getAggregateRatingSourceShortLabel,
+  hasAggregateRatingProvidersForSource,
+  normalizeAggregateRatingSource,
+  normalizeRatingPresentation,
+  selectAggregateRatingProviders,
+  type AggregateRatingSource,
+  type RatingPresentation,
+} from '@/lib/ratingPresentation';
 import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 import { resolveReverseMappedAnimeImageTarget } from '@/lib/animeReverseMapping';
@@ -41,17 +53,23 @@ import {
   putCachedImageToObjectStorage,
 } from '@/lib/objectStorage';
 import { getMetadata, setMetadata } from '@/lib/metadataCache';
-import { formatDisplayRatingValue, formatRatingNumber } from '@/lib/ratingDisplay';
+import {
+  formatDisplayRatingValue,
+  formatRatingNumber,
+  parseNumericRatingValue,
+} from '@/lib/ratingDisplay';
 
 export const runtime = 'nodejs';
 
 type PosterTextPreference = 'original' | 'clean' | 'alternative';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
 type StreamBadgeKey = '4k' | 'hdr' | 'dolbyvision' | 'dolbyatmos' | 'remux';
-type BadgeKey = RatingPreference | StreamBadgeKey;
+type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
+type BadgeKey = RatingPreference | StreamBadgeKey | AggregateBadgeKey;
 type QualityBadgesSide = 'left' | 'right';
 type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 type LogoBackground = 'transparent' | 'dark';
+type BlockbusterDensity = 'sparse' | 'balanced' | 'packed';
 type StreamQualityFlags = {
   has4k: boolean;
   hasHdr: boolean;
@@ -112,7 +130,18 @@ const normalizeOptionalBadgeCount = (value?: string | null) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return normalized;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v42';
+const DEFAULT_BLOCKBUSTER_DENSITY: BlockbusterDensity = 'balanced';
+const normalizeBlockbusterDensity = (
+  value?: string | null,
+  fallback: BlockbusterDensity = DEFAULT_BLOCKBUSTER_DENSITY
+): BlockbusterDensity => {
+  const normalized = (value || '').trim().toLowerCase();
+  if (normalized === 'sparse' || normalized === 'balanced' || normalized === 'packed') {
+    return normalized;
+  }
+  return fallback;
+};
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v61';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -383,8 +412,14 @@ type RatingBadge = {
   key: BadgeKey;
   label: string;
   value: string;
+  sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  variant?: 'standard' | 'minimal' | 'summary';
+};
+type BlockbusterBlurb = {
+  text: string;
+  author: string;
 };
 type OutputFormat = 'png' | 'jpeg' | 'webp';
 const RATING_PROVIDER_META = new Map(
@@ -452,6 +487,756 @@ const buildProviderMonogram = (label: string) => {
   const words = cleaned.split(/\s+/).filter(Boolean);
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
+};
+
+const AGGREGATE_BADGE_KEY_BY_SOURCE: Record<AggregateRatingSource, AggregateBadgeKey> = {
+  overall: 'aggregate-overall',
+  critics: 'aggregate-critics',
+  audience: 'aggregate-audience',
+};
+
+const AGGREGATE_BADGE_ACCENT_BY_SOURCE: Record<AggregateRatingSource, string> = {
+  overall: '#a78bfa',
+  critics: '#fb923c',
+  audience: '#34d399',
+};
+const BLOCKBUSTER_DENSITY_PRESETS = {
+  sparse: {
+    calloutLimit: 3,
+    blurbLimit: 3,
+    calloutScales: [0.94, 0.9, 0.86, 0.82, 0.78],
+    blurbScales: [0.96, 0.9, 0.84],
+    badgeScales: [0.9, 0.86, 0.82, 0.78, 0.74, 0.7, 0.66, 0.62],
+    calloutAttempts: 180,
+    blurbAttempts: 180,
+    badgeAttempts: 220,
+    calloutPadding: 8,
+    blurbPadding: 8,
+    badgePadding: 3,
+  },
+  balanced: {
+    calloutLimit: 4,
+    blurbLimit: 4,
+    calloutScales: [0.96, 0.92, 0.88, 0.84, 0.8, 0.76],
+    blurbScales: [0.98, 0.92, 0.86, 0.8],
+    badgeScales: [0.92, 0.88, 0.84, 0.8, 0.76, 0.72, 0.68, 0.64, 0.6, 0.56],
+    calloutAttempts: 220,
+    blurbAttempts: 220,
+    badgeAttempts: 280,
+    calloutPadding: 6,
+    blurbPadding: 6,
+    badgePadding: 2,
+  },
+  packed: {
+    calloutLimit: 4,
+    blurbLimit: 6,
+    calloutScales: [0.98, 0.94, 0.9, 0.86, 0.82, 0.78, 0.74],
+    blurbScales: [1, 0.94, 0.88, 0.82, 0.76],
+    badgeScales: [0.94, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7, 0.66, 0.62, 0.58, 0.54, 0.5],
+    calloutAttempts: 260,
+    blurbAttempts: 260,
+    badgeAttempts: 340,
+    calloutPadding: 4,
+    blurbPadding: 4,
+    badgePadding: 1,
+  },
+} satisfies Record<
+  BlockbusterDensity,
+  {
+    calloutLimit: number;
+    blurbLimit: number;
+    calloutScales: number[];
+    blurbScales: number[];
+    badgeScales: number[];
+    calloutAttempts: number;
+    blurbAttempts: number;
+    badgeAttempts: number;
+    calloutPadding: number;
+    blurbPadding: number;
+    badgePadding: number;
+  }
+>;
+const getBlockbusterDensityScale = (values: number[], index: number) =>
+  values[Math.max(0, Math.min(index, values.length - 1))] ?? 1;
+
+const parseHexColor = (value: string) => {
+  const normalized = String(value || '').trim().replace(/^#/, '');
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((char) => `${char}${char}`)
+          .join('')
+      : normalized;
+
+  if (!/^[0-9a-f]{6}$/i.test(expanded)) {
+    return null;
+  }
+
+  return {
+    r: Number.parseInt(expanded.slice(0, 2), 16),
+    g: Number.parseInt(expanded.slice(2, 4), 16),
+    b: Number.parseInt(expanded.slice(4, 6), 16),
+  };
+};
+
+const hexColorToRgba = (value: string, alpha: number, fallback = `rgba(167,139,250,${alpha})`) => {
+  const parsed = parseHexColor(value);
+  if (!parsed) return fallback;
+  return `rgba(${parsed.r},${parsed.g},${parsed.b},${alpha})`;
+};
+
+const parseDisplayRatingNumber = (value: string) => {
+  const numericCandidate = value.replace('%', '').split('/')[0].replace(',', '.').trim();
+  return parseNumericRatingValue(numericCandidate);
+};
+
+const buildAggregateRatingBadge = ({
+  requestedSource,
+  presentation,
+  renderablePreferences,
+  ratingBadgeByProvider,
+}: {
+  requestedSource: AggregateRatingSource;
+  presentation: RatingPresentation;
+  renderablePreferences: RatingPreference[];
+  ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
+}): RatingBadge | null => {
+  const availableProviders = renderablePreferences.filter((provider) => ratingBadgeByProvider.has(provider));
+  if (availableProviders.length === 0) return null;
+
+  const selectedProviders = selectAggregateRatingProviders(requestedSource, availableProviders);
+  const resolvedSource =
+    requestedSource !== 'overall' &&
+    !hasAggregateRatingProvidersForSource(requestedSource, availableProviders)
+      ? 'overall'
+      : requestedSource;
+
+  const numericValues = selectedProviders
+    .map((provider) => ratingBadgeByProvider.get(provider))
+    .filter((badge): badge is RatingBadge => badge !== undefined)
+    .map((badge) => parseDisplayRatingNumber(badge.value))
+    .filter((value): value is number => value !== null);
+
+  if (numericValues.length === 0) return null;
+
+  const averageValue =
+    numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  const effectiveSource = resolvedSource as AggregateRatingSource;
+
+  return {
+    key: AGGREGATE_BADGE_KEY_BY_SOURCE[effectiveSource],
+    label:
+      presentation === 'minimal'
+        ? getAggregateRatingSourceShortLabel(effectiveSource)
+        : getAggregateRatingSourceLabel(effectiveSource),
+    value: formatRatingNumber(averageValue),
+    iconUrl: '',
+    accentColor: AGGREGATE_BADGE_ACCENT_BY_SOURCE[effectiveSource],
+    variant: presentation === 'minimal' ? 'minimal' : 'summary',
+  };
+};
+
+const BLOCKBUSTER_CALLOUT_PRIORITY = new Map<BadgeKey, number>([
+  ['tomatoes', 0],
+  ['metacritic', 1],
+  ['rogerebert', 2],
+  ['mdblist', 3],
+  ['tomatoesaudience', 4],
+  ['metacriticuser', 5],
+  ['imdb', 6],
+  ['letterboxd', 7],
+  ['tmdb', 8],
+  ['trakt', 9],
+  ['myanimelist', 10],
+  ['anilist', 11],
+  ['kitsu', 12],
+]);
+
+const getBlockbusterCalloutHeadline = (badge: RatingBadge) => {
+  const numericValue = parseDisplayRatingNumber(String(badge.sourceValue || badge.value));
+
+  if ((badge.key === 'tomatoes' || badge.key === 'tomatoesaudience') && numericValue !== null) {
+    return numericValue >= 60 ? 'FRESH' : 'ROTTEN';
+  }
+
+  if (badge.key === 'metacritic' && numericValue !== null) {
+    if (numericValue >= 81) return 'UNIVERSAL ACCLAIM';
+    if (numericValue >= 61) return 'GENERALLY FAVORABLE';
+    if (numericValue >= 40) return 'MIXED REVIEWS';
+    if (numericValue >= 20) return 'GENERALLY UNFAVORABLE';
+    return 'OVERWHELMING DISLIKE';
+  }
+
+  if (badge.key === 'metacriticuser' && numericValue !== null) {
+    if (numericValue >= 8) return 'UNIVERSAL ACCLAIM';
+    if (numericValue >= 6) return 'GENERALLY FAVORABLE';
+    if (numericValue >= 4) return 'MIXED REVIEWS';
+    if (numericValue >= 2) return 'GENERALLY UNFAVORABLE';
+    return 'OVERWHELMING DISLIKE';
+  }
+
+  return badge.label.trim().toUpperCase();
+};
+
+const getBlockbusterCalloutDetail = (badge: RatingBadge, headline: string) => {
+  const label =
+    badge.key === 'tomatoesaudience'
+      ? 'AUDIENCE'
+      : badge.key === 'metacriticuser'
+        ? 'USER SCORE'
+        : badge.label.trim().toUpperCase();
+  const sourceValue = String(badge.sourceValue || badge.value || '')
+    .trim()
+    .replace(/(\d+)\.0(%|\/10|\/5|\/4)$/i, '$1$2')
+    .replace(/(\d+)\.0$/i, '$1')
+    .toUpperCase();
+  if (!sourceValue) return label;
+  return headline === label ? sourceValue : `${label} ${sourceValue}`;
+};
+
+const sortBlockbusterBadgesByPriority = (badges: RatingBadge[]) =>
+  badges
+    .filter(
+      (badge) =>
+        badge.variant !== 'minimal' &&
+        badge.variant !== 'summary' &&
+        badge.label.trim().length > 0 &&
+        String(badge.sourceValue || badge.value || '').trim().length > 0
+    )
+    .map((badge) => ({
+      badge,
+      numericValue: parseDisplayRatingNumber(String(badge.sourceValue || badge.value)),
+      priority:
+        BLOCKBUSTER_CALLOUT_PRIORITY.get(badge.key) ?? BLOCKBUSTER_CALLOUT_PRIORITY.size + 1,
+    }))
+    .sort((left, right) => {
+      if (left.priority !== right.priority) return left.priority - right.priority;
+      if (left.numericValue !== null && right.numericValue !== null) {
+        return right.numericValue - left.numericValue;
+      }
+      if (left.numericValue !== null) return -1;
+      if (right.numericValue !== null) return 1;
+      return left.badge.label.localeCompare(right.badge.label);
+    })
+    .map(({ badge }) => badge);
+
+const pickBlockbusterCalloutBadges = (badges: RatingBadge[]) =>
+  sortBlockbusterBadgesByPriority(badges);
+
+const pickBlockbusterScoreBadges = (badges: RatingBadge[]) =>
+  sortBlockbusterBadgesByPriority(badges);
+
+const buildBlockbusterCalloutSvg = ({
+  headline,
+  detail,
+  accentColor,
+  rotation,
+  iconDataUri,
+  iconMonogram,
+}: {
+  headline: string;
+  detail: string;
+  accentColor: string;
+  rotation: number;
+  iconDataUri?: string | null;
+  iconMonogram?: string;
+}) => {
+  const normalizedHeadline = headline.trim().toUpperCase();
+  const normalizedDetail = detail.trim().toUpperCase();
+  const headlineFontSize =
+    normalizedHeadline.length > 22 ? 12 : normalizedHeadline.length > 15 ? 13 : 15;
+  const detailFontSize = normalizedDetail.length > 24 ? 8.5 : 9.5;
+  const padX = 13;
+  const padTop = 8;
+  const padBottom = 8;
+  const iconPlateSize = 22;
+  const iconGap = 7;
+  const hasIconPlate = Boolean(iconDataUri || iconMonogram);
+  const stripeHeight = 3.5;
+  const lineGap = 4;
+  const availableHeadlineWidth = estimateGeneratedLogoLineWidth(normalizedHeadline, headlineFontSize);
+  const availableDetailWidth = estimateGeneratedLogoLineWidth(normalizedDetail, detailFontSize);
+  const iconSpace = hasIconPlate ? iconPlateSize + iconGap : 0;
+  const contentWidth = Math.max(availableHeadlineWidth, availableDetailWidth) + iconSpace;
+  const stickerWidth = Math.max(118, Math.min(198, Math.round(contentWidth + padX * 2)));
+  const stickerHeight =
+    padTop + headlineFontSize + lineGap + detailFontSize + padBottom + stripeHeight;
+  const svgWidth = stickerWidth + 14;
+  const svgHeight = stickerHeight + 14;
+  const centerX = Math.round(svgWidth / 2);
+  const centerY = Math.round(svgHeight / 2);
+  const iconPlateX = padX;
+  const iconPlateY = Math.round((stickerHeight - stripeHeight - iconPlateSize) / 2);
+  const iconSize = 15;
+  const iconX = iconPlateX + Math.round((iconPlateSize - iconSize) / 2);
+  const iconY = iconPlateY + Math.round((iconPlateSize - iconSize) / 2);
+  const textX = padX + iconSpace;
+  const headlineY = padTop + headlineFontSize;
+  const detailY = headlineY + lineGap + detailFontSize;
+  const availableTextWidth = Math.max(0, stickerWidth - padX * 2 - iconSpace);
+  const headlineTextLength =
+    availableHeadlineWidth > availableTextWidth
+      ? ` textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+      : '';
+  const detailTextLength =
+    availableDetailWidth > availableTextWidth
+      ? ` textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+      : '';
+  const cardStroke = hexColorToRgba(accentColor, 0.34, 'rgba(167,139,250,0.34)');
+  const paperFill = 'rgba(253,251,246,0.98)';
+  const paperShade = 'rgba(255,255,255,0.52)';
+
+  return {
+    width: svgWidth,
+    height: svgHeight,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
+<defs>
+<filter id="blockbuster-callout-shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+<feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#020617" flood-opacity="0.12" />
+</filter>
+</defs>
+<g filter="url(#blockbuster-callout-shadow)" transform="translate(${centerX},${centerY}) rotate(${rotation}) translate(${-Math.round(stickerWidth / 2)},${-Math.round(stickerHeight / 2)})">
+<rect x="0" y="0" width="${stickerWidth}" height="${stickerHeight}" rx="9" fill="${paperFill}" stroke="${cardStroke}" stroke-width="1.1" />
+<rect x="0" y="0" width="${stickerWidth}" height="${Math.max(12, Math.round(stickerHeight * 0.38))}" rx="9" fill="${paperShade}" />
+${hasIconPlate ? `<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="11" fill="rgba(255,255,255,0.98)" stroke="${cardStroke}" stroke-width="0.8" />` : ''}
+${iconDataUri ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" />` : ''}
+${!iconDataUri && iconMonogram ? `<text x="${Math.round(iconPlateX + iconPlateSize / 2)}" y="${Math.round(iconPlateY + iconPlateSize / 2 + 4)}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="10" font-weight="900" text-anchor="middle" fill="rgba(17,24,39,0.84)">${escapeXml(iconMonogram.slice(0, 2))}</text>` : ''}
+<rect x="0" y="${Math.max(0, stickerHeight - stripeHeight)}" width="${stickerWidth}" height="${stripeHeight}" rx="${Math.max(2, Math.round(stripeHeight / 2))}" fill="${accentColor}" fill-opacity="0.88" />
+<text x="${textX}" y="${headlineY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${headlineFontSize}" font-weight="900" fill="#111827"${headlineTextLength}>${escapeXml(normalizedHeadline)}</text>
+<text x="${textX}" y="${detailY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${detailFontSize}" font-weight="800" fill="rgba(17,24,39,0.78)"${detailTextLength}>${escapeXml(normalizedDetail)}</text>
+</g>
+</svg>`,
+  };
+};
+
+const sanitizeBlockbusterReviewText = (value: string) =>
+  String(value || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/<\/?[^>]+>/g, ' ')
+    .replace(/[_*~>#]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const trimBlockbusterReviewText = (value: string, maxLength = 220) => {
+  const normalized = sanitizeBlockbusterReviewText(value);
+  if (!normalized) return '';
+
+  const sentences = normalized
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+  if (sentences.length > 0) {
+    const combinedSentences: string[] = [];
+    for (const sentence of sentences) {
+      const candidate = combinedSentences.length > 0
+        ? `${combinedSentences.join(' ')} ${sentence}`
+        : sentence;
+      if (candidate.length > maxLength) break;
+      combinedSentences.push(sentence);
+      if (candidate.length >= 72) {
+        return candidate;
+      }
+    }
+
+    const pickedSentence =
+      sentences.find((sentence) => sentence.length >= 52 && sentence.length <= maxLength) ||
+      combinedSentences[0];
+    if (pickedSentence && pickedSentence.length <= maxLength) {
+      return pickedSentence;
+    }
+  }
+
+  if (normalized.length <= maxLength) return normalized;
+
+  const sliced = normalized.slice(0, maxLength + 1);
+  const boundary = Math.max(sliced.lastIndexOf(' '), sliced.lastIndexOf(','), sliced.lastIndexOf('.'));
+  const trimmed = (boundary > 48 ? sliced.slice(0, boundary) : sliced.slice(0, maxLength)).trim();
+  return `${trimmed}...`;
+};
+
+const extractBlockbusterReviewBlurbs = (payload: any): BlockbusterBlurb[] => {
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  return results
+    .flatMap((review: any) => {
+      const normalized = sanitizeBlockbusterReviewText(review?.content || '');
+      if (!normalized) return [];
+      const snippets = normalized
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => trimBlockbusterReviewText(sentence, 220))
+        .filter((sentence) => sentence.length >= 34);
+      const shortlist =
+        snippets.length > 0
+          ? Array.from(new Set(snippets)).slice(0, 2)
+          : (() => {
+              const fallback = trimBlockbusterReviewText(normalized, 220);
+              return fallback.length >= 34 ? [fallback] : [];
+            })();
+      if (shortlist.length === 0) return [];
+      const author = String(
+        review?.author_details?.username ||
+        review?.author_details?.name ||
+        review?.author ||
+        'TMDB review'
+      )
+        .replace(/\s+/g, ' ')
+        .trim();
+      return shortlist.map((text) => ({
+        text,
+        author: author || 'TMDB review',
+      }));
+    })
+    .filter((review: BlockbusterBlurb | null): review is BlockbusterBlurb => review !== null);
+};
+
+const dedupeBlockbusterBlurbs = (blurbs: BlockbusterBlurb[], limit = 10) => {
+  const seen = new Set<string>();
+  const merged: BlockbusterBlurb[] = [];
+
+  for (const blurb of blurbs) {
+    const text = blurb.text.replace(/\s+/g, ' ').trim();
+    const author = blurb.author.replace(/\s+/g, ' ').trim();
+    const key = `${author.toLowerCase()}::${text.toLowerCase()}`;
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    merged.push({ text, author });
+    if (merged.length >= limit) break;
+  }
+
+  return merged;
+};
+
+const fitBlockbusterBlurbLine = (
+  text: string,
+  fontSize: number,
+  maxWidth: number,
+) => {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  if (estimateGeneratedLogoLineWidth(normalized, fontSize) <= maxWidth) return normalized;
+  const words = normalized.split(' ').filter(Boolean);
+  while (words.length > 1) {
+    words.pop();
+    const candidate = `${words.join(' ')}...`.trim();
+    if (estimateGeneratedLogoLineWidth(candidate, fontSize) <= maxWidth) {
+      return candidate;
+    }
+  }
+  return normalized;
+};
+
+const splitBlockbusterBlurbLines = (
+  text: string,
+  fontSize: number,
+  maxWidth: number,
+  maxLines: number,
+) => {
+  const words = text.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+  const lines: string[] = [];
+  let didOverflow = false;
+
+  for (const word of words) {
+    const currentLine = lines[lines.length - 1] || '';
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (!currentLine || estimateGeneratedLogoLineWidth(candidate, fontSize) <= maxWidth) {
+      if (currentLine) {
+        lines[lines.length - 1] = candidate;
+      } else {
+        lines.push(candidate);
+      }
+      continue;
+    }
+
+    if (lines.length < maxLines) {
+      lines.push(word);
+      continue;
+    }
+
+    lines[maxLines - 1] = fitBlockbusterBlurbLine(`${lines[maxLines - 1]} ${word}`, fontSize, maxWidth);
+    didOverflow = true;
+    break;
+  }
+
+  return {
+    lines: lines.slice(0, maxLines),
+    didOverflow,
+  };
+};
+
+const buildBlockbusterReviewCalloutSvg = ({
+  text,
+  author,
+  rotation: _rotation,
+}: {
+  text: string;
+  author: string;
+  rotation: number;
+}) => {
+  const normalizedText = sanitizeBlockbusterReviewText(text);
+  const quoteText = normalizedText ? `“${normalizedText}”` : '';
+  const padX = 15;
+  const padTop = 12;
+  const padBottom = 12;
+  const bylineFontSize = 8.5;
+  const layoutOptions = [
+    { fontSize: 13, maxLines: 3, minWidth: 190, maxWidth: 248 },
+    { fontSize: 12, maxLines: 4, minWidth: 214, maxWidth: 276 },
+    { fontSize: 11, maxLines: 5, minWidth: 232, maxWidth: 304 },
+    { fontSize: 10, maxLines: 6, minWidth: 248, maxWidth: 324 },
+  ];
+  let chosenWidth = layoutOptions[layoutOptions.length - 1].maxWidth;
+  let chosenFontSize = layoutOptions[layoutOptions.length - 1].fontSize;
+  let chosenLines: string[] = quoteText ? [quoteText] : [];
+
+  for (let index = 0; index < layoutOptions.length; index += 1) {
+    const option = layoutOptions[index];
+    const width = Math.max(
+      option.minWidth,
+      Math.min(
+        option.maxWidth,
+        136 + Math.round(estimateGeneratedLogoLineWidth(quoteText, option.fontSize) * 0.62)
+      )
+    );
+    const maxTextWidth = width - padX * 2;
+    const wrapped = splitBlockbusterBlurbLines(quoteText, option.fontSize, maxTextWidth, option.maxLines);
+    chosenWidth = width;
+    chosenFontSize = option.fontSize;
+    chosenLines = wrapped.lines;
+    if (!wrapped.didOverflow) {
+      break;
+    }
+    if (index === layoutOptions.length - 1 && chosenLines.length > 0) {
+      chosenLines[chosenLines.length - 1] = fitBlockbusterBlurbLine(
+        chosenLines[chosenLines.length - 1],
+        option.fontSize,
+        maxTextWidth
+      );
+    }
+  }
+
+  const width = chosenWidth;
+  const textFontSize = chosenFontSize;
+  const maxTextWidth = width - padX * 2;
+  const lines = chosenLines;
+  const lineHeight = Math.round(textFontSize * 1.24);
+  const bylineY = padTop + lines.length * lineHeight + 8;
+  const cardHeight = bylineY + bylineFontSize + padBottom;
+  const outerWidth = width + 12;
+  const outerHeight = cardHeight + 12;
+  const centerX = Math.round(outerWidth / 2);
+  const centerY = Math.round(outerHeight / 2);
+  const byline = author.trim().toUpperCase().slice(0, 26) || 'TMDB REVIEW';
+  const tspans = lines
+    .map((line, index) => {
+      const y = padTop + textFontSize + index * lineHeight;
+      const estimatedWidth = estimateGeneratedLogoLineWidth(line, textFontSize);
+      const textLength =
+        estimatedWidth > maxTextWidth
+          ? ` textLength="${maxTextWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
+      return `<tspan x="${padX}" y="${y}"${textLength}>${escapeXml(line)}</tspan>`;
+    })
+    .join('');
+  const stripeWidth = Math.max(26, Math.round(width * 0.2));
+
+  return {
+    width: outerWidth,
+    height: outerHeight,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${outerWidth}" height="${outerHeight}" viewBox="0 0 ${outerWidth} ${outerHeight}">
+<defs>
+<filter id="blockbuster-review-shadow" x="-20%" y="-20%" width="160%" height="170%" color-interpolation-filters="sRGB">
+<feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#020617" flood-opacity="0.12" />
+</filter>
+</defs>
+<g filter="url(#blockbuster-review-shadow)" transform="translate(${centerX},${centerY}) translate(${-Math.round(width / 2)},${-Math.round(cardHeight / 2)})">
+<rect x="0" y="0" width="${width}" height="${cardHeight}" rx="9" fill="rgba(253,251,246,0.98)" stroke="rgba(15,23,42,0.14)" stroke-width="0.95" />
+<rect x="${padX}" y="${padTop - 5}" width="${stripeWidth}" height="3" rx="1.5" fill="rgba(15,23,42,0.28)" />
+<text x="${padX}" y="${padTop + textFontSize}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${textFontSize}" font-weight="900" fill="rgba(15,23,42,0.92)">${tspans}</text>
+<text x="${padX}" y="${bylineY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${bylineFontSize}" font-weight="800" letter-spacing="0.04em" fill="rgba(15,23,42,0.62)">${escapeXml(byline)}</text>
+</g>
+</svg>`,
+  };
+};
+
+const buildBlockbusterScoreTileSvg = ({
+  badge,
+  iconDataUri,
+  iconMonogram,
+}: {
+  badge: RatingBadge;
+  iconDataUri?: string | null;
+  iconMonogram?: string;
+}) => {
+  const normalizedValue = String(badge.sourceValue || badge.value || '')
+    .trim()
+    .replace(/(\d+)\.0(%|\/10|\/5|\/4)$/i, '$1$2')
+    .replace(/(\d+)\.0$/i, '$1')
+    .toUpperCase();
+  const tileKind =
+    badge.key === 'tomatoes' || badge.key === 'tomatoesaudience'
+      ? 'seal'
+      : badge.key === 'metacritic' || badge.key === 'metacriticuser' || badge.key === 'mdblist'
+        ? 'tile'
+        : 'pill';
+  const accent = badge.accentColor;
+
+  if (tileKind === 'seal') {
+    const size = 64;
+    const iconSize = 18;
+    const fontSize = normalizedValue.length > 3 ? 18 : 21;
+    const label = badge.key === 'tomatoesaudience' ? 'AUDIENCE' : badge.label.trim().toUpperCase();
+    return {
+      width: size + 14,
+      height: size + 14,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${size + 14}" height="${size + 14}" viewBox="0 0 ${size + 14} ${size + 14}">
+<defs><filter id="blockbuster-seal-shadow" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#020617" flood-opacity="0.16" /></filter></defs>
+<g filter="url(#blockbuster-seal-shadow)" transform="translate(7,7)">
+<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1.5}" fill="rgba(252,252,251,0.98)" stroke="${accent}" stroke-width="3" />
+${iconDataUri ? `<image href="${iconDataUri}" x="${Math.round(size / 2 - iconSize / 2)}" y="11" width="${iconSize}" height="${iconSize}" />` : ''}
+${!iconDataUri && iconMonogram ? `<text x="${Math.round(size / 2)}" y="25" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="10" font-weight="900" text-anchor="middle" fill="rgba(17,24,39,0.88)">${escapeXml(iconMonogram.slice(0, 2))}</text>` : ''}
+<text x="${Math.round(size / 2)}" y="${Math.round(size / 2 + 11)}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="900" text-anchor="middle" fill="#111827">${escapeXml(normalizedValue)}</text>
+<text x="${Math.round(size / 2)}" y="${size - 11}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="7.5" font-weight="900" text-anchor="middle" fill="rgba(17,24,39,0.70)">${escapeXml(label.slice(0, 12))}</text>
+</g>
+</svg>`,
+    };
+  }
+
+  if (tileKind === 'tile') {
+    const width = 58;
+    const height = 52;
+    const iconSize = 16;
+    const fontSize = normalizedValue.length > 3 ? 17 : 20;
+    return {
+      width: width + 12,
+      height: height + 12,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width + 12}" height="${height + 12}" viewBox="0 0 ${width + 12} ${height + 12}">
+<defs><filter id="blockbuster-tile-shadow" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#020617" flood-opacity="0.15" /></filter></defs>
+<g filter="url(#blockbuster-tile-shadow)" transform="translate(6,6)">
+<rect x="0" y="0" width="${width}" height="${height}" rx="12" fill="rgba(250,250,249,0.98)" stroke="${accent}" stroke-width="2.4" />
+${iconDataUri ? `<image href="${iconDataUri}" x="8" y="8" width="${iconSize}" height="${iconSize}" />` : ''}
+${!iconDataUri && iconMonogram ? `<text x="16" y="21" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="10" font-weight="900" text-anchor="middle" fill="rgba(17,24,39,0.84)">${escapeXml(iconMonogram.slice(0, 2))}</text>` : ''}
+<text x="${Math.round(width / 2)}" y="${Math.round(height / 2 + 14)}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="900" text-anchor="middle" fill="#111827">${escapeXml(normalizedValue)}</text>
+</g>
+</svg>`,
+    };
+  }
+
+  const width = Math.max(72, Math.min(94, 38 + estimateGeneratedLogoLineWidth(normalizedValue, 17)));
+  const height = 36;
+  const iconSize = 14;
+  return {
+    width: width + 12,
+    height: height + 12,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width + 12}" height="${height + 12}" viewBox="0 0 ${width + 12} ${height + 12}">
+<defs><filter id="blockbuster-pill-shadow" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#020617" flood-opacity="0.12" /></filter></defs>
+<g filter="url(#blockbuster-pill-shadow)" transform="translate(6,6)">
+<rect x="0" y="0" width="${width}" height="${height}" rx="${Math.round(height / 2)}" fill="rgba(13,18,28,0.88)" stroke="${accent}" stroke-opacity="0.52" stroke-width="1.4" />
+${iconDataUri ? `<image href="${iconDataUri}" x="10" y="${Math.round((height - iconSize) / 2)}" width="${iconSize}" height="${iconSize}" />` : ''}
+${!iconDataUri && iconMonogram ? `<text x="17" y="${Math.round(height / 2 + 4)}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="10" font-weight="900" text-anchor="middle" fill="white">${escapeXml(iconMonogram.slice(0, 2))}</text>` : ''}
+<text x="${iconDataUri || iconMonogram ? 32 : 12}" y="${Math.round(height / 2 + 6)}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="17" font-weight="900" fill="white">${escapeXml(normalizedValue)}</text>
+</g>
+</svg>`,
+  };
+};
+
+const getBlockbusterBadgeChaos = (badge: RatingBadge, seedSalt = '') => {
+  const hash = sha1Hex(`${seedSalt}:${badge.key}:${badge.label}:${badge.value}`);
+  const read = (start: number, length = 4) =>
+    Number.parseInt(hash.slice(start, start + length), 16) || 0;
+  return {
+    rotation: ((read(0) % 3400) / 100) - 17,
+    xJitter: (read(4) % 145) - 72,
+    yJitter: (read(8) % 125) - 62,
+    opacity: 0.40 + (read(12) % 17) / 100,
+    spreadX: (read(16) % 1000) / 1000,
+    spreadY: (read(20) % 1000) / 1000,
+  };
+};
+
+const getBlockbusterBlurbChaos = (seedKey: string, density: BlockbusterDensity) => {
+  const hash = sha1Hex(seedKey);
+  const read = (start: number, length = 4) =>
+    Number.parseInt(hash.slice(start, start + length), 16) || 0;
+  const densityMultiplier =
+    density === 'packed' ? 1.28 : density === 'balanced' ? 1.08 : 0.92;
+  const baseOuterRotation = ((((read(4) % 7600) / 100) - 38) * 0.42) * densityMultiplier;
+  const verticalRoll = read(28) % 100;
+  const shouldGoNearVertical =
+    density === 'packed' ? verticalRoll < 34 : density === 'balanced' ? verticalRoll < 10 : false;
+  const verticalSign = read(32) % 2 === 0 ? -1 : 1;
+  const nearVerticalRotation = verticalSign * (52 + (read(36) % 19));
+  const outerRotation = shouldGoNearVertical ? nearVerticalRotation : baseOuterRotation;
+  return {
+    innerRotation: ((((read(0) % 4200) / 100) - 21) * 0.24) * densityMultiplier,
+    outerRotation,
+    skewX:
+      ((((read(8) % 3200) / 100) - 16) * 0.34) *
+      (shouldGoNearVertical ? Math.max(0.72, densityMultiplier * 0.78) : densityMultiplier),
+    skewY:
+      ((((read(12) % 1800) / 100) - 9) * 0.16) *
+      (shouldGoNearVertical ? Math.max(0.7, densityMultiplier * 0.72) : densityMultiplier),
+    scale:
+      (0.92 + (read(16) % 18) / 100) *
+      (shouldGoNearVertical ? (density === 'packed' ? 0.84 : 0.88) : 1),
+    horizontalBias: (read(20) % 1000) / 1000,
+    verticalBias: (read(24) % 1000) / 1000,
+    isNearVertical: shouldGoNearVertical,
+  };
+};
+
+const buildTransformedSvgOverlay = ({
+  svg,
+  width,
+  height,
+  rotation,
+  opacity,
+  scale = 1,
+  skewX = 0,
+  skewY = 0,
+  pad = 18,
+}: {
+  svg: string;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
+  scale?: number;
+  skewX?: number;
+  skewY?: number;
+  pad?: number;
+}) => {
+  const normalizedScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const normalizedSkewX = Number.isFinite(skewX) ? skewX : 0;
+  const normalizedSkewY = Number.isFinite(skewY) ? skewY : 0;
+  const rotationRadians = Math.abs(rotation) * (Math.PI / 180);
+  const skewXRadians = Math.abs(normalizedSkewX) * (Math.PI / 180);
+  const skewYRadians = Math.abs(normalizedSkewY) * (Math.PI / 180);
+  const skewedWidth = width + Math.abs(height * Math.tan(skewXRadians));
+  const skewedHeight = height + Math.abs(width * Math.tan(skewYRadians));
+  const transformedWidth =
+    Math.abs(skewedWidth * Math.cos(rotationRadians)) +
+    Math.abs(skewedHeight * Math.sin(rotationRadians));
+  const transformedHeight =
+    Math.abs(skewedWidth * Math.sin(rotationRadians)) +
+    Math.abs(skewedHeight * Math.cos(rotationRadians));
+  const scaledWidth = Math.max(1, Math.ceil(transformedWidth * normalizedScale));
+  const scaledHeight = Math.max(1, Math.ceil(transformedHeight * normalizedScale));
+  const outerWidth = scaledWidth + pad * 2;
+  const outerHeight = scaledHeight + pad * 2;
+  const dataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  return {
+    width: outerWidth,
+    height: outerHeight,
+    offsetX: Math.round((outerWidth - scaledWidth) / 2),
+    offsetY: Math.round((outerHeight - scaledHeight) / 2),
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${outerWidth}" height="${outerHeight}" viewBox="0 0 ${outerWidth} ${outerHeight}">
+<g opacity="${opacity}" transform="translate(${Math.round(outerWidth / 2)},${Math.round(outerHeight / 2)}) rotate(${rotation}) skewX(${normalizedSkewX}) skewY(${normalizedSkewY}) scale(${normalizedScale}) translate(${-Math.round(width / 2)},${-Math.round(height / 2)})">
+<image href="${dataUri}" x="0" y="0" width="${width}" height="${height}" />
+</g>
+</svg>`,
+  };
 };
 
 const normalizeStreamBadgesSetting = (value?: string | null) => {
@@ -1721,6 +2506,9 @@ const pickBackdropByPreference = (
 
 type FastRenderInput = {
   imageType: 'poster' | 'backdrop' | 'logo';
+  ratingPresentation: RatingPresentation;
+  aggregateRatingSource: AggregateRatingSource;
+  blockbusterDensity: BlockbusterDensity;
   outputFormat: OutputFormat;
   imgUrl: string;
   outputWidth: number;
@@ -1758,6 +2546,7 @@ type FastRenderInput = {
   posterTopRows?: RatingBadge[][];
   posterBottomRows?: RatingBadge[][];
   backdropRows?: RatingBadge[][];
+  blockbusterBlurbs?: BlockbusterBlurb[];
   cacheControl: string;
 };
 
@@ -2413,6 +3202,49 @@ const estimateBadgeWidth = (
     outerPadding + iconSize + innerGap + outerPadding + Math.round(fontSize * (compactText ? 1.12 : 1.25))
   );
 };
+
+const estimateSummaryLabelWidth = (label: string, fontSize: number) => {
+  const normalized = label.trim().toUpperCase();
+  if (!normalized) return 0;
+  return Math.round(
+    [...normalized].reduce((acc, ch) => {
+      if (ch === ' ') return acc + fontSize * 0.32;
+      return acc + fontSize * 0.56;
+    }, 0)
+  );
+};
+
+const estimateRenderedBadgeWidth = (
+  badge: RatingBadge,
+  fontSize: number,
+  paddingX: number,
+  iconSize: number,
+  gap: number,
+  compactText = false
+) => {
+  const variant = badge.variant || 'standard';
+  if (variant === 'standard') {
+    return estimateBadgeWidth(badge.value, fontSize, paddingX, iconSize, gap, compactText);
+  }
+
+  const outerPadding = Math.max(10, Math.round(paddingX * (variant === 'minimal' ? 1.05 : 0.95)));
+  const valueWidth = estimateBadgeTextWidth(badge.value, fontSize, false);
+  if (variant === 'minimal') {
+    const chipDiameter = iconSize + outerPadding;
+    return Math.max(chipDiameter, valueWidth + outerPadding * 2);
+  }
+
+  const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
+  const labelWidth =
+    estimateSummaryLabelWidth(badge.label, summaryLabelFontSize) +
+    Math.max(10, Math.round(paddingX * 0.55)) * 2;
+  const innerGap = Math.max(10, Math.round(paddingX * 0.7));
+  const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+  return Math.max(
+    sideInset * 2 + valueWidth + labelWidth + innerGap,
+    sideInset * 2 + valueWidth + Math.round(summaryLabelFontSize * 4.2)
+  );
+};
 const getMinimumCompressedBadgeWidth = (
   value: string,
   fontSize: number,
@@ -2427,6 +3259,34 @@ const getMinimumCompressedBadgeWidth = (
   Math.max(6, Math.round(paddingX * 0.7)) +
   Math.round(fontSize * (compactText ? 0.82 : 0.92));
 
+const getMinimumCompressedRenderedBadgeWidth = (
+  badge: RatingBadge,
+  fontSize: number,
+  paddingX: number,
+  iconSize: number,
+  gap: number,
+  compactText = false
+) => {
+  const variant = badge.variant || 'standard';
+  if (variant === 'standard') {
+    return getMinimumCompressedBadgeWidth(badge.value, fontSize, paddingX, iconSize, gap, compactText);
+  }
+
+  if (variant === 'minimal') {
+    return Math.max(iconSize, Math.round(fontSize * 1.8) + Math.max(12, Math.round(paddingX * 1.4)));
+  }
+
+  const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
+  const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+  return Math.max(
+    Math.round(fontSize * 2.5),
+    estimateSummaryLabelWidth(badge.label, summaryLabelFontSize) +
+      Math.max(10, Math.round(paddingX * 0.55)) * 2 +
+      Math.round(fontSize * 1.6) +
+      sideInset * 2
+  );
+};
+
 const measureBadgeRowWidth = (
   rowBadges: RatingBadge[],
   metrics: BadgeLayoutMetrics,
@@ -2437,8 +3297,8 @@ const measureBadgeRowWidth = (
     rowBadges.reduce(
       (acc, badge) =>
         acc +
-        estimateBadgeWidth(
-          badge.value,
+        estimateRenderedBadgeWidth(
+          badge,
           metrics.fontSize,
           metrics.paddingX,
           metrics.iconSize,
@@ -2833,7 +3693,9 @@ const buildBadgeSvg = ({
   monogram,
   iconDataUri,
   iconKey,
+  labelText,
   value,
+  badgeVariant = 'standard',
   ratingStyle,
   preferNeutralGlassPlate = false,
   compactText = false,
@@ -2848,13 +3710,109 @@ const buildBadgeSvg = ({
   monogram: string;
   iconDataUri?: string | null;
   iconKey?: BadgeKey;
+  labelText?: string;
   value: string;
+  badgeVariant?: 'standard' | 'minimal' | 'summary';
   ratingStyle: RatingStyle;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
 }) => {
   const radius = getBadgeOuterRadius(height, ratingStyle);
+  const outerRect =
+    ratingStyle === 'plain'
+      ? ''
+      : `<rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${ratingStyle === 'square' ? '1.5' : '1'}" />`;
+  const plainBadgeDefs =
+    ratingStyle === 'plain'
+      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter></defs>`
+      : '';
+  const valueFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
   const iconRadius = getBadgeIconRadius(iconSize, ratingStyle);
+  if (badgeVariant !== 'standard') {
+    const valueNumericStyle =
+      ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
+    const centerX = Math.round(width / 2);
+    const centerY = Math.round(height / 2);
+    const accentStrokeOpacity =
+      ratingStyle === 'plain' ? 0.96 : ratingStyle === 'square' ? 0.9 : 0.86;
+    const accentTintStartOpacity = ratingStyle === 'plain' ? 0.22 : ratingStyle === 'square' ? 0.18 : 0.16;
+    const accentTintEndOpacity = ratingStyle === 'plain' ? 0.08 : ratingStyle === 'square' ? 0.06 : 0.05;
+    const baseFill =
+      ratingStyle === 'square'
+        ? 'rgb(5,5,5)'
+        : ratingStyle === 'glass'
+          ? 'rgb(11,17,28)'
+          : 'rgb(8,12,22)';
+    const baseFillOpacity =
+      ratingStyle === 'square' ? 0.96 : ratingStyle === 'glass' ? 0.82 : 0.9;
+    const innerStroke = 'rgb(255,255,255)';
+    const innerStrokeOpacity = ratingStyle === 'plain' ? 0.1 : 0.16;
+    const strokeWidth =
+      ratingStyle === 'plain' ? 1.8 : ratingStyle === 'square' ? 1.7 : 1.45;
+    const variantOuterInset = 0.9;
+    const variantOuterWidth = Math.max(0, width - variantOuterInset * 2);
+    const variantOuterHeight = Math.max(0, height - variantOuterInset * 2);
+    const variantInnerInset = 1.6;
+    const variantInnerWidth = Math.max(0, width - variantInnerInset * 2);
+    const variantInnerHeight = Math.max(0, height - variantInnerInset * 2);
+    const variantInnerRadius = Math.max(2, radius - 1);
+    const variantStrokeInset = 2.3;
+    const variantStrokeWidth = Math.max(0, width - variantStrokeInset * 2);
+    const variantStrokeHeight = Math.max(0, height - variantStrokeInset * 2);
+    const variantStrokeRadius = Math.max(2, radius - 2);
+    const variantDefs = `<defs>
+${ratingStyle === 'plain' ? `<filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="variant-shadow" x="-25%" y="-35%" width="150%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="4.2" flood-color="#020617" flood-opacity="0.62" /><feDropShadow dx="0" dy="0" stdDeviation="2.6" flood-color="${accentColor}" flood-opacity="0.18" /></filter>` : ''}
+<linearGradient id="variant-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="${accentColor}" stop-opacity="${accentTintStartOpacity}" />
+<stop offset="100%" stop-color="${accentColor}" stop-opacity="${accentTintEndOpacity}" />
+</linearGradient>
+</defs>`;
+    const variantChrome = `
+<rect x="${variantOuterInset}" y="${variantOuterInset}" width="${variantOuterWidth}" height="${variantOuterHeight}" rx="${radius}" fill="${baseFill}" fill-opacity="${baseFillOpacity}" stroke="${accentColor}" stroke-opacity="${accentStrokeOpacity}" stroke-width="${strokeWidth}"${ratingStyle === 'plain' ? ' filter="url(#variant-shadow)"' : ''} />
+<rect x="${variantInnerInset}" y="${variantInnerInset}" width="${variantInnerWidth}" height="${variantInnerHeight}" rx="${variantInnerRadius}" fill="url(#variant-surface-fill)" />
+<rect x="${variantStrokeInset}" y="${variantStrokeInset}" width="${variantStrokeWidth}" height="${variantStrokeHeight}" rx="${variantStrokeRadius}" fill="none" stroke="${innerStroke}" stroke-opacity="${innerStrokeOpacity}" stroke-width="0.85" />`;
+
+    if (badgeVariant === 'minimal') {
+      const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
+      const valueY = Math.round(centerY + valueFontSize * 0.34);
+      const accentRailWidth = Math.max(24, Math.round(width * 0.4));
+      const accentRailHeight = Math.max(3, Math.round(height * 0.08));
+      const accentRailX = Math.round((width - accentRailWidth) / 2);
+      const accentRailY = Math.max(6, Math.round(height * 0.18));
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${variantDefs}
+${variantChrome}
+<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(1, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />
+<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+</svg>`;
+    }
+
+    const summaryLabel = (labelText || '').trim().toUpperCase();
+    const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
+    const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+    const chipPaddingX = Math.max(10, Math.round(paddingX * 0.55));
+    const chipHeight = Math.max(summaryLabelFontSize + 12, Math.round(height * 0.56));
+    const chipY = Math.round((height - chipHeight) / 2);
+    const chipRadius = Math.round(chipHeight / 2);
+    const chipWidth = estimateSummaryLabelWidth(summaryLabel, summaryLabelFontSize) + chipPaddingX * 2;
+    const chipX = sideInset;
+    const labelX = Math.round(chipX + chipWidth / 2);
+    const labelY = Math.round(centerY + summaryLabelFontSize * 0.14);
+    const contentGap = Math.max(10, Math.round(paddingX * 0.7));
+    const dividerX = chipX + chipWidth + Math.round(contentGap / 2);
+    const dividerY = Math.max(8, Math.round(height * 0.22));
+    const dividerHeight = Math.max(16, Math.round(height * 0.56));
+    const valueX = width - sideInset;
+    const valueY = Math.round(centerY + fontSize * 0.34);
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${variantDefs}
+${variantChrome}
+<rect x="${chipX}" y="${chipY}" width="${chipWidth}" height="${chipHeight}" rx="${chipRadius}" fill="${accentColor}" fill-opacity="0.94" />
+<text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" fill="white"${valueFilter}>${escapeXml(summaryLabel)}</text>
+<rect x="${dividerX}" y="${dividerY}" width="1.25" height="${dividerHeight}" rx="0.625" fill="${accentColor}" fill-opacity="0.35" />
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+</svg>`;
+  }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
   const innerGap = outerPadding;
   const iconX = outerPadding;
@@ -2898,15 +3856,7 @@ const buildBadgeSvg = ({
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 0.75)}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.75" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="none" stroke="rgba(255,255,255,0.45)" />`;
-  const outerRect =
-    ratingStyle === 'plain'
-      ? ''
-      : `<rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${ratingStyle === 'square' ? '1.5' : '1'}" />`;
   const monogramFill = ratingStyle === 'glass' && !useNeutralGlassPlate ? 'white' : accentColor;
-  const plainBadgeDefs =
-    ratingStyle === 'plain'
-      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter></defs>`
-      : '';
   const plainIconFilter = ratingStyle === 'plain' ? ' filter="url(#plain-icon-shadow)"' : '';
   const iconImage =
     !iconDataUri
@@ -2918,7 +3868,6 @@ const buildBadgeSvg = ({
     iconDataUri
       ? ''
       : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}"${plainIconFilter}>${escapeXml(monogram)}</text>${iconBorder}`;
-  const valueFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
   const valueNumericStyle =
     ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -3014,6 +3963,326 @@ const renderWithSharp = async (
       posterTopRows.length > 0
         ? input.badgeTopOffset + posterTopRows.length * (badgeHeight + input.badgeGap)
         : input.badgeTopOffset;
+    type BlockbusterPlacementRect = { left: number; top: number; width: number; height: number };
+    type BlockbusterScatterMode = 'callout' | 'blurb' | 'score';
+    const intersectsBlockbusterRect = (
+      left: BlockbusterPlacementRect,
+      right: BlockbusterPlacementRect,
+      padding = 0
+    ) =>
+      left.left < right.left + right.width + padding &&
+      left.left + left.width > right.left - padding &&
+      left.top < right.top + right.height + padding &&
+      left.top + left.height > right.top - padding;
+    const clampBlockbusterRect = (
+      left: number,
+      top: number,
+      width: number,
+      height: number
+    ): BlockbusterPlacementRect => ({
+      left: Math.max(0, Math.min(Math.round(left), Math.max(0, input.outputWidth - width))),
+      top: Math.max(0, Math.min(Math.round(top), Math.max(0, input.outputHeight - height))),
+      width,
+      height,
+    });
+    const blockbusterScatterRects: BlockbusterPlacementRect[] = [];
+    const blockbusterBadgeOverlays: Array<{ input: Buffer; top: number; left: number }> = [];
+    const blockbusterStickerOverlays: Array<{ input: Buffer; top: number; left: number }> = [];
+    const blockbusterSideMetrics: BadgeLayoutMetrics = {
+      iconSize: input.badgeIconSize,
+      fontSize: input.badgeFontSize,
+      paddingX: input.badgePaddingX,
+      paddingY: input.badgePaddingY,
+      gap: input.badgeGap,
+    };
+    const buildPosterQualityProtectedRects = (): BlockbusterPlacementRect[] => {
+      if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return [];
+      const usableQualityBadges = input.qualityBadges.filter((badge) =>
+        STREAM_BADGE_META.has(badge.key as StreamBadgeKey)
+      );
+      if (usableQualityBadges.length === 0 || !posterQualityBadgePlacement) return [];
+
+      const protectionPad = 18;
+      if (posterQualityBadgePlacement === 'bottom') {
+        const bottomQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        const bottomY = Math.max(
+          input.badgeTopOffset,
+          input.outputHeight - input.badgeBottomOffset - bottomQualityHeight
+        );
+        return [
+          {
+            left: 0,
+            top: Math.max(0, bottomY - protectionPad),
+            width: input.outputWidth,
+            height: input.outputHeight - Math.max(0, bottomY - protectionPad),
+          },
+        ];
+      }
+
+      if (posterQualityBadgePlacement === 'top') {
+        const topQualityHeight = Math.max(36, Math.round(badgeHeight * 1.05));
+        return [
+          {
+            left: 0,
+            top: 0,
+            width: input.outputWidth,
+            height: Math.min(input.outputHeight, input.badgeTopOffset + topQualityHeight + protectionPad),
+          },
+        ];
+      }
+
+      const qualityHeight = Math.max(44, Math.round(badgeHeight * 1.25));
+      const uniformBadgeWidth = Math.min(
+        Math.max(72, Math.round(qualityHeight * 1.75)),
+        Math.max(72, input.outputWidth - 24)
+      );
+      const qualityTotalHeight =
+        usableQualityBadges.length * qualityHeight +
+        Math.max(0, usableQualityBadges.length - 1) * input.badgeGap;
+      const centeredStartY = Math.max(
+        input.badgeTopOffset,
+        Math.round((input.outputHeight - qualityTotalHeight) / 2)
+      );
+      let qualityStartY = centeredStartY;
+      const shouldTopAlignQuality =
+        (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') &&
+        (posterQualityBadgePlacement === 'left' || posterQualityBadgePlacement === 'right');
+      if (shouldTopAlignQuality) {
+        qualityStartY = input.badgeTopOffset;
+      } else if (posterTopRows.length > 0) {
+        qualityStartY = Math.max(qualityStartY, posterTopBlockBottom);
+      } else {
+        const sideBadges =
+          posterQualityBadgePlacement === 'right' ? input.rightBadges : input.leftBadges;
+        if (sideBadges.length > 0) {
+          const sideColumnHeight = measureBadgeColumnHeight(sideBadges, blockbusterSideMetrics);
+          if (sideColumnHeight > 0) {
+            qualityStartY = Math.max(
+              qualityStartY,
+              input.badgeTopOffset + sideColumnHeight + input.badgeGap
+            );
+          }
+        }
+      }
+
+      const left =
+        posterQualityBadgePlacement === 'right'
+          ? Math.max(0, input.outputWidth - uniformBadgeWidth - 12 - protectionPad)
+          : 0;
+      return [
+        {
+          left,
+          top: Math.max(0, qualityStartY - protectionPad),
+          width: Math.min(input.outputWidth - left, uniformBadgeWidth + protectionPad * 2),
+          height: Math.min(
+            input.outputHeight - Math.max(0, qualityStartY - protectionPad),
+            qualityTotalHeight + protectionPad * 2
+          ),
+        },
+      ];
+    };
+    const blockbusterProtectedRects = buildPosterQualityProtectedRects();
+    const blockbusterDensityPreset = BLOCKBUSTER_DENSITY_PRESETS[input.blockbusterDensity];
+    const blockbusterSeedSalt = sha1Hex(
+      `${input.imgUrl}|${input.outputWidth}|${input.outputHeight}|${input.blockbusterDensity}|${input.imageType}`
+    );
+    const blockbusterCalloutBadges =
+      input.imageType === 'poster' && input.ratingPresentation === 'blockbuster'
+        ? pickBlockbusterCalloutBadges(input.badges).slice(0, blockbusterDensityPreset.calloutLimit)
+        : [];
+    const blockbusterCalloutKeys = new Set(blockbusterCalloutBadges.map((badge) => badge.key));
+    const createBlockbusterScatterCandidates = ({
+      seedKey,
+      width,
+      height,
+      preferredLeft,
+      preferredTop,
+      attempts = 72,
+      scatterMode = 'score',
+    }: {
+      seedKey: string;
+      width: number;
+      height: number;
+      preferredLeft: number;
+      preferredTop: number;
+      attempts?: number;
+      scatterMode?: BlockbusterScatterMode;
+    }) => {
+      let state = Number.parseInt(sha1Hex(`${blockbusterSeedSalt}:${seedKey}`).slice(0, 8), 16) || 1;
+      const next = () => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 4294967296;
+      };
+      const safeInset = 8;
+      const horizontalRange = Math.max(0, input.outputWidth - width - safeInset * 2);
+      const topInset = Math.max(8, input.badgeTopOffset - 8);
+      const verticalRange = Math.max(0, input.outputHeight - height - topInset - safeInset);
+      const edgeBandX = Math.max(14, Math.min(84, Math.round(input.outputWidth * 0.14)));
+      const edgeBandY = Math.max(14, Math.min(88, Math.round(input.outputHeight * 0.12)));
+      const anchorMap: Record<
+        BlockbusterScatterMode,
+        Array<{ x: number; y: number; jitterX: number; jitterY: number }>
+      > = {
+        callout: [
+          { x: 0.04, y: 0.04, jitterX: 30, jitterY: 18 },
+          { x: 0.24, y: 0.04, jitterX: 36, jitterY: 18 },
+          { x: 0.52, y: 0.05, jitterX: 40, jitterY: 18 },
+          { x: 0.8, y: 0.06, jitterX: 34, jitterY: 18 },
+          { x: 0.04, y: 0.2, jitterX: 24, jitterY: 24 },
+          { x: 0.82, y: 0.22, jitterX: 24, jitterY: 24 },
+          { x: 0.08, y: 0.42, jitterX: 28, jitterY: 28 },
+          { x: 0.76, y: 0.4, jitterX: 28, jitterY: 28 },
+          { x: 0.14, y: 0.62, jitterX: 28, jitterY: 26 },
+          { x: 0.68, y: 0.62, jitterX: 28, jitterY: 26 },
+          { x: 0.42, y: 0.16, jitterX: 44, jitterY: 22 },
+        ],
+        blurb: [
+          { x: 0.06, y: 0.18, jitterX: 26, jitterY: 24 },
+          { x: 0.62, y: 0.12, jitterX: 30, jitterY: 24 },
+          { x: 0.08, y: 0.36, jitterX: 28, jitterY: 26 },
+          { x: 0.68, y: 0.34, jitterX: 30, jitterY: 26 },
+          { x: 0.12, y: 0.58, jitterX: 28, jitterY: 24 },
+          { x: 0.58, y: 0.56, jitterX: 32, jitterY: 24 },
+          { x: 0.2, y: 0.74, jitterX: 26, jitterY: 18 },
+          { x: 0.66, y: 0.72, jitterX: 26, jitterY: 18 },
+          { x: 0.32, y: 0.24, jitterX: 36, jitterY: 24 },
+          { x: 0.46, y: 0.44, jitterX: 34, jitterY: 24 },
+        ],
+        score: [
+          { x: 0.02, y: 0.04, jitterX: 18, jitterY: 14 },
+          { x: 0.84, y: 0.04, jitterX: 18, jitterY: 14 },
+          { x: 0.04, y: 0.2, jitterX: 18, jitterY: 18 },
+          { x: 0.84, y: 0.2, jitterX: 18, jitterY: 18 },
+          { x: 0.06, y: 0.38, jitterX: 18, jitterY: 20 },
+          { x: 0.84, y: 0.4, jitterX: 18, jitterY: 20 },
+          { x: 0.08, y: 0.58, jitterX: 18, jitterY: 22 },
+          { x: 0.82, y: 0.6, jitterX: 18, jitterY: 22 },
+          { x: 0.1, y: 0.76, jitterX: 18, jitterY: 18 },
+          { x: 0.78, y: 0.76, jitterX: 18, jitterY: 18 },
+          { x: 0.34, y: 0.08, jitterX: 28, jitterY: 16 },
+          { x: 0.56, y: 0.08, jitterX: 28, jitterY: 16 },
+        ],
+      };
+      const candidates = [{ left: preferredLeft, top: preferredTop }];
+      const anchors = anchorMap[scatterMode];
+      const anchorOffset =
+        anchors.length > 0
+          ? (Number.parseInt(sha1Hex(`${seedKey}:anchors`).slice(0, 4), 16) || 0) % anchors.length
+          : 0;
+
+      for (let index = 0; index < anchors.length; index += 1) {
+        const anchor = anchors[(index + anchorOffset) % anchors.length];
+        const jitterX = Math.round((next() - 0.5) * anchor.jitterX * 2);
+        const jitterY = Math.round((next() - 0.5) * anchor.jitterY * 2);
+        candidates.push({
+          left: safeInset + Math.round(horizontalRange * anchor.x) + jitterX,
+          top: topInset + Math.round(verticalRange * anchor.y) + jitterY,
+        });
+      }
+
+      for (let index = 0; index < attempts; index += 1) {
+        let left = safeInset + Math.round(horizontalRange * next());
+        let top = topInset + Math.round(verticalRange * next());
+        const roll = next();
+
+        if (scatterMode === 'score') {
+          if (roll < 0.28) {
+            left = safeInset + Math.round(edgeBandX * next());
+          } else if (roll < 0.56) {
+            left = safeInset + horizontalRange - Math.round(edgeBandX * next());
+          } else if (roll < 0.74) {
+            top = topInset + Math.round(edgeBandY * next());
+          } else if (roll < 0.88) {
+            top = topInset + Math.round(verticalRange * (0.56 + next() * 0.28));
+          } else {
+            top = topInset + Math.round(verticalRange * (0.18 + next() * 0.5));
+          }
+        } else if (scatterMode === 'callout') {
+          if (roll < 0.32) {
+            top = topInset + Math.round(edgeBandY * next());
+          } else if (roll < 0.54) {
+            left = safeInset + Math.round(edgeBandX * next());
+          } else if (roll < 0.76) {
+            left = safeInset + horizontalRange - Math.round(edgeBandX * next());
+          } else {
+            top = topInset + Math.round(verticalRange * (0.12 + next() * 0.48));
+          }
+        } else {
+          if (roll < 0.24) {
+            left = safeInset + Math.round(edgeBandX * next());
+          } else if (roll < 0.48) {
+            left = safeInset + horizontalRange - Math.round(edgeBandX * next());
+          } else if (roll < 0.72) {
+            top = topInset + Math.round(verticalRange * (0.14 + next() * 0.44));
+          } else {
+            top = topInset + Math.round(verticalRange * (0.32 + next() * 0.4));
+          }
+        }
+
+        candidates.push({ left, top });
+      }
+
+      return candidates;
+    };
+    const placeBlockbusterRect = ({
+      width,
+      height,
+      seedKey,
+      preferredLeft,
+      preferredTop,
+      attempts = 72,
+      protectedPadding = 18,
+      occupiedPadding = 10,
+      scatterMode = 'score',
+      relaxedOccupiedPadding = 0,
+    }: {
+      width: number;
+      height: number;
+      seedKey: string;
+      preferredLeft: number;
+      preferredTop: number;
+      attempts?: number;
+      protectedPadding?: number;
+      occupiedPadding?: number;
+      scatterMode?: BlockbusterScatterMode;
+      relaxedOccupiedPadding?: number;
+    }): BlockbusterPlacementRect | null => {
+      const candidates = createBlockbusterScatterCandidates({
+        seedKey,
+        width,
+        height,
+        preferredLeft,
+        preferredTop,
+        attempts,
+        scatterMode,
+      });
+      const occupiedPaddingPasses = Array.from(
+        new Set([
+          Math.max(0, Math.round(occupiedPadding)),
+          Math.max(Math.max(0, relaxedOccupiedPadding), Math.round(occupiedPadding * 0.5)),
+          Math.max(0, Math.round(relaxedOccupiedPadding)),
+        ])
+      ).sort((left, right) => right - left);
+
+      for (const occupiedPaddingForPass of occupiedPaddingPasses) {
+        for (let index = 0; index < candidates.length; index += 1) {
+          const candidate = candidates[index];
+          const rect = clampBlockbusterRect(candidate.left, candidate.top, width, height);
+          const hitsProtected = blockbusterProtectedRects.some((target) =>
+            intersectsBlockbusterRect(rect, target, protectedPadding)
+          );
+          if (hitsProtected) continue;
+          const hitsPlaced = blockbusterScatterRects.some((target) =>
+            intersectsBlockbusterRect(rect, target, occupiedPaddingForPass)
+          );
+          if (hitsPlaced) continue;
+          blockbusterScatterRects.push(rect);
+          return rect;
+        }
+      }
+
+      return null;
+    };
     const alignPosterRowWithQuality =
       input.imageType === 'poster' && input.qualityBadges.length > 0 && posterQualityBadgeSidePlacement !== null;
     const posterRowAlign: 'left' | 'center' | 'right' = alignPosterRowWithQuality
@@ -3065,16 +4334,16 @@ const renderWithSharp = async (
     ) => {
       if (rowBadges.length === 0) return;
       const rowEntries = rowBadges.map((badge) => {
-        const badgeWidth = estimateBadgeWidth(
-          badge.value,
+        const badgeWidth = estimateRenderedBadgeWidth(
+          badge,
           input.badgeFontSize,
           input.badgePaddingX,
           input.badgeIconSize,
           input.badgeGap,
           compactPosterRowText
         );
-        const minBadgeWidth = getMinimumCompressedBadgeWidth(
-          badge.value,
+        const minBadgeWidth = getMinimumCompressedRenderedBadgeWidth(
+          badge,
           input.badgeFontSize,
           input.badgePaddingX,
           input.badgeIconSize,
@@ -3142,27 +4411,13 @@ const renderWithSharp = async (
           Math.min(centerX, Math.max(regionLeft, regionRight - rowEntries[0].badgeWidth))
         );
         const entry = rowEntries[0];
-        const monogram = buildProviderMonogram(
-          entry.badge.label || String(entry.badge.key).toUpperCase()
-        );
-        const badgeSvg = buildBadgeSvg({
-          width: entry.badgeWidth,
-          height: badgeHeight,
-          iconSize: input.badgeIconSize,
-          fontSize: input.badgeFontSize,
-          paddingX: input.badgePaddingX,
-          gap: input.badgeGap,
-          accentColor: entry.badge.accentColor,
-          monogram,
-          iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
-          iconKey: entry.badge.key,
-          value: entry.badge.value,
-          ratingStyle: input.ratingStyle,
-          preferNeutralGlassPlate:
-            iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
+        pushBadgeOverlay({
+          badge: entry.badge,
+          badgeWidth: entry.badgeWidth,
+          rowX: clampedX,
+          rowY,
           compactText: compactPosterRowText,
         });
-        overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: clampedX });
         return;
       }
       if (shouldSplitRow) {
@@ -3188,27 +4443,13 @@ const renderWithSharp = async (
             const positions = [leftX, rightX];
             for (let index = 0; index < rowEntries.length; index += 1) {
               const entry = rowEntries[index];
-              const monogram = buildProviderMonogram(
-                entry.badge.label || String(entry.badge.key).toUpperCase()
-              );
-              const badgeSvg = buildBadgeSvg({
-                width: entry.badgeWidth,
-                height: badgeHeight,
-                iconSize: input.badgeIconSize,
-                fontSize: input.badgeFontSize,
-                paddingX: input.badgePaddingX,
-                gap: input.badgeGap,
-                accentColor: entry.badge.accentColor,
-                monogram,
-                iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
-                iconKey: entry.badge.key,
-                value: entry.badge.value,
-                ratingStyle: input.ratingStyle,
-                preferNeutralGlassPlate:
-                  iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
+              pushBadgeOverlay({
+                badge: entry.badge,
+                badgeWidth: entry.badgeWidth,
+                rowX: positions[index],
+                rowY,
                 compactText: compactPosterRowText,
               });
-              overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: positions[index] });
             }
             return;
           }
@@ -3226,27 +4467,13 @@ const renderWithSharp = async (
           const positions = [leftX, centerX, rightX];
           for (let index = 0; index < rowEntries.length; index += 1) {
             const entry = rowEntries[index];
-            const monogram = buildProviderMonogram(
-              entry.badge.label || String(entry.badge.key).toUpperCase()
-            );
-            const badgeSvg = buildBadgeSvg({
-              width: entry.badgeWidth,
-              height: badgeHeight,
-              iconSize: input.badgeIconSize,
-              fontSize: input.badgeFontSize,
-              paddingX: input.badgePaddingX,
-              gap: input.badgeGap,
-              accentColor: entry.badge.accentColor,
-              monogram,
-              iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
-              iconKey: entry.badge.key,
-              value: entry.badge.value,
-              ratingStyle: input.ratingStyle,
-              preferNeutralGlassPlate:
-                iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
+            pushBadgeOverlay({
+              badge: entry.badge,
+              badgeWidth: entry.badgeWidth,
+              rowX: positions[index],
+              rowY,
               compactText: compactPosterRowText,
             });
-            overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: positions[index] });
           }
           return;
         }
@@ -3276,27 +4503,13 @@ const renderWithSharp = async (
       rowX = Math.max(regionLeft, Math.min(rowX, Math.max(regionLeft, regionRight - rowWidth)));
 
       for (const entry of rowEntries) {
-        const monogram = buildProviderMonogram(
-          entry.badge.label || String(entry.badge.key).toUpperCase()
-        );
-        const badgeSvg = buildBadgeSvg({
-          width: entry.badgeWidth,
-          height: badgeHeight,
-          iconSize: input.badgeIconSize,
-          fontSize: input.badgeFontSize,
-          paddingX: input.badgePaddingX,
-          gap: input.badgeGap,
-          accentColor: entry.badge.accentColor,
-          monogram,
-          iconDataUri: iconRenderStateByProvider.get(entry.badge.key)?.dataUri || null,
-          iconKey: entry.badge.key,
-          value: entry.badge.value,
-          ratingStyle: input.ratingStyle,
-          preferNeutralGlassPlate:
-            iconRenderStateByProvider.get(entry.badge.key)?.preferNeutralGlassPlate || false,
+        pushBadgeOverlay({
+          badge: entry.badge,
+          badgeWidth: entry.badgeWidth,
+          rowX,
+          rowY,
           compactText: compactPosterRowText,
         });
-        overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
         rowX += entry.badgeWidth + rowGap;
       }
     };
@@ -3331,24 +4544,19 @@ const renderWithSharp = async (
       );
       overlays.push({ input: overlay.buffer, top: overlayY, left: overlayX });
     };
-    const composeEdgeAlignedPosterBadge = (
-      badge: RatingBadge,
-      rowY: number,
-      side: 'left' | 'right',
-      maxBadgeWidth: number
-    ) => {
-      const estimatedWidth = estimateBadgeWidth(
-        badge.value,
-        input.badgeFontSize,
-        input.badgePaddingX,
-        input.badgeIconSize,
-        input.badgeGap
-      );
-      const badgeWidth = Math.min(estimatedWidth, maxBadgeWidth);
-      const rowX =
-        side === 'left'
-          ? 12
-          : Math.max(12, input.outputWidth - badgeWidth - 12);
+    const pushBadgeOverlay = ({
+      badge,
+      badgeWidth,
+      rowX,
+      rowY,
+      compactText = compactPosterRowText,
+    }: {
+      badge: RatingBadge;
+      badgeWidth: number;
+      rowX: number;
+      rowY: number;
+      compactText?: boolean;
+    }) => {
       const monogram = buildProviderMonogram(
         badge.label || String(badge.key).toUpperCase()
       );
@@ -3363,12 +4571,235 @@ const renderWithSharp = async (
         monogram,
         iconDataUri: iconRenderStateByProvider.get(badge.key)?.dataUri || null,
         iconKey: badge.key,
+        labelText: badge.label,
         value: badge.value,
+        badgeVariant: badge.variant || 'standard',
         ratingStyle: input.ratingStyle,
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
+        compactText,
       });
+
+      if (
+        input.imageType === 'poster' &&
+        input.ratingPresentation === 'blockbuster' &&
+        (badge.variant || 'standard') === 'standard'
+      ) {
+        return;
+      }
+
       overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
+    };
+    const composeBlockbusterPosterCallouts = () => {
+      if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return;
+      const calloutBadges = blockbusterCalloutBadges;
+      if (calloutBadges.length === 0) return;
+
+      for (let index = 0; index < calloutBadges.length; index += 1) {
+        const badge = calloutBadges[index];
+        const hash = sha1Hex(`${blockbusterSeedSalt}:${badge.key}:${badge.value}:callout`);
+        const rotationBias = ((Number.parseInt(hash.slice(4, 8), 16) || 0) % 600) / 100 - 3;
+        const headline = getBlockbusterCalloutHeadline(badge);
+        const detail = getBlockbusterCalloutDetail(badge, headline);
+        const monogram = buildProviderMonogram(
+          badge.label || String(badge.key).toUpperCase()
+        );
+        const callout = buildBlockbusterCalloutSvg({
+          headline,
+          detail,
+          accentColor: badge.accentColor,
+          rotation: rotationBias,
+          iconDataUri: iconRenderStateByProvider.get(badge.key)?.dataUri || null,
+          iconMonogram: monogram,
+        });
+        const transformedCallout = buildTransformedSvgOverlay({
+          svg: callout.svg,
+          width: callout.width,
+          height: callout.height,
+          rotation: 0,
+          opacity: 1,
+          scale: getBlockbusterDensityScale(blockbusterDensityPreset.calloutScales, index),
+          pad: 6,
+        });
+        const chaos = getBlockbusterBadgeChaos(badge, blockbusterSeedSalt);
+        const preferredHorizontalRatio =
+          chaos.spreadX < 0.33 ? 0.02 + chaos.spreadX * 0.18
+          : chaos.spreadX > 0.66 ? 0.72 + (chaos.spreadX - 0.66) * 0.32
+          : 0.24 + (chaos.spreadX - 0.33) * 0.72;
+        const placement = placeBlockbusterRect({
+          width: transformedCallout.width,
+          height: transformedCallout.height,
+          seedKey: `callout:${badge.key}:${badge.value}:${blockbusterSeedSalt}`,
+          preferredLeft: Math.round(
+            Math.max(
+              0,
+              (input.outputWidth - transformedCallout.width) * preferredHorizontalRatio + chaos.xJitter * 0.35
+            )
+          ),
+          preferredTop: Math.round(
+            Math.max(
+              posterTopBlockBottom + 8,
+              (input.outputHeight - transformedCallout.height) * (0.04 + chaos.spreadY * 0.58)
+            )
+          ),
+          attempts: blockbusterDensityPreset.calloutAttempts,
+          protectedPadding: 20,
+          occupiedPadding: blockbusterDensityPreset.calloutPadding,
+          scatterMode: 'callout',
+          relaxedOccupiedPadding: 0,
+        });
+        if (!placement) continue;
+        blockbusterStickerOverlays.push({
+          input: Buffer.from(transformedCallout.svg),
+          top: placement.top,
+          left: placement.left,
+        });
+      }
+    };
+    const composeBlockbusterReviewBlurbs = () => {
+      if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return;
+      const blurbs = (input.blockbusterBlurbs || []).slice(0, blockbusterDensityPreset.blurbLimit);
+      if (blurbs.length === 0) return;
+
+      for (let index = 0; index < blurbs.length; index += 1) {
+        const blurb = blurbs[index];
+        const hash = sha1Hex(`${blockbusterSeedSalt}:${blurb.author}:${blurb.text}`);
+        const chaos = getBlockbusterBlurbChaos(hash, input.blockbusterDensity);
+        const reviewCallout = buildBlockbusterReviewCalloutSvg({
+          text: blurb.text,
+          author: blurb.author,
+          rotation: 0,
+        });
+        const transformedReviewCallout = buildTransformedSvgOverlay({
+          svg: reviewCallout.svg,
+          width: reviewCallout.width,
+          height: reviewCallout.height,
+          rotation: chaos.outerRotation,
+          opacity: 1,
+          scale: Math.max(
+            0.72,
+            Math.min(
+              1.2,
+              getBlockbusterDensityScale(blockbusterDensityPreset.blurbScales, index) * chaos.scale
+            )
+          ),
+          skewX: chaos.skewX,
+          skewY: chaos.skewY,
+          pad: chaos.isNearVertical ? 38 : 22,
+        });
+        const preferredHorizontalRatio =
+          chaos.horizontalBias < 0.33
+            ? 0.03 + chaos.horizontalBias * 0.45
+            : chaos.horizontalBias > 0.66
+              ? 0.68 + (chaos.horizontalBias - 0.66) * 0.74
+              : 0.18 + (chaos.horizontalBias - 0.33) * 1.02;
+        const placement = placeBlockbusterRect({
+          width: transformedReviewCallout.width,
+          height: transformedReviewCallout.height,
+          seedKey: `blurb:${hash}`,
+          preferredLeft: Math.round(
+            Math.max(
+              0,
+              (input.outputWidth - transformedReviewCallout.width) * preferredHorizontalRatio
+            )
+          ),
+          preferredTop: Math.round(
+            Math.max(
+              posterTopBlockBottom + 18,
+              (input.outputHeight - transformedReviewCallout.height) *
+                (0.08 + chaos.verticalBias * 0.72)
+            )
+          ),
+          attempts: blockbusterDensityPreset.blurbAttempts,
+          protectedPadding: 24,
+          occupiedPadding: blockbusterDensityPreset.blurbPadding,
+          scatterMode: 'blurb',
+          relaxedOccupiedPadding: 0,
+        });
+        if (!placement) continue;
+        blockbusterStickerOverlays.push({
+          input: Buffer.from(transformedReviewCallout.svg),
+          top: placement.top,
+          left: placement.left,
+        });
+      }
+    };
+    const composeBlockbusterScoreTiles = () => {
+      if (input.imageType !== 'poster' || input.ratingPresentation !== 'blockbuster') return;
+      const scoreBadges = pickBlockbusterScoreBadges(input.badges).slice(
+        0,
+        blockbusterDensityPreset.badgeScales.length
+      ).filter((badge) => !blockbusterCalloutKeys.has(badge.key));
+      for (let index = 0; index < scoreBadges.length; index += 1) {
+        const badge = scoreBadges[index];
+        const chaos = getBlockbusterBadgeChaos(badge, blockbusterSeedSalt);
+        const monogram = buildProviderMonogram(
+          badge.label || String(badge.key).toUpperCase()
+        );
+        const scoreTile = buildBlockbusterScoreTileSvg({
+          badge,
+          iconDataUri: iconRenderStateByProvider.get(badge.key)?.dataUri || null,
+          iconMonogram: monogram,
+        });
+        const scaledBadge = buildTransformedSvgOverlay({
+          svg: scoreTile.svg,
+          width: scoreTile.width,
+          height: scoreTile.height,
+          rotation: chaos.rotation * 0.5,
+          opacity: 1,
+          scale: getBlockbusterDensityScale(blockbusterDensityPreset.badgeScales, index),
+          pad: 4,
+        });
+        const placement = placeBlockbusterRect({
+          width: scaledBadge.width,
+          height: scaledBadge.height,
+          seedKey: `score:${badge.key}:${badge.value}:${blockbusterSeedSalt}`,
+          preferredLeft: Math.round(
+            Math.max(
+              0,
+              (input.outputWidth - scaledBadge.width) *
+                (chaos.spreadX < 0.33 ? 0.02 : chaos.spreadX > 0.66 ? 0.82 : 0.38)
+            ) + chaos.xJitter * 0.18
+          ),
+          preferredTop: Math.round(
+            Math.max(
+              posterTopBlockBottom,
+              (input.outputHeight - scaledBadge.height) * (0.04 + chaos.spreadY * 0.82)
+            )
+          ),
+          attempts: blockbusterDensityPreset.badgeAttempts,
+          protectedPadding: 20,
+          occupiedPadding: blockbusterDensityPreset.badgePadding,
+          scatterMode: 'score',
+          relaxedOccupiedPadding: 0,
+        });
+        if (!placement) continue;
+        blockbusterBadgeOverlays.push({
+          input: Buffer.from(scaledBadge.svg),
+          top: placement.top,
+          left: placement.left,
+        });
+      }
+    };
+    const composeEdgeAlignedPosterBadge = (
+      badge: RatingBadge,
+      rowY: number,
+      side: 'left' | 'right',
+      maxBadgeWidth: number
+    ) => {
+      const estimatedWidth = estimateRenderedBadgeWidth(
+        badge,
+        input.badgeFontSize,
+        input.badgePaddingX,
+        input.badgeIconSize,
+        input.badgeGap
+      );
+      const badgeWidth = Math.min(estimatedWidth, maxBadgeWidth);
+      const rowX =
+        side === 'left'
+          ? 12
+          : Math.max(12, input.outputWidth - badgeWidth - 12);
+      pushBadgeOverlay({ badge, badgeWidth, rowX, rowY, compactText: false });
     };
     const composeBadgeColumn = (
       columnBadges: RatingBadge[],
@@ -3608,6 +5039,12 @@ const renderWithSharp = async (
             }
           }
         }
+        composeBlockbusterReviewBlurbs();
+        composeBlockbusterPosterCallouts();
+        composeBlockbusterScoreTiles();
+        if (blockbusterBadgeOverlays.length > 0 || blockbusterStickerOverlays.length > 0) {
+          overlays.push(...blockbusterBadgeOverlays, ...blockbusterStickerOverlays);
+        }
         const bottomOverlayAnchorY =
           posterBottomRows.length > 0
             ? bottomRowY - (posterBottomRows.length - 1) * (badgeHeight + input.badgeGap)
@@ -3846,6 +5283,44 @@ export async function GET(
   const posterRatings = request.nextUrl.searchParams.get('posterRatings') ?? globalRatings;
   const backdropRatings = request.nextUrl.searchParams.get('backdropRatings') ?? globalRatings;
   const logoRatings = request.nextUrl.searchParams.get('logoRatings') ?? globalRatings;
+  const globalRatingPresentation = normalizeRatingPresentation(
+    request.nextUrl.searchParams.get('ratingPresentation'),
+    DEFAULT_RATING_PRESENTATION,
+  );
+  const posterRatingPresentation = normalizeRatingPresentation(
+    request.nextUrl.searchParams.get('posterRatingPresentation') ??
+      request.nextUrl.searchParams.get('ratingPresentation'),
+    globalRatingPresentation,
+  );
+  const backdropRatingPresentation = normalizeRatingPresentation(
+    request.nextUrl.searchParams.get('backdropRatingPresentation') ??
+      request.nextUrl.searchParams.get('ratingPresentation'),
+    globalRatingPresentation,
+  );
+  const logoRatingPresentation = normalizeRatingPresentation(
+    request.nextUrl.searchParams.get('logoRatingPresentation') ??
+      request.nextUrl.searchParams.get('ratingPresentation'),
+    globalRatingPresentation,
+  );
+  const globalAggregateRatingSource = normalizeAggregateRatingSource(
+    request.nextUrl.searchParams.get('aggregateRatingSource'),
+    DEFAULT_AGGREGATE_RATING_SOURCE,
+  );
+  const posterAggregateRatingSource = normalizeAggregateRatingSource(
+    request.nextUrl.searchParams.get('posterAggregateRatingSource') ??
+      request.nextUrl.searchParams.get('aggregateRatingSource'),
+    globalAggregateRatingSource,
+  );
+  const backdropAggregateRatingSource = normalizeAggregateRatingSource(
+    request.nextUrl.searchParams.get('backdropAggregateRatingSource') ??
+      request.nextUrl.searchParams.get('aggregateRatingSource'),
+    globalAggregateRatingSource,
+  );
+  const logoAggregateRatingSource = normalizeAggregateRatingSource(
+    request.nextUrl.searchParams.get('logoAggregateRatingSource') ??
+      request.nextUrl.searchParams.get('aggregateRatingSource'),
+    globalAggregateRatingSource,
+  );
   const imageTextParam =
     request.nextUrl.searchParams.get('imageText') || request.nextUrl.searchParams.get('posterText');
   const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
@@ -3980,6 +5455,23 @@ export async function GET(
     ratingsForType === null || ratingsForType === undefined
       ? [...ALL_RATING_PREFERENCES]
       : parseRatingPreferencesAllowEmpty(ratingsForType);
+  const ratingPresentation =
+    imageType === 'poster'
+      ? posterRatingPresentation
+      : imageType === 'backdrop'
+        ? backdropRatingPresentation
+        : logoRatingPresentation;
+  const blockbusterDensity = normalizeBlockbusterDensity(
+    request.nextUrl.searchParams.get('posterBlockbusterDensity') ??
+      request.nextUrl.searchParams.get('blockbusterDensity'),
+    DEFAULT_BLOCKBUSTER_DENSITY
+  );
+  const aggregateRatingSource =
+    imageType === 'poster'
+      ? posterAggregateRatingSource
+      : imageType === 'backdrop'
+        ? backdropAggregateRatingSource
+        : logoAggregateRatingSource;
   const hasExplicitRatingOrder = ratingsForType !== null && ratingsForType !== undefined;
   const shouldApplyRatings = ratingPreferences.length > 0;
   const shouldApplyStreamBadges =
@@ -4021,6 +5513,9 @@ export async function GET(
     imageType !== 'logo' ? qualityBadgesStyle : '-',
     imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
     imageType === 'backdrop' ? backdropRatingsLayout : '-',
+    ratingPresentation,
+    imageType === 'poster' ? blockbusterDensity : '-',
+    aggregateRatingSource,
     ratingStyle,
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
@@ -4333,6 +5828,8 @@ export async function GET(
         imageType !== 'logo' ? qualityBadgesStyle : '-',
         imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
         imageType === 'backdrop' ? backdropRatingsLayout : '-',
+        ratingPresentation,
+        aggregateRatingSource,
         ratingStyle,
         imageType === 'logo' ? logoBackground : '-',
         effectiveRatingPreferences.join(',') || 'none',
@@ -5220,12 +6717,25 @@ export async function GET(
       const usePosterBadgeLayout = type === 'poster';
       const useBackdropBadgeLayout = type === 'backdrop';
       const useLogoBadgeLayout = type === 'logo';
+      const usesAggregatePresentation =
+        ratingPresentation === 'minimal' || ratingPresentation === 'average';
+      const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
+      const effectivePosterRatingsLayout =
+        usePosterBadgeLayout && useBlockbusterPresentation ? 'left-right' : posterRatingsLayout;
+      const effectivePosterRatingsMaxPerSide =
+        usePosterBadgeLayout && useBlockbusterPresentation ? null : posterRatingsMaxPerSide;
+      const effectiveBackdropRatingsLayout =
+        useBackdropBadgeLayout && useBlockbusterPresentation
+          ? ('right-vertical' as BackdropRatingLayout)
+          : backdropRatingsLayout;
+      const effectiveLogoRatingsMax =
+        useLogoBadgeLayout && useBlockbusterPresentation ? null : logoRatingsMax;
       const posterRatingLimit = usePosterBadgeLayout
-        ? getPosterRatingLayoutMaxBadges(posterRatingsLayout, posterRatingsMaxPerSide)
+        ? getPosterRatingLayoutMaxBadges(effectivePosterRatingsLayout, effectivePosterRatingsMaxPerSide)
         : null;
-      const logoRatingLimit = useLogoBadgeLayout ? logoRatingsMax : null;
+      const logoRatingLimit = useLogoBadgeLayout ? effectiveLogoRatingsMax : null;
       const resolvedRatingBadgeLimit =
-        usePosterBadgeLayout || useLogoBadgeLayout
+        !usesAggregatePresentation && (usePosterBadgeLayout || useLogoBadgeLayout)
           ? (posterRatingLimit ?? logoRatingLimit ?? null)
           : null;
       const ratingBadgeByProvider = new Map<RatingPreference, RatingBadge>();
@@ -5247,6 +6757,7 @@ export async function GET(
         const baseValue = provider === 'tmdb' ? tmdbRating : providerRatings.get(provider) || null;
         if (!shouldRenderRatingValue(baseValue)) continue;
         const value = formatDisplayRatingValue(provider, baseValue as string, imageType);
+        const sourceValue = formatDisplayRatingValue(provider, baseValue as string);
         if (!shouldRenderRatingValue(value)) continue;
 
         const iconUrl = meta.iconUrl;
@@ -5254,17 +6765,31 @@ export async function GET(
           key: provider,
           label: meta.label,
           value,
+          sourceValue,
           iconUrl,
           accentColor: meta.accentColor,
+          variant: 'standard',
         });
       }
-      const ratingBadges = selectAvailableRatingPreferences(
-        renderableRatingPreferences,
-        ratingBadgeByProvider.keys(),
-        resolvedRatingBadgeLimit,
-      )
-        .map((provider) => ratingBadgeByProvider.get(provider) || null)
-        .filter((badge): badge is RatingBadge => badge !== null);
+      const aggregateBadge = usesAggregatePresentation
+        ? buildAggregateRatingBadge({
+            requestedSource: aggregateRatingSource,
+            presentation: ratingPresentation,
+            renderablePreferences: renderableRatingPreferences,
+            ratingBadgeByProvider,
+          })
+        : null;
+      const ratingBadges = usesAggregatePresentation
+        ? aggregateBadge
+          ? [aggregateBadge]
+          : []
+        : selectAvailableRatingPreferences(
+            renderableRatingPreferences,
+            ratingBadgeByProvider.keys(),
+            resolvedRatingBadgeLimit,
+          )
+            .map((provider) => ratingBadgeByProvider.get(provider) || null)
+            .filter((badge): badge is RatingBadge => badge !== null);
       if (
         ratingBadges.length === 0 &&
         streamBadges.length === 0 &&
@@ -5276,11 +6801,12 @@ export async function GET(
       }
       const usePosterRowLayout =
         usePosterBadgeLayout &&
-        (posterRatingsLayout === 'top' ||
-          posterRatingsLayout === 'bottom' ||
-          posterRatingsLayout === 'top-bottom');
+        (effectivePosterRatingsLayout === 'top' ||
+          effectivePosterRatingsLayout === 'bottom' ||
+          effectivePosterRatingsLayout === 'top-bottom');
       const usePosterRowLayoutLarge = usePosterBadgeLayout && usePosterRowLayout;
-      const useBackdropRightVerticalLayout = useBackdropBadgeLayout && backdropRatingsLayout === 'right-vertical';
+      const useBackdropRightVerticalLayout =
+        useBackdropBadgeLayout && effectiveBackdropRatingsLayout === 'right-vertical';
       let cappedRatingBadges = [...ratingBadges];
       const backdropRows =
         useBackdropBadgeLayout && !useBackdropRightVerticalLayout
@@ -5291,8 +6817,8 @@ export async function GET(
           : [];
       let posterBadgeGroups = splitPosterBadgesByLayout(
         cappedRatingBadges,
-        posterRatingsLayout,
-        posterRatingsMaxPerSide === null ? undefined : posterRatingsMaxPerSide
+        effectivePosterRatingsLayout,
+        effectivePosterRatingsMaxPerSide === null ? undefined : effectivePosterRatingsMaxPerSide
       );
       let topRatingBadges = usePosterBadgeLayout
         ? posterBadgeGroups.topBadges
@@ -5312,6 +6838,41 @@ export async function GET(
           : [];
       let posterTopRows: RatingBadge[][] = topRatingBadges.length > 0 ? [topRatingBadges] : [];
       let posterBottomRows: RatingBadge[][] = bottomRatingBadges.length > 0 ? [bottomRatingBadges] : [];
+      let blockbusterBlurbs: BlockbusterBlurb[] = [];
+
+      if (usePosterBadgeLayout && useBlockbusterPresentation && mediaType && media?.id) {
+        const fetchBlockbusterBlurbsForLanguage = async (language: string) => {
+          const responses = await Promise.all(
+            [1, 2, 3].map((page) =>
+              fetchJsonCached(
+                `tmdb:${mediaType}:${media.id}:reviews:${language}:page:${page}`,
+                `https://api.themoviedb.org/3/${mediaType}/${media.id}/reviews?api_key=${tmdbKey}&language=${language}&page=${page}`,
+                TMDB_CACHE_TTL_MS,
+                phases,
+                'tmdb'
+              )
+            )
+          );
+          return dedupeBlockbusterBlurbs(
+            responses.flatMap((response) =>
+              response.ok ? extractBlockbusterReviewBlurbs(response.data) : []
+            ),
+            10
+          );
+        };
+
+        blockbusterBlurbs = await fetchBlockbusterBlurbsForLanguage(requestedImageLang);
+
+        if (blockbusterBlurbs.length < 6 && requestedImageLang !== FALLBACK_IMAGE_LANGUAGE) {
+          blockbusterBlurbs = dedupeBlockbusterBlurbs(
+            [
+              ...blockbusterBlurbs,
+              ...(await fetchBlockbusterBlurbsForLanguage(FALLBACK_IMAGE_LANGUAGE)),
+            ],
+            10
+          );
+        }
+      }
 
       let badgeIconSize = 34;
       let badgeFontSize = 28;
@@ -5365,9 +6926,13 @@ export async function GET(
 
       if (usePosterBadgeLayout && cappedRatingBadges.length > 0) {
         let fittedPosterMetrics: BadgeLayoutMetrics;
-        if (posterRatingsLayout === 'left' || posterRatingsLayout === 'right' || posterRatingsLayout === 'left-right') {
+        if (
+          effectivePosterRatingsLayout === 'left' ||
+          effectivePosterRatingsLayout === 'right' ||
+          effectivePosterRatingsLayout === 'left-right'
+        ) {
           const useThreeBadgeTopRow =
-            posterRatingsLayout === 'left-right' &&
+            effectivePosterRatingsLayout === 'left-right' &&
             topRatingBadges.length === 1 &&
             leftRatingBadges.length > 0 &&
             rightRatingBadges.length > 0;
@@ -5376,11 +6941,12 @@ export async function GET(
           const posterColumns = [fittedLeftColumn, fittedRightColumn].filter((column) => column.length > 0);
           const widthRows = posterColumns.flatMap((column) => column.map((badge) => [badge]));
           const alignPosterQualityBadges =
-            (posterRatingsLayout === 'left' || posterRatingsLayout === 'right') && streamBadges.length > 0;
+            (effectivePosterRatingsLayout === 'left' || effectivePosterRatingsLayout === 'right') &&
+            streamBadges.length > 0;
           const reservedTopRows =
-            posterRatingsLayout === 'left-right' && topRatingBadges.length > 0 ? 1 : 0;
+            effectivePosterRatingsLayout === 'left-right' && topRatingBadges.length > 0 ? 1 : 0;
           const posterColumnMaxWidth =
-            posterRatingsLayout === 'left-right'
+            effectivePosterRatingsLayout === 'left-right'
               ? Math.max(160, Math.floor((outputWidth - 36) / 2))
               : alignPosterQualityBadges
                 ? Math.max(220, Math.floor(outputWidth * 0.6))
@@ -5409,10 +6975,17 @@ export async function GET(
             reservedTopRows
           );
           const effectiveMaxPerSide =
-            posterRatingsMaxPerSide === null
+            effectivePosterRatingsMaxPerSide === null
               ? maxPerColumn + (useThreeBadgeTopRow ? 1 : 0)
-              : Math.min(maxPerColumn + (useThreeBadgeTopRow ? 1 : 0), posterRatingsMaxPerSide);
-          posterBadgeGroups = splitPosterBadgesByLayout(cappedRatingBadges, posterRatingsLayout, effectiveMaxPerSide);
+              : Math.min(
+                  maxPerColumn + (useThreeBadgeTopRow ? 1 : 0),
+                  effectivePosterRatingsMaxPerSide
+                );
+          posterBadgeGroups = splitPosterBadgesByLayout(
+            cappedRatingBadges,
+            effectivePosterRatingsLayout,
+            effectiveMaxPerSide
+          );
           topRatingBadges = posterBadgeGroups.topBadges;
           bottomRatingBadges = posterBadgeGroups.bottomBadges;
           leftRatingBadges = posterBadgeGroups.leftBadges;
@@ -5436,21 +7009,21 @@ export async function GET(
             usePosterRowLayout,
             false
           );
-          if (posterRatingsLayout === 'top') {
+          if (effectivePosterRatingsLayout === 'top') {
             posterTopRows = splitBadgesIntoFittingRows(
               topRatingBadges,
               posterRowFitWidth,
               fittedPosterMetrics,
               usePosterRowLayout
             );
-          } else if (posterRatingsLayout === 'bottom') {
+          } else if (effectivePosterRatingsLayout === 'bottom') {
             posterBottomRows = splitBadgesIntoFittingRows(
               bottomRatingBadges,
               posterRowFitWidth,
               fittedPosterMetrics,
               usePosterRowLayout
             );
-          } else if (posterRatingsLayout === 'top-bottom') {
+          } else if (effectivePosterRatingsLayout === 'top-bottom') {
             posterTopRows = splitBadgesIntoFittingRows(
               topRatingBadges,
               posterRowFitWidth,
@@ -5501,7 +7074,7 @@ export async function GET(
           rightRatingBadges = rightRatingBadges.slice(0, maxPerColumn);
           cappedRatingBadges = [...rightRatingBadges];
         } else {
-          const backdropRegion = getBackdropBadgeRegion(outputWidth, backdropRatingsLayout);
+          const backdropRegion = getBackdropBadgeRegion(outputWidth, effectiveBackdropRatingsLayout);
           fittedBackdropMetrics = fitPosterBadgeMetricsToWidth(
             [topRatingBadges, bottomRatingBadges].filter((row) => row.length > 0),
             backdropRegion.width,
@@ -5521,14 +7094,22 @@ export async function GET(
         badgeGap = fittedBackdropMetrics.gap;
       }
 
+      const logoBadgesPerRow = useLogoBadgeLayout
+        ? useBlockbusterPresentation
+          ? Math.max(2, Math.min(4, Math.ceil(Math.sqrt(cappedRatingBadges.length || 1))))
+          : Math.max(1, cappedRatingBadges.length)
+        : 0;
       const logoBadgeRowWidth = useLogoBadgeLayout && cappedRatingBadges.length > 0
-        ? measureBadgeRowWidth(cappedRatingBadges, {
-          iconSize: badgeIconSize,
-          fontSize: badgeFontSize,
-          paddingX: badgePaddingX,
-          paddingY: badgePaddingY,
-          gap: badgeGap,
-        })
+        ? chunkBy(cappedRatingBadges, Math.max(1, logoBadgesPerRow)).reduce((maxWidth, row) => {
+            const rowWidth = measureBadgeRowWidth(row, {
+              iconSize: badgeIconSize,
+              fontSize: badgeFontSize,
+              paddingX: badgePaddingX,
+              paddingY: badgePaddingY,
+              gap: badgeGap,
+            });
+            return Math.max(maxWidth, rowWidth);
+          }, 0)
         : 0;
       const qualityBadges = useLogoBadgeLayout
         ? []
@@ -5542,8 +7123,10 @@ export async function GET(
         : outputWidth;
       const logoImageWidth = useLogoBadgeLayout ? logoNaturalWidth : 0;
       const logoImageHeight = useLogoBadgeLayout ? outputHeight : 0;
-      const logoBadgesPerRow = useLogoBadgeLayout ? Math.max(1, cappedRatingBadges.length) : 0;
-      const logoBadgeRows = useLogoBadgeLayout && cappedRatingBadges.length > 0 ? 1 : 0;
+      const logoBadgeRows =
+        useLogoBadgeLayout && cappedRatingBadges.length > 0
+          ? Math.ceil(cappedRatingBadges.length / Math.max(1, logoBadgesPerRow))
+          : 0;
       const logoBadgeItemHeight = badgeIconSize + badgePaddingY * 2;
       const estimatedLogoWidth = logoImageWidth;
       const logoBadgeContainerMaxWidth = Math.max(0, finalOutputWidth - 24);
@@ -5558,12 +7141,15 @@ export async function GET(
         ? Math.max(170, logoBadgeRows * logoBadgeItemHeight + Math.max(0, logoBadgeRows - 1) * badgeGap + 68)
         : 0;
       const finalOutputHeight = useLogoBadgeLayout ? logoImageHeight + logoBadgeBandHeight : outputHeight;
+      const renderedRatingCacheKeys = usesAggregatePresentation
+        ? [...ratingBadgeByProvider.keys()]
+        : ratingBadges.map((badge) => badge.key);
       const renderedRatingCacheTtlCandidates = [
-        ...ratingBadges.map((badge) => {
-          if (badge.key === 'tmdb') {
+        ...renderedRatingCacheKeys.map((badgeKey) => {
+          if (badgeKey === 'tmdb') {
             return TMDB_CACHE_TTL_MS;
           }
-          return renderedRatingTtlByProvider.get(badge.key) || null;
+          return renderedRatingTtlByProvider.get(badgeKey) || null;
         }),
         ...(streamBadges.length > 0 ? [streamBadgesCacheTtlMs ?? TORRENTIO_CACHE_TTL_MS] : []),
       ].filter((ttlMs): ttlMs is number => typeof ttlMs === 'number' && Number.isFinite(ttlMs) && ttlMs > 0);
@@ -5575,6 +7161,9 @@ export async function GET(
       const renderedPayload = await renderWithSharp(
         {
           imageType,
+          ratingPresentation,
+          aggregateRatingSource,
+          blockbusterDensity,
           outputFormat,
           imgUrl,
           outputWidth: finalOutputWidth,
@@ -5600,9 +7189,9 @@ export async function GET(
           qualityBadgesSide,
           posterQualityBadgesPosition,
           qualityBadgesStyle,
-          posterRatingsLayout,
-          posterRatingsMaxPerSide,
-          backdropRatingsLayout,
+          posterRatingsLayout: effectivePosterRatingsLayout,
+          posterRatingsMaxPerSide: effectivePosterRatingsMaxPerSide,
+          backdropRatingsLayout: effectiveBackdropRatingsLayout,
           ratingStyle,
           logoBackground,
           topBadges: topRatingBadges,
@@ -5612,6 +7201,7 @@ export async function GET(
           posterTopRows,
           posterBottomRows,
           backdropRows,
+          blockbusterBlurbs,
           cacheControl: responseCacheControl,
         },
         phases

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatDisplayRatingValue } from '../lib/ratingDisplay.ts';
+import { formatDisplayRatingValue, normalizeRatingToTenPointValue } from '../lib/ratingDisplay.ts';
 
 test('trakt direct ratings render on the same 0 to 10 scale as imdb', () => {
   assert.equal(formatDisplayRatingValue('trakt', '9.2', 'poster'), '9.2');
@@ -15,4 +15,10 @@ test('trakt mdb list ratings still normalize from percentage style values', () =
 test('percentage based providers still normalize to poster friendly decimal values', () => {
   assert.equal(formatDisplayRatingValue('tomatoes', '93', 'poster'), '9.3');
   assert.equal(formatDisplayRatingValue('kitsu', '82', 'poster'), '8.2');
+});
+
+test('numeric normalization exports the 0 to 10 values used by aggregate modes', () => {
+  assert.equal(normalizeRatingToTenPointValue('tomatoes', '93'), 9.3);
+  assert.equal(normalizeRatingToTenPointValue('rogerebert', '3.5'), 8.75);
+  assert.equal(normalizeRatingToTenPointValue('trakt', '76'), 7.6);
 });
