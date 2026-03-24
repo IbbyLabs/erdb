@@ -172,7 +172,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v67';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v68';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -3658,10 +3658,17 @@ const buildQualityBadgeSvg = (
     return baseRect(width, chrome.stroke, chrome.fill, extra);
   };
   const buildMediaCertificationSvg = () => {
-    const textSize = Math.round(h * 0.39);
+    const badgeTypeLabel = 'AGE';
+    const badgeTypeSize = Math.max(9, Math.round(h * 0.2));
+    const textSize = Math.round(h * 0.34);
     const sidePadding = Math.round(h * 0.26);
-    const width = widthOverride ?? Math.max(Math.round(h * 1.22), estimateMediaLabelWidth(label, textSize, 0.012, sidePadding));
-    const textY = Math.round(h * 0.61);
+    const width = widthOverride ?? Math.max(
+      Math.round(h * 1.22),
+      estimateMediaLabelWidth(label, textSize, 0.012, sidePadding),
+      estimateMediaLabelWidth(badgeTypeLabel, badgeTypeSize, 0.14, sidePadding),
+    );
+    const badgeTypeY = Math.round(h * 0.3);
+    const textY = Math.round(h * 0.72);
     return {
       width,
       height: h,
@@ -3673,6 +3680,7 @@ ${buildMediaPlate(width, {
   radiusScale: 0.29,
   highlightOpacity: 0.08,
 })}
+<text x="${width / 2}" y="${badgeTypeY}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="rgba(255,250,245,0.82)" letter-spacing="0.16em">${badgeTypeLabel}</text>
 <text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${certText}" letter-spacing="0.012em">${escapeXml(label)}</text>
 </svg>`,
     };
@@ -3733,9 +3741,16 @@ ${buildCenteredBadgeAssetImage({
   }
 
   if (key === 'certification') {
-    const textSize = Math.round(h * 0.42);
-    const width = widthOverride ?? Math.max(Math.round(h * 1.02), estimateSummaryLabelWidth(label, textSize) + 16);
-    const textY = Math.round(h * 0.62);
+    const badgeTypeLabel = 'AGE';
+    const badgeTypeSize = Math.max(9, Math.round(h * 0.2));
+    const textSize = Math.round(h * 0.36);
+    const width = widthOverride ?? Math.max(
+      Math.round(h * 1.08),
+      estimateSummaryLabelWidth(label, textSize) + 16,
+      estimateSummaryLabelWidth(badgeTypeLabel, badgeTypeSize) + 16,
+    );
+    const badgeTypeY = Math.round(h * 0.31);
+    const textY = Math.round(h * 0.72);
     const rect = buildRect(width, '#e5e7eb');
     const fill = style === 'plain' ? mediaText : '#e5e7eb';
     const filter = style === 'plain' ? ' filter="url(#quality-badge-text-shadow)"' : '';
@@ -3748,6 +3763,7 @@ ${buildCenteredBadgeAssetImage({
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${defs}
 ${style === 'plain' ? plainStroke : rect}
+<text x="${width / 2}" y="${badgeTypeY}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="${style === 'plain' ? 'rgba(245,245,244,0.84)' : 'rgba(229,231,235,0.74)'}"${filter}>${badgeTypeLabel}</text>
 <text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${fill}"${filter}>${escapeXml(label)}</text>
 </svg>`,
       width,
