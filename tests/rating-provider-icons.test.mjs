@@ -107,25 +107,11 @@ test('smart provider icons switch embedded art for rotten tomatoes, metacritic, 
   assert.match(trakt.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
 });
 
-test('trakt embedded icon uses the corrected parallel mark without a center stem', async () => {
-  const buffer = decodeSvgDataUri(TRAKT_LOGO_DATA_URI);
-  const { data, info } = await sharp(buffer)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+test('trakt embedded icon uses the official hosted favicon art', () => {
+  const svg = decodeURIComponent(TRAKT_LOGO_DATA_URI.slice('data:image/svg+xml;charset=utf-8,'.length));
 
-  const pixelAt = (x, y) => {
-    const offset = (y * info.width + x) * info.channels;
-    return {
-      r: data[offset],
-      g: data[offset + 1],
-      b: data[offset + 2],
-      a: data[offset + 3],
-    };
-  };
-  const isMostlyWhite = ({ r, g, b, a }) => a > 220 && r > 220 && g > 220 && b > 220;
-
-  assert.equal(isMostlyWhite(pixelAt(38, 50)), true);
-  assert.equal(isMostlyWhite(pixelAt(69, 38)), true);
-  assert.equal(isMostlyWhite(pixelAt(51, 72)), false);
+  assert.match(svg, /id="logomark\.square\.gradient"/);
+  assert.match(svg, /id="checkbox"/);
+  assert.match(svg, /id="radial-gradient"/);
+  assert.match(svg, /class="cls-2"/);
 });
