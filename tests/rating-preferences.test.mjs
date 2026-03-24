@@ -60,6 +60,17 @@ test('selection keeps falling through ordered providers until the requested coun
   );
 });
 
+test('explicit rating max still caps side layouts when auto per side is in play', () => {
+  const ordered = parseRatingPreferencesAllowEmpty(
+    'tmdb,mdblist,imdb,tomatoes,tomatoesaudience,letterboxd,metacritic,metacriticuser,trakt,rogerebert',
+  );
+
+  assert.deepEqual(
+    selectAvailableRatingPreferences(ordered, ordered, 2),
+    ['tmdb', 'mdblist'],
+  );
+});
+
 test('kitsu uses the embedded logo source instead of a remote fallback icon', () => {
   const kitsu = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'kitsu');
 
