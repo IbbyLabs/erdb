@@ -1,5 +1,5 @@
 export type RatingStyle = 'glass' | 'square' | 'plain' | 'stacked';
-export type QualityBadgeStyle = 'glass' | 'square' | 'plain' | 'media';
+export type QualityBadgeStyle = 'glass' | 'square' | 'plain' | 'media' | 'silver';
 
 export const DEFAULT_RATING_STYLE: RatingStyle = 'glass';
 export const DEFAULT_QUALITY_BADGES_STYLE: QualityBadgeStyle = 'glass';
@@ -15,6 +15,7 @@ export const QUALITY_BADGE_STYLE_OPTIONS: Array<{ id: QualityBadgeStyle; label: 
   { id: 'square', label: 'Square Dark' },
   { id: 'plain', label: 'No Background' },
   { id: 'media', label: 'Media Marks' },
+  { id: 'silver', label: 'Silver Marks' },
 ];
 
 export const normalizeRatingStyle = (value?: string | null): RatingStyle => {
@@ -36,7 +37,8 @@ export const normalizeQualityBadgeStyle = (value?: string | null): QualityBadgeS
     normalized === 'glass' ||
     normalized === 'square' ||
     normalized === 'plain' ||
-    normalized === 'media'
+    normalized === 'media' ||
+    normalized === 'silver'
   ) {
     return normalized;
   }

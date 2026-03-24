@@ -350,9 +350,9 @@ qualityBadgesSide       | left, right (poster top bottom layout only)           
 posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
 posterQualityBadges    | ${QUALITY_BADGE_DOC_VALUES} (poster only, empty string disables all) | all
 backdropQualityBadges  | ${QUALITY_BADGE_DOC_VALUES} (backdrop only, empty string disables all)| all
-qualityBadgesStyle      | glass, square, plain, media (global fallback)                        | glass
-posterQualityBadgesStyle| glass, square, plain, media (poster only)                            | glass
-backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
+qualityBadgesStyle      | glass, square, plain, media, silver (global fallback)                | glass
+posterQualityBadgesStyle| glass, square, plain, media, silver (poster only)                    | glass
+backdropQualityBadgesStyle| glass, square, plain, media, silver (backdrop only)                | glass
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 providerAppearance     | base64url or JSON provider overrides for icon, accent, and stacked badge chrome | none
@@ -3007,7 +3007,7 @@ export default function Home() {
                       </div>
                     )}
                     <p className="text-[11px] leading-relaxed text-zinc-500">
-                      Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, and no-background styling without losing context.
+                      Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, no background styling, and silver mark styling without losing context.
                     </p>
                   </div>
                 )}
@@ -3984,17 +3984,17 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">qualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media, silver (global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (poster only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media, silver (poster only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media (backdrop only)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">glass, square, plain, media, silver (backdrop only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">glass</td>
                       </tr>
                       <tr>

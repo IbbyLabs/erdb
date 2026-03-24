@@ -3969,6 +3969,9 @@ const buildCenteredBadgeAssetImage = ({
   return `<image href="${dataUri}" x="${x}" y="${y}" width="${assetWidth}" height="${assetHeight}" preserveAspectRatio="xMidYMid meet"${extraAttributes ? ` ${extraAttributes}` : ''} />`;
 };
 
+const usesIntrinsicQualityBadgeWidths = (style: QualityBadgeStyle) =>
+  style === 'media' || style === 'silver';
+
 const buildQualityBadgeSvg = (
   badge: Pick<RatingBadge, 'key' | 'label'>,
   height: number,
@@ -3982,6 +3985,7 @@ const buildQualityBadgeSvg = (
   const label = (normalizeUserFacingMediaBadgeLabel(badge.label) || '').toUpperCase();
   const h = Math.max(32, Math.round(height * 0.9));
   const radius = style === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
+  const isSilverStyle = style === 'silver';
   const strokeWidth =
     style === 'glass'
       ? Math.max(1, Math.round(h * 0.04))
@@ -3993,6 +3997,8 @@ const buildQualityBadgeSvg = (
   const certStroke = 'rgba(255,247,237,0.94)';
   const certFill = 'rgba(17,24,39,0.42)';
   const certText = '#fffaf5';
+  const silverStroke = 'rgba(244,244,245,0.9)';
+  const silverText = 'rgba(244,244,245,0.96)';
   const mediaFrameByKey: Partial<Record<MediaFeatureBadgeKey, { stroke: string; fill: string }>> = {
     '4k': {
       stroke: 'rgba(56,189,248,0.88)',
@@ -4055,7 +4061,7 @@ const buildQualityBadgeSvg = (
     return Math.round(estimateSummaryLabelWidth(collapsed, textSize) + trackingWidth + sidePadding * 2 + safetyWidth);
   };
   const resolveChrome = (accentColor: string) => {
-    if (style === 'plain' || style === 'media') return null;
+    if (style === 'plain' || style === 'media' || style === 'silver') return null;
     if (style === 'glass') {
       return {
         stroke: 'rgba(255,255,255,0.45)',
@@ -4101,6 +4107,10 @@ ${buildMediaPlate(width, {
     `<defs><filter id="${filterId}" x="-28%" y="-34%" width="156%" height="188%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="3.6" flood-color="#020617" flood-opacity="0.72" /><feDropShadow dx="0" dy="0" stdDeviation="2.1" flood-color="#020617" flood-opacity="0.34" /></filter></defs>`;
   const buildPlainQualitySurface = (width: number, filterId: string) =>
     `<rect x="5" y="7" width="${Math.max(0, width - 10)}" height="${Math.max(0, h - 14)}" rx="${Math.max(8, Math.round(h * 0.24))}" fill="rgba(2,6,23,0.10)" filter="url(#${filterId})" />`;
+  const buildSilverQualityMarkDefs = (filterId: string) =>
+    `<defs><filter id="${filterId}" x="-25%" y="-30%" width="150%" height="170%" color-interpolation-filters="sRGB"><feDropShadow in="SourceAlpha" dx="0" dy="1.1" stdDeviation="1.8" flood-color="#020617" flood-opacity="0.52" result="silver-shadow" /><feFlood flood-color="#f4f4f5" flood-opacity="0.96" result="silver-fill" /><feComposite in="silver-fill" in2="SourceAlpha" operator="in" result="silver-mark" /><feMerge><feMergeNode in="silver-shadow" /><feMergeNode in="silver-mark" /></feMerge></filter></defs>`;
+  const buildSilverQualityTextDefs = (filterId: string) =>
+    `<defs><filter id="${filterId}" x="-25%" y="-30%" width="150%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="1.1" stdDeviation="2.1" flood-color="#020617" flood-opacity="0.56" /></filter></defs>`;
   const buildAssetBackedBadgeSvg = (
     assetKey: MediaBadgeAssetId,
     variant: 'media' | 'standard',
@@ -4109,9 +4119,12 @@ ${buildMediaPlate(width, {
     const width = widthOverride ?? Math.round(h * asset.widthRatio);
     const horizontalPadding = Math.round(h * asset.horizontalPaddingRatio);
     const isPlainStandard = variant === 'standard' && style === 'plain';
+    const isSilverStandard = variant === 'standard' && isSilverStyle;
     const mediaFrame = mediaFrameByKey[assetKey];
     const backgroundMarkup =
-      variant === 'media'
+      isSilverStandard
+        ? ''
+        : variant === 'media'
         ? buildMediaPlate(width, {
             stroke: mediaFrame?.stroke || 'rgba(255,255,255,0.78)',
             fill: mediaFrame?.fill || 'rgba(255,255,255,0.04)',
@@ -4122,9 +4135,11 @@ ${buildMediaPlate(width, {
         : isPlainStandard
           ? buildPlainQualitySurface(width, 'quality-badge-plain-shadow')
           : buildRect(width, standardAssetStrokeByKey[assetKey] || '#e5e7eb');
-    const defs = isPlainStandard
-      ? `${buildPlainQualityShadowDefs('quality-badge-plain-shadow')}<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
-      : '';
+    const defs = isSilverStandard
+      ? buildSilverQualityMarkDefs('quality-badge-silver-logo')
+      : isPlainStandard
+        ? `${buildPlainQualityShadowDefs('quality-badge-plain-shadow')}<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
+        : '';
     return {
       width,
       height: h,
@@ -4151,6 +4166,31 @@ ${buildCenteredBadgeAssetImage({
     }
     if (key in MEDIA_BADGE_ASSETS) {
       return buildAssetBackedBadgeSvg(key as MediaBadgeAssetId, 'media');
+    }
+  }
+
+  if (isSilverStyle) {
+    if (key === 'certification') {
+      const textSize = Math.round(h * 0.42);
+      const sidePadding = Math.max(10, Math.round(h * 0.18));
+      const width = widthOverride ?? Math.max(
+        Math.round(h * 0.9),
+        estimateSummaryLabelWidth(label, textSize) + sidePadding * 2,
+      );
+      const certRadius = Math.max(8, Math.round(h * 0.22));
+      const textY = Math.round(h * 0.66);
+      return {
+        width,
+        height: h,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${buildSilverQualityTextDefs('quality-badge-silver-text')}
+<rect x="${Math.max(1, strokeWidth * 0.4)}" y="${Math.max(1, strokeWidth * 0.4)}" width="${Math.max(0, width - Math.max(2, strokeWidth * 0.8))}" height="${Math.max(0, h - Math.max(2, strokeWidth * 0.8))}" rx="${certRadius}" fill="none" stroke="${silverStroke}" stroke-width="${Math.max(1.5, strokeWidth * 0.72)}" filter="url(#quality-badge-silver-text)" />
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${silverText}" filter="url(#quality-badge-silver-text)">${escapeXml(label)}</text>
+</svg>`,
+      };
+    }
+    if (key in MEDIA_BADGE_ASSETS) {
+      return buildAssetBackedBadgeSvg(key as MediaBadgeAssetId, 'standard');
     }
   }
 
@@ -5677,7 +5717,7 @@ const renderWithSharp = async (
     ) => {
       if (columnBadges.length === 0) return;
       const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
-      const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
+      const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const uniformBadgeWidth = useIntrinsicWidths
         ? null
         : Math.min(
@@ -5713,7 +5753,7 @@ const renderWithSharp = async (
     ) => {
       if (rowBadges.length === 0) return;
       const maxRowWidth = Math.max(0, input.outputWidth - 24);
-      const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
+      const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       let qualityHeight = Math.max(
         36,
         Math.round((baseHeight ?? badgeBaseHeight * 1.05) * qualityBadgeScaleRatio),
@@ -5784,7 +5824,7 @@ const renderWithSharp = async (
     ) => {
       if (columnBadges.length === 0) return;
       let rowY = Math.max(input.badgeTopOffset, startY);
-      const useIntrinsicWidths = input.qualityBadgesStyle === 'media';
+      const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const clampedX = Math.round(x);
       for (let index = 0; index < columnBadges.length; index += 1) {
         const badge = columnBadges[index];
@@ -6092,6 +6132,7 @@ const renderWithSharp = async (
 
     if (input.imageType === 'backdrop' && input.qualityBadges.length > 0) {
       const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
+      const useIntrinsicQualityWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
@@ -6125,7 +6166,18 @@ const renderWithSharp = async (
 
         if (rightColumn.length === 0) {
           const centerX = input.outputWidth / 2;
-          const singleX = Math.round(centerX - uniformBadgeWidth / 2);
+          const singleColumnWidth = useIntrinsicQualityWidths
+            ? leftColumn.reduce((maxWidth, badge) => {
+                const spec = buildQualityBadgeSvg(
+                  badge,
+                  qualityHeight,
+                  undefined,
+                  input.qualityBadgesStyle
+                );
+                return Math.max(maxWidth, spec?.width ?? 0);
+              }, 0)
+            : uniformBadgeWidth;
+          const singleX = Math.round(centerX - singleColumnWidth / 2);
           const ratingRows =
             input.backdropRatingsLayout === 'right-vertical'
               ? 0
@@ -6144,11 +6196,33 @@ const renderWithSharp = async (
             uniformBadgeWidth
           );
         } else {
+          const leftColumnWidth = useIntrinsicQualityWidths
+            ? leftColumn.reduce((maxWidth, badge) => {
+                const spec = buildQualityBadgeSvg(
+                  badge,
+                  qualityHeight,
+                  undefined,
+                  input.qualityBadgesStyle
+                );
+                return Math.max(maxWidth, spec?.width ?? 0);
+              }, 0)
+            : uniformBadgeWidth;
+          const rightColumnWidth = useIntrinsicQualityWidths
+            ? rightColumn.reduce((maxWidth, badge) => {
+                const spec = buildQualityBadgeSvg(
+                  badge,
+                  qualityHeight,
+                  undefined,
+                  input.qualityBadgesStyle
+                );
+                return Math.max(maxWidth, spec?.width ?? 0);
+              }, 0)
+            : uniformBadgeWidth;
           let leftX = 12;
-          let rightX = Math.max(12, input.outputWidth - uniformBadgeWidth - 12);
+          let rightX = Math.max(12, input.outputWidth - rightColumnWidth - 12);
           if (ratingsOnRight) {
             const centerX = input.outputWidth / 2;
-            leftX = centerX - columnGap - uniformBadgeWidth;
+            leftX = centerX - columnGap - leftColumnWidth;
             rightX = centerX + columnGap;
           } else {
             const metrics: BadgeLayoutMetrics = {
@@ -6177,7 +6251,7 @@ const renderWithSharp = async (
             const ratingCenterX = backdropRegion.left + backdropRegion.width / 2;
             const ratingLeft = ratingCenterX - ratingBlockWidth / 2;
             const ratingRight = ratingCenterX + ratingBlockWidth / 2;
-            leftX = ratingLeft - columnGap - uniformBadgeWidth;
+            leftX = ratingLeft - columnGap - leftColumnWidth;
             rightX = ratingRight + columnGap;
           }
 
