@@ -25,6 +25,16 @@
 
 <a id="v2-26-0"></a>
 
+<a id="v2-27-0"></a>
+
+## [v2.27.0] - 24/03/2026
+
+### Added
+* expand fanart artwork sources
+* add configurable clean poster sources
+* expose fanart poster preset in configurator
+* add experimental fanart clean poster mode
+
 ## [v2.26.0] - 24/03/2026
 
 ### Added
