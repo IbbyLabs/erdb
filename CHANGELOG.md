@@ -43,6 +43,17 @@
 
 <a id="v2-29-6"></a>
 
+<a id="v2-30-0"></a>
+
+## [v2.30.0] - 24/03/2026
+
+### Added
+* add silver quality badge style
+
+### Fixed
+* retry Discord release lookups
+* repair Discord release notifications
+
 ## [v2.29.6] - 24/03/2026
 
 ### Fixed
