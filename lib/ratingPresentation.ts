@@ -2,7 +2,12 @@ import type { BackdropRatingLayout } from './backdropRatingLayout.ts';
 import type { PosterRatingLayout } from './posterRatingLayout.ts';
 import type { RatingPreference } from './ratingPreferences.ts';
 
-export type RatingPresentation = 'standard' | 'minimal' | 'average' | 'blockbuster';
+export type RatingPresentation =
+  | 'standard'
+  | 'minimal'
+  | 'average'
+  | 'editorial'
+  | 'blockbuster';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
 
 export const DEFAULT_RATING_PRESENTATION: RatingPresentation = 'standard';
@@ -27,6 +32,11 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
     id: 'average',
     label: 'Labeled Average',
     description: 'One average badge labeled Overall, Critics, or Audience.',
+  },
+  {
+    id: 'editorial',
+    label: 'Editorial',
+    description: 'Poster gets an integrated top left score mark. Other outputs fall back to one clean average badge.',
   },
   {
     id: 'blockbuster',
@@ -85,12 +95,19 @@ export const normalizeRatingPresentation = (
     normalized === 'standard' ||
     normalized === 'minimal' ||
     normalized === 'average' ||
+    normalized === 'editorial' ||
     normalized === 'blockbuster'
   ) {
     return normalized;
   }
   return fallback;
 };
+
+export const resolveEffectiveRatingPresentation = (
+  presentation: RatingPresentation,
+  imageType: 'poster' | 'backdrop' | 'logo',
+): RatingPresentation =>
+  presentation === 'editorial' && imageType !== 'poster' ? 'average' : presentation;
 
 export const normalizeAggregateRatingSource = (
   value: unknown,
@@ -104,10 +121,10 @@ export const normalizeAggregateRatingSource = (
 };
 
 export const usesAggregateRatingSource = (presentation: RatingPresentation) =>
-  presentation === 'minimal' || presentation === 'average';
+  presentation === 'minimal' || presentation === 'average' || presentation === 'editorial';
 
 export const preservesSelectedRatingLayout = (presentation: RatingPresentation) =>
-  presentation !== 'blockbuster';
+  presentation !== 'blockbuster' && presentation !== 'editorial';
 
 export const resolvePosterRatingLayoutForPresentation = (
   presentation: RatingPresentation,

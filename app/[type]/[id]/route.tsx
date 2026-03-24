@@ -40,6 +40,7 @@ import {
   hasAggregateRatingProvidersForSource,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
+  resolveEffectiveRatingPresentation,
   resolveBackdropRatingLayoutForPresentation,
   resolveLogoRatingsMaxForPresentation,
   resolvePosterRatingLayoutForPresentation,
@@ -112,6 +113,10 @@ import {
   computeStackedBadgeLayout,
   getStackedBadgeHeight,
 } from '@/lib/stackedBadgeLayout';
+import {
+  buildEditorialRatingOverlaySvg,
+  type EditorialRatingOverlaySpec,
+} from '@/lib/editorialRatingOverlay';
 
 export const runtime = 'nodejs';
 
@@ -518,6 +523,7 @@ type GenreBadgeSpec = {
   mode: GenreBadgeMode;
   scalePercent?: number;
 };
+type EditorialRatingOverlay = EditorialRatingOverlaySpec;
 type BlockbusterBlurb = {
   text: string;
   author: string;
@@ -552,6 +558,29 @@ const AGGREGATE_BADGE_ACCENT_BY_SOURCE: Record<AggregateRatingSource, string> = 
   critics: '#fb923c',
   audience: '#34d399',
 };
+
+const EDITORIAL_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
+  anime: 'Anime',
+  horror: 'Horror',
+  comedy: 'Comedy',
+  romance: 'Romance',
+  action: 'Action',
+  scifi: 'Sci-Fi',
+  fantasy: 'Fantasy',
+  crime: 'Crime',
+  documentary: 'Doc',
+};
+
+const getEditorialEyebrowText = (
+  familyId: GenreBadgeFamilyId | null,
+  aggregateRatingSource: AggregateRatingSource,
+) => {
+  if (familyId) {
+    return EDITORIAL_GENRE_LABEL_BY_FAMILY[familyId];
+  }
+  return getAggregateRatingSourceLabel(aggregateRatingSource);
+};
+
 const BLOCKBUSTER_DENSITY_PRESETS = {
   sparse: {
     calloutLimit: 3,
@@ -2522,6 +2551,7 @@ type FastRenderInput = {
   posterRowHorizontalInset: number;
   posterTitleText?: string | null;
   posterLogoUrl?: string | null;
+  editorialOverlay?: EditorialRatingOverlay | null;
   genreBadge?: GenreBadgeSpec | null;
   badgeIconSize: number;
   badgeFontSize: number;
@@ -4648,6 +4678,14 @@ const renderWithSharp = async (
       posterTopRows.length > 0
         ? input.badgeTopOffset + posterTopRows.length * (ratingBadgeHeight + input.badgeGap)
         : input.badgeTopOffset;
+    const editorialOverlayBottom =
+      input.imageType === 'poster' && input.editorialOverlay
+        ? input.editorialOverlay.top + input.editorialOverlay.height
+        : null;
+    const editorialOverlaySafeBottom =
+      editorialOverlayBottom === null
+        ? null
+        : editorialOverlayBottom + Math.max(10, Math.round(input.badgeGap * 1.1));
     type BlockbusterPlacementRect = { left: number; top: number; width: number; height: number };
     type BlockbusterScatterMode = 'callout' | 'blurb' | 'score';
     const intersectsBlockbusterRect = (
@@ -5736,6 +5774,20 @@ const renderWithSharp = async (
       overlays.push({ input: Buffer.from(spec.svg), top, left });
     };
 
+    if (input.imageType === 'poster' && input.editorialOverlay) {
+      overlays.push({
+        input: Buffer.from(input.editorialOverlay.svg),
+        top: input.editorialOverlay.top,
+        left: input.editorialOverlay.left,
+      });
+      trackGenreCollisionRect(
+        input.editorialOverlay.left,
+        input.editorialOverlay.top,
+        input.editorialOverlay.width,
+        input.editorialOverlay.height,
+      );
+    }
+
     if (input.imageType === 'logo') {
       if (input.badges.length > 0 && input.logoBadgeBandHeight > 0 && input.logoBadgesPerRow > 0) {
         const rows = chunkBy(input.badges, input.logoBadgesPerRow);
@@ -5912,7 +5964,7 @@ const renderWithSharp = async (
           36,
           Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
         );
-        const topY = input.badgeTopOffset;
+        const topY = Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset);
         composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight);
       } else {
         const qualityTotalHeight =
@@ -5943,6 +5995,9 @@ const renderWithSharp = async (
               qualityStartY = Math.max(qualityStartY, belowSide);
             }
           }
+        }
+        if (qualityPlacement === 'left' && editorialOverlaySafeBottom !== null) {
+          qualityStartY = Math.max(qualityStartY, editorialOverlaySafeBottom);
         }
         composeQualityBadgeColumn(input.qualityBadges, qualityStartY, qualityPlacement);
       }
@@ -6381,12 +6436,16 @@ export async function GET(
     ratingsForType === null || ratingsForType === undefined
       ? [...ALL_RATING_PREFERENCES]
       : parseRatingPreferencesAllowEmpty(ratingsForType);
-  const ratingPresentation =
+  const requestedRatingPresentation =
     imageType === 'poster'
       ? posterRatingPresentation
       : imageType === 'backdrop'
         ? backdropRatingPresentation
         : logoRatingPresentation;
+  const ratingPresentation = resolveEffectiveRatingPresentation(
+    requestedRatingPresentation,
+    imageType,
+  );
   const blockbusterDensity = normalizeBlockbusterDensity(
     request.nextUrl.searchParams.get('posterBlockbusterDensity') ??
       request.nextUrl.searchParams.get('blockbusterDensity'),
@@ -6706,19 +6765,19 @@ export async function GET(
         allowAnimeOnlyRatings = hasConfirmedAnimeMapping || mediaLooksAnimated;
       }
       const isAnimeContent = hasNativeAnimeInput || hasConfirmedAnimeMapping || mediaLooksAnimated;
-      const buildResolvedGenreBadge = (
+      const resolvePrimaryGenreFamily = (
         genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>,
         genreIds: Array<number | string | null | undefined> = [],
-      ): GenreBadgeSpec | null => {
-        if (genreBadgeMode === DEFAULT_GENRE_BADGE_MODE) {
-          return null;
-        }
-        const family = resolveGenreBadgeFamily({
+      ) =>
+        resolveGenreBadgeFamily({
           genres,
           genreIds,
           isAnimeContent,
         });
-        if (!family) {
+      const buildResolvedGenreBadge = (
+        family: ReturnType<typeof resolvePrimaryGenreFamily>,
+      ): GenreBadgeSpec | null => {
+        if (genreBadgeMode === DEFAULT_GENRE_BADGE_MODE || !family) {
           return null;
         }
         return {
@@ -6729,10 +6788,11 @@ export async function GET(
           scalePercent: genreBadgeScale,
         };
       };
-      let genreBadge = buildResolvedGenreBadge(
+      let primaryGenreFamily = resolvePrimaryGenreFamily(
         Array.isArray(media?.genres) ? media.genres : [],
         Array.isArray(media?.genre_ids) ? media.genre_ids : [],
       );
+      let genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
 
       let imgPath = '';
       let imgUrl = rawFallbackImageUrl;
@@ -7460,7 +7520,7 @@ export async function GET(
                 ? resolveTvCertificationBadge(bundledCertificationPayload, requestedImageLang)
                 : null;
         }
-        genreBadge = buildResolvedGenreBadge(
+        primaryGenreFamily = resolvePrimaryGenreFamily(
           [
             ...(Array.isArray(details?.genres) ? details.genres : []),
             ...(Array.isArray(fallbackDetails?.genres) ? fallbackDetails.genres : []),
@@ -7468,6 +7528,7 @@ export async function GET(
           ],
           Array.isArray(media?.genre_ids) ? media.genre_ids : [],
         );
+        genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
         const fanartTvdbId =
           mediaType === 'tv'
             ? String(
@@ -7826,7 +7887,11 @@ export async function GET(
       const useBackdropBadgeLayout = type === 'backdrop';
       const useLogoBadgeLayout = type === 'logo';
       const usesAggregatePresentation =
-        ratingPresentation === 'minimal' || ratingPresentation === 'average';
+        ratingPresentation === 'minimal' ||
+        ratingPresentation === 'average' ||
+        ratingPresentation === 'editorial';
+      const useEditorialPosterPresentation =
+        imageType === 'poster' && ratingPresentation === 'editorial';
       const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
       const effectivePosterRatingsLayout =
         usePosterBadgeLayout
@@ -7923,6 +7988,21 @@ export async function GET(
             ratingBadgeByProvider,
           })
         : null;
+      const editorialOverlay =
+        useEditorialPosterPresentation && aggregateBadge
+          ? buildEditorialRatingOverlaySvg({
+              outputWidth,
+              outputHeight,
+              eyebrowText: getEditorialEyebrowText(
+                primaryGenreFamily?.id || null,
+                aggregateRatingSource,
+              ),
+              valueText: aggregateBadge.value,
+              accentColor:
+                primaryGenreFamily?.accentColor ||
+                AGGREGATE_BADGE_ACCENT_BY_SOURCE[aggregateRatingSource],
+            })
+          : null;
       const ratingBadges = usesAggregatePresentation
         ? aggregateBadge
           ? [aggregateBadge]
@@ -7934,13 +8014,18 @@ export async function GET(
           )
             .map((provider) => ratingBadgeByProvider.get(provider) || null)
             .filter((badge): badge is RatingBadge => badge !== null);
+      const displayRatingBadges = useEditorialPosterPresentation ? [] : ratingBadges;
+      if (useEditorialPosterPresentation) {
+        genreBadge = null;
+      }
       if (
-        ratingBadges.length === 0 &&
+        displayRatingBadges.length === 0 &&
         streamBadges.length === 0 &&
         !shouldRenderLogoBackground &&
         !genreBadge &&
         !posterTitleText &&
-        !posterLogoUrl
+        !posterLogoUrl &&
+        !editorialOverlay
       ) {
         return getSourceImagePayload(imgUrl);
       }
@@ -7952,7 +8037,7 @@ export async function GET(
       const usePosterRowLayoutLarge = usePosterBadgeLayout && usePosterRowLayout;
       const useBackdropRightVerticalLayout =
         useBackdropBadgeLayout && effectiveBackdropRatingsLayout === 'right-vertical';
-      let cappedRatingBadges = [...ratingBadges];
+      let cappedRatingBadges = [...displayRatingBadges];
       const backdropRows =
         useBackdropBadgeLayout && !useBackdropRightVerticalLayout
           ? (() => {
@@ -8345,7 +8430,7 @@ export async function GET(
       const finalOutputHeight = useLogoBadgeLayout ? logoImageHeight + logoBadgeBandHeight : outputHeight;
       const renderedRatingCacheKeys = usesAggregatePresentation
         ? [...ratingBadgeByProvider.keys()]
-        : ratingBadges.map((badge) => badge.key);
+        : displayRatingBadges.map((badge) => badge.key);
       const renderedRatingCacheTtlCandidates = [
         ...renderedRatingCacheKeys.map((badgeKey) => {
           if (badgeKey === 'tmdb') {
@@ -8380,6 +8465,7 @@ export async function GET(
           posterRowHorizontalInset,
           posterTitleText,
           posterLogoUrl,
+          editorialOverlay,
           genreBadge,
           badgeIconSize,
           badgeFontSize,

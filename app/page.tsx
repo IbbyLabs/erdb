@@ -316,7 +316,7 @@ backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)         
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 providerAppearance     | base64url or JSON provider overrides                                 | none
-ratingPresentation      | standard, minimal, average, blockbuster                              | standard
+ratingPresentation      | standard, minimal, average, editorial, blockbuster                   | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
 ratingStyle             | glass, square, plain, stacked                                        | glass
@@ -370,6 +370,7 @@ Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRating
 Use cfg.ratingValueMode to keep provider native scales or normalize everything to ten point values.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
+Editorial presentation gives posters a fixed top left print style and falls back to the labeled average badge on backdrop and logo output.
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge size uses cfg.genreBadgeScale.
@@ -1979,6 +1980,7 @@ export default function Home() {
     (activeProviderMeta && ratingProviderAppearanceOverrides[activeProviderMeta.id]) || {};
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
   const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
+  const isEditorialPresentation = activeRatingPresentation === 'editorial';
   const layoutPlacementHelp =
     previewType === 'poster'
       ? 'top, bottom, left, or right'
@@ -2357,13 +2359,19 @@ export default function Home() {
                   </div>
                   {layoutPlacementHelp ? (
                     <p className="text-[11px] leading-relaxed text-zinc-500">
-                      {activePresentationPreservesLayout
+                      {isEditorialPresentation
+                        ? previewType === 'poster'
+                          ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
+                          : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
+                        : activePresentationPreservesLayout
                         ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
                         : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
                     </p>
                   ) : (
                     <p className="text-[11px] leading-relaxed text-zinc-500">
-                      Logo presentation keeps the output controls below available.
+                      {isEditorialPresentation
+                        ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
+                        : 'Logo presentation keeps the output controls below available.'}
                     </p>
                   )}
                   {showsAggregateRatingSource && (
@@ -3532,7 +3540,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingPresentation</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, blockbuster</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, editorial, blockbuster</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">standard</td>
                       </tr>
                       <tr>
@@ -3722,7 +3730,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, blockbuster</div>
+                            <div>standard, minimal, average, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -3759,7 +3767,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, blockbuster</div>
+                            <div>standard, minimal, average, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -3789,7 +3797,7 @@ export default function Home() {
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
                             <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, blockbuster</div>
+                            <div>standard, minimal, average, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
                           </div>

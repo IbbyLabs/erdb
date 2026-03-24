@@ -6,6 +6,7 @@ import {
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
   preservesSelectedRatingLayout,
+  resolveEffectiveRatingPresentation,
   resolveBackdropRatingLayoutForPresentation,
   resolveLogoRatingsMaxForPresentation,
   resolvePosterRatingLayoutForPresentation,
@@ -16,6 +17,7 @@ import {
 
 test('presentation modes normalize to supported values', () => {
   assert.equal(normalizeRatingPresentation('minimal'), 'minimal');
+  assert.equal(normalizeRatingPresentation('EDITORIAL'), 'editorial');
   assert.equal(normalizeRatingPresentation('BLOCKBUSTER'), 'blockbuster');
   assert.equal(normalizeRatingPresentation('unknown'), 'standard');
 });
@@ -29,6 +31,7 @@ test('aggregate rating sources normalize to supported values', () => {
 test('aggregate source helpers distinguish summary modes and preferred providers', () => {
   assert.equal(usesAggregateRatingSource('standard'), false);
   assert.equal(usesAggregateRatingSource('minimal'), true);
+  assert.equal(usesAggregateRatingSource('editorial'), true);
   assert.deepEqual(
     selectAggregateRatingProviders('critics', ['imdb', 'tomatoes', 'metacriticuser']),
     ['tomatoes'],
@@ -49,6 +52,13 @@ test('non-blockbuster presentations preserve selected placement controls', () =>
   assert.equal(resolveBackdropRatingLayoutForPresentation('average', 'center'), 'center');
   assert.equal(resolvePosterRatingsMaxPerSideForPresentation('average', 5), 5);
   assert.equal(resolveLogoRatingsMaxForPresentation('minimal', 3), 3);
+});
+
+test('editorial keeps aggregate behavior but only renders as a unique poster mode', () => {
+  assert.equal(preservesSelectedRatingLayout('editorial'), false);
+  assert.equal(resolveEffectiveRatingPresentation('editorial', 'poster'), 'editorial');
+  assert.equal(resolveEffectiveRatingPresentation('editorial', 'backdrop'), 'average');
+  assert.equal(resolveEffectiveRatingPresentation('editorial', 'logo'), 'average');
 });
 
 test('blockbuster uses fixed placement defaults', () => {
