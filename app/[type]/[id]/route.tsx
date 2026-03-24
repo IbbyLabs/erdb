@@ -101,7 +101,7 @@ import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons'
 export const runtime = 'nodejs';
 
 type PosterTextPreference = 'original' | 'clean' | 'alternative';
-type PosterCleanSource = 'tmdb' | 'fanart';
+type ArtworkSource = 'tmdb' | 'fanart';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -119,7 +119,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anidb',
 ]);
 const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
-const POSTER_CLEAN_SOURCE_SET = new Set<PosterCleanSource>(['tmdb', 'fanart']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart']);
 const parseApiKeyList = (...values: Array<string | undefined>) => {
   const result: string[] = [];
   const seen = new Set<string>();
@@ -135,13 +135,13 @@ const parseApiKeyList = (...values: Array<string | undefined>) => {
 
   return result;
 };
-const normalizePosterCleanSource = (
+const normalizeArtworkSource = (
   value?: string | null,
-  fallback: PosterCleanSource = 'tmdb'
-): PosterCleanSource => {
+  fallback: ArtworkSource = 'tmdb'
+): ArtworkSource => {
   const normalized = (value || '').trim().toLowerCase();
-  return POSTER_CLEAN_SOURCE_SET.has(normalized as PosterCleanSource)
-    ? (normalized as PosterCleanSource)
+  return ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
+    ? (normalized as ArtworkSource)
     : fallback;
 };
 const toAnimeMappingProvider = (value?: string | null): AnimeMappingProvider | null => {
@@ -2146,7 +2146,6 @@ const fetchMyAnimeListRating = async (malId: string, phases: PhaseDurations) => 
         }
       }
     } catch {
-      // Fall through to the public Jikan fallback.
     }
   }
 
@@ -2802,7 +2801,7 @@ const rankFanartAsset = (
   };
 };
 
-const selectFanartAsset = (
+const selectFanartAssets = (
   items: FanartImageAsset[] = [],
   requestedLang: string,
   fallbackLang: string
@@ -2814,7 +2813,26 @@ const selectFanartAsset = (
       if (left.languageScore !== right.languageScore) return left.languageScore - right.languageScore;
       if (left.likes !== right.likes) return right.likes - left.likes;
       return left.index - right.index;
-    })[0]?.asset || null;
+    })
+    .map((entry) => entry.asset);
+
+const fanartAssetsToUrls = (items: FanartImageAsset[] = []) =>
+  [...new Set(
+    items
+      .map((item) => (typeof item?.url === 'string' ? item.url.trim() : ''))
+      .filter(Boolean)
+  )];
+
+const pickFanartUrlByPreference = (
+  urls: string[] = [],
+  preference: PosterTextPreference
+) => {
+  if (!Array.isArray(urls) || urls.length === 0) return null;
+  if (preference === 'alternative') {
+    return urls[1] || urls[0] || null;
+  }
+  return urls[0] || null;
+};
 
 const fetchFanartArtwork = async ({
   mediaType,
@@ -2865,6 +2883,9 @@ const fetchFanartArtwork = async ({
   const posterCandidates = mediaType === 'movie'
     ? ((payload.movieposter as FanartImageAsset[] | undefined) || [])
     : ((payload.tvposter as FanartImageAsset[] | undefined) || []);
+  const backdropCandidates = mediaType === 'movie'
+    ? ((payload.moviebackground as FanartImageAsset[] | undefined) || [])
+    : ((payload.showbackground as FanartImageAsset[] | undefined) || []);
   const logoCandidates = mediaType === 'movie'
     ? [
         ...(((payload.hdmovielogo as FanartImageAsset[] | undefined) || [])),
@@ -2876,14 +2897,37 @@ const fetchFanartArtwork = async ({
         ...(((payload.tvlogo as FanartImageAsset[] | undefined) || [])),
       ];
 
-  const selectedPoster = selectFanartAsset(posterCandidates, requestedLang, fallbackLang);
-  const selectedLogo = selectFanartAsset(logoCandidates, requestedLang, fallbackLang);
-  if (!selectedPoster?.url) return null;
+  const selectedPosters = selectFanartAssets(posterCandidates, requestedLang, fallbackLang);
+  const selectedBackdrops = selectFanartAssets(backdropCandidates, requestedLang, fallbackLang);
+  const selectedLogos = selectFanartAssets(logoCandidates, requestedLang, fallbackLang);
+  const posterUrls = fanartAssetsToUrls(selectedPosters);
+  const backdropUrls = fanartAssetsToUrls(selectedBackdrops);
+  const logoUrls = fanartAssetsToUrls(selectedLogos);
+  if (posterUrls.length === 0 && backdropUrls.length === 0 && logoUrls.length === 0) return null;
 
   return {
-    posterUrl: selectedPoster.url.trim(),
-    logoUrl: typeof selectedLogo?.url === 'string' && selectedLogo.url.trim() ? selectedLogo.url.trim() : null,
+    posterUrls,
+    backdropUrls,
+    logoUrls,
   };
+};
+
+const getRemoteImageAspectRatio = async (imgUrl: string): Promise<number | null> => {
+  const normalizedImgUrl = String(imgUrl || '').trim();
+  if (!normalizedImgUrl) return null;
+
+  try {
+    const sourcePayload = await getSourceImagePayload(normalizedImgUrl);
+    const sourceBuffer = Buffer.from(sourcePayload.body);
+    const sharp = await getSharpFactory();
+    const metadata = await sharp(sourceBuffer).metadata();
+    if (!metadata.width || !metadata.height || metadata.height <= 0) {
+      return null;
+    }
+    return metadata.width / metadata.height;
+  } catch {
+    return null;
+  }
 };
 
 const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> => {
@@ -5846,9 +5890,22 @@ export async function GET(
     request.nextUrl.searchParams.get('imageText') || request.nextUrl.searchParams.get('posterText');
   const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
   const legacyFanartCleanMode = imageText === 'fanartclean';
-  const posterCleanSource = legacyFanartCleanMode
+  const posterArtworkSource = legacyFanartCleanMode
     ? 'fanart'
-    : normalizePosterCleanSource(request.nextUrl.searchParams.get('posterCleanSource'));
+    : normalizeArtworkSource(
+        request.nextUrl.searchParams.get('posterArtworkSource') ??
+          request.nextUrl.searchParams.get('posterCleanSource')
+      );
+  const backdropArtworkSource = legacyFanartCleanMode
+    ? 'fanart'
+    : normalizeArtworkSource(
+        request.nextUrl.searchParams.get('backdropArtworkSource') ??
+          request.nextUrl.searchParams.get('backdropCleanSource')
+      );
+  const logoArtworkSource = normalizeArtworkSource(
+    request.nextUrl.searchParams.get('logoArtworkSource') ??
+      request.nextUrl.searchParams.get('logoSource')
+  );
   const fanartKey = request.nextUrl.searchParams.get('fanartKey') || FANART_API_KEY;
   const fanartClientKey = request.nextUrl.searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
   const posterRatingsLayout = normalizePosterRatingLayout(request.nextUrl.searchParams.get('posterRatingsLayout'));
@@ -6033,7 +6090,10 @@ export async function GET(
     shouldApplyStreamBadges ||
     shouldRenderLogoBackground ||
     genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ||
-    (imageType === 'poster' && posterTextPreference === 'clean');
+    (imageType === 'poster' && posterTextPreference === 'clean') ||
+    (imageType === 'poster' && posterArtworkSource === 'fanart') ||
+    (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
+    (imageType === 'logo' && logoArtworkSource === 'fanart');
   const renderCacheBuster = (request.nextUrl.searchParams.get('cb') || '').trim();
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
@@ -6044,7 +6104,9 @@ export async function GET(
     cleanId,
     requestedImageLang,
     posterTextPreference,
-    imageType === 'poster' && posterTextPreference === 'clean' ? posterCleanSource : '-',
+    imageType === 'poster' ? posterArtworkSource : '-',
+    imageType === 'backdrop' ? backdropArtworkSource : '-',
+    imageType === 'logo' ? logoArtworkSource : '-',
     imageType === 'poster' ? posterRatingsLayout : '-',
     imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
     imageType === 'logo' ? String(logoRatingsMax ?? 'auto') : '-',
@@ -6065,10 +6127,18 @@ export async function GET(
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
-    imageType === 'poster' && posterTextPreference === 'clean' && posterCleanSource === 'fanart'
+    (
+      (imageType === 'poster' && posterArtworkSource === 'fanart') ||
+      (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
+      (imageType === 'logo' && logoArtworkSource === 'fanart')
+    )
       ? sha1Hex(fanartKey || '').slice(0, 12)
       : '-',
-    imageType === 'poster' && posterTextPreference === 'clean' && posterCleanSource === 'fanart'
+    (
+      (imageType === 'poster' && posterArtworkSource === 'fanart') ||
+      (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
+      (imageType === 'logo' && logoArtworkSource === 'fanart')
+    )
       ? sha1Hex(fanartClientKey || '').slice(0, 12)
       : '-',
     renderCacheBuster || '-',
@@ -6394,10 +6464,6 @@ export async function GET(
       const streamBadgesCacheKey = shouldRenderStreamBadges
         ? `torrentio:${streamBadgesCacheWindow ?? 0}`
         : 'off';
-      // Keep object-storage caching aligned with the in-process render key.
-      // A second ad hoc cache key drifted and started serving stale renders for
-      // fanart-backed clean posters because it omitted posterCleanSource and
-      // other render inputs.
       const finalImageCacheKey = renderSeedKey;
       const finalCacheHash = sha1Hex(finalImageCacheKey);
       const finalObjectStorageKey = buildObjectStorageImageKey(
@@ -7064,6 +7130,34 @@ export async function GET(
           ],
           Array.isArray(media?.genre_ids) ? media.genre_ids : [],
         );
+        const fanartTvdbId =
+          mediaType === 'tv'
+            ? String(
+                bundledExternalIds?.tvdb_id ||
+                details?.external_ids?.tvdb_id ||
+                fallbackDetails?.external_ids?.tvdb_id ||
+                media?.external_ids?.tvdb_id ||
+                ''
+              ).trim()
+            : '';
+        let fanartArtworkPromise:
+          | Promise<{ posterUrls: string[]; backdropUrls: string[]; logoUrls: string[] } | null>
+          | null = null;
+        const getFanartArtwork = async () => {
+          if (!(mediaType === 'movie' || mediaType === 'tv')) return null;
+          if (fanartArtworkPromise) return fanartArtworkPromise;
+          fanartArtworkPromise = fetchFanartArtwork({
+            mediaType,
+            tmdbId: String(media.id),
+            tvdbId: mediaType === 'tv' ? fanartTvdbId : null,
+            fanartKey,
+            fanartClientKey,
+            requestedLang: requestedImageLang,
+            fallbackLang: FALLBACK_IMAGE_LANGUAGE,
+            phases,
+          });
+          return fanartArtworkPromise;
+        };
 
         const selectImagePath = async (input: {
           posters: any[];
@@ -7159,36 +7253,18 @@ export async function GET(
           }
 
           if (type === 'poster') {
-            if (
-              posterTextPreference === 'clean' &&
-              posterCleanSource === 'fanart' &&
-              (mediaType === 'movie' || mediaType === 'tv')
-            ) {
-              const fanartArtwork = await fetchFanartArtwork({
-                mediaType,
-                tmdbId: String(media.id),
-                tvdbId:
-                  mediaType === 'tv'
-                    ? String(
-                        bundledExternalIds?.tvdb_id ||
-                        details?.external_ids?.tvdb_id ||
-                        fallbackDetails?.external_ids?.tvdb_id ||
-                        media?.external_ids?.tvdb_id ||
-                        ''
-                      )
-                    : null,
-                fanartKey,
-                fanartClientKey,
-                requestedLang: requestedImageLang,
-                fallbackLang: FALLBACK_IMAGE_LANGUAGE,
-                phases,
-              });
-              if (fanartArtwork?.posterUrl) {
+            if (posterArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
+              const fanartArtwork = await getFanartArtwork();
+              const fanartPosterUrl = pickFanartUrlByPreference(
+                fanartArtwork?.posterUrls || [],
+                posterTextPreference
+              );
+              if (fanartPosterUrl) {
                 return {
                   imgPath: '',
-                  imgUrlOverride: fanartArtwork.posterUrl,
+                  imgUrlOverride: fanartPosterUrl,
                   logoAspectRatio: null,
-                  logoPath: fanartArtwork.logoUrl || logoPath,
+                  logoPath: fanartArtwork?.logoUrls?.[0] || logoPath,
                   posterIsTextless: false,
                 };
               }
@@ -7211,6 +7287,22 @@ export async function GET(
           }
 
           if (type === 'backdrop') {
+            if (backdropArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
+              const fanartArtwork = await getFanartArtwork();
+              const fanartBackdropUrl = pickFanartUrlByPreference(
+                fanartArtwork?.backdropUrls || [],
+                posterTextPreference
+              );
+              if (fanartBackdropUrl) {
+                return {
+                  imgPath: '',
+                  imgUrlOverride: fanartBackdropUrl,
+                  logoAspectRatio: null,
+                  logoPath,
+                  posterIsTextless: false,
+                };
+              }
+            }
             const selectedBackdrop = pickBackdropByPreference(
               backdropCollection,
               imageText as PosterTextPreference,
@@ -7225,6 +7317,21 @@ export async function GET(
               logoPath,
               posterIsTextless: false,
             };
+          }
+
+          if (logoArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
+            const fanartArtwork = await getFanartArtwork();
+            const fanartLogoUrl = fanartArtwork?.logoUrls?.[0] || null;
+            if (fanartLogoUrl) {
+              const logoAspectRatio = await getRemoteImageAspectRatio(fanartLogoUrl);
+              return {
+                imgPath: '',
+                imgUrlOverride: fanartLogoUrl,
+                logoAspectRatio,
+                logoPath: fanartLogoUrl,
+                posterIsTextless: false,
+              };
+            }
           }
 
           const logoAspectRatio =

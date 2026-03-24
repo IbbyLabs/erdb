@@ -16,10 +16,13 @@ const buildSampleSettings = () =>
     settings: {
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
+      fanartKey: 'fanart-key-789',
       lang: 'fr',
       posterImageText: 'clean',
-      backdropImageText: 'alternative',
-      posterCleanSource: 'fanart',
+      backdropImageText: 'clean',
+      posterArtworkSource: 'fanart',
+      backdropArtworkSource: 'fanart',
+      logoArtworkSource: 'fanart',
       genreBadgeMode: 'both',
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
@@ -67,10 +70,13 @@ test('workspace serialization round-trips shared settings and proxy state', () =
     settings: {
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
+      fanartKey: 'fanart-key-789',
       lang: 'fr',
       posterImageText: 'clean',
-      backdropImageText: 'alternative',
-      posterCleanSource: 'fanart',
+      backdropImageText: 'clean',
+      posterArtworkSource: 'fanart',
+      backdropArtworkSource: 'fanart',
+      logoArtworkSource: 'fanart',
       genreBadgeMode: 'both',
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
@@ -145,6 +151,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     baseUrl: 'https://erdb.example.com',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
+    fanartKey: 'fanart-key-789',
     posterRatings: 'imdb,tmdb',
     backdropRatings: 'mdblist',
     logoRatings: '',
@@ -166,14 +173,16 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
     posterImageText: 'clean',
-    backdropImageText: 'alternative',
-    posterCleanSource: 'fanart',
+    backdropImageText: 'clean',
+    posterArtworkSource: 'fanart',
+    backdropArtworkSource: 'fanart',
     posterRatingsLayout: 'top-bottom',
     backdropRatingsLayout: 'right-vertical',
     sideRatingsPosition: 'custom',
     sideRatingsOffset: 62,
     logoRatingsMax: 4,
     logoBackground: 'dark',
+    logoArtworkSource: 'fanart',
   });
 
   const proxyUrl = buildProxyUrl(baseUrl, config.proxy, config.settings);
@@ -187,6 +196,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     url: 'https://addon.example.com/manifest.json',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
+    fanartKey: 'fanart-key-789',
     translateMeta: true,
     translateMetaMode: 'prefer-requested-language',
     debugMetaTranslation: true,
@@ -211,14 +221,16 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
     posterImageText: 'clean',
-    backdropImageText: 'alternative',
-    posterCleanSource: 'fanart',
+    backdropImageText: 'clean',
+    posterArtworkSource: 'fanart',
+    backdropArtworkSource: 'fanart',
     posterRatingsLayout: 'top-bottom',
     backdropRatingsLayout: 'right-vertical',
     sideRatingsPosition: 'custom',
     sideRatingsOffset: '62',
     logoRatingsMax: '4',
     logoBackground: 'dark',
+    logoArtworkSource: 'fanart',
     erdbBase: 'https://erdb.example.com',
   });
 });
@@ -259,7 +271,7 @@ test('workspace normalization accepts spaced layout values from the page docs', 
   assert.equal(config.settings.backdropRatingsLayout, 'right-vertical');
 });
 
-test('workspace normalization maps legacy fanart poster mode into clean source state', () => {
+test('workspace normalization maps legacy fanart poster mode into artwork source state', () => {
   const config = normalizeSavedUiConfig({
     settings: {
       posterImageText: 'fanartclean',
@@ -269,7 +281,8 @@ test('workspace normalization maps legacy fanart poster mode into clean source s
 
   assert.equal(config.settings.posterImageText, 'clean');
   assert.equal(config.settings.backdropImageText, 'clean');
-  assert.equal(config.settings.posterCleanSource, 'fanart');
+  assert.equal(config.settings.posterArtworkSource, 'fanart');
+  assert.equal(config.settings.backdropArtworkSource, 'fanart');
 });
 
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {

@@ -28,15 +28,15 @@ Use Node 22.x locally. The repo now includes `.nvmrc` and `.node-version` so nat
 ## Stateless Architecture & API Keys (BYOK)
 
 ERDB is designed with a **Bring Your Own Key (BYOK)** stateless architecture. 
-This means that the ERDB server itself does not permanently store or centrally manage your TMDB or MDBList API keys. Instead:
+This means that the ERDB server itself does not permanently store or centrally manage your TMDB, MDBList, or optional Fanart API keys. Instead:
 
 1. Keys are saved locally in your browser's `localStorage` when using the configurator UI.
-2. Keys are embedded directly into your generated URLs (`tmdbKey=...&mdblistKey=...`) and Addon proxy Base64 configurations.
+2. Keys are embedded directly into your generated URLs (`tmdbKey=...&mdblistKey=...&fanartKey=...`) and Addon proxy Base64 configurations when present.
 3. The server solely reads these keys from incoming requests to fetch upstream metadata on the fly.
 
 This intentional design allows you to host public ERDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
-Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, and `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present.
+Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, and `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
 
 ## Live Preview Gallery
 
@@ -255,13 +255,16 @@ Main endpoint:
 | `ratingStyle` (or `style`) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
+| `fanartKey` | Fanart API Key for fanart poster, backdrop, and logo sources | String (e.g. `your_key`) | Server fallback when available |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
-| `posterCleanSource` | Poster clean source | `tmdb`, `fanart` (only when `imageText=clean`) | `tmdb` |
+| `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart` | `tmdb` |
+| `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart` | `tmdb` |
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top bottom`, `left right` | `top bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right vertical` | `center` |
 | `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
+| `logoArtworkSource` | Logo artwork source | `tmdb`, `fanart` | `tmdb` |
 
 In the configurator UI, `minimal` is labeled as `Compact Average` and `average` is labeled as `Labeled Average`. The underlying query values stay `minimal` and `average`.
 
@@ -273,7 +276,13 @@ Transparent provider icons stay transparent across `glass`, `square`, and `plain
 
 Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, sci fi, fantasy, crime, documentary, and anime render; ambiguous combinations stay off.
 
-Poster `posterCleanSource=fanart` only applies when `imageText=clean`. It uses fanart.tv poster art when the ERDB server has `ERDB_FANART_API_KEY` or `FANART_API_KEY`. Without a fanart key, it falls back to the usual TMDB clean poster selection.
+`fanartKey` is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to `ERDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
+
+Poster `posterArtworkSource=fanart` uses fanart.tv poster art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+
+Backdrop `backdropArtworkSource=fanart` uses fanart.tv `moviebackground` or `showbackground` art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. `logoArtworkSource=fanart` uses fanart.tv HD or clear logo assets for logo output.
+
+Future work: season aware fanart support is a strong next step for TV because fanart.tv exposes `seasonposter` and `seasonthumb` assets.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
@@ -292,15 +301,16 @@ ERDB supports multiple formats to identify media:
 
 To integrate ERDB into your addon:
 
-1. **Config String**: use a single `erdbConfig` string (base64url) generated by the ERDB configurator. It contains `baseUrl`, `tmdbKey`, `mdblistKey`, the per type style/text/layout fields, and any optional overrides currently enabled. Defaults are usually omitted.
+1. **Config String**: use a single `erdbConfig` string (base64url) generated by the ERDB configurator. It contains `baseUrl`, `tmdbKey`, `mdblistKey`, optional `fanartKey`, the per type style/text/layout fields, and any optional overrides currently enabled. Defaults are usually omitted.
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call ERDB for that type).
 4. **Decode**: decode `erdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `genreBadge`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, and `posterCleanSource`. Then apply the per type config fields:
+5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `genreBadge`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
-   - `poster clean source`: `posterCleanSource` only when `posterImageText=clean`
+   - `poster artwork source`: `posterArtworkSource`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
-   - `logo`: `logoRatingStyle`, `logoBackground` (omit `imageText`)
+   - `backdrop artwork source`: `backdropArtworkSource`
+   - `logo`: `logoRatingStyle`, `logoBackground`, `logoArtworkSource` (omit `imageText`)
 
 The generated configurator payload usually emits the per type fields and omits unchanged defaults. Global fallback params such as `ratings`, `streamBadges`, or `qualityBadgesStyle` are still supported if you build configs manually.
 
@@ -352,18 +362,25 @@ ratingPresentation      | standard, minimal, average, blockbuster               
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
-posterCleanSource       | tmdb, fanart (poster clean only)                                     | tmdb
+posterArtworkSource     | tmdb, fanart                                                         | tmdb
+backdropArtworkSource   | tmdb, fanart                                                         | tmdb
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
 backdropRatingsLayout   | center, right, right vertical                                        | center
 logoRatingsMax          | Number (1+)                                                          | auto
 logoBackground          | transparent, dark                                                    | transparent
+logoArtworkSource       | tmdb, fanart                                                         | tmdb
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
+fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
-POSTER NOTE: posterCleanSource=fanart only applies when imageText=clean. It uses fanart.tv poster art when ERDB has ERDB_FANART_API_KEY or FANART_API_KEY. Without a fanart key, it falls back to the usual TMDB clean poster selection.
+FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
+POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
+FUTURE NOTE: season aware fanart support is a good next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -373,9 +390,10 @@ POSTER NOTE: posterCleanSource=fanart only applies when imageText=clean. It uses
 
 --- PER TYPE SETTINGS ---
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
-poster clean source -> use cfg.posterCleanSource only when cfg.posterImageText = clean
+poster artwork source -> use cfg.posterArtworkSource for poster original, clean, or alternative
 backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
-logo     -> ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
+backdrop artwork source -> use cfg.backdropArtworkSource for backdrop original, clean, or alternative
+logo     -> ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground, logoArtworkSource = cfg.logoArtworkSource
 all      -> genreBadge = cfg.genreBadge (optional global genre badge)
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
@@ -387,7 +405,7 @@ Quality badges style/max can be set per type via cfg.posterQualityBadgesStyle / 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterCleanSource=${cfg.posterCleanSource}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}
+${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&fanartKey=${cfg.fanartKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterArtworkSource=${cfg.posterArtworkSource}&backdropArtworkSource=${cfg.backdropArtworkSource}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}&logoArtworkSource=${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -416,7 +434,7 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 For scripts, testing, or non generated integrations, ERDB also exposes a direct manifest rewrite route:
 
 ```text
-https://YOUR_ERDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...
+https://YOUR_ERDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...&fanartKey=...
 ```
 
 The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The encoded `/proxy/{config}/manifest.json` form is still the normal Stremio install URL.
@@ -426,6 +444,7 @@ The matching query based passthrough routes live under `/proxy/catalog/...`, `/p
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` is required.
 - `mdblistKey` is required for MDBList backed ratings and broad fallback coverage.
+- `fanartKey` is optional and is recommended when you use fanart sources. When it is missing, ERDB can fall back to the server key if one exists.
 - Optional proxy metadata translation can localize `meta.name` / `meta.description` and episode text.
 - `translateMetaMode=fill-missing` is the safe default: keep good addon text and only backfill blanks or placeholders.
 - `translateMetaMode=prefer-upstream` keeps any upstream text that is present, even placeholders like `N/A`.

@@ -5,6 +5,7 @@ import {
 } from './metadataTranslation.ts';
 
 const ERDB_OPTIONAL_PARAMS = [
+  'fanartKey',
   'ratings',
   'lang',
   'genreBadge',
@@ -28,7 +29,7 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'posterRatings',
     'posterRatingPresentation',
     'posterAggregateRatingSource',
-    'posterCleanSource',
+    'posterArtworkSource',
   ],
   backdrop: [
     'backdropStreamBadges',
@@ -37,8 +38,9 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'backdropRatings',
     'backdropRatingPresentation',
     'backdropAggregateRatingSource',
+    'backdropArtworkSource',
   ],
-  logo: ['logoRatings', 'logoRatingsMax', 'logoBackground', 'logoRatingPresentation', 'logoAggregateRatingSource'],
+  logo: ['logoRatings', 'logoRatingsMax', 'logoBackground', 'logoRatingPresentation', 'logoAggregateRatingSource', 'logoArtworkSource'],
 } as const;
 const ERDB_OPTIONAL_PARAM_KEYS = [
   ...ERDB_OPTIONAL_PARAMS,
@@ -66,6 +68,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'url',
   'tmdbKey',
   'mdblistKey',
+  'fanartKey',
   'erdbBase',
   'translateMeta',
   'translateMetaMode',
@@ -88,7 +91,12 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'logoAggregateRatingSource',
   'posterImageText',
   'backdropImageText',
+  'posterArtworkSource',
+  'backdropArtworkSource',
+  'logoArtworkSource',
   'posterCleanSource',
+  'backdropCleanSource',
+  'logoSource',
   ...ERDB_OPTIONAL_PARAM_KEYS,
 ]);
 
@@ -96,6 +104,7 @@ export type ProxyConfig = {
   url: string;
   tmdbKey: string;
   mdblistKey: string;
+  fanartKey?: string;
   translateMeta?: boolean;
   translateMetaMode?: MetadataTranslationMode;
   debugMetaTranslation?: boolean;
@@ -130,7 +139,11 @@ export type ProxyConfig = {
   logoAggregateRatingSource?: string;
   posterImageText?: string;
   backdropImageText?: string;
+  posterArtworkSource?: string;
+  backdropArtworkSource?: string;
+  logoArtworkSource?: string;
   posterCleanSource?: string;
+  backdropCleanSource?: string;
   posterRatingsLayout?: string;
   posterRatingsMaxPerSide?: string;
   backdropRatingsLayout?: string;
@@ -138,6 +151,7 @@ export type ProxyConfig = {
   sideRatingsOffset?: string;
   logoRatingsMax?: string;
   logoBackground?: string;
+  logoSource?: string;
   erdbBase?: string;
   posterEnabled?: boolean;
   backdropEnabled?: boolean;
@@ -146,6 +160,7 @@ export type ProxyConfig = {
 
 const PROXY_OPTIONAL_STRING_KEYS = [
   'translateMetaMode',
+  'fanartKey',
   'ratings',
   'posterRatings',
   'backdropRatings',
@@ -177,7 +192,11 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'logoAggregateRatingSource',
   'posterImageText',
   'backdropImageText',
+  'posterArtworkSource',
+  'backdropArtworkSource',
+  'logoArtworkSource',
   'posterCleanSource',
+  'backdropCleanSource',
   'posterRatingsLayout',
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',
@@ -185,6 +204,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'sideRatingsOffset',
   'logoRatingsMax',
   'logoBackground',
+  'logoSource',
   'erdbBase',
  ] as const satisfies readonly (keyof ProxyConfig)[];
 type ProxyOptionalStringKey = (typeof PROXY_OPTIONAL_STRING_KEYS)[number];
@@ -383,6 +403,36 @@ const getProxyParam = (reqUrl: URL, config: ProxyConfig | null, key: keyof Proxy
   const configValue = config ? config[key] : null;
   if (typeof configValue === 'string') {
     return configValue;
+  }
+  if (key === 'posterArtworkSource') {
+    const legacyConfigValue = config?.posterCleanSource;
+    if (typeof legacyConfigValue === 'string') {
+      return legacyConfigValue;
+    }
+    const legacyQueryValue = reqUrl.searchParams.get('posterCleanSource');
+    if (legacyQueryValue !== null) {
+      return legacyQueryValue;
+    }
+  }
+  if (key === 'backdropArtworkSource') {
+    const legacyConfigValue = config?.backdropCleanSource;
+    if (typeof legacyConfigValue === 'string') {
+      return legacyConfigValue;
+    }
+    const legacyQueryValue = reqUrl.searchParams.get('backdropCleanSource');
+    if (legacyQueryValue !== null) {
+      return legacyQueryValue;
+    }
+  }
+  if (key === 'logoArtworkSource') {
+    const legacyConfigValue = config?.logoSource;
+    if (typeof legacyConfigValue === 'string') {
+      return legacyConfigValue;
+    }
+    const legacyQueryValue = reqUrl.searchParams.get('logoSource');
+    if (legacyQueryValue !== null) {
+      return legacyQueryValue;
+    }
   }
   const queryValue = reqUrl.searchParams.get(key);
   return queryValue !== null ? queryValue : null;

@@ -64,9 +64,9 @@ import {
   serializeSavedUiConfig,
   normalizeBaseUrl,
   normalizeManifestUrl,
+  type ArtworkSource,
   type BackdropImageTextPreference,
   type LogoBackground,
-  type PosterCleanSource,
   type PosterImageTextPreference,
   type QualityBadgesSide,
   type PosterQualityBadgesPosition,
@@ -122,13 +122,13 @@ const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   { id: 'clean', label: 'Clean', description: 'Prefer TMDB art with less embedded text when available.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
 ];
-const POSTER_CLEAN_SOURCE_OPTIONS: Array<{
-  id: PosterCleanSource;
+const ARTWORK_SOURCE_OPTIONS: Array<{
+  id: ArtworkSource;
   label: string;
   description: string;
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean poster selection.' },
-  { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv poster art when the server has a fanart key, then fall back to TMDB clean.' },
+  { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv artwork when a fanart key is available, then fall back to TMDB.' },
 ];
 const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   id: BackdropImageTextPreference;
@@ -259,6 +259,8 @@ const buildGenreSamplePreviewUrl = ({
 
   return `${normalizedBaseUrl}/${sample.previewType}/${encodeURIComponent(sample.mediaId)}.jpg?${query.toString()}`;
 };
+const FANART_KEY_HELP_COPY =
+  'Optional. Recommended. Your key is used first. If left blank, ERDB falls back to the service key when one exists. This helps if the shared service key is rate limited or blocked later.';
 const AI_DEVELOPER_PROMPT = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
 CONFIG INPUT
@@ -294,7 +296,8 @@ ratingPresentation      | standard, minimal, average, blockbuster               
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
-posterCleanSource       | tmdb, fanart (poster clean only)                                     | tmdb
+posterArtworkSource     | tmdb, fanart (poster artwork source)                                 | tmdb
+backdropArtworkSource   | tmdb, fanart (backdrop artwork source)                               | tmdb
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
@@ -302,13 +305,19 @@ sideRatingsPosition     | ${SIDE_RATING_POSITION_DOC_VALUES}                    
 sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
+logoArtworkSource       | tmdb, fanart                                                          | tmdb
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
+fanartKey               | Your Fanart API Key (used first for fanart sources)                  | service fallback when available
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
-POSTER NOTE: posterCleanSource=fanart only applies when imageText=clean. It uses fanart.tv poster art when ERDB has ERDB_FANART_API_KEY or FANART_API_KEY. Without a fanart key, it falls back to the usual TMDB clean poster selection.
+FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
+POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
+FUTURE NOTE: season aware fanart support is a strong next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
 
 INTEGRATION REQUIREMENTS
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -319,9 +328,11 @@ INTEGRATION REQUIREMENTS
 PER TYPE SETTINGS
 poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
-logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
+logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground
 all      : genreBadge = cfg.genreBadge (optional global genre badge)
-poster clean source : use cfg.posterCleanSource only when cfg.posterImageText = clean
+poster artwork source : use cfg.posterArtworkSource for poster original, clean, or alternative
+backdrop artwork source : use cfg.backdropArtworkSource for backdrop original, clean, or alternative
+logo artwork source : use cfg.logoArtworkSource when rendering logo output
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
@@ -332,7 +343,7 @@ Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterCleanSource=\${cfg.posterCleanSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -680,7 +691,8 @@ export default function Home() {
   const [lang, setLang] = useState('en');
   const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
-  const [posterCleanSource, setPosterCleanSource] = useState<PosterCleanSource>('tmdb');
+  const [posterArtworkSource, setPosterArtworkSource] = useState<ArtworkSource>('tmdb');
+  const [backdropArtworkSource, setBackdropArtworkSource] = useState<ArtworkSource>('tmdb');
   const [genreBadgeMode, setGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -719,9 +731,11 @@ export default function Home() {
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
+  const [logoArtworkSource, setLogoArtworkSource] = useState<ArtworkSource>('tmdb');
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
+  const [fanartKey, setFanartKey] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
   const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
   const [proxyTranslateMetaMode, setProxyTranslateMetaMode] =
@@ -1001,10 +1015,12 @@ export default function Home() {
 
       setTmdbKey(normalized.settings.tmdbKey);
       setMdblistKey(normalized.settings.mdblistKey);
+      setFanartKey(normalized.settings.fanartKey);
       setLang(normalized.settings.lang);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
-      setPosterCleanSource(normalized.settings.posterCleanSource);
+      setPosterArtworkSource(normalized.settings.posterArtworkSource);
+      setBackdropArtworkSource(normalized.settings.backdropArtworkSource);
       setGenreBadgeMode(normalized.settings.genreBadgeMode);
       setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
       setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
@@ -1033,6 +1049,7 @@ export default function Home() {
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
+      setLogoArtworkSource(normalized.settings.logoArtworkSource);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
       setProxyTranslateMeta(normalized.proxy.translateMeta);
       setProxyTranslateMetaMode(normalized.proxy.translateMetaMode);
@@ -1048,10 +1065,12 @@ export default function Home() {
       settings: {
         tmdbKey: tmdbKey.trim(),
         mdblistKey: mdblistKey.trim(),
+        fanartKey: fanartKey.trim(),
         lang,
         posterImageText,
         backdropImageText,
-        posterCleanSource,
+        posterArtworkSource,
+        backdropArtworkSource,
         genreBadgeMode,
         posterRatingPreferences,
         backdropRatingPreferences,
@@ -1080,6 +1099,7 @@ export default function Home() {
         posterRatingsMaxPerSide,
         logoRatingsMax,
         logoBackground,
+        logoArtworkSource,
       },
       proxy: {
         manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
@@ -1091,10 +1111,12 @@ export default function Home() {
     [
       tmdbKey,
       mdblistKey,
+      fanartKey,
       lang,
       posterImageText,
       backdropImageText,
-      posterCleanSource,
+      posterArtworkSource,
+      backdropArtworkSource,
       genreBadgeMode,
       posterRatingPreferences,
       backdropRatingPreferences,
@@ -1123,6 +1145,7 @@ export default function Home() {
       posterRatingsMaxPerSide,
       logoRatingsMax,
       logoBackground,
+      logoArtworkSource,
       proxyManifestUrl,
       proxyTranslateMeta,
       proxyTranslateMetaMode,
@@ -1220,6 +1243,7 @@ export default function Home() {
 
   const previewUrl = useMemo(() => {
     const normalizedTmdbKey = tmdbKey.trim();
+    const normalizedFanartKey = fanartKey.trim();
     const normalizedMediaId = mediaId.trim();
     if (!baseUrl || !normalizedTmdbKey || !normalizedMediaId) {
       return '';
@@ -1314,11 +1338,21 @@ export default function Home() {
       query.set('mdblistKey', mdblistKey);
     }
     query.set('tmdbKey', normalizedTmdbKey);
+    const shouldSendFanartKey =
+      (previewType === 'poster' && posterArtworkSource === 'fanart') ||
+      (previewType === 'backdrop' && backdropArtworkSource === 'fanart') ||
+      (previewType === 'logo' && logoArtworkSource === 'fanart');
+    if (normalizedFanartKey && shouldSendFanartKey) {
+      query.set('fanartKey', normalizedFanartKey);
+    }
 
     if (previewType === 'poster' || previewType === 'backdrop') {
       query.set('imageText', imageTextForType);
-      if (previewType === 'poster' && imageTextForType === 'clean' && posterCleanSource !== 'tmdb') {
-        query.set('posterCleanSource', posterCleanSource);
+      if (previewType === 'poster' && posterArtworkSource !== 'tmdb') {
+        query.set('posterArtworkSource', posterArtworkSource);
+      }
+      if (previewType === 'backdrop' && backdropArtworkSource !== 'tmdb') {
+        query.set('backdropArtworkSource', backdropArtworkSource);
       }
     }
     if (previewType === 'poster') {
@@ -1334,6 +1368,9 @@ export default function Home() {
       }
       if (logoBackground !== 'transparent') {
         query.set('logoBackground', logoBackground);
+      }
+      if (logoArtworkSource !== 'tmdb') {
+        query.set('logoArtworkSource', logoArtworkSource);
       }
     }
     const usesVerticalSideRatings =
@@ -1357,7 +1394,8 @@ export default function Home() {
     lang,
     posterImageText,
     backdropImageText,
-    posterCleanSource,
+    posterArtworkSource,
+    backdropArtworkSource,
     genreBadgeMode,
     posterRatingPreferences,
     backdropRatingPreferences,
@@ -1385,11 +1423,13 @@ export default function Home() {
     logoAggregateRatingSource,
     logoRatingsMax,
     logoBackground,
+    logoArtworkSource,
     baseUrl,
     shouldShowQualityBadgesSide,
     shouldShowQualityBadgesPosition,
     mdblistKey,
     tmdbKey,
+    fanartKey,
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
@@ -1664,8 +1704,11 @@ export default function Home() {
     previewType === 'backdrop' ? BACKDROP_IMAGE_TEXT_OPTIONS : POSTER_IMAGE_TEXT_OPTIONS;
   const activeImageTextOptionMeta =
     activeImageTextOptions.find((option) => option.id === activeImageText) || null;
-  const activePosterCleanSourceOptionMeta =
-    POSTER_CLEAN_SOURCE_OPTIONS.find((option) => option.id === posterCleanSource) || null;
+  const activeArtworkSource = previewType === 'backdrop' ? backdropArtworkSource : posterArtworkSource;
+  const activeArtworkSourceOptionMeta =
+    ARTWORK_SOURCE_OPTIONS.find((option) => option.id === activeArtworkSource) || null;
+  const activeLogoSourceOptionMeta =
+    ARTWORK_SOURCE_OPTIONS.find((option) => option.id === logoArtworkSource) || null;
   const shouldShowSideRatingPlacement =
     previewType === 'poster'
       ? isVerticalPosterRatingLayout(posterRatingsLayout) || activeRatingPresentation === 'blockbuster'
@@ -1978,7 +2021,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2 md:grid-cols-3">
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
                       <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
@@ -1987,7 +2030,14 @@ export default function Home() {
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
                       <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Fanart</label>
+                      <input type="password" value={fanartKey} onChange={(e) => setFanartKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+                    </div>
                   </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                    {FANART_KEY_HELP_COPY}
+                  </p>
                 </div>
 
                 <div>
@@ -2169,16 +2219,22 @@ export default function Home() {
                   <p className="text-[11px] leading-relaxed text-zinc-500">
                     Genre badges use a small curated bucket set. Clear genres such as horror, comedy, sci fi, fantasy, crime, documentary, and anime resolve; fuzzy cases stay off.
                   </p>
-                  {previewType === 'poster' && activeImageText === 'clean' ? (
+                  {(previewType === 'poster' || previewType === 'backdrop') ? (
                     <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Clean Source</div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
                       <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {POSTER_CLEAN_SOURCE_OPTIONS.map((option) => (
+                        {ARTWORK_SOURCE_OPTIONS.map((option) => (
                           <button
                             key={option.id}
-                            onClick={() => setPosterCleanSource(option.id)}
+                            onClick={() => {
+                              if (previewType === 'backdrop') {
+                                setBackdropArtworkSource(option.id);
+                                return;
+                              }
+                              setPosterArtworkSource(option.id);
+                            }}
                             className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              posterCleanSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                              activeArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
                             }`}
                             title={option.description}
                           >
@@ -2186,9 +2242,14 @@ export default function Home() {
                           </button>
                         ))}
                       </div>
-                      {activePosterCleanSourceOptionMeta ? (
+                      {activeArtworkSourceOptionMeta ? (
                         <p className="text-[11px] leading-relaxed text-zinc-500">
-                          {activePosterCleanSourceOptionMeta.description}
+                          {previewType === 'backdrop'
+                            ? activeArtworkSourceOptionMeta.description.replace('poster', 'backdrop')
+                            : activeArtworkSourceOptionMeta.description}
+                          {activeArtworkSource === 'fanart'
+                            ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
+                            : ''}
                         </p>
                       ) : null}
                     </div>
@@ -2300,6 +2361,23 @@ export default function Home() {
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Output</div>
                         <div className="flex flex-wrap gap-3 items-end">
                           <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Artwork Source</span>
+                            <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                              {ARTWORK_SOURCE_OPTIONS.map((option) => (
+                                <button
+                                  key={option.id}
+                                  onClick={() => setLogoArtworkSource(option.id)}
+                                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                    logoArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                                  }`}
+                                  title={option.description}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Background</span>
                             <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
                               {(['transparent', 'dark'] as const).map((option) => (
@@ -2315,6 +2393,11 @@ export default function Home() {
                             <button onClick={() => setLogoRatingsMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Default</button>
                           </div>
                         </div>
+                        {activeLogoSourceOptionMeta ? (
+                          <p className="text-[11px] leading-relaxed text-zinc-500">
+                            {activeLogoSourceOptionMeta.description.replace('artwork', 'logo assets')}
+                          </p>
+                        ) : null}
                       </div>
                     )}
                   </div>
@@ -2899,8 +2982,13 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">original (poster), clean (backdrop)</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterCleanSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart (poster clean only)</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterArtworkSource</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart (poster artwork source)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropArtworkSource</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart (backdrop artwork source)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
@@ -2939,6 +3027,11 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">transparent</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoArtworkSource</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">TMDB v3 API Key</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
@@ -2947,6 +3040,11 @@ export default function Home() {
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">mdblistKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">MDBList.com API Key</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">fanartKey</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">Fanart API Key for fanart poster, backdrop, and logo sources</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">service fallback when available</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2960,7 +3058,13 @@ export default function Home() {
                   <br />
                   Media quality badges use local asset based artwork for <span className="font-semibold text-zinc-200">4K</span>, <span className="font-semibold text-zinc-200">Bluray</span>, <span className="font-semibold text-zinc-200">HDR10</span>, <span className="font-semibold text-zinc-200">Dolby Vision</span>, and <span className="font-semibold text-zinc-200">Dolby Atmos</span>. Certification badges include a small <span className="font-semibold text-zinc-200">AGE</span> label above the rating.
                   <br />
-                  Poster <span className="font-mono text-zinc-200">posterCleanSource=fanart</span> only applies when <span className="font-mono text-zinc-200">imageText=clean</span>. It uses fanart.tv poster art when the ERDB server has <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span>. Without a fanart key, it falls back to the usual TMDB clean poster selection.
+                  <span className="font-mono text-zinc-200">fanartKey</span> is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span> when the server has one.
+                  <br />
+                  Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+                  <br />
+                  Backdrop <span className="font-mono text-zinc-200">backdropArtworkSource=fanart</span> uses fanart.tv backdrop art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. <span className="font-mono text-zinc-200">logoArtworkSource=fanart</span> uses fanart.tv HD or clear logo assets for logo output.
+                  <br />
+                  Future work: season aware fanart support is a good next step for TV because fanart.tv exposes <span className="font-mono text-zinc-200">seasonposter</span> and <span className="font-mono text-zinc-200">seasonthumb</span> assets.
                 </div>
               </div>
 
@@ -2985,7 +3089,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
-                            <div>posterCleanSource</div>
+                            <div>posterArtworkSource</div>
                             <div>posterRatingPresentation</div>
                             <div>posterAggregateRatingSource</div>
                             <div>posterRatingsLayout</div>
@@ -2999,7 +3103,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
-                            <div>tmdb, fanart (clean only)</div>
+                            <div>tmdb, fanart</div>
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
@@ -3016,6 +3120,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
+                            <div>backdropArtworkSource</div>
                             <div>backdropRatingPresentation</div>
                             <div>backdropAggregateRatingSource</div>
                             <div>backdropRatingsLayout</div>
@@ -3027,6 +3132,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
+                            <div>tmdb, fanart</div>
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
@@ -3042,6 +3148,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>logoRatingsMax</div>
                             <div>logoBackground</div>
+                            <div>logoArtworkSource</div>
                             <div>logoRatingPresentation</div>
                             <div>logoAggregateRatingSource</div>
                           </div>
@@ -3050,6 +3157,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
+                            <div>tmdb, fanart</div>
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                           </div>
@@ -3137,6 +3245,8 @@ export default function Home() {
                     <span className="text-violet-400 font-bold">tmdbKey</span>=<span className="text-zinc-400 font-bold">{'{tmdbKey}'}</span>
                     <span className="text-white">&</span>
                     <span className="text-violet-400 font-bold">mdblistKey</span>=<span className="text-zinc-400 font-bold">{'{mdbKey}'}</span>
+                    <span className="text-white">&</span>
+                    <span className="text-violet-400 font-bold">fanartKey</span>=<span className="text-zinc-400 font-bold">{'{fanartKey}'}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
                     <div className="flex gap-2">
@@ -3154,6 +3264,10 @@ export default function Home() {
                     <div className="flex gap-2">
                       <span className="text-violet-500 font-bold shrink-0">mdblistKey (required):</span>
                       <span className="text-zinc-400">Your MDBList API Key.</span>
+                    </div>
+                    <div className="flex gap-2 md:col-span-2">
+                      <span className="text-violet-500 font-bold shrink-0">fanartKey (optional):</span>
+                      <span className="text-zinc-400">Recommended when you use fanart sources. Your key is used first, then ERDB can fall back to the service key when one exists.</span>
                     </div>
                   </div>
                 </div>

@@ -9,6 +9,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
     settings: {
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
+      fanartKey: 'fanart-key-789',
       lang: 'en',
       genreBadgeMode: 'text',
       logoRatingPreferences: ['mdblist', 'tomatoes', 'letterboxd'],
@@ -17,6 +18,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       logoAggregateRatingSource: 'audience',
       logoRatingsMax: 3,
       logoBackground: 'dark',
+      logoArtworkSource: 'fanart',
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',
@@ -48,14 +50,38 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.pathname, '/logo/mal%3A16498.jpg');
   assert.equal(rewrittenLogoUrl.searchParams.get('tmdbKey'), 'tmdb-key-123');
   assert.equal(rewrittenLogoUrl.searchParams.get('mdblistKey'), 'mdblist-key-456');
+  assert.equal(rewrittenLogoUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenLogoUrl.searchParams.get('lang'), 'en');
   assert.equal(rewrittenLogoUrl.searchParams.get('genreBadge'), 'text');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatings'), 'mdblist,tomatoes,letterboxd');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingsMax'), '3');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoBackground'), 'dark');
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoArtworkSource'), 'fanart');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingPresentation'), 'average');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoAggregateRatingSource'), 'audience');
   assert.equal(rewrittenLogoUrl.searchParams.get('ratingStyle'), 'plain');
+});
+
+test('proxy image rewrites upgrade legacy logo source params to artwork source params', () => {
+  const rewrittenLogoUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL(
+        'https://proxy.example.net/proxy/example/meta/series/example.json?logoSource=fanart&logoBackground=dark'
+      ),
+      imageType: 'logo',
+      erdbId: 'tt0386676',
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    })
+  );
+
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoArtworkSource'), 'fanart');
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoSource'), null);
 });
 
 test('proxy image rewrites carry side rating placement for poster layouts', () => {
@@ -63,8 +89,11 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
     settings: {
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
+      fanartKey: 'fanart-key-789',
       posterImageText: 'clean',
-      posterCleanSource: 'fanart',
+      posterArtworkSource: 'fanart',
+      backdropImageText: 'clean',
+      backdropArtworkSource: 'fanart',
       posterRatingPreferences: ['imdb', 'metacritic'],
       posterRatingsLayout: 'left-right',
       sideRatingsPosition: 'custom',
@@ -94,9 +123,70 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   );
 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,metacritic');
+  assert.equal(rewrittenPosterUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenPosterUrl.searchParams.get('imageText'), 'clean');
-  assert.equal(rewrittenPosterUrl.searchParams.get('posterCleanSource'), 'fanart');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'fanart');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsLayout'), 'left-right');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsPosition'), 'custom');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsOffset'), '68');
+});
+
+test('proxy image rewrites carry artwork source selection for backdrops', () => {
+  const uiConfig = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      fanartKey: 'fanart-key-789',
+      backdropImageText: 'clean',
+      backdropArtworkSource: 'fanart',
+      backdropRatingPreferences: ['imdb'],
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+
+  const decodedProxyConfig = decodeProxyConfig(encodedConfig);
+  assert.ok(decodedProxyConfig);
+
+  const rewrittenBackdropUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
+      imageType: 'backdrop',
+      erdbId: 'tt0386676',
+      tmdbKey: decodedProxyConfig.tmdbKey,
+      mdblistKey: decodedProxyConfig.mdblistKey,
+      config: decodedProxyConfig,
+    })
+  );
+
+  assert.equal(rewrittenBackdropUrl.searchParams.get('imageText'), 'clean');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('fanartKey'), 'fanart-key-789');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropArtworkSource'), 'fanart');
+});
+
+test('proxy image rewrites upgrade legacy clean source params to artwork source params', () => {
+  const rewrittenPosterUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL(
+        'https://proxy.example.net/proxy/example/meta/movie/example.json?imageText=alternative&posterCleanSource=fanart'
+      ),
+      imageType: 'poster',
+      erdbId: 'tt0133093',
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    })
+  );
+
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'fanart');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterCleanSource'), null);
 });

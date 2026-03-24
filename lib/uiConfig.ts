@@ -55,16 +55,19 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
-export type PosterCleanSource = 'tmdb' | 'fanart';
+export type ArtworkSource = 'tmdb' | 'fanart';
 export type LogoBackground = 'transparent' | 'dark';
 
 export type SharedErdbSettings = {
   tmdbKey: string;
   mdblistKey: string;
+  fanartKey: string;
   lang: string;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
-  posterCleanSource: PosterCleanSource;
+  posterArtworkSource: ArtworkSource;
+  backdropArtworkSource: ArtworkSource;
+  logoArtworkSource: ArtworkSource;
   genreBadgeMode: GenreBadgeMode;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
@@ -119,7 +122,7 @@ const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>(
   'clean',
   'alternative',
 ]);
-const POSTER_CLEAN_SOURCE_SET = new Set<PosterCleanSource>(['tmdb', 'fanart']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -140,10 +143,13 @@ const normalizeBoolean = (value: unknown, fallback = false) => {
 export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   tmdbKey: '',
   mdblistKey: '',
+  fanartKey: '',
   lang: 'en',
   posterImageText: 'clean',
   backdropImageText: 'clean',
-  posterCleanSource: 'tmdb',
+  posterArtworkSource: 'tmdb',
+  backdropArtworkSource: 'tmdb',
+  logoArtworkSource: 'tmdb',
   genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -251,13 +257,13 @@ const normalizeBackdropImageTextPreference = (
     : fallback;
 };
 
-const normalizePosterCleanSource = (
+const normalizeArtworkSource = (
   value: unknown,
-  fallback: PosterCleanSource,
-): PosterCleanSource => {
+  fallback: ArtworkSource,
+): ArtworkSource => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return POSTER_CLEAN_SOURCE_SET.has(normalized as PosterCleanSource)
-    ? (normalized as PosterCleanSource)
+  return ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
+    ? (normalized as ArtworkSource)
     : fallback;
 };
 
@@ -336,28 +342,47 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     return defaults;
   }
 
-  const candidate = value as Partial<Record<keyof SharedErdbSettings, unknown>>;
+  const candidate = value as Partial<Record<keyof SharedErdbSettings, unknown>> & Record<string, unknown>;
   const rawPosterImageText =
     typeof candidate.posterImageText === 'string' ? candidate.posterImageText.trim().toLowerCase() : '';
+  const rawBackdropImageText =
+    typeof candidate.backdropImageText === 'string' ? candidate.backdropImageText.trim().toLowerCase() : '';
   const legacyFanartPosterMode = rawPosterImageText === 'fanartclean';
+  const legacyFanartBackdropMode = rawBackdropImageText === 'fanartclean';
   const posterImageText = legacyFanartPosterMode
     ? 'clean'
     : normalizePosterImageTextPreference(candidate.posterImageText, defaults.posterImageText);
-  const posterCleanSource = legacyFanartPosterMode
+  const backdropImageText = legacyFanartBackdropMode
+    ? 'clean'
+    : normalizeBackdropImageTextPreference(candidate.backdropImageText, defaults.backdropImageText);
+  const posterArtworkSource = legacyFanartPosterMode
     ? 'fanart'
-    : normalizePosterCleanSource(candidate.posterCleanSource, defaults.posterCleanSource);
+    : normalizeArtworkSource(
+        candidate.posterArtworkSource ?? candidate.posterCleanSource,
+        defaults.posterArtworkSource
+      );
+  const backdropArtworkSource = legacyFanartBackdropMode
+    ? 'fanart'
+    : normalizeArtworkSource(
+        candidate.backdropArtworkSource ?? candidate.backdropCleanSource,
+        defaults.backdropArtworkSource
+      );
 
   return {
     tmdbKey: typeof candidate.tmdbKey === 'string' ? candidate.tmdbKey.trim() : defaults.tmdbKey,
     mdblistKey:
       typeof candidate.mdblistKey === 'string' ? candidate.mdblistKey.trim() : defaults.mdblistKey,
+    fanartKey:
+      typeof candidate.fanartKey === 'string' ? candidate.fanartKey.trim() : defaults.fanartKey,
     lang: typeof candidate.lang === 'string' && candidate.lang.trim() ? candidate.lang.trim() : defaults.lang,
     posterImageText,
-    backdropImageText: normalizeBackdropImageTextPreference(
-      candidate.backdropImageText,
-      defaults.backdropImageText,
+    backdropImageText,
+    posterArtworkSource,
+    backdropArtworkSource,
+    logoArtworkSource: normalizeArtworkSource(
+      candidate.logoArtworkSource ?? candidate.logoSource,
+      defaults.logoArtworkSource
     ),
-    posterCleanSource,
     genreBadgeMode: normalizeGenreBadgeMode(candidate.genreBadgeMode, defaults.genreBadgeMode),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences,
@@ -490,6 +515,7 @@ export const serializeSavedUiConfig = (config: SavedUiConfig) =>
 const buildSharedPayload = (settings: SharedErdbSettings) => {
   const tmdbKey = settings.tmdbKey.trim();
   const mdblistKey = settings.mdblistKey.trim();
+  const fanartKey = settings.fanartKey.trim();
   if (!tmdbKey || !mdblistKey) {
     return null;
   }
@@ -498,6 +524,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     tmdbKey,
     mdblistKey,
   };
+  if (fanartKey) {
+    payload.fanartKey = fanartKey;
+  }
 
   const posterRatings = stringifyRatingPreferencesAllowEmpty(settings.posterRatingPreferences);
   const backdropRatings = stringifyRatingPreferencesAllowEmpty(settings.backdropRatingPreferences);
@@ -551,8 +580,14 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   payload.logoRatingStyle = settings.logoRatingStyle;
   payload.posterImageText = settings.posterImageText;
   payload.backdropImageText = settings.backdropImageText;
-  if (settings.posterImageText === 'clean' && settings.posterCleanSource !== 'tmdb') {
-    payload.posterCleanSource = settings.posterCleanSource;
+  if (settings.posterArtworkSource !== 'tmdb') {
+    payload.posterArtworkSource = settings.posterArtworkSource;
+  }
+  if (settings.backdropArtworkSource !== 'tmdb') {
+    payload.backdropArtworkSource = settings.backdropArtworkSource;
+  }
+  if (settings.logoArtworkSource !== 'tmdb') {
+    payload.logoArtworkSource = settings.logoArtworkSource;
   }
   payload.posterRatingsLayout = settings.posterRatingsLayout;
   if (settings.posterRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
