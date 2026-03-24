@@ -7,6 +7,9 @@ import { RATING_PROVIDER_OPTIONS } from '../lib/ratingPreferences.ts';
 import { METACRITIC_LOGO_DATA_URI, TRAKT_LOGO_DATA_URI } from '../lib/ratingProviderBrandAssets.ts';
 import { resolveRatingProviderBadgeAppearance } from '../lib/ratingProviderIcons.ts';
 
+const decodeSvgDataUri = (value) =>
+  Buffer.from(decodeURIComponent(value.slice('data:image/svg+xml;charset=utf-8,'.length)));
+
 test('kitsu embedded icon keeps transparent corners for plain badge rendering', async () => {
   const kitsu = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'kitsu');
   assert.ok(kitsu);
@@ -102,4 +105,27 @@ test('smart provider icons switch embedded art for rotten tomatoes, metacritic, 
   assert.notEqual(metacriticMustSee.iconUrl, metacriticUser.iconUrl);
   assert.equal(metacriticUser.label, 'Metacritic User');
   assert.match(trakt.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
+});
+
+test('trakt embedded icon uses the corrected parallel mark without a center stem', async () => {
+  const buffer = decodeSvgDataUri(TRAKT_LOGO_DATA_URI);
+  const { data, info } = await sharp(buffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const pixelAt = (x, y) => {
+    const offset = (y * info.width + x) * info.channels;
+    return {
+      r: data[offset],
+      g: data[offset + 1],
+      b: data[offset + 2],
+      a: data[offset + 3],
+    };
+  };
+  const isMostlyWhite = ({ r, g, b, a }) => a > 220 && r > 220 && g > 220 && b > 220;
+
+  assert.equal(isMostlyWhite(pixelAt(38, 50)), true);
+  assert.equal(isMostlyWhite(pixelAt(69, 38)), true);
+  assert.equal(isMostlyWhite(pixelAt(51, 72)), false);
 });

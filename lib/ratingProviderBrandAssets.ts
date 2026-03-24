@@ -34,70 +34,20 @@ export const TRAKT_LOGO_DATA_URI = buildSvgDataUri(`
       </linearGradient>
     </defs>
     <rect x="4" y="4" width="88" height="88" rx="21" fill="url(#trakt-surface)"/>
-    <path
-      d="M23 26h40"
+    <g
       fill="none"
       stroke="#ffffff"
-      stroke-width="5.8"
-      stroke-linecap="round"
-    />
-    <path
-      d="M23 26c-7.5 0-13 5.6-13 13v39"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="5.8"
+      stroke-width="6.2"
       stroke-linecap="round"
       stroke-linejoin="round"
-    />
-    <path
-      d="M73 20 48 45"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="6.6"
-      stroke-linecap="round"
-    />
-    <path
-      d="M58 20 83 45"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="6.6"
-      stroke-linecap="round"
-    />
-    <path
-      d="M51 51v24"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="6.6"
-      stroke-linecap="round"
-    />
-    <path
-      d="M73 70v8"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="5.8"
-      stroke-linecap="round"
-    />
-    <path
-      d="M73 78c7.5 0 13-5.6 13-13V26"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="5.8"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M31 54 46 69"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="6.6"
-      stroke-linecap="round"
-    />
-    <path
-      d="M31 41 46 56"
-      fill="none"
-      stroke="#ffffff"
-      stroke-width="6.6"
-      stroke-linecap="round"
-    />
+    >
+      <path d="M22 21h43"/>
+      <path d="M22 21c-7.7 0-12 5.1-12 12.8V74"/>
+      <path d="M81 31v39c0 7.2-4.8 12-12 12h-4"/>
+      <path d="M31 43 44 56"/>
+      <path d="M36 38 49 51"/>
+      <path d="M45 62 55 52 82 25"/>
+      <path d="M55 62 87 30"/>
+    </g>
   </svg>
 `);
