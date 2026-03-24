@@ -27,6 +27,13 @@
 
 <a id="v2-27-0"></a>
 
+<a id="v2-28-0"></a>
+
+## [v2.28.0] - 24/03/2026
+
+### Added
+* add badge customization controls
+
 ## [v2.27.0] - 24/03/2026
 
 ### Added
