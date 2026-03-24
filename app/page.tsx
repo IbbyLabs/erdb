@@ -91,7 +91,6 @@ import {
   serializeSavedUiConfig,
   normalizeBaseUrl,
   normalizeManifestUrl,
-  type AiometadataIdSource,
   type ArtworkSource,
   type BackdropImageTextPreference,
   type LogoBackground,
@@ -213,19 +212,6 @@ const QUALITY_BADGE_POSITION_OPTIONS: Array<{ id: PosterQualityBadgesPosition; l
   { id: 'auto', label: 'Auto' },
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
-];
-const AIOMETADATA_ID_SOURCE_OPTIONS: Array<{
-  id: AiometadataIdSource;
-  label: string;
-  description: string;
-}> = [
-  { id: 'imdb', label: 'IMDb', description: 'Best default for general movie and series libraries.' },
-  { id: 'tvdb', label: 'TVDB', description: 'Useful when your AIO setup is TVDB first.' },
-  { id: 'anilist', label: 'AniList', description: 'Good for anime setups built around AniList IDs.' },
-  { id: 'mal', label: 'MAL', description: 'Good for anime setups built around MyAnimeList IDs.' },
-  { id: 'anidb', label: 'AniDB', description: 'Useful if your library already tracks AniDB IDs.' },
-  { id: 'kitsu', label: 'Kitsu', description: 'Episode thumb patterns use the Kitsu episode form here.' },
-  { id: 'tmdb', label: 'TMDB', description: 'Works, but bare TMDB IDs can collide between movie and TV items.' },
 ];
 const SAMPLE_GENRE_BADGE_MODE_DEFAULT: GenreBadgeMode = 'both';
 type RecentCommitType = 'feat' | 'fix' | 'chore' | 'refactor' | 'perf' | 'test' | 'build' | 'ci' | 'style' | 'revert';
@@ -851,8 +837,6 @@ export default function Home() {
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
-  const [aiometadataIdSource, setAiometadataIdSource] =
-    useState<AiometadataIdSource>('imdb');
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
   const [previewErrorDetails, setPreviewErrorDetails] = useState('');
   const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
@@ -1752,9 +1736,8 @@ export default function Home() {
     () =>
       buildAiometadataUrlPatterns(baseUrl, currentUiConfig.settings, {
         hideCredentials: hideAiometadataCredentials,
-        idSource: aiometadataIdSource,
       }),
-    [baseUrl, currentUiConfig, hideAiometadataCredentials, aiometadataIdSource]
+    [baseUrl, currentUiConfig, hideAiometadataCredentials]
   );
 
   const proxyUrl = useMemo(
@@ -1782,25 +1765,25 @@ export default function Home() {
           key: 'poster',
           label: 'Poster URL Pattern',
           value: aiometadataPatterns.posterUrlPattern,
-          description: 'Use this in the poster override field.',
+          description: 'Matches the live AIOMetadata poster preset and uses IMDb IDs.',
         },
         {
           key: 'background',
           label: 'Background URL Pattern',
           value: aiometadataPatterns.backgroundUrlPattern,
-          description: 'Use this in the background override field.',
+          description: 'Matches the live AIOMetadata background preset and uses TMDB IDs.',
         },
         {
           key: 'logo',
           label: 'Logo URL Pattern',
           value: aiometadataPatterns.logoUrlPattern,
-          description: 'Use this in the logo override field.',
+          description: 'Matches the live AIOMetadata logo preset and uses TMDB IDs.',
         },
         {
           key: 'episode',
           label: 'Episode Thumbnail URL Pattern',
           value: aiometadataPatterns.episodeThumbnailUrlPattern,
-          description: 'This uses the ERDB backdrop renderer so wide episode thumbs stay readable.',
+          description: 'Matches the live AIOMetadata episode thumb preset and keeps the wide ERDB thumb render.',
         },
       ]
     : [];
@@ -3366,31 +3349,23 @@ export default function Home() {
                     </button>
                   </div>
                   <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                    Pick the placeholder source you want AIOMetadata to use, then copy the poster, background, logo, and episode thumb patterns straight from here.
+                    These presets match the live AIOMetadata defaults: poster uses IMDb, background and logo use TMDB, and episode thumbs use IMDb with season and episode placeholders.
                   </p>
                   <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
                     <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Primary ID Placeholder</div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {AIOMETADATA_ID_SOURCE_OPTIONS.map((option) => (
-                            <button
-                              key={option.id}
-                              type="button"
-                              onClick={() => setAiometadataIdSource(option.id)}
-                              className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                                aiometadataIdSource === option.id
-                                  ? 'border-violet-500/60 bg-zinc-800 text-white'
-                                  : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                              }`}
-                              title={option.description}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                        <div className="text-[11px] font-semibold text-zinc-200">Preset mapping</div>
                         <p className="mt-2 text-[11px] leading-5 text-zinc-500">
-                          {AIOMETADATA_ID_SOURCE_OPTIONS.find((option) => option.id === aiometadataIdSource)?.description}
+                          Poster: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          Background: <span className="font-mono text-zinc-300">{'{tmdb_id}'}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          Logo: <span className="font-mono text-zinc-300">{'{tmdb_id}'}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          Episode thumb: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>, <span className="font-mono text-zinc-300">{'{season}'}</span>, <span className="font-mono text-zinc-300">{'{episode}'}</span>
                         </p>
                       </div>
                       <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">

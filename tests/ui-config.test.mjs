@@ -304,18 +304,22 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 
   const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
     hideCredentials: true,
-    idSource: 'imdb',
   });
 
   assert.equal(patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'), true);
   assert.equal(
-    patterns?.backgroundUrlPattern.startsWith('https://erdb.example.com/backdrop/{imdb_id}.jpg?'),
+    patterns?.backgroundUrlPattern.startsWith(
+      'https://erdb.example.com/backdrop/{tmdb_id}.jpg?idSource=tmdb&',
+    ),
     true,
   );
-  assert.equal(patterns?.logoUrlPattern.startsWith('https://erdb.example.com/logo/{imdb_id}.jpg?'), true);
+  assert.equal(
+    patterns?.logoUrlPattern.startsWith('https://erdb.example.com/logo/{tmdb_id}.png?idSource=tmdb&'),
+    true,
+  );
   assert.equal(
     patterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://erdb.example.com/backdrop/{imdb_id}:{season}:{episode}.jpg?',
+      'https://erdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
     ),
     true,
   );
@@ -338,25 +342,39 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.equal(value.includes('%7Bmdblist_key%7D'), false);
     assert.equal(value.includes('%7Bfanart_key%7D'), false);
   }
+
+  assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
+  assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
 });
 
-test('AIOMetadata export can keep live credentials and use Kitsu episode ids', () => {
+test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {
   const config = buildSampleSettings();
 
   const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
     hideCredentials: false,
-    idSource: 'kitsu',
   });
 
   assert.equal(
     patterns?.posterUrlPattern.startsWith(
-      'https://erdb.example.com/poster/kitsu:{kitsu_id}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+      'https://erdb.example.com/poster/{imdb_id}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+    ),
+    true,
+  );
+  assert.equal(
+    patterns?.backgroundUrlPattern.startsWith(
+      'https://erdb.example.com/backdrop/{tmdb_id}.jpg?idSource=tmdb&tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+    ),
+    true,
+  );
+  assert.equal(
+    patterns?.logoUrlPattern.startsWith(
+      'https://erdb.example.com/logo/{tmdb_id}.png?idSource=tmdb&tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
     ),
     true,
   );
   assert.equal(
     patterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://erdb.example.com/backdrop/kitsu:{kitsu_id}:{episode}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+      'https://erdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
     ),
     true,
   );

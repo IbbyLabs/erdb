@@ -134,6 +134,8 @@ type LogoBackground = 'transparent' | 'dark';
 type BlockbusterDensity = 'sparse' | 'balanced' | 'packed';
 const FALLBACK_IMAGE_LANGUAGE = 'en';
 const ALLOWED_IMAGE_TYPES = new Set(['poster', 'backdrop', 'logo']);
+const EXPLICIT_ID_SOURCE_SET = new Set(['imdb', 'tmdb', 'tvdb', 'mal', 'kitsu', 'anilist', 'anidb']);
+const RAW_IMDB_ID_RE = /^tt\d+(?::.+)?$/i;
 const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'mal',
   'anilist',
@@ -6202,7 +6204,17 @@ export async function GET(
   scheduleImdbDatasetSync();
   const imageType = type as 'poster' | 'backdrop' | 'logo';
   const outputFormat = pickOutputFormat(imageType, request.headers.get('accept'));
-  const cleanId = id.replace('.jpg', '');
+  const requestedIdSourceCandidate = String(request.nextUrl.searchParams.get('idSource') || '')
+    .trim()
+    .toLowerCase();
+  const cleanIdWithoutExtension = id.replace(/\.(?:jpg|jpeg|png|webp)$/i, '');
+  const explicitIdPrefix = cleanIdWithoutExtension.split(':')[0]?.trim().toLowerCase() || '';
+  const cleanId =
+    EXPLICIT_ID_SOURCE_SET.has(requestedIdSourceCandidate) &&
+    !EXPLICIT_ID_SOURCE_SET.has(explicitIdPrefix) &&
+    !RAW_IMDB_ID_RE.test(cleanIdWithoutExtension)
+      ? `${requestedIdSourceCandidate}:${cleanIdWithoutExtension}`
+      : cleanIdWithoutExtension;
 
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
   const ratingValueMode = normalizeRatingValueMode(

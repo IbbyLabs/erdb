@@ -73,15 +73,6 @@ export type PosterImageTextPreference = 'original' | 'clean' | 'alternative';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta';
 export type LogoBackground = 'transparent' | 'dark';
-export type AiometadataIdSource =
-  | 'imdb'
-  | 'tmdb'
-  | 'tvdb'
-  | 'mal'
-  | 'kitsu'
-  | 'anilist'
-  | 'anidb';
-
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
   backgroundUrlPattern: string;
@@ -800,26 +791,6 @@ const AIO_TMDB_KEY_PLACEHOLDER = '{tmdb_key}';
 const AIO_MDBLIST_KEY_PLACEHOLDER = '{mdblist_key}';
 const AIO_FANART_KEY_PLACEHOLDER = '{fanart_key}';
 
-const AIO_ID_PATH_BY_SOURCE: Record<AiometadataIdSource, string> = {
-  imdb: '{imdb_id}',
-  tmdb: 'tmdb:{tmdb_id}',
-  tvdb: 'tvdb:{tvdb_id}',
-  mal: 'mal:{mal_id}',
-  kitsu: 'kitsu:{kitsu_id}',
-  anilist: 'anilist:{anilist_id}',
-  anidb: 'anidb:{anidb_id}',
-};
-
-const AIO_EPISODE_ID_PATH_BY_SOURCE: Record<AiometadataIdSource, string> = {
-  imdb: '{imdb_id}:{season}:{episode}',
-  tmdb: 'tmdb:{tmdb_id}:{season}:{episode}',
-  tvdb: 'tvdb:{tvdb_id}:{season}:{episode}',
-  mal: 'mal:{mal_id}:{season}:{episode}',
-  kitsu: 'kitsu:{kitsu_id}:{episode}',
-  anilist: 'anilist:{anilist_id}:{season}:{episode}',
-  anidb: 'anidb:{anidb_id}:{season}:{episode}',
-};
-
 const restoreAiometadataPlaceholders = (value: string) => {
   const placeholders = [
     AIO_TMDB_KEY_PLACEHOLDER,
@@ -871,7 +842,6 @@ export const buildAiometadataUrlPatterns = (
   settings: SharedErdbSettings,
   options?: {
     hideCredentials?: boolean;
-    idSource?: AiometadataIdSource;
   },
 ): AiometadataUrlPatterns | null => {
   const origin = normalizeBaseUrl(baseUrl);
@@ -880,7 +850,6 @@ export const buildAiometadataUrlPatterns = (
   }
 
   const hideCredentials = options?.hideCredentials ?? true;
-  const idSource = options?.idSource ?? 'imdb';
   const needsFanartKey =
     settings.posterArtworkSource === 'fanart' ||
     settings.backdropArtworkSource === 'fanart' ||
@@ -917,14 +886,21 @@ export const buildAiometadataUrlPatterns = (
       Object.entries(payload).map(([key, value]) => [key, String(value)]),
     ).toString(),
   );
-  const idPath = AIO_ID_PATH_BY_SOURCE[idSource];
-  const episodeIdPath = AIO_EPISODE_ID_PATH_BY_SOURCE[idSource];
+  const buildQueryString = (extraParams?: Record<string, string>) =>
+    restoreAiometadataPlaceholders(
+      new URLSearchParams([
+        ...(extraParams
+          ? Object.entries(extraParams).map(([key, value]) => [key, value] as [string, string])
+          : []),
+        ...Array.from(new URLSearchParams(queryString).entries()),
+      ]).toString(),
+    );
 
   return {
-    posterUrlPattern: `${origin}/poster/${idPath}.jpg?${queryString}`,
-    backgroundUrlPattern: `${origin}/backdrop/${idPath}.jpg?${queryString}`,
-    logoUrlPattern: `${origin}/logo/${idPath}.jpg?${queryString}`,
-    episodeThumbnailUrlPattern: `${origin}/backdrop/${episodeIdPath}.jpg?${queryString}`,
+    posterUrlPattern: `${origin}/poster/{imdb_id}.jpg?${buildQueryString()}`,
+    backgroundUrlPattern: `${origin}/backdrop/{tmdb_id}.jpg?${buildQueryString({ idSource: 'tmdb' })}`,
+    logoUrlPattern: `${origin}/logo/{tmdb_id}.png?${buildQueryString({ idSource: 'tmdb' })}`,
+    episodeThumbnailUrlPattern: `${origin}/thumbnail/{imdb_id}/S{season}E{episode}.jpg?${buildQueryString()}`,
   };
 };
 
