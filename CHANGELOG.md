@@ -41,6 +41,17 @@
 
 <a id="v2-29-5"></a>
 
+<a id="v2-29-6"></a>
+
+## [v2.29.6] - 24/03/2026
+
+### Fixed
+* refine stacked badges and mobile docs
+* use official Trakt badge asset
+
+### Other Changes
+* remove inline rating comment
+
 ## [v2.29.5] - 24/03/2026
 
 ### Fixed
