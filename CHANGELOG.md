@@ -39,6 +39,18 @@
 
 <a id="v2-29-4"></a>
 
+<a id="v2-29-5"></a>
+
+## [v2.29.5] - 24/03/2026
+
+### Fixed
+* correct Trakt badge artwork
+* sync AIOMetadata export presets
+
+### Other Changes
+* cover poster rating max caps
+* add Discord release notifications
+
 ## [v2.29.4] - 24/03/2026
 
 ### Added
