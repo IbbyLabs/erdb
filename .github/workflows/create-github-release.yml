@@ -67,3 +67,24 @@ jobs:
           tag_name: ${{ github.event.workflow_run.head_branch }}
           body_path: .github/release-notes.md
           make_latest: ${{ steps.latest_tag.outputs.make_latest }}
+
+      - name: Check Discord webhook secret
+        id: discord_webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "${WEBHOOK_URL}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "WEBHOOK_URL secret is not configured. Skipping Discord release notification."
+          fi
+
+      - name: Notify Discord about release
+        if: ${{ steps.discord_webhook.outputs.enabled == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: ./.github/scripts/post-discord-release.sh

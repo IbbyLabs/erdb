@@ -1,9 +1,12 @@
 name: Notify Discord On Release
 
 "on":
-  release:
-    types:
-      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to post. Leave empty to use the latest published release.
+        required: false
+        type: string
 
 jobs:
   discord-release:
@@ -12,6 +15,9 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Check Discord webhook secret
         id: webhook
         env:
@@ -26,12 +32,9 @@ jobs:
 
       - name: Post release to Discord
         if: ${{ steps.webhook.outputs.enabled == 'true' }}
-        uses: SethCohen/github-releases-to-discord@b96a33520f8ad5e6dcdecee6f1212bdf88b16550
-        with:
-          webhook_url: ${{ secrets.WEBHOOK_URL }}
-          username: ERDB Releases
-          avatar_url: https://raw.githubusercontent.com/IbbyLabs/erdb/main/public/favicon-96x96.png
-          footer_title: IbbyLabs ERDB
-          footer_timestamp: true
-          reduce_headings: true
-          remove_github_reference_links: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+        run: ./.github/scripts/post-discord-release.sh
