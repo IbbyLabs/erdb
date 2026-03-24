@@ -23,6 +23,21 @@
 
 <a id="v2-25-0"></a>
 
+<a id="v2-26-0"></a>
+
+## [v2.26.0] - 24/03/2026
+
+### Added
+* add asset backed badge rendering controls
+* add media quality badge rendering
+
+### Fixed
+* label age rating badges more clearly
+* bust cached media badge renders
+
+### Documentation
+* align badge copy and UI wording
+
 ## [v2.25.0] - 24/03/2026
 
 ### Added
