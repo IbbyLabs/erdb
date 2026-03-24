@@ -22,3 +22,4 @@ future stuff.md
 *.sqlite
 Thumbs.db
 output/
+tsconfig.tsbuildinfo
