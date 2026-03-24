@@ -21,6 +21,15 @@ export const MAX_STACKED_LINE_HEIGHT_PERCENT = 220;
 export const DEFAULT_STACKED_LINE_GAP_PERCENT = 100;
 export const MIN_STACKED_LINE_GAP_PERCENT = 0;
 export const MAX_STACKED_LINE_GAP_PERCENT = 220;
+export const DEFAULT_STACKED_WIDTH_PERCENT = 100;
+export const MIN_STACKED_WIDTH_PERCENT = 70;
+export const MAX_STACKED_WIDTH_PERCENT = 130;
+export const DEFAULT_STACKED_SURFACE_OPACITY_PERCENT = 100;
+export const MIN_STACKED_SURFACE_OPACITY_PERCENT = 30;
+export const MAX_STACKED_SURFACE_OPACITY_PERCENT = 100;
+
+export type StackedAccentMode = 'badge' | 'logo';
+export const DEFAULT_STACKED_ACCENT_MODE: StackedAccentMode = 'badge';
 
 export type RatingProviderAppearanceOverride = {
   iconUrl?: string;
@@ -30,6 +39,9 @@ export type RatingProviderAppearanceOverride = {
   stackedLineWidthPercent?: number;
   stackedLineHeightPercent?: number;
   stackedLineGapPercent?: number;
+  stackedWidthPercent?: number;
+  stackedSurfaceOpacityPercent?: number;
+  stackedAccentMode?: StackedAccentMode;
 };
 
 export type RatingProviderAppearanceOverrides = Partial<
@@ -180,6 +192,43 @@ export const normalizeStackedLineGapPercent = (
     MAX_STACKED_LINE_GAP_PERCENT,
   );
 
+export const normalizeStackedWidthPercent = (
+  value: unknown,
+  fallback = DEFAULT_STACKED_WIDTH_PERCENT,
+) =>
+  normalizeBoundedPercent(
+    value,
+    fallback,
+    MIN_STACKED_WIDTH_PERCENT,
+    MAX_STACKED_WIDTH_PERCENT,
+  );
+
+export const normalizeStackedSurfaceOpacityPercent = (
+  value: unknown,
+  fallback = DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+) =>
+  normalizeBoundedPercent(
+    value,
+    fallback,
+    MIN_STACKED_SURFACE_OPACITY_PERCENT,
+    MAX_STACKED_SURFACE_OPACITY_PERCENT,
+  );
+
+export const normalizeStackedAccentMode = (
+  value: unknown,
+  fallback: StackedAccentMode = DEFAULT_STACKED_ACCENT_MODE,
+): StackedAccentMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase().replace(/[\s._-]+/g, '') : '';
+  if (!normalized) return fallback;
+  if (['badge', 'block', 'surface', 'full'].includes(normalized)) {
+    return 'badge';
+  }
+  if (['logo', 'icon', 'logoonly', 'icononly'].includes(normalized)) {
+    return 'logo';
+  }
+  return fallback;
+};
+
 export const normalizeHexColor = (value: unknown) => {
   if (typeof value !== 'string') return undefined;
   const normalized = value.trim().replace(/^#/, '');
@@ -271,6 +320,17 @@ export const normalizeRatingProviderAppearanceOverrides = (
       stackedLineGapPercent?: unknown;
       stackedLineGap?: unknown;
       stackedRailGapPercent?: unknown;
+      stackedWidthPercent?: unknown;
+      stackedWidth?: unknown;
+      stackedSurfaceOpacityPercent?: unknown;
+      stackedSurfaceOpacity?: unknown;
+      stackedBodyOpacityPercent?: unknown;
+      stackedOpacity?: unknown;
+      stackedAccentMode?: unknown;
+      stackedAccentPlacement?: unknown;
+      stackedAccentTarget?: unknown;
+      stackedLogoAccentOnly?: unknown;
+      logoOnlyAccent?: unknown;
     };
     const iconUrl =
       typeof candidate.iconUrl === 'string' && candidate.iconUrl.trim()
@@ -309,6 +369,33 @@ export const normalizeRatingProviderAppearanceOverrides = (
         candidate.stackedRailGapPercent,
       DEFAULT_STACKED_LINE_GAP_PERCENT,
     );
+    const stackedWidthPercent = normalizeStackedWidthPercent(
+      candidate.stackedWidthPercent ?? candidate.stackedWidth,
+      DEFAULT_STACKED_WIDTH_PERCENT,
+    );
+    const stackedSurfaceOpacityPercent = normalizeStackedSurfaceOpacityPercent(
+      candidate.stackedSurfaceOpacityPercent ??
+        candidate.stackedSurfaceOpacity ??
+        candidate.stackedBodyOpacityPercent ??
+        candidate.stackedOpacity,
+      DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+    );
+    const stackedAccentMode = (() => {
+      const explicitMode =
+        candidate.stackedAccentMode ??
+        candidate.stackedAccentPlacement ??
+        candidate.stackedAccentTarget;
+      if (explicitMode !== undefined) {
+        return normalizeStackedAccentMode(explicitMode, DEFAULT_STACKED_ACCENT_MODE);
+      }
+      if (
+        candidate.stackedLogoAccentOnly === true ||
+        candidate.logoOnlyAccent === true
+      ) {
+        return 'logo';
+      }
+      return DEFAULT_STACKED_ACCENT_MODE;
+    })();
     const override = compactObject({
       iconUrl,
       accentColor,
@@ -330,6 +417,14 @@ export const normalizeRatingProviderAppearanceOverrides = (
         stackedLineGapPercent !== DEFAULT_STACKED_LINE_GAP_PERCENT
           ? stackedLineGapPercent
           : undefined,
+      stackedWidthPercent:
+        stackedWidthPercent !== DEFAULT_STACKED_WIDTH_PERCENT ? stackedWidthPercent : undefined,
+      stackedSurfaceOpacityPercent:
+        stackedSurfaceOpacityPercent !== DEFAULT_STACKED_SURFACE_OPACITY_PERCENT
+          ? stackedSurfaceOpacityPercent
+          : undefined,
+      stackedAccentMode:
+        stackedAccentMode !== DEFAULT_STACKED_ACCENT_MODE ? stackedAccentMode : undefined,
     }) as RatingProviderAppearanceOverride;
 
     return Object.keys(override).length > 0 ? [[provider, override] as const] : [];

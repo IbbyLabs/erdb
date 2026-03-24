@@ -24,25 +24,35 @@ import {
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  DEFAULT_STACKED_ACCENT_MODE,
   DEFAULT_STACKED_LINE_GAP_PERCENT,
   DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
   DEFAULT_STACKED_LINE_WIDTH_PERCENT,
+  DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+  DEFAULT_STACKED_WIDTH_PERCENT,
   MAX_BADGE_SCALE_PERCENT,
   MAX_PROVIDER_ICON_SCALE_PERCENT,
+  MAX_STACKED_SURFACE_OPACITY_PERCENT,
   MAX_STACKED_LINE_GAP_PERCENT,
   MAX_STACKED_LINE_HEIGHT_PERCENT,
   MAX_STACKED_LINE_WIDTH_PERCENT,
+  MAX_STACKED_WIDTH_PERCENT,
   MIN_BADGE_SCALE_PERCENT,
   MIN_PROVIDER_ICON_SCALE_PERCENT,
+  MIN_STACKED_SURFACE_OPACITY_PERCENT,
   MIN_STACKED_LINE_GAP_PERCENT,
   MIN_STACKED_LINE_HEIGHT_PERCENT,
   MIN_STACKED_LINE_WIDTH_PERCENT,
+  MIN_STACKED_WIDTH_PERCENT,
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
   normalizeProviderIconScalePercent,
+  normalizeStackedAccentMode,
   normalizeStackedLineGapPercent,
   normalizeStackedLineHeightPercent,
   normalizeStackedLineWidthPercent,
+  normalizeStackedSurfaceOpacityPercent,
+  normalizeStackedWidthPercent,
   type RatingProviderAppearanceOverride,
   type RatingProviderAppearanceOverrides,
 } from '@/lib/badgeCustomization';
@@ -345,7 +355,7 @@ posterQualityBadgesStyle| glass, square, plain, media (poster only)             
 backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
-providerAppearance     | base64url or JSON provider overrides                                 | none
+providerAppearance     | base64url or JSON provider overrides for icon, accent, and stacked badge chrome | none
 ratingPresentation      | standard, minimal, average, editorial, blockbuster                   | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
@@ -405,7 +415,7 @@ Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBad
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge size uses cfg.genreBadgeScale.
 Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale.
-Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedLineVisible":false,"stackedLineWidthPercent":88}}.
+Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedWidthPercent":88,"stackedSurfaceOpacityPercent":72,"stackedAccentMode":"logo","stackedLineVisible":false,"stackedLineWidthPercent":88}}.
 Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0-100 vertical anchor.
 
 URL BUILD
@@ -834,6 +844,7 @@ export default function Home() {
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
   const [aiometadataCopied, setAiometadataCopied] = useState(false);
+  const [baseStructureCopied, setBaseStructureCopied] = useState(false);
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
@@ -1790,6 +1801,20 @@ export default function Home() {
   const aiometadataCopyBlock = aiometadataPatternRows
     .map((row) => `${row.label}\n${row.value}`)
     .join('\n\n');
+  const baseStructureTemplate = useMemo(
+    () =>
+      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
+    [baseUrl],
+  );
+  const displayedBaseStructureTemplate = useMemo(
+    () => baseStructureTemplate.replace('?', '?\n').replaceAll('&', '\n&'),
+    [baseStructureTemplate],
+  );
+  const handleCopyBaseStructure = useCallback(() => {
+    navigator.clipboard.writeText(baseStructureTemplate);
+    setBaseStructureCopied(true);
+    setTimeout(() => setBaseStructureCopied(false), 2000);
+  }, [baseStructureTemplate]);
 
   const updateRatingRowsForType = (
     type: 'poster' | 'backdrop' | 'logo',
@@ -1883,6 +1908,18 @@ export default function Home() {
           nextOverride.stackedLineGapPercent,
           DEFAULT_STACKED_LINE_GAP_PERCENT,
         );
+        const normalizedStackedWidth = normalizeStackedWidthPercent(
+          nextOverride.stackedWidthPercent,
+          DEFAULT_STACKED_WIDTH_PERCENT,
+        );
+        const normalizedStackedSurfaceOpacity = normalizeStackedSurfaceOpacityPercent(
+          nextOverride.stackedSurfaceOpacityPercent,
+          DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+        );
+        const normalizedStackedAccentMode = normalizeStackedAccentMode(
+          nextOverride.stackedAccentMode,
+          DEFAULT_STACKED_ACCENT_MODE,
+        );
         const compactOverride: RatingProviderAppearanceOverride = {};
         if (trimmedIconUrl) {
           compactOverride.iconUrl = trimmedIconUrl;
@@ -1904,6 +1941,15 @@ export default function Home() {
         }
         if (normalizedStackedLineGap !== DEFAULT_STACKED_LINE_GAP_PERCENT) {
           compactOverride.stackedLineGapPercent = normalizedStackedLineGap;
+        }
+        if (normalizedStackedWidth !== DEFAULT_STACKED_WIDTH_PERCENT) {
+          compactOverride.stackedWidthPercent = normalizedStackedWidth;
+        }
+        if (normalizedStackedSurfaceOpacity !== DEFAULT_STACKED_SURFACE_OPACITY_PERCENT) {
+          compactOverride.stackedSurfaceOpacityPercent = normalizedStackedSurfaceOpacity;
+        }
+        if (normalizedStackedAccentMode !== DEFAULT_STACKED_ACCENT_MODE) {
+          compactOverride.stackedAccentMode = normalizedStackedAccentMode;
         }
 
         const next = { ...current };
@@ -3087,10 +3133,10 @@ export default function Home() {
                             <div className="flex flex-wrap items-center justify-between gap-3">
                               <div>
                                 <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                                  Stacked Accent Line
+                                  Stacked Badge
                                 </div>
                                 <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                                  Applies when the current rating style is stacked. Turn the line off entirely or fine tune its width, thickness, and gap for this source.
+                                  Applies when the current rating style is stacked. Fine tune the badge width, body opacity, accent placement, and the top line for this source.
                                 </p>
                               </div>
                               <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-[11px] font-medium text-zinc-300">
@@ -3108,7 +3154,111 @@ export default function Home() {
                                 <span>{activeProviderAppearanceOverride.stackedLineVisible === false ? 'Hidden' : 'Visible'}</span>
                               </label>
                             </div>
-                            <div className={`grid gap-3 ${usesStackedRatingStyle ? 'md:grid-cols-3' : 'md:grid-cols-3 opacity-75'}`}>
+                            <div className={`grid gap-3 ${usesStackedRatingStyle ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2 xl:grid-cols-3 opacity-75'}`}>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Width</span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    {activeProviderAppearanceOverride.stackedWidthPercent ||
+                                      DEFAULT_STACKED_WIDTH_PERCENT}
+                                    %
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={MIN_STACKED_WIDTH_PERCENT}
+                                  max={MAX_STACKED_WIDTH_PERCENT}
+                                  step={1}
+                                  value={
+                                    activeProviderAppearanceOverride.stackedWidthPercent ||
+                                    DEFAULT_STACKED_WIDTH_PERCENT
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      stackedWidthPercent: normalizeStackedWidthPercent(
+                                        event.target.value,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-2 w-full accent-violet-500"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Body Opacity</span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    {activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
+                                      DEFAULT_STACKED_SURFACE_OPACITY_PERCENT}
+                                    %
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={MIN_STACKED_SURFACE_OPACITY_PERCENT}
+                                  max={MAX_STACKED_SURFACE_OPACITY_PERCENT}
+                                  step={1}
+                                  value={
+                                    activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
+                                    DEFAULT_STACKED_SURFACE_OPACITY_PERCENT
+                                  }
+                                  onChange={(event) =>
+                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                      ...current,
+                                      stackedSurfaceOpacityPercent: normalizeStackedSurfaceOpacityPercent(
+                                        event.target.value,
+                                      ),
+                                    }))
+                                  }
+                                  className="h-2 w-full accent-violet-500"
+                                />
+                              </div>
+                              <div className="space-y-2 xl:col-span-1 md:col-span-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent Placement</span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    {activeProviderAppearanceOverride.stackedAccentMode === 'logo'
+                                      ? 'Logo only'
+                                      : 'Badge'}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                        ...current,
+                                        stackedAccentMode: 'badge',
+                                      }))
+                                    }
+                                    className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                                      (activeProviderAppearanceOverride.stackedAccentMode ||
+                                        DEFAULT_STACKED_ACCENT_MODE) === 'badge'
+                                        ? 'border-violet-500/60 bg-violet-500/20 text-white'
+                                        : 'border-white/10 bg-black text-zinc-400 hover:text-white'
+                                    }`}
+                                  >
+                                    Badge
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                                        ...current,
+                                        stackedAccentMode: 'logo',
+                                      }))
+                                    }
+                                    className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                                      (activeProviderAppearanceOverride.stackedAccentMode ||
+                                        DEFAULT_STACKED_ACCENT_MODE) === 'logo'
+                                        ? 'border-violet-500/60 bg-violet-500/20 text-white'
+                                        : 'border-white/10 bg-black text-zinc-400 hover:text-white'
+                                    }`}
+                                  >
+                                    Logo only
+                                  </button>
+                                </div>
+                              </div>
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between gap-3">
                                   <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Width</span>
@@ -3249,7 +3399,7 @@ export default function Home() {
                                 {activeProviderMeta.label}
                               </div>
                               <div className="text-[11px] text-zinc-500">
-                                Per-source overrides apply across poster, backdrop, and logo renders, including stacked line tweaks.
+                                Per-source overrides apply across poster, backdrop, and logo renders, including stacked badge width, opacity, and accent placement.
                               </div>
                             </div>
                           </div>
@@ -3859,7 +4009,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">providerAppearance</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, iconScalePercent, and stacked line controls</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, iconScalePercent, stacked width, stacked body opacity, stacked accent mode, and stacked line controls</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                       <tr>
@@ -4180,66 +4330,54 @@ export default function Home() {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/20 blur-[80px] pointer-events-none" />
 
                 <div className="mb-6">
-                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Base Structure</h4>
-                  <div className="p-4 bg-zinc-900/60 border border-white/5 rounded-xl font-mono text-xs overflow-x-auto overflow-y-hidden whitespace-nowrap pb-2">
-                    <span className="text-zinc-500">{baseUrl || 'http://localhost:3000'}</span>
-                    <span className="text-white">/</span>
-                    <span className="text-violet-500 font-bold">{'{type}'}</span>
-                    <span className="text-white">/</span>
-                    <span className="text-violet-500 font-bold">{'{id}'}</span>
-                    <span className="text-white">.jpg?</span>
-                    <span className="text-violet-400 font-bold">ratings</span>=<span className="text-zinc-400 font-bold">{'{ratings}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">lang</span>=<span className="text-zinc-400 font-bold">{'{lang}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">ratingStyle</span>=<span className="text-zinc-400 font-bold">{'{style}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">imageText</span>=<span className="text-zinc-400 font-bold">{'{text}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">posterRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{layout}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">posterRatingsMaxPerSide</span>=<span className="text-zinc-400 font-bold">{'{max}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">backdropRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{bLayout}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">sideRatingsPosition</span>=<span className="text-zinc-400 font-bold">{'{sidePos}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">sideRatingsOffset</span>=<span className="text-zinc-400 font-bold">{'{sideOffset}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">tmdbKey</span>=<span className="text-zinc-400 font-bold">{'{tmdbKey}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">mdblistKey</span>=<span className="text-zinc-400 font-bold">{'{mdbKey}'}</span>
-                    <span className="text-white">&</span>
-                    <span className="text-violet-400 font-bold">fanartKey</span>=<span className="text-zinc-400 font-bold">{'{fanartKey}'}</span>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Base Structure</h4>
+                    <button
+                      type="button"
+                      onClick={handleCopyBaseStructure}
+                      className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold transition-all ${
+                        baseStructureCopied
+                          ? 'bg-green-500 text-white'
+                          : 'border border-violet-500/30 bg-violet-500/12 text-violet-200 hover:bg-violet-500/20 hover:text-white'
+                      }`}
+                    >
+                      {baseStructureCopied ? <Check className="h-3.5 w-3.5" /> : <Clipboard className="h-3.5 w-3.5" />}
+                      <span>{baseStructureCopied ? 'Copied' : 'Copy Base Structure'}</span>
+                    </button>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-zinc-900/60 p-4">
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-6 text-zinc-300">
+                      {displayedBaseStructureTemplate}
+                    </pre>
                   </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
-                    <div className="flex gap-2">
-                      <span className="text-violet-500 font-bold shrink-0">lang (optional):</span>
-                      <span className="text-zinc-400">{TMDB_LANGUAGE_HELP_COPY}</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
+                      <span className="text-violet-500 font-bold">lang (optional):</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">{TMDB_LANGUAGE_HELP_COPY}</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-violet-500 font-bold shrink-0">id (required):</span>
-                      <span className="text-zinc-400">IMDb ID (tt...), TMDB ID (prefer tmdb:movie:id or tmdb:tv:id), or Kitsu ID (kitsu:...).</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
+                      <span className="text-violet-500 font-bold">id (required):</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">IMDb ID (tt...), TMDB ID (prefer tmdb:movie:id or tmdb:tv:id), or Kitsu ID (kitsu:...).</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-violet-500 font-bold shrink-0">tmdbKey (required):</span>
-                      <span className="text-zinc-400">Your TMDB v3 API Key.</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
+                      <span className="text-violet-500 font-bold">tmdbKey (required):</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Your TMDB v3 API Key.</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-violet-500 font-bold shrink-0">mdblistKey (required):</span>
-                      <span className="text-zinc-400">Your MDBList API Key.</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
+                      <span className="text-violet-500 font-bold">mdblistKey (required):</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Your MDBList API Key.</span>
                     </div>
-                    <div className="flex gap-2 md:col-span-2">
-                      <span className="text-violet-500 font-bold shrink-0">fanartKey (optional):</span>
-                      <span className="text-zinc-400">Recommended when you use fanart sources. Your key is used first, then ERDB can fall back to the service key when one exists.</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2 md:col-span-2">
+                      <span className="text-violet-500 font-bold">fanartKey (optional):</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Recommended when you use fanart sources. Your key is used first, then ERDB can fall back to the service key when one exists.</span>
                     </div>
-                    <div className="flex gap-2 md:col-span-2">
-                      <span className="text-violet-500 font-bold shrink-0">providerAppearance:</span>
-                      <span className="text-zinc-400">Accepts base64url or raw JSON overrides for iconUrl, accentColor, iconScalePercent, and stacked line controls such as stackedLineVisible or stackedLineWidthPercent. Keep the help text visible while editing so users can paste custom provider art without losing the format reference.</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2 md:col-span-2">
+                      <span className="text-violet-500 font-bold">providerAppearance:</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Accepts base64url or raw JSON overrides for iconUrl, accentColor, iconScalePercent, stackedWidthPercent, stackedSurfaceOpacityPercent, stackedAccentMode, and stacked line controls such as stackedLineVisible or stackedLineWidthPercent.</span>
                     </div>
-                    <div className="flex gap-2 md:col-span-2">
-                      <span className="text-violet-500 font-bold shrink-0">posterQualityBadges / backdropQualityBadges:</span>
-                      <span className="text-zinc-400">Comma separated badge ids such as certification,hdr,remux. Send an empty string if you want no quality badges rendered for that type.</span>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2 md:col-span-2">
+                      <span className="text-violet-500 font-bold">posterQualityBadges / backdropQualityBadges:</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Comma separated badge ids such as certification,hdr,remux. Send an empty string if you want no quality badges rendered for that type.</span>
                     </div>
                   </div>
                 </div>

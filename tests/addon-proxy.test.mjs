@@ -10,6 +10,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
     mdblist: {
       accentColor: '#22c55e',
       iconScalePercent: 112,
+      stackedWidthPercent: 91,
+      stackedSurfaceOpacityPercent: 70,
       stackedLineWidthPercent: 88,
     },
   };
@@ -109,6 +111,8 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       iconUrl: 'https://cdn.example.com/trakt-custom.svg',
       accentColor: '#7c3aed',
       iconScalePercent: 116,
+      stackedWidthPercent: 84,
+      stackedAccentMode: 'logo',
       stackedLineVisible: false,
     },
   };

@@ -105,12 +105,17 @@ import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons'
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+  DEFAULT_STACKED_ACCENT_MODE,
   DEFAULT_STACKED_LINE_GAP_PERCENT,
   DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
   DEFAULT_STACKED_LINE_WIDTH_PERCENT,
+  DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+  DEFAULT_STACKED_WIDTH_PERCENT,
+  MIN_STACKED_SURFACE_OPACITY_PERCENT,
   normalizeBadgeScalePercent,
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
+  type StackedAccentMode,
 } from '@/lib/badgeCustomization';
 import {
   computeStackedBadgeLayout,
@@ -523,6 +528,9 @@ type RatingBadge = {
   stackedLineWidthPercent?: number;
   stackedLineHeightPercent?: number;
   stackedLineGapPercent?: number;
+  stackedWidthPercent?: number;
+  stackedSurfaceOpacityPercent?: number;
+  stackedAccentMode?: StackedAccentMode;
   variant?: 'standard' | 'minimal' | 'summary';
 };
 type GenreBadgeSpec = {
@@ -3431,10 +3439,15 @@ const estimateBadgeTextWidth = (
   );
   const structureWidth = Math.round(normalized.length * fontSize * (compactText ? 0.38 : 0.44));
   const isShortDecimalValue = /^\d+(?:[.,]\d)?$/.test(normalized) && !normalized.includes('/');
+  const isWholeNumberValue = /^\d+$/.test(normalized);
   const shortDecimalMinWidth = isShortDecimalValue
     ? Math.round(fontSize * (compactText ? 1.52 : 1.68))
     : 0;
+  const wholeNumberMinWidth = isWholeNumberValue
+    ? Math.round(fontSize * (compactText ? 1.44 : 1.62))
+    : 0;
   return Math.max(
+    wholeNumberMinWidth,
     shortDecimalMinWidth,
     Math.round(fontSize * (compactText ? 0.92 : 1.00)),
     Math.round(measuredTextWidth + safetyRightPadding),
@@ -3509,7 +3522,20 @@ const estimateRenderedBadgeWidth = (
 ) => {
   const variant = badge.variant || 'standard';
   if (variant === 'standard') {
-    return estimateBadgeWidth(badge.value, fontSize, paddingX, iconSize, gap, compactText, ratingStyle);
+    const baseWidth = estimateBadgeWidth(
+      badge.value,
+      fontSize,
+      paddingX,
+      iconSize,
+      gap,
+      compactText,
+      ratingStyle,
+    );
+    if (ratingStyle === 'stacked') {
+      const widthRatio = Math.max(0.7, Math.min(1.3, (badge.stackedWidthPercent || DEFAULT_STACKED_WIDTH_PERCENT) / 100));
+      return Math.max(Math.round(fontSize * 2.05), Math.round(baseWidth * widthRatio));
+    }
+    return baseWidth;
   }
 
   const outerPadding = Math.max(10, Math.round(paddingX * (variant === 'minimal' ? 1.05 : 0.95)));
@@ -3560,7 +3586,7 @@ const getMinimumCompressedRenderedBadgeWidth = (
 ) => {
   const variant = badge.variant || 'standard';
   if (variant === 'standard') {
-    return getMinimumCompressedBadgeWidth(
+    const baseWidth = getMinimumCompressedBadgeWidth(
       badge.value,
       fontSize,
       paddingX,
@@ -3569,6 +3595,11 @@ const getMinimumCompressedRenderedBadgeWidth = (
       compactText,
       ratingStyle,
     );
+    if (ratingStyle === 'stacked') {
+      const widthRatio = Math.max(0.7, Math.min(1.3, (badge.stackedWidthPercent || DEFAULT_STACKED_WIDTH_PERCENT) / 100));
+      return Math.max(Math.round(fontSize * 1.72), Math.round(baseWidth * widthRatio));
+    }
+    return baseWidth;
   }
 
   if (variant === 'minimal') {
@@ -4306,6 +4337,8 @@ const buildBadgeSvg = ({
   stackedLineWidthPercent = DEFAULT_STACKED_LINE_WIDTH_PERCENT,
   stackedLineHeightPercent = DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
   stackedLineGapPercent = DEFAULT_STACKED_LINE_GAP_PERCENT,
+  stackedSurfaceOpacityPercent = DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+  stackedAccentMode = DEFAULT_STACKED_ACCENT_MODE,
   preferNeutralGlassPlate = false,
   compactText = false,
 }: {
@@ -4328,6 +4361,8 @@ const buildBadgeSvg = ({
   stackedLineWidthPercent?: number;
   stackedLineHeightPercent?: number;
   stackedLineGapPercent?: number;
+  stackedSurfaceOpacityPercent?: number;
+  stackedAccentMode?: StackedAccentMode;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
 }) => {
@@ -4483,12 +4518,29 @@ ${variantChrome}
         : '';
     const valueNumericStyle =
       ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
-    const iconSurfaceFill = hexColorToRgba(accentColor, 0.22, 'rgba(167,139,250,0.22)');
+    const surfaceOpacityRatio = Math.max(
+      MIN_STACKED_SURFACE_OPACITY_PERCENT / 100,
+      Math.min(1, stackedSurfaceOpacityPercent / 100),
+    );
+    const useLogoOnlyAccent = stackedAccentMode === 'logo';
+    const iconSurfaceFill = hexColorToRgba(
+      accentColor,
+      0.22,
+      'rgba(167,139,250,0.22)',
+    );
     const iconSurfaceStroke = hexColorToRgba(accentColor, 0.54, 'rgba(167,139,250,0.54)');
+    const stackedSurfaceStartColor = useLogoOnlyAccent ? '#ffffff' : accentColor;
+    const stackedSurfaceEndColor = useLogoOnlyAccent ? '#94a3b8' : accentColor;
+    const stackedSurfaceStartOpacity = (useLogoOnlyAccent ? 0.06 : 0.14) * surfaceOpacityRatio;
+    const stackedSurfaceEndOpacity = (useLogoOnlyAccent ? 0.015 : 0.04) * surfaceOpacityRatio;
+    const stackedBodyFillOpacity = 0.9 * surfaceOpacityRatio;
+    const stackedBodyStroke = useLogoOnlyAccent
+      ? 'rgba(255,255,255,0.22)'
+      : hexColorToRgba(accentColor, 0.28, 'rgba(255,255,255,0.22)');
     const stackedDefs = `<defs>
 <linearGradient id="stacked-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" stop-color="${accentColor}" stop-opacity="0.14" />
-<stop offset="100%" stop-color="${accentColor}" stop-opacity="0.04" />
+<stop offset="0%" stop-color="${stackedSurfaceStartColor}" stop-opacity="${stackedSurfaceStartOpacity}" />
+<stop offset="100%" stop-color="${stackedSurfaceEndColor}" stop-opacity="${stackedSurfaceEndOpacity}" />
 </linearGradient>
 <clipPath id="stacked-icon-clip">
 <rect x="${stackedLayout.iconX}" y="${stackedLayout.iconY}" width="${renderIconSize}" height="${renderIconSize}" rx="${Math.max(6, stackedLayout.iconRadius - 4)}" />
@@ -4502,7 +4554,7 @@ ${variantChrome}
       : `<text x="${stackedLayout.iconCenterX}" y="${Math.round(stackedLayout.iconCenterY + stackedLayout.iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${stackedLayout.iconFontSize}" font-weight="700" text-anchor="middle" fill="${accentColor}">${escapeXml(monogram)}</text>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${stackedDefs}
-<rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,0.90)" stroke="rgba(255,255,255,0.22)" stroke-width="1.15" />
+<rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,${stackedBodyFillOpacity.toFixed(3)})" stroke="${stackedBodyStroke}" stroke-width="1.15" />
 <rect x="${stackedInnerInset}" y="${stackedInnerInset}" width="${stackedInnerWidth}" height="${stackedInnerHeight}" rx="${Math.max(10, radius - 3)}" fill="url(#stacked-surface-fill)" />
 ${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="${accentColor}" />` : ''}
 <rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
@@ -4533,6 +4585,7 @@ ${monogramText}
     compactText && valueTextWidth > valueAvailableWidth
       ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
       : '';
+  const shouldCenterValueInSlot = /^\d+(?:\.0)?$/.test(value.trim());
   const valueFontFamily = compactText
     ? `'Noto Sans','DejaVu Sans','Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
     : `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
@@ -4575,13 +4628,17 @@ ${monogramText}
       : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}"${plainIconFilter}>${escapeXml(monogram)}</text>${iconBorder}`;
   const valueNumericStyle =
     ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
+  const valueAnchor = shouldCenterValueInSlot ? 'middle' : 'start';
+  const valueRenderX = shouldCenterValueInSlot
+    ? Math.round(valueX + valueAvailableWidth / 2)
+    : valueX;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainBadgeDefs}
 ${outerRect}
 ${iconShape}
 ${iconImage}
 ${monogramText}
-<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueRenderX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" text-anchor="${valueAnchor}" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
 };
 
@@ -5341,6 +5398,8 @@ const renderWithSharp = async (
         stackedLineWidthPercent: badge.stackedLineWidthPercent,
         stackedLineHeightPercent: badge.stackedLineHeightPercent,
         stackedLineGapPercent: badge.stackedLineGapPercent,
+        stackedSurfaceOpacityPercent: badge.stackedSurfaceOpacityPercent,
+        stackedAccentMode: badge.stackedAccentMode,
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
         compactText,
@@ -8041,6 +8100,9 @@ export async function GET(
           stackedLineWidthPercent: providerAppearance?.stackedLineWidthPercent,
           stackedLineHeightPercent: providerAppearance?.stackedLineHeightPercent,
           stackedLineGapPercent: providerAppearance?.stackedLineGapPercent,
+          stackedWidthPercent: providerAppearance?.stackedWidthPercent,
+          stackedSurfaceOpacityPercent: providerAppearance?.stackedSurfaceOpacityPercent,
+          stackedAccentMode: providerAppearance?.stackedAccentMode,
           variant: 'standard',
         });
       }

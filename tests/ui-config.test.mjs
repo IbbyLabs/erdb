@@ -18,11 +18,15 @@ const SAMPLE_PROVIDER_APPEARANCE = {
     iconUrl: 'https://cdn.example.com/trakt-custom.svg',
     accentColor: '#7c3aed',
     iconScalePercent: 118,
+    stackedWidthPercent: 86,
+    stackedSurfaceOpacityPercent: 74,
+    stackedAccentMode: 'logo',
     stackedLineVisible: false,
     stackedLineWidthPercent: 86,
   },
   imdb: {
     accentColor: '#facc15',
+    stackedWidthPercent: 92,
     stackedLineHeightPercent: 124,
   },
 };
