@@ -31,6 +31,13 @@
 
 <a id="v2-29-0"></a>
 
+<a id="v2-29-1"></a>
+
+## [v2.29.1] - 24/03/2026
+
+### Fixed
+* tighten stacked badge rating layout
+
 ## [v2.29.0] - 24/03/2026
 
 ### Added
