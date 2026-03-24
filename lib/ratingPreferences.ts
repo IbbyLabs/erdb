@@ -25,10 +25,10 @@ export const RATING_PROVIDER_OPTIONS = [
   },
   {
     id: 'tomatoesaudience',
-    label: 'Popcorntime',
+    label: 'RT Audience',
     iconUrl:
       'https://upload.wikimedia.org/wikipedia/commons/d/da/Rotten_Tomatoes_positive_audience.svg',
-    accentColor: '#198754',
+    accentColor: '#f59e0b',
   },
   {
     id: 'letterboxd',

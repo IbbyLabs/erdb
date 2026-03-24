@@ -48,6 +48,14 @@ import {
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
+import {
+  DEFAULT_SIDE_RATING_OFFSET,
+  DEFAULT_SIDE_RATING_POSITION,
+  normalizeSideRatingOffset,
+  normalizeSideRatingPosition,
+  resolveSideRatingOffsetFraction,
+  type SideRatingPosition,
+} from '@/lib/sideRatingPosition';
 import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 import { resolveReverseMappedAnimeImageTarget } from '@/lib/animeReverseMapping';
@@ -84,6 +92,11 @@ import {
   type MediaFeatureBadgeKey,
   type MediaFeatureFlags,
 } from '@/lib/mediaFeatures';
+import {
+  MEDIA_BADGE_ASSETS,
+  type MediaBadgeAssetId,
+} from '@/lib/mediaBadgeAssets';
+import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons';
 
 export const runtime = 'nodejs';
 
@@ -159,7 +172,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v65';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v66';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -2444,6 +2457,8 @@ type FastRenderInput = {
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
+  sideRatingsPosition: SideRatingPosition;
+  sideRatingsOffset: number;
   ratingStyle: RatingStyle;
   logoBackground: LogoBackground;
   topBadges: RatingBadge[];
@@ -3121,6 +3136,27 @@ const estimateSummaryLabelWidth = (label: string, fontSize: number) => {
   );
 };
 
+const getSummaryBadgeHorizontalMetrics = (
+  label: string,
+  fontSize: number,
+  paddingX: number
+) => {
+  const summaryLabel = label.trim().toUpperCase();
+  const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
+  const chipPaddingX = Math.max(10, Math.round(paddingX * 0.55));
+  const chipWidth = estimateSummaryLabelWidth(summaryLabel, summaryLabelFontSize) + chipPaddingX * 2;
+  const contentGap = Math.max(10, Math.round(paddingX * 0.7));
+  const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+  return {
+    summaryLabel,
+    summaryLabelFontSize,
+    chipPaddingX,
+    chipWidth,
+    contentGap,
+    sideInset,
+  };
+};
+
 const estimateRenderedBadgeWidth = (
   badge: RatingBadge,
   fontSize: number,
@@ -3141,14 +3177,13 @@ const estimateRenderedBadgeWidth = (
     return Math.max(chipDiameter, valueWidth + outerPadding * 2);
   }
 
-  const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
-  const labelWidth =
-    estimateSummaryLabelWidth(badge.label, summaryLabelFontSize) +
-    Math.max(10, Math.round(paddingX * 0.55)) * 2;
-  const innerGap = Math.max(10, Math.round(paddingX * 0.7));
-  const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+  const { summaryLabelFontSize, chipWidth, contentGap, sideInset } = getSummaryBadgeHorizontalMetrics(
+    badge.label,
+    fontSize,
+    paddingX
+  );
   return Math.max(
-    sideInset * 2 + valueWidth + labelWidth + innerGap,
+    sideInset * 2 + valueWidth + chipWidth + contentGap,
     sideInset * 2 + valueWidth + Math.round(summaryLabelFontSize * 4.2)
   );
 };
@@ -3183,12 +3218,14 @@ const getMinimumCompressedRenderedBadgeWidth = (
     return Math.max(iconSize, Math.round(fontSize * 1.8) + Math.max(12, Math.round(paddingX * 1.4)));
   }
 
-  const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
-  const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+  const { chipWidth, sideInset } = getSummaryBadgeHorizontalMetrics(
+    badge.label,
+    fontSize,
+    paddingX
+  );
   return Math.max(
     Math.round(fontSize * 2.5),
-    estimateSummaryLabelWidth(badge.label, summaryLabelFontSize) +
-      Math.max(10, Math.round(paddingX * 0.55)) * 2 +
+    chipWidth +
       Math.round(fontSize * 1.6) +
       sideInset * 2
   );
@@ -3321,6 +3358,31 @@ const measureBadgeColumnHeight = (columnBadges: RatingBadge[], metrics: BadgeLay
   if (columnBadges.length === 0) return 0;
   const badgeHeight = metrics.iconSize + metrics.paddingY * 2;
   return columnBadges.length * badgeHeight + Math.max(0, columnBadges.length - 1) * metrics.gap;
+};
+
+const resolveVerticalBadgeColumnStartY = ({
+  outputHeight,
+  columnHeight,
+  topOffset,
+  bottomOffset,
+  position,
+  customOffset,
+  minTop = topOffset,
+}: {
+  outputHeight: number;
+  columnHeight: number;
+  topOffset: number;
+  bottomOffset: number;
+  position: SideRatingPosition;
+  customOffset: number;
+  minTop?: number;
+}) => {
+  const baseTop = Math.max(topOffset, minTop);
+  if (columnHeight <= 0) return baseTop;
+  const maxStartY = Math.max(baseTop, outputHeight - bottomOffset - columnHeight);
+  if (maxStartY <= baseTop) return baseTop;
+  const fraction = resolveSideRatingOffsetFraction(position, customOffset);
+  return Math.round(baseTop + (maxStartY - baseTop) * fraction);
 };
 
 const getMaxBadgeColumnCount = (
@@ -3466,6 +3528,35 @@ const getBadgeOuterRadius = (height: number, ratingStyle: RatingStyle) =>
 const getBadgeIconRadius = (iconSize: number, ratingStyle: RatingStyle) =>
   ratingStyle === 'square' ? Math.max(6, Math.round(iconSize * 0.22)) : Math.round(iconSize / 2);
 
+const buildCenteredBadgeAssetImage = ({
+  dataUri,
+  width,
+  height,
+  assetAspectRatio,
+  horizontalPadding,
+  heightRatio = 0.6,
+  yOffset = 0,
+  extraAttributes = '',
+}: {
+  dataUri: string;
+  width: number;
+  height: number;
+  assetAspectRatio: number;
+  horizontalPadding: number;
+  heightRatio?: number;
+  yOffset?: number;
+  extraAttributes?: string;
+}) => {
+  const maxWidth = Math.max(0, width - horizontalPadding * 2);
+  const targetHeight = Math.max(1, Math.round(height * heightRatio));
+  const targetWidth = Math.round(targetHeight * assetAspectRatio);
+  const assetWidth = Math.min(maxWidth, targetWidth);
+  const assetHeight = Math.max(1, Math.round(assetWidth / assetAspectRatio));
+  const x = Math.round((width - assetWidth) / 2);
+  const y = Math.round((height - assetHeight) / 2 + yOffset);
+  return `<image href="${dataUri}" x="${x}" y="${y}" width="${assetWidth}" height="${assetHeight}" preserveAspectRatio="xMidYMid meet"${extraAttributes ? ` ${extraAttributes}` : ''} />`;
+};
+
 const buildQualityBadgeSvg = (
   badge: Pick<RatingBadge, 'key' | 'label'>,
   height: number,
@@ -3485,28 +3576,44 @@ const buildQualityBadgeSvg = (
       : style === 'square'
         ? Math.max(1, Math.round(h * 0.05))
         : Math.max(2, Math.round(h * 0.08));
-  const innerPadding = Math.max(10, Math.round(h * 0.16));
   const fontFamily = `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
   const mediaText = '#f5f5f4';
   const certStroke = 'rgba(255,247,237,0.94)';
   const certFill = 'rgba(17,24,39,0.42)';
   const certText = '#fffaf5';
-  const mediaFrameByKey: Partial<Record<MediaFeatureBadgeKey, { stroke: string; fill: string; text: string }>> = {
+  const mediaFrameByKey: Partial<Record<MediaFeatureBadgeKey, { stroke: string; fill: string }>> = {
     '4k': {
-      stroke: 'rgba(251,191,36,0.9)',
-      fill: 'rgba(245,158,11,0.16)',
-      text: '#fcd34d',
+      stroke: 'rgba(56,189,248,0.88)',
+      fill: 'rgba(2,132,199,0.16)',
     },
     hdr: {
-      stroke: 'rgba(103,232,249,0.88)',
-      fill: 'rgba(34,211,238,0.12)',
-      text: '#a5f3fc',
+      stroke: 'rgba(255,255,255,0.76)',
+      fill: 'rgba(148,163,184,0.16)',
     },
     remux: {
       stroke: 'rgba(251,146,60,0.92)',
       fill: 'rgba(239,68,68,0.16)',
-      text: '#fdba74',
     },
+    bluray: {
+      stroke: 'rgba(125,211,252,0.34)',
+      fill: 'rgba(15,23,42,0.16)',
+    },
+    dolbyvision: {
+      stroke: 'rgba(255,255,255,0.58)',
+      fill: 'rgba(15,23,42,0.18)',
+    },
+    dolbyatmos: {
+      stroke: 'rgba(255,255,255,0.58)',
+      fill: 'rgba(15,23,42,0.18)',
+    },
+  };
+  const standardAssetStrokeByKey: Partial<Record<MediaBadgeAssetId, string>> = {
+    '4k': '#7dd3fc',
+    hdr: '#e5e7eb',
+    bluray: '#dbeafe',
+    dolbyvision: '#e5e7eb',
+    dolbyatmos: '#e5e7eb',
+    remux: '#fb923c',
   };
   const baseRect = (width: number, stroke: string, fill: string, extra = '') =>
     `<rect x="${strokeWidth / 2}" y="${strokeWidth / 2}" width="${Math.max(0, width - strokeWidth)}" height="${Math.max(0, h - strokeWidth)}" rx="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" ${extra}/>`;
@@ -3550,33 +3657,6 @@ const buildQualityBadgeSvg = (
     if (!chrome) return '';
     return baseRect(width, chrome.stroke, chrome.fill, extra);
   };
-  const buildMediaDolbySvg = (variant: 'VISION' | 'ATMOS') => {
-    const topSize = Math.round(h * 0.19);
-    const bottomSize = Math.round(h * 0.3);
-    const iconWidth = Math.round(h * 0.42);
-    const iconHeight = Math.round(h * 0.28);
-    const sidePadding = Math.round(h * 0.06);
-    const labelBlockWidth = Math.max(
-      Math.round(h * 0.98),
-      estimateMediaLabelWidth(`DOLBY ${variant}`, bottomSize, 0.025, sidePadding),
-    );
-    const width = widthOverride ?? iconWidth + labelBlockWidth + Math.round(h * 0.18);
-    const iconX = sidePadding;
-    const iconY = Math.round(h * 0.31);
-    const textX = iconX + iconWidth + Math.round(h * 0.12);
-    const topY = Math.round(h * 0.42);
-    const bottomY = Math.round(h * 0.72);
-    const icon = `<g transform="translate(${iconX} ${iconY}) scale(${iconWidth / 16} ${iconHeight / 13})">
-<path d="M0 1.8h3.9c2.6 0 4.7 2 4.7 4.7S6.5 11.2 3.9 11.2H0V1.8Zm1.4 1.4v6.6h2.2c1.8 0 3.5-1.4 3.5-3.3S5.4 3.2 3.6 3.2H1.4Z" fill="${mediaText}"/>
-<path d="M15.8 1.8h-3.9c-2.6 0-4.7 2-4.7 4.7s2.1 4.7 4.7 4.7h3.9V1.8Zm-1.4 1.4v6.6h-2.2c-1.8 0-3.5-1.4-3.5-3.3s1.7-3.3 3.5-3.3h2.2Z" fill="${mediaText}"/>
-</g>`;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${icon}
-<text x="${textX}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" fill="${mediaText}" letter-spacing="0.11em">DOLBY</text>
-<text x="${textX}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" fill="${mediaText}" letter-spacing="0.02em">${variant}</text>
-</svg>`;
-    return { svg, width, height: h };
-  };
   const buildMediaCertificationSvg = () => {
     const textSize = Math.round(h * 0.39);
     const sidePadding = Math.round(h * 0.26);
@@ -3597,68 +3677,48 @@ ${buildMediaPlate(width, {
 </svg>`,
     };
   };
-  const buildMediaOutlineTextSvg = (input: {
-    labelText: string;
-    minWidth: number;
-    accentKey?: MediaFeatureBadgeKey;
-    letterSpacing?: string;
-    textScale?: number;
-    sidePaddingScale?: number;
-  }) => {
-    const textSize = Math.round(h * (input.textScale ?? 0.38));
-    const trackingEm = input.letterSpacing ? Number.parseFloat(input.letterSpacing) || 0 : 0;
-    const sidePadding = Math.round(h * (input.sidePaddingScale ?? 0.24));
-    const frame = mediaFrameByKey[input.accentKey || '4k'] || {
-      stroke: 'rgba(255,255,255,0.78)',
-      fill: 'rgba(255,255,255,0.04)',
-      text: mediaText,
-    };
-    const width =
-      widthOverride ??
-      Math.max(input.minWidth, estimateMediaLabelWidth(input.labelText, textSize, trackingEm, sidePadding));
-    const textY = Math.round(h * 0.61);
+  const buildPlainQualityRect = (width: number) =>
+    `<rect x="1" y="1" width="${Math.max(0, width - 2)}" height="${Math.max(0, h - 2)}" rx="${Math.max(8, Math.round(h * 0.22))}" fill="rgba(0,0,0,0.08)" stroke="rgba(255,255,255,0.82)" stroke-width="2" />`;
+  const buildAssetBackedBadgeSvg = (
+    assetKey: MediaBadgeAssetId,
+    variant: 'media' | 'standard',
+  ) => {
+    const asset = MEDIA_BADGE_ASSETS[assetKey];
+    const width = widthOverride ?? Math.round(h * asset.widthRatio);
+    const horizontalPadding = Math.round(h * asset.horizontalPaddingRatio);
+    const isPlainStandard = variant === 'standard' && style === 'plain';
+    const mediaFrame = mediaFrameByKey[assetKey];
+    const backgroundMarkup =
+      variant === 'media'
+        ? buildMediaPlate(width, {
+            stroke: mediaFrame?.stroke || 'rgba(255,255,255,0.78)',
+            fill: mediaFrame?.fill || 'rgba(255,255,255,0.04)',
+            strokeScale: assetKey === 'bluray' ? 0.66 : assetKey.startsWith('dolby') ? 0.78 : 0.82,
+            radiusScale: assetKey === 'bluray' ? 0.24 : 0.27,
+            highlightOpacity: assetKey === 'bluray' ? 0.035 : 0.05,
+          })
+        : isPlainStandard
+          ? buildPlainQualityRect(width)
+          : buildRect(width, standardAssetStrokeByKey[assetKey] || '#e5e7eb');
+    const defs = isPlainStandard
+      ? `<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
+      : '';
     return {
       width,
       height: h,
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${buildMediaPlate(width, {
-  stroke: frame.stroke,
-  fill: frame.fill,
-  radiusScale: 0.27,
-  highlightOpacity: 0.05,
+${defs}
+${backgroundMarkup}
+${buildCenteredBadgeAssetImage({
+  dataUri: asset.dataUri,
+  width,
+  height: h,
+  assetAspectRatio: asset.aspectRatio,
+  horizontalPadding,
+  heightRatio: asset.heightRatio,
+  yOffset: Math.round(h * (asset.yOffsetRatio || 0)),
+  extraAttributes: isPlainStandard ? 'filter="url(#quality-badge-logo-shadow)"' : '',
 })}
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${frame.text}"${input.letterSpacing ? ` letter-spacing="${input.letterSpacing}"` : ''}>${escapeXml(input.labelText)}</text>
-</svg>`,
-    };
-  };
-  const buildMediaBluraySvg = () => {
-    const iconWidth = Math.round(h * 0.8);
-    const sidePadding = Math.round(h * 0.08);
-    const textSize = Math.round(h * 0.24);
-    const trackingEm = 0.09;
-    const textBlockWidth = estimateMediaLabelWidth('BLU RAY', textSize, trackingEm, Math.round(h * 0.08));
-    const width = widthOverride ?? iconWidth + textBlockWidth + sidePadding * 2;
-    const stroke = Math.max(1.05, Math.round(h * 0.044));
-    const iconX = sidePadding;
-    const iconTopY = Math.round(h * 0.26);
-    const textX = iconX + iconWidth + Math.round(h * 0.1);
-    const textY = Math.round(h * 0.62);
-    return {
-      width,
-      height: h,
-      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${buildMediaPlate(width, {
-  stroke: 'rgba(125,211,252,0.34)',
-  fill: 'rgba(15,23,42,0.16)',
-  strokeScale: 0.66,
-  radiusScale: 0.24,
-  highlightOpacity: 0.035,
-})}
-<g transform="translate(${iconX} ${iconTopY})">
-<path d="M0 ${Math.round(h * 0.1)}c${Math.round(h * 0.26)} ${Math.round(-h * 0.06)} ${Math.round(h * 0.48)} ${Math.round(-h * 0.04)} ${iconWidth - Math.round(h * 0.06)} ${Math.round(h * 0.28)}" fill="none" stroke="rgba(147,197,253,0.96)" stroke-width="${stroke}" stroke-linecap="round"/>
-<path d="M${Math.round(h * 0.08)} ${Math.round(h * 0.34)}c${Math.round(h * 0.12)} ${Math.round(-h * 0.02)} ${Math.round(h * 0.26)} 0 ${Math.round(h * 0.44)} ${Math.round(h * 0.12)}" fill="none" stroke="rgba(125,211,252,0.88)" stroke-width="${Math.max(0.9, stroke * 0.68)}" stroke-linecap="round"/>
-</g>
-<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" fill="rgba(191,219,254,0.98)" letter-spacing="${trackingEm}em">BLU RAY</text>
 </svg>`,
     };
   };
@@ -3667,42 +3727,8 @@ ${buildMediaPlate(width, {
     if (key === 'certification') {
       return buildMediaCertificationSvg();
     }
-    if (key === '4k') {
-      return buildMediaOutlineTextSvg({
-        labelText: '4K',
-        minWidth: Math.round(h * 1.06),
-        accentKey: '4k',
-        textScale: 0.4,
-        sidePaddingScale: 0.24,
-      });
-    }
-    if (key === 'bluray') {
-      return buildMediaBluraySvg();
-    }
-    if (key === 'hdr') {
-      return buildMediaOutlineTextSvg({
-        labelText: 'HDR',
-        minWidth: Math.round(h * 1.26),
-        accentKey: 'hdr',
-        textScale: 0.38,
-        sidePaddingScale: 0.24,
-      });
-    }
-    if (key === 'dolbyvision') {
-      return buildMediaDolbySvg('VISION');
-    }
-    if (key === 'dolbyatmos') {
-      return buildMediaDolbySvg('ATMOS');
-    }
-    if (key === 'remux') {
-      return buildMediaOutlineTextSvg({
-        labelText: 'REMUX',
-        minWidth: Math.round(h * 1.72),
-        accentKey: 'remux',
-        letterSpacing: '0.08em',
-        textScale: 0.36,
-        sidePaddingScale: 0.3,
-      });
+    if (key in MEDIA_BADGE_ASSETS) {
+      return buildAssetBackedBadgeSvg(key as MediaBadgeAssetId, 'media');
     }
   }
 
@@ -3717,10 +3743,7 @@ ${buildMediaPlate(width, {
       style === 'plain'
         ? `<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
         : '';
-    const plainStroke =
-      style === 'plain'
-        ? `<rect x="1" y="1" width="${Math.max(0, width - 2)}" height="${Math.max(0, h - 2)}" rx="${Math.max(8, Math.round(h * 0.22))}" fill="rgba(0,0,0,0.08)" stroke="rgba(255,255,255,0.82)" stroke-width="2" />`
-        : '';
+    const plainStroke = style === 'plain' ? buildPlainQualityRect(width) : '';
     return {
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${defs}
@@ -3733,126 +3756,27 @@ ${style === 'plain' ? plainStroke : rect}
   }
 
   if (key === '4k') {
-    const width = widthOverride ?? Math.round(h * 1.55);
-    const bigSize = Math.round(h * 0.56);
-    const smallSize = Math.round(h * 0.2);
-    const bigY = Math.round(h * 0.58);
-    const smallY = Math.round(h * 0.86);
-    const color = '#f7c948';
-    const rect = buildRect(width, color);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${rect}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="${color}">4K</text>
-<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="${color}" letter-spacing="0.06em">ULTRA HD</text>
-</svg>`;
-    return { svg, width, height: h };
+    return buildAssetBackedBadgeSvg('4k', 'standard');
   }
 
   if (key === 'hdr') {
-    const width = widthOverride ?? Math.round(h * 1.6);
-    const bigSize = Math.round(h * 0.5);
-    const smallSize = Math.round(h * 0.2);
-    const bigY = Math.round(h * 0.57);
-    const smallY = Math.round(h * 0.86);
-    const rect =
-      style === 'square'
-        ? baseRect(width, 'url(#hdrBorder)', '#0b0b0b')
-        : buildRect(width, '#e5e7eb');
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-<defs>
-  <linearGradient id="hdrBorder" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#22c55e"/>
-    <stop offset="50%" stop-color="#22d3ee"/>
-    <stop offset="100%" stop-color="#facc15"/>
-  </linearGradient>
-</defs>
-${rect}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="white">HDR</text>
-<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="0.05em">TRUE COLOR</text>
-</svg>`;
-    return { svg, width, height: h };
+    return buildAssetBackedBadgeSvg('hdr', 'standard');
   }
 
   if (key === 'bluray') {
-    const width = widthOverride ?? Math.round(h * 1.72);
-    const color = '#dbeafe';
-    const textSize = Math.round(h * 0.24);
-    const textY = Math.round(h * 0.72);
-    const arcStartX = Math.round(h * 0.18);
-    const arcStartY = Math.round(h * 0.36);
-    const arcEndX = Math.round(h * 0.84);
-    const arcEndY = Math.round(h * 0.74);
-    const innerArcStartX = Math.round(h * 0.24);
-    const innerArcStartY = Math.round(h * 0.55);
-    const innerArcEndX = Math.round(h * 0.64);
-    const innerArcEndY = Math.round(h * 0.65);
-    const stroke = Math.max(1.3, Math.round(h * 0.06));
-    const rect = buildRect(width, color);
-    const plainStroke =
-      style === 'plain'
-        ? `<rect x="1" y="1" width="${Math.max(0, width - 2)}" height="${Math.max(0, h - 2)}" rx="${Math.max(8, Math.round(h * 0.22))}" fill="rgba(0,0,0,0.08)" stroke="rgba(255,255,255,0.82)" stroke-width="2" />`
-        : '';
-    const defs =
-      style === 'plain'
-        ? `<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
-        : '';
-    const filter = style === 'plain' ? ' filter="url(#quality-badge-logo-shadow)"' : '';
-    return {
-      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${defs}
-${style === 'plain' ? plainStroke : rect}
-<path d="M${arcStartX} ${arcStartY}c${Math.round(h * 0.28)} 0 ${Math.round(h * 0.58)} ${Math.round(h * 0.04)} ${arcEndX - arcStartX} ${arcEndY - arcStartY}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"${filter}/>
-<path d="M${innerArcStartX} ${innerArcStartY}c${Math.round(h * 0.14)} 0 ${Math.round(h * 0.28)} ${Math.round(h * 0.03)} ${innerArcEndX - innerArcStartX} ${innerArcEndY - innerArcStartY}" fill="none" stroke="${color}" stroke-width="${Math.max(1.1, stroke * 0.7)}" stroke-linecap="round"${filter}/>
-<text x="${Math.round(width * 0.64)}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.11em"${filter}>BLU RAY</text>
-</svg>`,
-      width,
-      height: h,
-    };
+    return buildAssetBackedBadgeSvg('bluray', 'standard');
   }
 
   if (key === 'dolbyvision') {
-    const width = widthOverride ?? Math.round(h * 1.95);
-    const topSize = Math.round(h * 0.22);
-    const bottomSize = Math.round(h * 0.42);
-    const topY = Math.round(h * 0.36);
-    const bottomY = Math.round(h * 0.73);
-    const textLength = Math.max(40, Math.floor(width - innerPadding * 2));
-    const rect = buildRect(width, '#e5e7eb');
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${rect}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">DOLBY</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">VISION</text>
-</svg>`;
-    return { svg, width, height: h };
+    return buildAssetBackedBadgeSvg('dolbyvision', 'standard');
   }
 
   if (key === 'dolbyatmos') {
-    const width = widthOverride ?? Math.round(h * 1.95);
-    const topSize = Math.round(h * 0.22);
-    const bottomSize = Math.round(h * 0.42);
-    const topY = Math.round(h * 0.36);
-    const bottomY = Math.round(h * 0.73);
-    const textLength = Math.max(40, Math.floor(width - innerPadding * 2));
-    const rect = buildRect(width, '#e5e7eb');
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${rect}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">DOLBY</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">ATMOS</text>
-</svg>`;
-    return { svg, width, height: h };
+    return buildAssetBackedBadgeSvg('dolbyatmos', 'standard');
   }
 
   if (key === 'remux') {
-    const width = widthOverride ?? Math.round(h * 1.55);
-    const textSize = Math.round(h * 0.42);
-    const textY = Math.round(h * 0.63);
-    const color = '#ef4444';
-    const rect = buildRect(width, color);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
-${rect}
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.08em">REMUX</text>
-</svg>`;
-    return { svg, width, height: h };
+    return buildAssetBackedBadgeSvg('remux', 'standard');
   }
 
   return null;
@@ -3915,19 +3839,19 @@ const buildGenreBadgeSvg = (
 ) => {
   const height =
     imageType === 'logo'
-      ? 34
+      ? 38
       : imageType === 'backdrop'
-        ? 36
-        : 34;
+        ? 44
+        : 40;
   const radius = Math.round(height / 2);
-  const strokeWidth = 1.3;
-  const iconSize = Math.round(height * 0.48);
-  const fontSize = genreBadge.mode === 'text' ? Math.round(height * 0.39) : Math.round(height * 0.35);
+  const strokeWidth = imageType === 'backdrop' ? 1.5 : 1.4;
+  const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
+  const fontSize = genreBadge.mode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34);
   const label = genreBadge.label.trim().toUpperCase();
   const showIcon = genreBadge.mode === 'icon' || genreBadge.mode === 'both';
   const showText = genreBadge.mode === 'text' || genreBadge.mode === 'both';
-  const paddingX = showText ? (showIcon ? 14 : 16) : 12;
-  const iconGap = showIcon && showText ? 9 : 0;
+  const paddingX = showText ? (showIcon ? 16 : 18) : 14;
+  const iconGap = showIcon && showText ? Math.max(9, Math.round(height * 0.22)) : 0;
   const labelWidth = showText ? estimateGenreBadgeLabelWidth(label, fontSize) : 0;
   const width = Math.max(
     height,
@@ -4052,7 +3976,7 @@ ${ratingStyle === 'plain' ? `<filter id="text-shadow" x="-20%" y="-20%" width="1
 
     if (badgeVariant === 'minimal') {
       const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
-      const valueY = Math.round(centerY + valueFontSize * 0.34);
+      const valueY = Math.round(centerY + 1);
       const accentRailWidth = Math.max(24, Math.round(width * 0.4));
       const accentRailHeight = Math.max(3, Math.round(height * 0.08));
       const accentRailX = Math.round((width - accentRailWidth) / 2);
@@ -4061,34 +3985,30 @@ ${ratingStyle === 'plain' ? `<filter id="text-shadow" x="-20%" y="-20%" width="1
 ${variantDefs}
 ${variantChrome}
 <rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(1, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />
-<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
 
-    const summaryLabel = (labelText || '').trim().toUpperCase();
-    const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
-    const sideInset = Math.max(12, Math.round(paddingX * 0.95));
-    const chipPaddingX = Math.max(10, Math.round(paddingX * 0.55));
+    const {
+      summaryLabel,
+      summaryLabelFontSize,
+      sideInset,
+      chipWidth,
+    } = getSummaryBadgeHorizontalMetrics(labelText || '', fontSize, paddingX);
     const chipHeight = Math.max(summaryLabelFontSize + 12, Math.round(height * 0.56));
     const chipY = Math.round((height - chipHeight) / 2);
     const chipRadius = Math.round(chipHeight / 2);
-    const chipWidth = estimateSummaryLabelWidth(summaryLabel, summaryLabelFontSize) + chipPaddingX * 2;
     const chipX = sideInset;
     const labelX = Math.round(chipX + chipWidth / 2);
-    const labelY = Math.round(centerY + summaryLabelFontSize * 0.14);
-    const contentGap = Math.max(10, Math.round(paddingX * 0.7));
-    const dividerX = chipX + chipWidth + Math.round(contentGap / 2);
-    const dividerY = Math.max(8, Math.round(height * 0.22));
-    const dividerHeight = Math.max(16, Math.round(height * 0.56));
+    const labelY = Math.round(chipY + chipHeight / 2 + 1);
     const valueX = width - sideInset;
-    const valueY = Math.round(centerY + fontSize * 0.34);
+    const valueY = Math.round(centerY + 1);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
 ${variantChrome}
 <rect x="${chipX}" y="${chipY}" width="${chipWidth}" height="${chipHeight}" rx="${chipRadius}" fill="${accentColor}" fill-opacity="0.94" />
-<text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" fill="white"${valueFilter}>${escapeXml(summaryLabel)}</text>
-<rect x="${dividerX}" y="${dividerY}" width="1.25" height="${dividerHeight}" rx="0.625" fill="${accentColor}" fill-opacity="0.35" />
-<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}>${escapeXml(summaryLabel)}</text>
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
@@ -4214,6 +4134,27 @@ const renderWithSharp = async (
     }
 
     const badgeHeight = input.badgeIconSize + input.badgePaddingY * 2;
+    const sideColumnMetrics: BadgeLayoutMetrics = {
+      iconSize: input.badgeIconSize,
+      fontSize: input.badgeFontSize,
+      paddingX: input.badgePaddingX,
+      paddingY: input.badgePaddingY,
+      gap: input.badgeGap,
+    };
+    const resolveSideBadgeStartY = (
+      columnBadges: RatingBadge[],
+      metrics: BadgeLayoutMetrics = sideColumnMetrics,
+      minTop = input.badgeTopOffset
+    ) =>
+      resolveVerticalBadgeColumnStartY({
+        outputHeight: input.outputHeight,
+        columnHeight: measureBadgeColumnHeight(columnBadges, metrics),
+        topOffset: input.badgeTopOffset,
+        bottomOffset: input.badgeBottomOffset,
+        position: input.sideRatingsPosition,
+        customOffset: input.sideRatingsOffset,
+        minTop,
+      });
     const compactPosterRowText =
       input.imageType === 'poster' &&
       input.posterRatingsLayout !== 'left' &&
@@ -4348,7 +4289,9 @@ const renderWithSharp = async (
           if (sideColumnHeight > 0) {
             qualityStartY = Math.max(
               qualityStartY,
-              input.badgeTopOffset + sideColumnHeight + input.badgeGap
+              resolveSideBadgeStartY(sideBadges, blockbusterSideMetrics) +
+                sideColumnHeight +
+                input.badgeGap
             );
           }
         }
@@ -5337,7 +5280,13 @@ const renderWithSharp = async (
       if (input.imageType === 'backdrop') {
         if (input.backdropRatingsLayout === 'right-vertical') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.28));
-          composeBadgeColumn(input.rightBadges, 'right', maxBadgeWidth);
+          composeBadgeColumn(
+            input.rightBadges,
+            'right',
+            maxBadgeWidth,
+            'top',
+            resolveSideBadgeStartY(input.rightBadges)
+          );
         } else {
           const backdropRegion = getBackdropBadgeRegion(input.outputWidth, input.backdropRatingsLayout);
           const backdropRows =
@@ -5360,10 +5309,14 @@ const renderWithSharp = async (
         );
         if (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.46));
+          const sideBadges =
+            input.posterRatingsLayout === 'left' ? input.leftBadges : input.rightBadges;
           composeBadgeColumn(
-            input.posterRatingsLayout === 'left' ? input.leftBadges : input.rightBadges,
+            sideBadges,
             input.posterRatingsLayout,
-            maxBadgeWidth
+            maxBadgeWidth,
+            'top',
+            resolveSideBadgeStartY(sideBadges)
           );
         } else if (input.posterRatingsLayout === 'left-right') {
           const maxBadgeWidth = Math.max(160, Math.floor((input.outputWidth - 36) / 2));
@@ -5393,9 +5346,15 @@ const renderWithSharp = async (
           }
 
           const sideStartY =
-            input.topBadges.length > 0
-              ? input.badgeTopOffset + badgeHeight + input.badgeGap
-              : input.badgeTopOffset;
+            resolveSideBadgeStartY(
+              remainingLeftBadges.length >= remainingRightBadges.length
+                ? remainingLeftBadges
+                : remainingRightBadges,
+              sideColumnMetrics,
+              input.topBadges.length > 0
+                ? input.badgeTopOffset + badgeHeight + input.badgeGap
+                : input.badgeTopOffset
+            );
           if (remainingLeftBadges.length === remainingRightBadges.length) {
             for (let index = 0; index < remainingLeftBadges.length; index += 1) {
               const rowY = sideStartY + index * (badgeHeight + input.badgeGap);
@@ -5492,7 +5451,10 @@ const renderWithSharp = async (
           if (sideBadges.length > 0) {
             const sideColumnHeight = measureBadgeColumnHeight(sideBadges, metrics);
             if (sideColumnHeight > 0) {
-              const belowSide = input.badgeTopOffset + sideColumnHeight + input.badgeGap;
+              const belowSide =
+                resolveSideBadgeStartY(sideBadges, metrics) +
+                sideColumnHeight +
+                input.badgeGap;
               qualityStartY = Math.max(qualityStartY, belowSide);
             }
           }
@@ -5723,6 +5685,14 @@ export async function GET(
   const posterRatingsMaxPerSide = normalizePosterRatingsMaxPerSide(request.nextUrl.searchParams.get('posterRatingsMaxPerSide'));
   const logoRatingsMax = normalizeOptionalBadgeCount(request.nextUrl.searchParams.get('logoRatingsMax'));
   const backdropRatingsLayout = normalizeBackdropRatingLayout(request.nextUrl.searchParams.get('backdropRatingsLayout'));
+  const sideRatingsPosition = normalizeSideRatingPosition(
+    request.nextUrl.searchParams.get('sideRatingsPosition'),
+    DEFAULT_SIDE_RATING_POSITION
+  );
+  const sideRatingsOffset = normalizeSideRatingOffset(
+    request.nextUrl.searchParams.get('sideRatingsOffset'),
+    DEFAULT_SIDE_RATING_OFFSET
+  );
   const globalStreamBadgesSetting = normalizeStreamBadgesSetting(request.nextUrl.searchParams.get('streamBadges'));
   const posterStreamBadgesSetting = normalizeStreamBadgesSetting(
     request.nextUrl.searchParams.get('posterStreamBadges') || request.nextUrl.searchParams.get('streamBadges')
@@ -5909,6 +5879,8 @@ export async function GET(
     imageType !== 'logo' ? qualityBadgesStyle : '-',
     imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
     imageType === 'backdrop' ? backdropRatingsLayout : '-',
+    imageType === 'poster' || imageType === 'backdrop' ? sideRatingsPosition : '-',
+    imageType === 'poster' || imageType === 'backdrop' ? String(sideRatingsOffset) : '-',
     ratingPresentation,
     imageType === 'poster' ? blockbusterDensity : '-',
     aggregateRatingSource,
@@ -6256,6 +6228,8 @@ export async function GET(
         imageType !== 'logo' ? qualityBadgesStyle : '-',
         imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
         imageType === 'backdrop' ? backdropRatingsLayout : '-',
+        imageType === 'poster' || imageType === 'backdrop' ? sideRatingsPosition : '-',
+        imageType === 'poster' || imageType === 'backdrop' ? String(sideRatingsOffset) : '-',
         ratingPresentation,
         aggregateRatingSource,
         ratingStyle,
@@ -7238,15 +7212,20 @@ export async function GET(
         const value = formatDisplayRatingValue(provider, baseValue as string, imageType);
         const sourceValue = formatDisplayRatingValue(provider, baseValue as string);
         if (!shouldRenderRatingValue(value)) continue;
-
-        const iconUrl = meta.iconUrl;
+        const appearance = resolveRatingProviderBadgeAppearance({
+          provider,
+          label: meta.label,
+          iconUrl: meta.iconUrl,
+          accentColor: meta.accentColor,
+          sourceValue,
+        });
         ratingBadgeByProvider.set(provider, {
           key: provider,
-          label: meta.label,
+          label: appearance.label,
           value,
           sourceValue,
-          iconUrl,
-          accentColor: meta.accentColor,
+          iconUrl: appearance.iconUrl,
+          accentColor: appearance.accentColor,
           variant: 'standard',
         });
       }
@@ -7674,6 +7653,8 @@ export async function GET(
           posterRatingsLayout: effectivePosterRatingsLayout,
           posterRatingsMaxPerSide: effectivePosterRatingsMaxPerSide,
           backdropRatingsLayout: effectiveBackdropRatingsLayout,
+          sideRatingsPosition,
+          sideRatingsOffset,
           ratingStyle,
           logoBackground,
           topBadges: topRatingBadges,

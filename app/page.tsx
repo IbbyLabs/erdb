@@ -82,6 +82,11 @@ import {
   GENRE_BADGE_PREVIEW_SAMPLES,
   type GenreBadgeMode,
 } from '@/lib/genreBadge';
+import {
+  DEFAULT_SIDE_RATING_OFFSET,
+  SIDE_RATING_POSITION_OPTIONS,
+  type SideRatingPosition,
+} from '@/lib/sideRatingPosition';
 
 const RatingProviderSortableList = dynamic(
   () =>
@@ -157,6 +162,8 @@ const POSTER_LAYOUT_DOC_DEFAULT = 'top bottom';
 const POSTER_RATINGS_MAX_DOC_COPY = '1+';
 const OPTIONAL_BADGE_MAX_DOC_COPY = '1+';
 const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
+const SIDE_RATING_POSITION_DOC_VALUES = 'top, middle, bottom, custom';
+const SIDE_RATING_OFFSET_DOC_COPY = '0-100';
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
 const AGGREGATE_SOURCE_ACCENT_BY_ID: Record<AggregateRatingSource, string> = {
   overall: '#a78bfa',
@@ -261,6 +268,8 @@ imageText               | original, clean, alternative                          
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
+sideRatingsPosition     | ${SIDE_RATING_POSITION_DOC_VALUES}                                    | top
+sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
@@ -285,11 +294,12 @@ Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.b
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
+Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0-100 vertical anchor.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
 
 Omit imageText when type=logo.
 
@@ -653,6 +663,10 @@ export default function Home() {
   const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
+  const [sideRatingsPosition, setSideRatingsPosition] =
+    useState<SideRatingPosition>('top');
+  const [sideRatingsOffset, setSideRatingsOffset] =
+    useState<number>(DEFAULT_SIDE_RATING_OFFSET);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
@@ -970,6 +984,8 @@ export default function Home() {
       setBackdropQualityBadgesMax(normalized.settings.backdropQualityBadgesMax);
       setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
       setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
+      setSideRatingsPosition(normalized.settings.sideRatingsPosition);
+      setSideRatingsOffset(normalized.settings.sideRatingsOffset);
       setPosterRatingStyle(normalized.settings.posterRatingStyle);
       setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
@@ -1014,6 +1030,8 @@ export default function Home() {
         backdropQualityBadgesMax,
         posterRatingsLayout,
         backdropRatingsLayout,
+        sideRatingsPosition,
+        sideRatingsOffset,
         posterRatingStyle,
         backdropRatingStyle,
         logoRatingStyle,
@@ -1054,6 +1072,8 @@ export default function Home() {
       backdropQualityBadgesMax,
       posterRatingsLayout,
       backdropRatingsLayout,
+      sideRatingsPosition,
+      sideRatingsOffset,
       posterRatingStyle,
       backdropRatingStyle,
       logoRatingStyle,
@@ -1276,6 +1296,19 @@ export default function Home() {
         query.set('logoBackground', logoBackground);
       }
     }
+    const usesVerticalSideRatings =
+      (previewType === 'poster' &&
+        (isVerticalPosterRatingLayout(posterRatingsLayout) ||
+          posterRatingPresentation === 'blockbuster')) ||
+      (previewType === 'backdrop' &&
+        (backdropRatingsLayout === 'right-vertical' ||
+          backdropRatingPresentation === 'blockbuster'));
+    if (usesVerticalSideRatings && sideRatingsPosition !== 'top') {
+      query.set('sideRatingsPosition', sideRatingsPosition);
+      if (sideRatingsPosition === 'custom') {
+        query.set('sideRatingsOffset', String(sideRatingsOffset));
+      }
+    }
 
     return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
   }, [
@@ -1292,6 +1325,8 @@ export default function Home() {
     backdropStreamBadges,
     posterRatingsLayout,
     posterRatingsMaxPerSide,
+    sideRatingsPosition,
+    sideRatingsOffset,
     activeQualityBadgesMax,
     backdropRatingsLayout,
     qualityBadgesSide,
@@ -1584,6 +1619,12 @@ export default function Home() {
         : logoAggregateRatingSource;
   const activeAggregateAccent = AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
   const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
+  const shouldShowSideRatingPlacement =
+    previewType === 'poster'
+      ? isVerticalPosterRatingLayout(posterRatingsLayout) || activeRatingPresentation === 'blockbuster'
+      : previewType === 'backdrop'
+        ? backdropRatingsLayout === 'right-vertical' || activeRatingPresentation === 'blockbuster'
+        : false;
   const styleLabel =
     previewType === 'poster'
       ? 'Poster Ratings Style'
@@ -2112,6 +2153,65 @@ export default function Home() {
                       </div>
                     )}
 
+                    {shouldShowSideRatingPlacement && (
+                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                          Side Rating Placement
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {SIDE_RATING_POSITION_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              onClick={() => setSideRatingsPosition(option.id)}
+                              className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                                sideRatingsPosition === option.id
+                                  ? 'border-violet-500/60 bg-zinc-800 text-white'
+                                  : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        {sideRatingsPosition === 'custom' && (
+                          <div className="flex flex-wrap items-center gap-3">
+                            <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                              Vertical Offset
+                            </label>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={sideRatingsOffset}
+                              onChange={(event) => setSideRatingsOffset(Number(event.target.value))}
+                              className="h-2 w-40 accent-violet-500"
+                            />
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={sideRatingsOffset}
+                              onChange={(event) => {
+                                const parsed = Number(event.target.value);
+                                setSideRatingsOffset(
+                                  Number.isFinite(parsed)
+                                    ? Math.max(0, Math.min(100, Math.round(parsed)))
+                                    : DEFAULT_SIDE_RATING_OFFSET
+                                );
+                              }}
+                              className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <span className="text-[11px] text-zinc-500">0 = top, 100 = bottom</span>
+                          </div>
+                        )}
+                        <p className="text-[11px] leading-relaxed text-zinc-500">
+                          Applies to poster side stacks and the backdrop right-vertical layout, including blockbuster mode.
+                        </p>
+                      </div>
+                    )}
+
                     {previewType === 'logo' && (
                       <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Output</div>
@@ -2345,7 +2445,7 @@ export default function Home() {
                     </div>
                   </div>
                   {tmdbKey.trim() ? (
-                    <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1 min-[1900px]:grid-cols-2">
                       {genrePreviewCards.map(({ sample, url }) => {
                         const family = GENRE_BADGE_FAMILY_META[sample.familyId];
                         const accentStyle = {
@@ -2361,7 +2461,7 @@ export default function Home() {
 
                         return (
                           <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
-                            <div className="flex min-h-[3.5rem] items-start justify-between gap-3">
+                            <div className="flex min-h-[3.5rem] flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                               <div className="min-w-0 flex-1">
                                 <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                                   {sample.typeLabel}
@@ -2369,7 +2469,7 @@ export default function Home() {
                                 <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
                               </div>
                               <span
-                                className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
+                                className="shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
                                 style={accentStyle}
                               >
                                 {family.label}
@@ -2731,6 +2831,16 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">center</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">sideRatingsPosition</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{SIDE_RATING_POSITION_DOC_VALUES}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">top</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">sideRatingsOffset</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">50</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatingsMax</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{OPTIONAL_BADGE_MAX_DOC_COPY}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">auto</td>
@@ -2786,6 +2896,8 @@ export default function Home() {
                             <div>posterRatingPresentation</div>
                             <div>posterAggregateRatingSource</div>
                             <div>posterRatingsLayout</div>
+                            <div>sideRatingsPosition</div>
+                            <div>sideRatingsOffset</div>
                             <div>posterQualityBadgesPosition</div>
                             <div>posterRatingsMaxPerSide</div>
                             <div>posterQualityBadgesMax</div>
@@ -2797,6 +2909,8 @@ export default function Home() {
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
+                            <div>{SIDE_RATING_POSITION_DOC_VALUES} (side layouts only)</div>
+                            <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
                             <div>auto, left, right (top or bottom layouts only)</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -2811,6 +2925,8 @@ export default function Home() {
                             <div>backdropRatingPresentation</div>
                             <div>backdropAggregateRatingSource</div>
                             <div>backdropRatingsLayout</div>
+                            <div>sideRatingsPosition</div>
+                            <div>sideRatingsOffset</div>
                             <div>backdropQualityBadgesMax</div>
                           </div>
                         </td>
@@ -2820,6 +2936,8 @@ export default function Home() {
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
+                            <div>{SIDE_RATING_POSITION_DOC_VALUES} (right vertical only)</div>
+                            <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                           </div>
                         </td>
@@ -2918,6 +3036,10 @@ export default function Home() {
                     <span className="text-white">&</span>
                     <span className="text-violet-400 font-bold">backdropRatingsLayout</span>=<span className="text-zinc-400 font-bold">{'{bLayout}'}</span>
                     <span className="text-white">&</span>
+                    <span className="text-violet-400 font-bold">sideRatingsPosition</span>=<span className="text-zinc-400 font-bold">{'{sidePos}'}</span>
+                    <span className="text-white">&</span>
+                    <span className="text-violet-400 font-bold">sideRatingsOffset</span>=<span className="text-zinc-400 font-bold">{'{sideOffset}'}</span>
+                    <span className="text-white">&</span>
                     <span className="text-violet-400 font-bold">tmdbKey</span>=<span className="text-zinc-400 font-bold">{'{tmdbKey}'}</span>
                     <span className="text-white">&</span>
                     <span className="text-violet-400 font-bold">mdblistKey</span>=<span className="text-zinc-400 font-bold">{'{mdbKey}'}</span>
@@ -2983,7 +3105,7 @@ export default function Home() {
                   <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
                   <div className="text-zinc-600 font-bold mt-4">Backdrop (TMDB)</div>
-                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:movie:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}`}</div>
+                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:movie:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}&sideRatingsPosition=middle`}</div>
 
                 </pre>
               </div>

@@ -43,6 +43,13 @@ import {
   normalizeGenreBadgeMode,
   type GenreBadgeMode,
 } from './genreBadge.ts';
+import {
+  DEFAULT_SIDE_RATING_OFFSET,
+  DEFAULT_SIDE_RATING_POSITION,
+  normalizeSideRatingOffset,
+  normalizeSideRatingPosition,
+  type SideRatingPosition,
+} from './sideRatingPosition.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -79,6 +86,8 @@ export type SharedErdbSettings = {
   backdropAggregateRatingSource: AggregateRatingSource;
   logoAggregateRatingSource: AggregateRatingSource;
   posterRatingsMaxPerSide: number | null;
+  sideRatingsPosition: SideRatingPosition;
+  sideRatingsOffset: number;
   logoRatingsMax: number | null;
   logoBackground: LogoBackground;
 };
@@ -145,6 +154,8 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   logoAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
+  sideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
+  sideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   logoRatingsMax: null,
   logoBackground: 'transparent',
 });
@@ -377,6 +388,8 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
         ? (candidate.logoRatingStyle as RatingStyle)
         : 'plain',
     posterRatingsMaxPerSide: normalizePosterRatingsMaxPerSide(candidate.posterRatingsMaxPerSide),
+    sideRatingsPosition: normalizeSideRatingPosition(candidate.sideRatingsPosition),
+    sideRatingsOffset: normalizeSideRatingOffset(candidate.sideRatingsOffset),
     logoRatingsMax: normalizeOptionalBadgeCount(candidate.logoRatingsMax),
     logoBackground: normalizeLogoBackground(candidate.logoBackground, defaults.logoBackground),
   };
@@ -519,6 +532,12 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     settings.posterRatingsMaxPerSide !== null
   ) {
     payload.posterRatingsMaxPerSide = settings.posterRatingsMaxPerSide;
+  }
+  if (settings.sideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION) {
+    payload.sideRatingsPosition = settings.sideRatingsPosition;
+    if (settings.sideRatingsPosition === 'custom') {
+      payload.sideRatingsOffset = settings.sideRatingsOffset;
+    }
   }
   if (settings.logoRatingsMax !== null) {
     payload.logoRatingsMax = settings.logoRatingsMax;

@@ -11,6 +11,9 @@ import {
   resolveMovieCertificationBadge,
   resolveTvCertificationBadge,
 } from '../lib/mediaFeatures.ts';
+import {
+  MEDIA_BADGE_ASSETS,
+} from '../lib/mediaBadgeAssets.ts';
 
 test('media feature parsing recognizes bluray premium audio video flags', () => {
   const flags = parseMediaFeatureFlagsFromFilename(
@@ -43,8 +46,24 @@ test('media feature badges prefer bluray over remux and dolby vision over hdr', 
   );
   assert.deepEqual(
     badges.map((badge) => badge.label),
-    ['4K', 'Blu Ray', 'Dolby Vision', 'Dolby Atmos'],
+    ['4K', 'Bluray', 'Dolby Vision', 'Dolby Atmos'],
   );
+});
+
+test('media badge assets stay embedded for renderer use', () => {
+  assert.deepEqual(Object.keys(MEDIA_BADGE_ASSETS).sort(), [
+    '4k',
+    'bluray',
+    'dolbyatmos',
+    'dolbyvision',
+    'hdr',
+    'remux',
+  ]);
+
+  for (const asset of Object.values(MEDIA_BADGE_ASSETS)) {
+    assert.match(asset.dataUri, /^data:image\/svg\+xml;base64,/);
+    assert.ok(asset.aspectRatio > 1.5);
+  }
 });
 
 test('media feature flag collection merges multiple filenames', () => {
@@ -67,7 +86,7 @@ test('certification labels remove user facing hyphens and unknown values', () =>
 });
 
 test('generic media badge labels collapse user facing hyphens into spaces', () => {
-  assert.equal(normalizeUserFacingMediaBadgeLabel('Blu-ray'), 'Blu ray');
+  assert.equal(normalizeUserFacingMediaBadgeLabel('Blu-ray'), 'Bluray');
   assert.equal(normalizeUserFacingMediaBadgeLabel('Dolby-Atmos'), 'Dolby Atmos');
 });
 

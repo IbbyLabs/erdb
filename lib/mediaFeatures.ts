@@ -52,7 +52,7 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
   },
   bluray: {
     key: 'bluray',
-    label: 'Blu Ray',
+    label: 'Bluray',
     accentColor: '#cbd5e1',
   },
   hdr: {
@@ -113,6 +113,9 @@ const collapseUserFacingSpaces = (value: string) =>
 
 export const normalizeUserFacingMediaBadgeLabel = (value?: string | null) => {
   const normalized = collapseUserFacingSpaces(String(value || ''));
+  if (/^blu\s*ray$/i.test(normalized)) {
+    return 'Bluray';
+  }
   return normalized || null;
 };
 

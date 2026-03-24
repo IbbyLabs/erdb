@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import sharp from 'sharp';
 
 import { RATING_PROVIDER_OPTIONS } from '../lib/ratingPreferences.ts';
+import { resolveRatingProviderBadgeAppearance } from '../lib/ratingProviderIcons.ts';
 
 test('kitsu embedded icon keeps transparent corners for plain badge rendering', async () => {
   const kitsu = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'kitsu');
@@ -29,4 +30,66 @@ test('kitsu embedded icon keeps transparent corners for plain badge rendering', 
   assert.equal(alphaAt(0, info.height - 1), 0);
   assert.equal(alphaAt(info.width - 1, info.height - 1), 0);
   assert.ok(alphaAt(Math.floor(info.width / 2), Math.floor(info.height / 2)) > 0);
+});
+
+test('smart provider icons switch embedded art for rotten tomatoes, metacritic, and trakt', () => {
+  const rtFresh = resolveRatingProviderBadgeAppearance({
+    provider: 'tomatoes',
+    label: 'Rotten Tomatoes',
+    iconUrl: 'https://example.com/rt.png',
+    accentColor: '#fa320a',
+    sourceValue: '92%',
+  });
+  const rtRotten = resolveRatingProviderBadgeAppearance({
+    provider: 'tomatoes',
+    label: 'Rotten Tomatoes',
+    iconUrl: 'https://example.com/rt.png',
+    accentColor: '#fa320a',
+    sourceValue: '41%',
+  });
+  const rtAudienceHot = resolveRatingProviderBadgeAppearance({
+    provider: 'tomatoesaudience',
+    label: 'RT Audience',
+    iconUrl: 'https://example.com/rta.png',
+    accentColor: '#f59e0b',
+    sourceValue: '88%',
+  });
+  const rtAudienceCold = resolveRatingProviderBadgeAppearance({
+    provider: 'tomatoesaudience',
+    label: 'RT Audience',
+    iconUrl: 'https://example.com/rta.png',
+    accentColor: '#f59e0b',
+    sourceValue: '32%',
+  });
+  const metacriticMustSee = resolveRatingProviderBadgeAppearance({
+    provider: 'metacritic',
+    label: 'Metacritic',
+    iconUrl: 'https://example.com/meta.png',
+    accentColor: '#66cc33',
+    sourceValue: '88',
+  });
+  const metacriticUser = resolveRatingProviderBadgeAppearance({
+    provider: 'metacriticuser',
+    label: 'Metacritic User',
+    iconUrl: 'https://example.com/meta-user.png',
+    accentColor: '#4caf50',
+    sourceValue: '8.4/10',
+  });
+  const trakt = resolveRatingProviderBadgeAppearance({
+    provider: 'trakt',
+    label: 'Trakt',
+    iconUrl: 'https://example.com/trakt.png',
+    accentColor: '#ed1c24',
+    sourceValue: '7.8/10',
+  });
+
+  assert.match(rtFresh.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
+  assert.match(rtRotten.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
+  assert.notEqual(rtFresh.iconUrl, rtRotten.iconUrl);
+  assert.equal(rtAudienceHot.label, 'RT Audience');
+  assert.notEqual(rtAudienceHot.iconUrl, rtAudienceCold.iconUrl);
+  assert.match(metacriticMustSee.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
+  assert.notEqual(metacriticMustSee.iconUrl, metacriticUser.iconUrl);
+  assert.equal(metacriticUser.label, 'Metacritic User');
+  assert.match(trakt.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
 });
