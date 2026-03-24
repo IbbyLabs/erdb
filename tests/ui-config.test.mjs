@@ -17,7 +17,7 @@ const buildSampleSettings = () =>
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       lang: 'fr',
-      posterImageText: 'original',
+      posterImageText: 'fanartclean',
       backdropImageText: 'alternative',
       genreBadgeMode: 'both',
       posterRatingPreferences: ['imdb', 'tmdb'],
@@ -67,7 +67,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       lang: 'fr',
-      posterImageText: 'original',
+      posterImageText: 'fanartclean',
       backdropImageText: 'alternative',
       genreBadgeMode: 'both',
       posterRatingPreferences: ['imdb', 'tmdb'],
@@ -163,7 +163,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoRatingPresentation: 'blockbuster',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
-    posterImageText: 'original',
+    posterImageText: 'fanartclean',
     backdropImageText: 'alternative',
     posterRatingsLayout: 'top-bottom',
     backdropRatingsLayout: 'right-vertical',
@@ -207,7 +207,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoRatingPresentation: 'blockbuster',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
-    posterImageText: 'original',
+    posterImageText: 'fanartclean',
     backdropImageText: 'alternative',
     posterRatingsLayout: 'top-bottom',
     backdropRatingsLayout: 'right-vertical',
@@ -253,6 +253,18 @@ test('workspace normalization accepts spaced layout values from the page docs', 
 
   assert.equal(config.settings.posterRatingsLayout, 'left-right');
   assert.equal(config.settings.backdropRatingsLayout, 'right-vertical');
+});
+
+test('workspace normalization keeps fanart poster mode poster only', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterImageText: 'fanartclean',
+      backdropImageText: 'fanartclean',
+    },
+  });
+
+  assert.equal(config.settings.posterImageText, 'fanartclean');
+  assert.equal(config.settings.backdropImageText, 'clean');
 });
 
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {

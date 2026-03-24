@@ -53,15 +53,16 @@ import {
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
-export type ImageTextPreference = 'original' | 'clean' | 'alternative';
+export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'fanartclean';
+export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
 export type LogoBackground = 'transparent' | 'dark';
 
 export type SharedErdbSettings = {
   tmdbKey: string;
   mdblistKey: string;
   lang: string;
-  posterImageText: ImageTextPreference;
-  backdropImageText: ImageTextPreference;
+  posterImageText: PosterImageTextPreference;
+  backdropImageText: BackdropImageTextPreference;
   genreBadgeMode: GenreBadgeMode;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
@@ -106,7 +107,17 @@ export type SavedProxySettings = {
 };
 
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
-const IMAGE_TEXT_PREFERENCE_SET = new Set<ImageTextPreference>(['original', 'clean', 'alternative']);
+const POSTER_IMAGE_TEXT_PREFERENCE_SET = new Set<PosterImageTextPreference>([
+  'original',
+  'clean',
+  'alternative',
+  'fanartclean',
+]);
+const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>([
+  'original',
+  'clean',
+  'alternative',
+]);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -217,13 +228,23 @@ export const decodeBase64Url = (value: string) => {
   );
 };
 
-const normalizeImageTextPreference = (
+const normalizePosterImageTextPreference = (
   value: unknown,
-  fallback: ImageTextPreference,
-): ImageTextPreference => {
+  fallback: PosterImageTextPreference,
+): PosterImageTextPreference => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return IMAGE_TEXT_PREFERENCE_SET.has(normalized as ImageTextPreference)
-    ? (normalized as ImageTextPreference)
+  return POSTER_IMAGE_TEXT_PREFERENCE_SET.has(normalized as PosterImageTextPreference)
+    ? (normalized as PosterImageTextPreference)
+    : fallback;
+};
+
+const normalizeBackdropImageTextPreference = (
+  value: unknown,
+  fallback: BackdropImageTextPreference,
+): BackdropImageTextPreference => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return BACKDROP_IMAGE_TEXT_PREFERENCE_SET.has(normalized as BackdropImageTextPreference)
+    ? (normalized as BackdropImageTextPreference)
     : fallback;
 };
 
@@ -309,8 +330,11 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     mdblistKey:
       typeof candidate.mdblistKey === 'string' ? candidate.mdblistKey.trim() : defaults.mdblistKey,
     lang: typeof candidate.lang === 'string' && candidate.lang.trim() ? candidate.lang.trim() : defaults.lang,
-    posterImageText: normalizeImageTextPreference(candidate.posterImageText, defaults.posterImageText),
-    backdropImageText: normalizeImageTextPreference(
+    posterImageText: normalizePosterImageTextPreference(
+      candidate.posterImageText,
+      defaults.posterImageText,
+    ),
+    backdropImageText: normalizeBackdropImageTextPreference(
       candidate.backdropImageText,
       defaults.backdropImageText,
     ),

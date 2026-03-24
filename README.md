@@ -255,7 +255,7 @@ Main endpoint:
 | `ratingStyle` (or `style`) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
-| `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
+| `imageText` | Image text (poster/backdrop only) | poster: `original`, `clean`, `alternative`, `fanartclean`; backdrop: `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top bottom`, `left right` | `top bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right vertical` | `center` |
@@ -271,6 +271,8 @@ Prefer `tmdb:movie:id` or `tmdb:tv:id` when you already know the media type. Bar
 Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, ERDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
 Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, sci fi, fantasy, crime, documentary, and anime render; ambiguous combinations stay off.
+
+Poster `imageText=fanartclean` uses fanart.tv poster art when the ERDB server has `ERDB_FANART_API_KEY` or `FANART_API_KEY`. Without a fanart key, it falls back to the usual clean poster selection.
 
 All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
 
@@ -347,7 +349,7 @@ backdropQualityBadgesMax| Number (1+)                                           
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
-imageText               | original, clean, alternative                                         | original
+imageText               | poster: original, clean, alternative, fanartclean; backdrop: original, clean, alternative | original
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
 backdropRatingsLayout   | center, right, right vertical                                        | center
@@ -358,6 +360,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
+POSTER NOTE: poster imageText=fanartclean uses fanart.tv poster art when ERDB has ERDB_FANART_API_KEY or FANART_API_KEY. Without a fanart key, it falls back to clean.
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).

@@ -64,7 +64,9 @@ import {
   serializeSavedUiConfig,
   normalizeBaseUrl,
   normalizeManifestUrl,
+  type BackdropImageTextPreference,
   type LogoBackground,
+  type PosterImageTextPreference,
   type QualityBadgesSide,
   type PosterQualityBadgesPosition,
   type SavedUiConfig,
@@ -109,6 +111,25 @@ const SUPPORTED_LANGUAGES = [
   { code: 'ja', label: 'Japanese', flag: '🇯🇵' },
   { code: 'zh', label: 'Chinese', flag: '🇨🇳' },
   { code: 'tr', label: 'Turkish', flag: '🇹🇷' },
+];
+const POSTER_IMAGE_TEXT_OPTIONS: Array<{
+  id: PosterImageTextPreference;
+  label: string;
+  description: string;
+}> = [
+  { id: 'original', label: 'Original', description: 'Use the default TMDB poster art.' },
+  { id: 'clean', label: 'Clean', description: 'Prefer TMDB art with less embedded text when available.' },
+  { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
+  { id: 'fanartclean', label: 'Fanart', description: 'Use fanart.tv poster art when the server has a fanart key, then fall back to clean.' },
+];
+const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
+  id: BackdropImageTextPreference;
+  label: string;
+  description: string;
+}> = [
+  { id: 'original', label: 'Original', description: 'Use the default TMDB backdrop art.' },
+  { id: 'clean', label: 'Clean', description: 'Prefer TMDB backdrop art with less embedded text when available.' },
+  { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB backdrop when one exists.' },
 ];
 const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
 type ProxyType = (typeof PROXY_TYPES)[number];
@@ -264,7 +285,7 @@ backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})               
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
-imageText               | original, clean, alternative                                         | original
+imageText               | poster: original, clean, alternative, fanartclean; backdrop: original, clean, alternative | original
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
@@ -278,6 +299,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
+POSTER NOTE: poster imageText=fanartclean uses fanart.tv poster art when ERDB has ERDB_FANART_API_KEY or FANART_API_KEY. Without a fanart key, it falls back to clean.
 
 INTEGRATION REQUIREMENTS
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -646,8 +668,8 @@ export default function Home() {
   const [previewType, setPreviewType] = useState<'poster' | 'backdrop' | 'logo'>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
-  const [posterImageText, setPosterImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
-  const [backdropImageText, setBackdropImageText] = useState<'original' | 'clean' | 'alternative'>('clean');
+  const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
+  const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
   const [genreBadgeMode, setGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -1620,6 +1642,10 @@ export default function Home() {
         : logoAggregateRatingSource;
   const activeAggregateAccent = AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
   const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
+  const activeImageTextOptions =
+    previewType === 'backdrop' ? BACKDROP_IMAGE_TEXT_OPTIONS : POSTER_IMAGE_TEXT_OPTIONS;
+  const activeImageTextOptionMeta =
+    activeImageTextOptions.find((option) => option.id === activeImageText) || null;
   const shouldShowSideRatingPlacement =
     previewType === 'poster'
       ? isVerticalPosterRatingLayout(posterRatingsLayout) || activeRatingPresentation === 'blockbuster'
@@ -1690,8 +1716,9 @@ export default function Home() {
     setLogoAggregateRatingSource(value);
   };
 
-  const setImageTextForType = (value: 'original' | 'clean' | 'alternative') => {
+  const setImageTextForType = (value: PosterImageTextPreference) => {
     if (previewType === 'backdrop') {
+      if (value === 'fanartclean') return;
       setBackdropImageText(value);
       return;
     }
@@ -2089,8 +2116,15 @@ export default function Home() {
                       <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
                         <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {(['original', 'clean', 'alternative'] as const).map(option => (
-                            <button key={option} onClick={() => setImageTextForType(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{option.charAt(0).toUpperCase() + option.slice(1)}</button>
+                          {activeImageTextOptions.map((option) => (
+                            <button
+                              key={option.id}
+                              onClick={() => setImageTextForType(option.id)}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}
+                              title={option.description}
+                            >
+                              {option.label}
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -2116,6 +2150,11 @@ export default function Home() {
                   <p className="text-[11px] leading-relaxed text-zinc-500">
                     Genre badges use a small curated bucket set. Clear genres such as horror, comedy, sci fi, fantasy, crime, documentary, and anime resolve; fuzzy cases stay off.
                   </p>
+                  {previewType !== 'logo' && activeImageTextOptionMeta ? (
+                    <p className="text-[11px] leading-relaxed text-zinc-500">
+                      {activeImageTextOptionMeta.description}
+                    </p>
+                  ) : null}
                 </div>
 
                 {(previewType === 'poster' || previewType === 'backdrop' || previewType === 'logo') && (
@@ -2813,7 +2852,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">imageText</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">original, clean, alternative</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">poster: original, clean, alternative, fanartclean; backdrop: original, clean, alternative</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">original (poster), clean (backdrop)</td>
                       </tr>
                       <tr>
@@ -2872,6 +2911,8 @@ export default function Home() {
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, and <span className="font-semibold text-zinc-200">plain</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                   <br />
                   Media quality badges use local asset based artwork for <span className="font-semibold text-zinc-200">4K</span>, <span className="font-semibold text-zinc-200">Bluray</span>, <span className="font-semibold text-zinc-200">HDR10</span>, <span className="font-semibold text-zinc-200">Dolby Vision</span>, and <span className="font-semibold text-zinc-200">Dolby Atmos</span>. Certification badges include a small <span className="font-semibold text-zinc-200">AGE</span> label above the rating.
+                  <br />
+                  Poster <span className="font-mono text-zinc-200">imageText=fanartclean</span> uses fanart.tv poster art when the ERDB server has <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span>. Without a fanart key, it falls back to the usual clean poster selection.
                 </div>
               </div>
 
@@ -2908,7 +2949,7 @@ export default function Home() {
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
-                            <div>original, clean, alternative</div>
+                            <div>original, clean, alternative, fanartclean (poster only)</div>
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
