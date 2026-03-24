@@ -277,6 +277,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
+QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
 
 INTEGRATION REQUIREMENTS
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -2869,6 +2870,8 @@ export default function Home() {
                   Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve; ambiguous combinations stay off.
                   <br />
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, and <span className="font-semibold text-zinc-200">plain</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
+                  <br />
+                  Media quality badges use local asset based artwork for <span className="font-semibold text-zinc-200">4K</span>, <span className="font-semibold text-zinc-200">Bluray</span>, <span className="font-semibold text-zinc-200">HDR10</span>, <span className="font-semibold text-zinc-200">Dolby Vision</span>, and <span className="font-semibold text-zinc-200">Dolby Atmos</span>. Certification badges include a small <span className="font-semibold text-zinc-200">AGE</span> label above the rating.
                 </div>
               </div>
 

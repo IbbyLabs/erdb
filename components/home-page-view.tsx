@@ -271,7 +271,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
               <h1 className="text-4xl md:text-6xl font-[var(--font-display)] text-white leading-tight">
                 Easy Ratings Database.
                 <span className="block text-slate-300 text-2xl md:text-3xl font-[var(--font-body)] mt-2">
-                  Design-Grade Ratings,
+                  Design Grade Ratings,
                 </span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-300 to-teal-300">
                   Without the State.
@@ -296,11 +296,11 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
-                  Query-driven layouts
+                  Query driven layouts
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
-                  Proxy-ready for addons
+                  Proxy ready for addons
                 </div>
               </div>
             </div>
@@ -322,7 +322,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-[#0b0f15]/80 p-4">
                     <div className="text-xs text-slate-400">Addon Proxy</div>
-                    <div className="mt-1 text-sm text-white font-semibold">Auto-rewrite catalog + meta</div>
+                    <div className="mt-1 text-sm text-white font-semibold">Auto rewrite catalog + meta</div>
                   </div>
                 </div>
               </div>
