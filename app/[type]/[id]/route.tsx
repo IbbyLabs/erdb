@@ -172,7 +172,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v66';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v67';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -5860,6 +5860,7 @@ export async function GET(
     shouldRenderLogoBackground ||
     genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ||
     (imageType === 'poster' && posterTextPreference === 'clean');
+  const renderCacheBuster = (request.nextUrl.searchParams.get('cb') || '').trim();
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
   const renderSeedKey = [
@@ -5889,7 +5890,8 @@ export async function GET(
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
-    'v1',
+    renderCacheBuster || '-',
+    'v2',
   ].join('|');
   const objectStorageEnabled = isObjectStorageConfigured();
 
