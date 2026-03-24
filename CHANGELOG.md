@@ -37,6 +37,13 @@
 
 <a id="v2-29-3"></a>
 
+<a id="v2-29-4"></a>
+
+## [v2.29.4] - 24/03/2026
+
+### Added
+* add AIOMetadata export and badge controls
+
 ## [v2.29.3] - 24/03/2026
 
 ### Added
