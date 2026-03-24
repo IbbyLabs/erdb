@@ -63,6 +63,8 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
     settings: {
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
+      posterImageText: 'clean',
+      posterCleanSource: 'fanart',
       posterRatingPreferences: ['imdb', 'metacritic'],
       posterRatingsLayout: 'left-right',
       sideRatingsPosition: 'custom',
@@ -92,6 +94,8 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   );
 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,metacritic');
+  assert.equal(rewrittenPosterUrl.searchParams.get('imageText'), 'clean');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterCleanSource'), 'fanart');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsLayout'), 'left-right');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsPosition'), 'custom');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsOffset'), '68');

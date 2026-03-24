@@ -100,7 +100,8 @@ import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons'
 
 export const runtime = 'nodejs';
 
-type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'fanartclean';
+type PosterTextPreference = 'original' | 'clean' | 'alternative';
+type PosterCleanSource = 'tmdb' | 'fanart';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -118,6 +119,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anidb',
 ]);
 const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
+const POSTER_CLEAN_SOURCE_SET = new Set<PosterCleanSource>(['tmdb', 'fanart']);
 const parseApiKeyList = (...values: Array<string | undefined>) => {
   const result: string[] = [];
   const seen = new Set<string>();
@@ -132,6 +134,15 @@ const parseApiKeyList = (...values: Array<string | undefined>) => {
   }
 
   return result;
+};
+const normalizePosterCleanSource = (
+  value?: string | null,
+  fallback: PosterCleanSource = 'tmdb'
+): PosterCleanSource => {
+  const normalized = (value || '').trim().toLowerCase();
+  return POSTER_CLEAN_SOURCE_SET.has(normalized as PosterCleanSource)
+    ? (normalized as PosterCleanSource)
+    : fallback;
 };
 const toAnimeMappingProvider = (value?: string | null): AnimeMappingProvider | null => {
   const normalized = (value || '').trim().toLowerCase();
@@ -2376,14 +2387,6 @@ const pickPosterByPreference = (
     );
   }
 
-  if (preference === 'fanartclean') {
-    return (
-      posters.find((poster: any) => !poster.iso_639_1) ||
-      pickByLanguageWithFallback(posters, preferredLang, fallbackLang) ||
-      fallbackOriginal
-    );
-  }
-
   if (preference === 'original') {
     return fallbackOriginal;
   }
@@ -2419,14 +2422,6 @@ const pickBackdropByPreference = (
   );
 
   if (preference === 'clean') {
-    return (
-      backdrops.find((backdrop: any) => !backdrop.iso_639_1) ||
-      pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
-      fallbackOriginal
-    );
-  }
-
-  if (preference === 'fanartclean') {
     return (
       backdrops.find((backdrop: any) => !backdrop.iso_639_1) ||
       pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
@@ -5850,6 +5845,10 @@ export async function GET(
   const imageTextParam =
     request.nextUrl.searchParams.get('imageText') || request.nextUrl.searchParams.get('posterText');
   const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
+  const legacyFanartCleanMode = imageText === 'fanartclean';
+  const posterCleanSource = legacyFanartCleanMode
+    ? 'fanart'
+    : normalizePosterCleanSource(request.nextUrl.searchParams.get('posterCleanSource'));
   const fanartKey = request.nextUrl.searchParams.get('fanartKey') || FANART_API_KEY;
   const fanartClientKey = request.nextUrl.searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
   const posterRatingsLayout = normalizePosterRatingLayout(request.nextUrl.searchParams.get('posterRatingsLayout'));
@@ -5980,10 +5979,11 @@ export async function GET(
   const posterTextPreference: PosterTextPreference =
     imageText === 'clean' ||
     imageText === 'alternative' ||
-    imageText === 'original' ||
-    imageText === 'fanartclean'
+    imageText === 'original'
       ? (imageText as PosterTextPreference)
-      : 'original';
+      : legacyFanartCleanMode
+        ? 'clean'
+        : 'original';
   const ratingsForType =
     imageType === 'poster'
       ? posterRatings
@@ -6044,6 +6044,7 @@ export async function GET(
     cleanId,
     requestedImageLang,
     posterTextPreference,
+    imageType === 'poster' && posterTextPreference === 'clean' ? posterCleanSource : '-',
     imageType === 'poster' ? posterRatingsLayout : '-',
     imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
     imageType === 'logo' ? String(logoRatingsMax ?? 'auto') : '-',
@@ -6064,8 +6065,12 @@ export async function GET(
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
-    imageType === 'poster' && posterTextPreference === 'fanartclean' ? sha1Hex(fanartKey || '').slice(0, 12) : '-',
-    imageType === 'poster' && posterTextPreference === 'fanartclean' ? sha1Hex(fanartClientKey || '').slice(0, 12) : '-',
+    imageType === 'poster' && posterTextPreference === 'clean' && posterCleanSource === 'fanart'
+      ? sha1Hex(fanartKey || '').slice(0, 12)
+      : '-',
+    imageType === 'poster' && posterTextPreference === 'clean' && posterCleanSource === 'fanart'
+      ? sha1Hex(fanartClientKey || '').slice(0, 12)
+      : '-',
     renderCacheBuster || '-',
     'v2',
   ].join('|');
@@ -6389,34 +6394,11 @@ export async function GET(
       const streamBadgesCacheKey = shouldRenderStreamBadges
         ? `torrentio:${streamBadgesCacheWindow ?? 0}`
         : 'off';
-      const finalImageCacheKey = [
-        FINAL_IMAGE_RENDERER_CACHE_VERSION,
-        imageType,
-        outputFormat,
-        cleanId,
-        requestedImageLang,
-        posterTextPreference,
-        imageType === 'poster' ? posterRatingsLayout : '-',
-        imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
-        imageType === 'logo' ? String(logoRatingsMax ?? 'auto') : '-',
-        imageType === 'poster' ? qualityBadgesSide : '-',
-        imageType === 'poster' && (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom')
-          ? posterQualityBadgesPosition
-          : '-',
-        imageType !== 'logo' ? qualityBadgesStyle : '-',
-        imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
-        imageType === 'backdrop' ? backdropRatingsLayout : '-',
-        imageType === 'poster' || imageType === 'backdrop' ? sideRatingsPosition : '-',
-        imageType === 'poster' || imageType === 'backdrop' ? String(sideRatingsOffset) : '-',
-        ratingPresentation,
-        aggregateRatingSource,
-        ratingStyle,
-        genreBadgeMode,
-        imageType === 'logo' ? logoBackground : '-',
-        effectiveRatingPreferences.join(',') || 'none',
-        streamBadgesCacheKey,
-        'v1',
-      ].join('|');
+      // Keep object-storage caching aligned with the in-process render key.
+      // A second ad hoc cache key drifted and started serving stale renders for
+      // fanart-backed clean posters because it omitted posterCleanSource and
+      // other render inputs.
+      const finalImageCacheKey = renderSeedKey;
       const finalCacheHash = sha1Hex(finalImageCacheKey);
       const finalObjectStorageKey = buildObjectStorageImageKey(
         finalCacheHash,
@@ -7178,7 +7160,8 @@ export async function GET(
 
           if (type === 'poster') {
             if (
-              posterTextPreference === 'fanartclean' &&
+              posterTextPreference === 'clean' &&
+              posterCleanSource === 'fanart' &&
               (mediaType === 'movie' || mediaType === 'tv')
             ) {
               const fanartArtwork = await fetchFanartArtwork({

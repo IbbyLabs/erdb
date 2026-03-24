@@ -28,6 +28,7 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'posterRatings',
     'posterRatingPresentation',
     'posterAggregateRatingSource',
+    'posterCleanSource',
   ],
   backdrop: [
     'backdropStreamBadges',
@@ -87,6 +88,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'logoAggregateRatingSource',
   'posterImageText',
   'backdropImageText',
+  'posterCleanSource',
   ...ERDB_OPTIONAL_PARAM_KEYS,
 ]);
 
@@ -128,6 +130,7 @@ export type ProxyConfig = {
   logoAggregateRatingSource?: string;
   posterImageText?: string;
   backdropImageText?: string;
+  posterCleanSource?: string;
   posterRatingsLayout?: string;
   posterRatingsMaxPerSide?: string;
   backdropRatingsLayout?: string;
@@ -174,6 +177,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'logoAggregateRatingSource',
   'posterImageText',
   'backdropImageText',
+  'posterCleanSource',
   'posterRatingsLayout',
   'posterRatingsMaxPerSide',
   'backdropRatingsLayout',

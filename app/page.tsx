@@ -66,6 +66,7 @@ import {
   normalizeManifestUrl,
   type BackdropImageTextPreference,
   type LogoBackground,
+  type PosterCleanSource,
   type PosterImageTextPreference,
   type QualityBadgesSide,
   type PosterQualityBadgesPosition,
@@ -120,7 +121,14 @@ const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   { id: 'original', label: 'Original', description: 'Use the default TMDB poster art.' },
   { id: 'clean', label: 'Clean', description: 'Prefer TMDB art with less embedded text when available.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
-  { id: 'fanartclean', label: 'Fanart', description: 'Use fanart.tv poster art when the server has a fanart key, then fall back to clean.' },
+];
+const POSTER_CLEAN_SOURCE_OPTIONS: Array<{
+  id: PosterCleanSource;
+  label: string;
+  description: string;
+}> = [
+  { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean poster selection.' },
+  { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv poster art when the server has a fanart key, then fall back to TMDB clean.' },
 ];
 const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   id: BackdropImageTextPreference;
@@ -285,7 +293,8 @@ backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})               
 ratingPresentation      | standard, minimal, average, blockbuster                              | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
-imageText               | poster: original, clean, alternative, fanartclean; backdrop: original, clean, alternative | original
+imageText               | original, clean, alternative                                         | original
+posterCleanSource       | tmdb, fanart (poster clean only)                                     | tmdb
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
@@ -299,7 +308,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
-POSTER NOTE: poster imageText=fanartclean uses fanart.tv poster art when ERDB has ERDB_FANART_API_KEY or FANART_API_KEY. Without a fanart key, it falls back to clean.
+POSTER NOTE: posterCleanSource=fanart only applies when imageText=clean. It uses fanart.tv poster art when ERDB has ERDB_FANART_API_KEY or FANART_API_KEY. Without a fanart key, it falls back to the usual TMDB clean poster selection.
 
 INTEGRATION REQUIREMENTS
 1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
@@ -312,6 +321,7 @@ poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground (omit imageText)
 all      : genreBadge = cfg.genreBadge (optional global genre badge)
+poster clean source : use cfg.posterCleanSource only when cfg.posterImageText = clean
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
@@ -322,7 +332,7 @@ Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&genreBadge=\${cfg.genreBadge}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterCleanSource=\${cfg.posterCleanSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}
 
 Omit imageText when type=logo.
 
@@ -670,6 +680,7 @@ export default function Home() {
   const [lang, setLang] = useState('en');
   const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
+  const [posterCleanSource, setPosterCleanSource] = useState<PosterCleanSource>('tmdb');
   const [genreBadgeMode, setGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -993,6 +1004,7 @@ export default function Home() {
       setLang(normalized.settings.lang);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
+      setPosterCleanSource(normalized.settings.posterCleanSource);
       setGenreBadgeMode(normalized.settings.genreBadgeMode);
       setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
       setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
@@ -1039,6 +1051,7 @@ export default function Home() {
         lang,
         posterImageText,
         backdropImageText,
+        posterCleanSource,
         genreBadgeMode,
         posterRatingPreferences,
         backdropRatingPreferences,
@@ -1081,6 +1094,7 @@ export default function Home() {
       lang,
       posterImageText,
       backdropImageText,
+      posterCleanSource,
       genreBadgeMode,
       posterRatingPreferences,
       backdropRatingPreferences,
@@ -1303,6 +1317,9 @@ export default function Home() {
 
     if (previewType === 'poster' || previewType === 'backdrop') {
       query.set('imageText', imageTextForType);
+      if (previewType === 'poster' && imageTextForType === 'clean' && posterCleanSource !== 'tmdb') {
+        query.set('posterCleanSource', posterCleanSource);
+      }
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
@@ -1340,6 +1357,7 @@ export default function Home() {
     lang,
     posterImageText,
     backdropImageText,
+    posterCleanSource,
     genreBadgeMode,
     posterRatingPreferences,
     backdropRatingPreferences,
@@ -1646,6 +1664,8 @@ export default function Home() {
     previewType === 'backdrop' ? BACKDROP_IMAGE_TEXT_OPTIONS : POSTER_IMAGE_TEXT_OPTIONS;
   const activeImageTextOptionMeta =
     activeImageTextOptions.find((option) => option.id === activeImageText) || null;
+  const activePosterCleanSourceOptionMeta =
+    POSTER_CLEAN_SOURCE_OPTIONS.find((option) => option.id === posterCleanSource) || null;
   const shouldShowSideRatingPlacement =
     previewType === 'poster'
       ? isVerticalPosterRatingLayout(posterRatingsLayout) || activeRatingPresentation === 'blockbuster'
@@ -1718,7 +1738,6 @@ export default function Home() {
 
   const setImageTextForType = (value: PosterImageTextPreference) => {
     if (previewType === 'backdrop') {
-      if (value === 'fanartclean') return;
       setBackdropImageText(value);
       return;
     }
@@ -2150,6 +2169,30 @@ export default function Home() {
                   <p className="text-[11px] leading-relaxed text-zinc-500">
                     Genre badges use a small curated bucket set. Clear genres such as horror, comedy, sci fi, fantasy, crime, documentary, and anime resolve; fuzzy cases stay off.
                   </p>
+                  {previewType === 'poster' && activeImageText === 'clean' ? (
+                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Clean Source</div>
+                      <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                        {POSTER_CLEAN_SOURCE_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => setPosterCleanSource(option.id)}
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                              posterCleanSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                            }`}
+                            title={option.description}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      {activePosterCleanSourceOptionMeta ? (
+                        <p className="text-[11px] leading-relaxed text-zinc-500">
+                          {activePosterCleanSourceOptionMeta.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {previewType !== 'logo' && activeImageTextOptionMeta ? (
                     <p className="text-[11px] leading-relaxed text-zinc-500">
                       {activeImageTextOptionMeta.description}
@@ -2852,8 +2895,13 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">imageText</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">poster: original, clean, alternative, fanartclean; backdrop: original, clean, alternative</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">original, clean, alternative</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">original (poster), clean (backdrop)</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterCleanSource</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart (poster clean only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingsLayout</td>
@@ -2912,7 +2960,7 @@ export default function Home() {
                   <br />
                   Media quality badges use local asset based artwork for <span className="font-semibold text-zinc-200">4K</span>, <span className="font-semibold text-zinc-200">Bluray</span>, <span className="font-semibold text-zinc-200">HDR10</span>, <span className="font-semibold text-zinc-200">Dolby Vision</span>, and <span className="font-semibold text-zinc-200">Dolby Atmos</span>. Certification badges include a small <span className="font-semibold text-zinc-200">AGE</span> label above the rating.
                   <br />
-                  Poster <span className="font-mono text-zinc-200">imageText=fanartclean</span> uses fanart.tv poster art when the ERDB server has <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span>. Without a fanart key, it falls back to the usual clean poster selection.
+                  Poster <span className="font-mono text-zinc-200">posterCleanSource=fanart</span> only applies when <span className="font-mono text-zinc-200">imageText=clean</span>. It uses fanart.tv poster art when the ERDB server has <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span>. Without a fanart key, it falls back to the usual TMDB clean poster selection.
                 </div>
               </div>
 
@@ -2937,6 +2985,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
+                            <div>posterCleanSource</div>
                             <div>posterRatingPresentation</div>
                             <div>posterAggregateRatingSource</div>
                             <div>posterRatingsLayout</div>
@@ -2949,7 +2998,8 @@ export default function Home() {
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
-                            <div>original, clean, alternative, fanartclean (poster only)</div>
+                            <div>original, clean, alternative</div>
+                            <div>tmdb, fanart (clean only)</div>
                             <div>standard, minimal, average, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>

@@ -53,8 +53,9 @@ import {
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
-export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'fanartclean';
+export type PosterImageTextPreference = 'original' | 'clean' | 'alternative';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
+export type PosterCleanSource = 'tmdb' | 'fanart';
 export type LogoBackground = 'transparent' | 'dark';
 
 export type SharedErdbSettings = {
@@ -63,6 +64,7 @@ export type SharedErdbSettings = {
   lang: string;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
+  posterCleanSource: PosterCleanSource;
   genreBadgeMode: GenreBadgeMode;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
@@ -111,13 +113,13 @@ const POSTER_IMAGE_TEXT_PREFERENCE_SET = new Set<PosterImageTextPreference>([
   'original',
   'clean',
   'alternative',
-  'fanartclean',
 ]);
 const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>([
   'original',
   'clean',
   'alternative',
 ]);
+const POSTER_CLEAN_SOURCE_SET = new Set<PosterCleanSource>(['tmdb', 'fanart']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -141,6 +143,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   lang: 'en',
   posterImageText: 'clean',
   backdropImageText: 'clean',
+  posterCleanSource: 'tmdb',
   genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -248,6 +251,16 @@ const normalizeBackdropImageTextPreference = (
     : fallback;
 };
 
+const normalizePosterCleanSource = (
+  value: unknown,
+  fallback: PosterCleanSource,
+): PosterCleanSource => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return POSTER_CLEAN_SOURCE_SET.has(normalized as PosterCleanSource)
+    ? (normalized as PosterCleanSource)
+    : fallback;
+};
+
 const normalizeStreamBadgesSetting = (
   value: unknown,
   fallback: StreamBadgesSetting,
@@ -324,20 +337,27 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
   }
 
   const candidate = value as Partial<Record<keyof SharedErdbSettings, unknown>>;
+  const rawPosterImageText =
+    typeof candidate.posterImageText === 'string' ? candidate.posterImageText.trim().toLowerCase() : '';
+  const legacyFanartPosterMode = rawPosterImageText === 'fanartclean';
+  const posterImageText = legacyFanartPosterMode
+    ? 'clean'
+    : normalizePosterImageTextPreference(candidate.posterImageText, defaults.posterImageText);
+  const posterCleanSource = legacyFanartPosterMode
+    ? 'fanart'
+    : normalizePosterCleanSource(candidate.posterCleanSource, defaults.posterCleanSource);
 
   return {
     tmdbKey: typeof candidate.tmdbKey === 'string' ? candidate.tmdbKey.trim() : defaults.tmdbKey,
     mdblistKey:
       typeof candidate.mdblistKey === 'string' ? candidate.mdblistKey.trim() : defaults.mdblistKey,
     lang: typeof candidate.lang === 'string' && candidate.lang.trim() ? candidate.lang.trim() : defaults.lang,
-    posterImageText: normalizePosterImageTextPreference(
-      candidate.posterImageText,
-      defaults.posterImageText,
-    ),
+    posterImageText,
     backdropImageText: normalizeBackdropImageTextPreference(
       candidate.backdropImageText,
       defaults.backdropImageText,
     ),
+    posterCleanSource,
     genreBadgeMode: normalizeGenreBadgeMode(candidate.genreBadgeMode, defaults.genreBadgeMode),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences,
@@ -531,6 +551,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   payload.logoRatingStyle = settings.logoRatingStyle;
   payload.posterImageText = settings.posterImageText;
   payload.backdropImageText = settings.backdropImageText;
+  if (settings.posterImageText === 'clean' && settings.posterCleanSource !== 'tmdb') {
+    payload.posterCleanSource = settings.posterCleanSource;
+  }
   payload.posterRatingsLayout = settings.posterRatingsLayout;
   if (settings.posterRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.posterRatingPresentation = settings.posterRatingPresentation;
