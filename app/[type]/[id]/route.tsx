@@ -100,7 +100,7 @@ import { resolveRatingProviderBadgeAppearance } from '@/lib/ratingProviderIcons'
 
 export const runtime = 'nodejs';
 
-type PosterTextPreference = 'original' | 'clean' | 'alternative';
+type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'fanartclean';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'anidb';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -172,7 +172,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v68';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v69';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -183,6 +183,10 @@ const TRAKT_API_BASE_URL =
   process.env.ERDB_TRAKT_API_BASE_URL?.trim() || 'https://api.trakt.tv';
 const TRAKT_CLIENT_ID =
   process.env.ERDB_TRAKT_CLIENT_ID?.trim() || process.env.TRAKT_CLIENT_ID?.trim() || '';
+const FANART_API_KEY =
+  process.env.ERDB_FANART_API_KEY?.trim() || process.env.FANART_API_KEY?.trim() || '';
+const FANART_CLIENT_KEY =
+  process.env.ERDB_FANART_CLIENT_KEY?.trim() || process.env.FANART_CLIENT_KEY?.trim() || '';
 const ANILIST_MEDIA_RATING_QUERY = `
   query ErdbAnimeRating($id: Int) {
     Media(id: $id, type: ANIME) {
@@ -297,6 +301,7 @@ type PhaseDurations = {
   auth: number;
   tmdb: number;
   mdb: number;
+  fanart: number;
   stream: number;
   render: number;
 };
@@ -416,6 +421,7 @@ const buildServerTimingHeader = (phases: PhaseDurations, totalMs: number) => {
     `auth;dur=${phases.auth.toFixed(1)}`,
     `tmdb;dur=${phases.tmdb.toFixed(1)}`,
     `mdb;dur=${phases.mdb.toFixed(1)}`,
+    `fanart;dur=${phases.fanart.toFixed(1)}`,
     `stream;dur=${phases.stream.toFixed(1)}`,
     `render;dur=${phases.render.toFixed(1)}`,
     `total;dur=${totalMs.toFixed(1)}`,
@@ -2370,6 +2376,14 @@ const pickPosterByPreference = (
     );
   }
 
+  if (preference === 'fanartclean') {
+    return (
+      posters.find((poster: any) => !poster.iso_639_1) ||
+      pickByLanguageWithFallback(posters, preferredLang, fallbackLang) ||
+      fallbackOriginal
+    );
+  }
+
   if (preference === 'original') {
     return fallbackOriginal;
   }
@@ -2405,6 +2419,14 @@ const pickBackdropByPreference = (
   );
 
   if (preference === 'clean') {
+    return (
+      backdrops.find((backdrop: any) => !backdrop.iso_639_1) ||
+      pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
+      fallbackOriginal
+    );
+  }
+
+  if (preference === 'fanartclean') {
     return (
       backdrops.find((backdrop: any) => !backdrop.iso_639_1) ||
       pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
@@ -2737,6 +2759,136 @@ const getSourceImagePayload = async (
 
     return payload;
   });
+};
+
+type FanartImageAsset = {
+  url?: string | null;
+  lang?: string | null;
+  likes?: string | number | null;
+};
+
+const normalizeFanartLanguage = (value: unknown) => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === '00' || normalized === 'n/a') return null;
+  return normalized;
+};
+
+const rankFanartAsset = (
+  asset: FanartImageAsset,
+  requestedLang: string,
+  fallbackLang: string,
+  index: number
+) => {
+  const assetLang = normalizeFanartLanguage(asset.lang);
+  const requested = normalizeImageLanguage(requestedLang);
+  const fallback = normalizeImageLanguage(fallbackLang);
+  const likes =
+    typeof asset.likes === 'number'
+      ? asset.likes
+      : typeof asset.likes === 'string'
+        ? Number.parseInt(asset.likes, 10) || 0
+        : 0;
+
+  const languageScore =
+    assetLang && requested && assetLang === requested
+      ? 0
+      : assetLang && fallback && assetLang === fallback
+        ? 1
+        : assetLang === null
+          ? 2
+          : 3;
+
+  return {
+    asset,
+    languageScore,
+    likes,
+    index,
+  };
+};
+
+const selectFanartAsset = (
+  items: FanartImageAsset[] = [],
+  requestedLang: string,
+  fallbackLang: string
+) =>
+  items
+    .filter((item) => typeof item?.url === 'string' && item.url.trim())
+    .map((item, index) => rankFanartAsset(item, requestedLang, fallbackLang, index))
+    .sort((left, right) => {
+      if (left.languageScore !== right.languageScore) return left.languageScore - right.languageScore;
+      if (left.likes !== right.likes) return right.likes - left.likes;
+      return left.index - right.index;
+    })[0]?.asset || null;
+
+const fetchFanartArtwork = async ({
+  mediaType,
+  tmdbId,
+  tvdbId,
+  fanartKey,
+  fanartClientKey,
+  requestedLang,
+  fallbackLang,
+  phases,
+}: {
+  mediaType: 'movie' | 'tv';
+  tmdbId: string;
+  tvdbId?: string | null;
+  fanartKey: string;
+  fanartClientKey?: string | null;
+  requestedLang: string;
+  fallbackLang: string;
+  phases: PhaseDurations;
+}) => {
+  const normalizedApiKey = String(fanartKey || '').trim();
+  if (!normalizedApiKey) return null;
+
+  const lookupId =
+    mediaType === 'movie' ? String(tmdbId || '').trim() : String(tvdbId || '').trim();
+  if (!lookupId) return null;
+
+  const endpoint =
+    mediaType === 'movie'
+      ? `https://webservice.fanart.tv/v3/movies/${lookupId}?api_key=${encodeURIComponent(normalizedApiKey)}`
+      : `https://webservice.fanart.tv/v3/tv/${lookupId}?api_key=${encodeURIComponent(normalizedApiKey)}`;
+  const url = fanartClientKey
+    ? `${endpoint}&client_key=${encodeURIComponent(String(fanartClientKey).trim())}`
+    : endpoint;
+
+  const response = await fetchJsonCached(
+    `fanart:${mediaType}:${lookupId}:key:${sha1Hex(normalizedApiKey)}:client:${sha1Hex(String(fanartClientKey || ''))}`,
+    url,
+    TMDB_CACHE_TTL_MS,
+    phases,
+    'fanart'
+  );
+  if (!response.ok || !response.data || typeof response.data !== 'object') {
+    return null;
+  }
+
+  const payload = response.data as Record<string, FanartImageAsset[] | unknown>;
+  const posterCandidates = mediaType === 'movie'
+    ? ((payload.movieposter as FanartImageAsset[] | undefined) || [])
+    : ((payload.tvposter as FanartImageAsset[] | undefined) || []);
+  const logoCandidates = mediaType === 'movie'
+    ? [
+        ...(((payload.hdmovielogo as FanartImageAsset[] | undefined) || [])),
+        ...(((payload.movielogo as FanartImageAsset[] | undefined) || [])),
+      ]
+    : [
+        ...(((payload.hdtvlogo as FanartImageAsset[] | undefined) || [])),
+        ...(((payload.clearlogo as FanartImageAsset[] | undefined) || [])),
+        ...(((payload.tvlogo as FanartImageAsset[] | undefined) || [])),
+      ];
+
+  const selectedPoster = selectFanartAsset(posterCandidates, requestedLang, fallbackLang);
+  const selectedLogo = selectFanartAsset(logoCandidates, requestedLang, fallbackLang);
+  if (!selectedPoster?.url) return null;
+
+  return {
+    posterUrl: selectedPoster.url.trim(),
+    logoUrl: typeof selectedLogo?.url === 'string' && selectedLogo.url.trim() ? selectedLogo.url.trim() : null,
+  };
 };
 
 const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> => {
@@ -5630,6 +5782,7 @@ export async function GET(
     auth: 0,
     tmdb: 0,
     mdb: 0,
+    fanart: 0,
     stream: 0,
     render: 0,
   };
@@ -5697,6 +5850,8 @@ export async function GET(
   const imageTextParam =
     request.nextUrl.searchParams.get('imageText') || request.nextUrl.searchParams.get('posterText');
   const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
+  const fanartKey = request.nextUrl.searchParams.get('fanartKey') || FANART_API_KEY;
+  const fanartClientKey = request.nextUrl.searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
   const posterRatingsLayout = normalizePosterRatingLayout(request.nextUrl.searchParams.get('posterRatingsLayout'));
   const posterRatingsMaxPerSide = normalizePosterRatingsMaxPerSide(request.nextUrl.searchParams.get('posterRatingsMaxPerSide'));
   const logoRatingsMax = normalizeOptionalBadgeCount(request.nextUrl.searchParams.get('logoRatingsMax'));
@@ -5823,7 +5978,10 @@ export async function GET(
   const requestedImageLang = normalizeImageLanguage(lang) || FALLBACK_IMAGE_LANGUAGE;
   const includeImageLanguage = buildIncludeImageLanguage(requestedImageLang, FALLBACK_IMAGE_LANGUAGE);
   const posterTextPreference: PosterTextPreference =
-    imageText === 'clean' || imageText === 'alternative' || imageText === 'original'
+    imageText === 'clean' ||
+    imageText === 'alternative' ||
+    imageText === 'original' ||
+    imageText === 'fanartclean'
       ? (imageText as PosterTextPreference)
       : 'original';
   const ratingsForType =
@@ -5906,6 +6064,8 @@ export async function GET(
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
     streamBadgesCacheKeySeed,
+    imageType === 'poster' && posterTextPreference === 'fanartclean' ? sha1Hex(fanartKey || '').slice(0, 12) : '-',
+    imageType === 'poster' && posterTextPreference === 'fanartclean' ? sha1Hex(fanartClientKey || '').slice(0, 12) : '-',
     renderCacheBuster || '-',
     'v2',
   ].join('|');
@@ -6901,6 +7061,7 @@ export async function GET(
           details,
           fallbackDetails,
           bundledImages,
+          bundledExternalIds,
           bundledCertificationPayload,
           tmdbRating: bundledRating,
         } = await detailsBundlePromise;
@@ -7016,6 +7177,39 @@ export async function GET(
           }
 
           if (type === 'poster') {
+            if (
+              posterTextPreference === 'fanartclean' &&
+              (mediaType === 'movie' || mediaType === 'tv')
+            ) {
+              const fanartArtwork = await fetchFanartArtwork({
+                mediaType,
+                tmdbId: String(media.id),
+                tvdbId:
+                  mediaType === 'tv'
+                    ? String(
+                        bundledExternalIds?.tvdb_id ||
+                        details?.external_ids?.tvdb_id ||
+                        fallbackDetails?.external_ids?.tvdb_id ||
+                        media?.external_ids?.tvdb_id ||
+                        ''
+                      )
+                    : null,
+                fanartKey,
+                fanartClientKey,
+                requestedLang: requestedImageLang,
+                fallbackLang: FALLBACK_IMAGE_LANGUAGE,
+                phases,
+              });
+              if (fanartArtwork?.posterUrl) {
+                return {
+                  imgPath: '',
+                  imgUrlOverride: fanartArtwork.posterUrl,
+                  logoAspectRatio: null,
+                  logoPath: fanartArtwork.logoUrl || logoPath,
+                  posterIsTextless: false,
+                };
+              }
+            }
             const selectedPoster = pickPosterByPreference(
               posterCollection,
               posterTextPreference,
@@ -7026,6 +7220,7 @@ export async function GET(
             const posterIsTextless = isTextlessPosterSelection(posterCollection, selectedPoster);
             return {
               imgPath: selectedPoster?.file_path || '',
+              imgUrlOverride: null,
               logoAspectRatio: null,
               logoPath,
               posterIsTextless,
@@ -7042,6 +7237,7 @@ export async function GET(
             );
             return {
               imgPath: selectedBackdrop?.file_path || '',
+              imgUrlOverride: null,
               logoAspectRatio: null,
               logoPath,
               posterIsTextless: false,
@@ -7052,7 +7248,13 @@ export async function GET(
             typeof selectedLogo?.aspect_ratio === 'number' && selectedLogo.aspect_ratio > 0
               ? selectedLogo.aspect_ratio
               : null;
-          return { imgPath: logoPath || '', logoAspectRatio, logoPath, posterIsTextless: false };
+          return {
+            imgPath: logoPath || '',
+            imgUrlOverride: null,
+            logoAspectRatio,
+            logoPath,
+            posterIsTextless: false,
+          };
         };
 
         const initialImages = bundledImages || {};
@@ -7064,6 +7266,7 @@ export async function GET(
         });
 
         imgPath = initialSelection.imgPath;
+        imgUrl = initialSelection.imgUrlOverride || imgUrl;
         selectedLogoAspectRatio = initialSelection.logoAspectRatio;
         selectedPosterLogoPath = initialSelection.logoPath || null;
         selectedPosterIsTextless = initialSelection.posterIsTextless;
@@ -7117,6 +7320,7 @@ export async function GET(
             });
             if (fallbackSelection.imgPath) {
               imgPath = fallbackSelection.imgPath;
+              imgUrl = fallbackSelection.imgUrlOverride || imgUrl;
               selectedLogoAspectRatio = fallbackSelection.logoAspectRatio;
               selectedPosterLogoPath = fallbackSelection.logoPath || selectedPosterLogoPath;
               selectedPosterIsTextless = fallbackSelection.posterIsTextless;
@@ -7139,12 +7343,16 @@ export async function GET(
       }
       const shouldApplyPosterCleanOverlay =
         imageType === 'poster' && posterTextPreference === 'clean' && selectedPosterIsTextless;
-      const posterTitleText = shouldApplyPosterCleanOverlay
+      const shouldApplyPosterBrandingOverlay =
+        shouldApplyPosterCleanOverlay;
+      const posterTitleText = shouldApplyPosterBrandingOverlay
         ? pickPosterTitleFromMedia(media, mediaType, rawFallbackTitle)
         : null;
       const posterLogoUrl =
-        shouldApplyPosterCleanOverlay && selectedPosterLogoPath
-          ? buildTmdbImageUrl('logo', selectedPosterLogoPath, outputWidth)
+        shouldApplyPosterBrandingOverlay && selectedPosterLogoPath
+          ? (/^https?:\/\//i.test(selectedPosterLogoPath)
+            ? selectedPosterLogoPath
+            : buildTmdbImageUrl('logo', selectedPosterLogoPath, outputWidth))
           : null;
       if (!shouldRenderBadges && !posterTitleText && !posterLogoUrl) {
         return getSourceImagePayload(imgUrl);
