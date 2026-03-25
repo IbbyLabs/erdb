@@ -20,10 +20,16 @@ import {
   type RatingStyle,
 } from './ratingStyle.ts';
 import {
+  DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  DEFAULT_AGGREGATE_ACCENT_COLOR,
+  DEFAULT_AGGREGATE_ACCENT_MODE,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
+  normalizeAggregateAccentBarOffset,
+  normalizeAggregateAccentMode,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
+  type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
 } from './ratingPresentation.ts';
@@ -59,6 +65,7 @@ import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   encodeRatingProviderAppearanceOverrides,
   normalizeBadgeScalePercent,
+  normalizeHexColor,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
   stringifyQualityBadgePreferencesAllowEmpty,
@@ -133,6 +140,9 @@ export type SharedErdbSettings = {
   posterAggregateRatingSource: AggregateRatingSource;
   backdropAggregateRatingSource: AggregateRatingSource;
   logoAggregateRatingSource: AggregateRatingSource;
+  aggregateAccentMode: AggregateAccentMode;
+  aggregateAccentColor: string;
+  aggregateAccentBarOffset: number;
   posterRatingsMaxPerSide: number | null;
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
@@ -230,6 +240,9 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   logoAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
+  aggregateAccentMode: DEFAULT_AGGREGATE_ACCENT_MODE,
+  aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
+  aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   sideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
   sideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
@@ -526,6 +539,16 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.logoAggregateRatingSource,
       defaults.logoAggregateRatingSource,
     ),
+    aggregateAccentMode: normalizeAggregateAccentMode(
+      candidate.aggregateAccentMode,
+      defaults.aggregateAccentMode,
+    ),
+    aggregateAccentColor:
+      normalizeHexColor(candidate.aggregateAccentColor) || defaults.aggregateAccentColor,
+    aggregateAccentBarOffset: normalizeAggregateAccentBarOffset(
+      candidate.aggregateAccentBarOffset,
+      defaults.aggregateAccentBarOffset,
+    ),
     logoRatingStyle:
       candidate.logoRatingStyle === 'glass' ||
       candidate.logoRatingStyle === 'plain' ||
@@ -762,6 +785,18 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   }
   if (settings.logoAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
     payload.logoAggregateRatingSource = settings.logoAggregateRatingSource;
+  }
+  if (settings.aggregateAccentMode !== DEFAULT_AGGREGATE_ACCENT_MODE) {
+    payload.aggregateAccentMode = settings.aggregateAccentMode;
+  }
+  if (
+    settings.aggregateAccentMode === 'custom' ||
+    settings.aggregateAccentColor !== DEFAULT_AGGREGATE_ACCENT_COLOR
+  ) {
+    payload.aggregateAccentColor = settings.aggregateAccentColor;
+  }
+  if (settings.aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET) {
+    payload.aggregateAccentBarOffset = settings.aggregateAccentBarOffset;
   }
 
   if (

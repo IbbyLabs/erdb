@@ -30,6 +30,9 @@ type FinalImageRenderSeedInput = {
   ratingPresentation: string;
   blockbusterDensity: string;
   aggregateRatingSource: string;
+  aggregateAccentMode: string;
+  aggregateAccentColor: string | null;
+  aggregateAccentBarOffset: number;
   ratingStyle: string;
   ratingValueMode: string;
   posterRatingBadgeScale: number;
@@ -96,6 +99,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.ratingPresentation,
     isPoster ? input.blockbusterDensity : '-',
     input.aggregateRatingSource,
+    input.aggregateAccentMode,
+    input.aggregateAccentColor || '-',
+    String(input.aggregateAccentBarOffset),
     input.ratingStyle,
     input.ratingValueMode,
     String(ratingBadgeScale),

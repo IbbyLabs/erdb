@@ -20,6 +20,9 @@ const ERDB_OPTIONAL_PARAMS = [
   'providerAppearance',
   'ratingPresentation',
   'aggregateRatingSource',
+  'aggregateAccentMode',
+  'aggregateAccentColor',
+  'aggregateAccentBarOffset',
   'posterRatingsLayout',
   'posterRatingsMax',
   'posterRatingsMaxPerSide',
@@ -150,6 +153,9 @@ export type ProxyConfig = {
   providerAppearance?: string;
   ratingPresentation?: string;
   aggregateRatingSource?: string;
+  aggregateAccentMode?: string;
+  aggregateAccentColor?: string;
+  aggregateAccentBarOffset?: string;
   posterQualityBadges?: string;
   posterQualityBadgesStyle?: string;
   posterQualityBadgeScale?: string;
@@ -218,6 +224,9 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'providerAppearance',
   'ratingPresentation',
   'aggregateRatingSource',
+  'aggregateAccentMode',
+  'aggregateAccentColor',
+  'aggregateAccentBarOffset',
   'posterQualityBadges',
   'posterQualityBadgesStyle',
   'posterQualityBadgeScale',

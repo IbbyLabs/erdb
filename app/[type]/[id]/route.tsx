@@ -33,11 +33,16 @@ import {
   type RatingStyle,
 } from '@/lib/ratingStyle';
 import {
+  AGGREGATE_RATING_SOURCE_ACCENTS,
+  DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  DEFAULT_AGGREGATE_ACCENT_MODE,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
   getAggregateRatingSourceLabel,
   getAggregateRatingSourceShortLabel,
   hasAggregateRatingProvidersForSource,
+  normalizeAggregateAccentBarOffset,
+  normalizeAggregateAccentMode,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
   resolveEffectiveRatingPresentation,
@@ -46,6 +51,9 @@ import {
   resolvePosterRatingLayoutForPresentation,
   resolvePosterRatingsMaxPerSideForPresentation,
   selectAggregateRatingProviders,
+  usesAggregateRatingPresentation,
+  usesAggregateRatingSource,
+  type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
@@ -119,6 +127,7 @@ import {
   DEFAULT_STACKED_WIDTH_PERCENT,
   MIN_STACKED_SURFACE_OPACITY_PERCENT,
   normalizeBadgeScalePercent,
+  normalizeHexColor,
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
   type StackedAccentMode,
@@ -226,7 +235,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v72';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v73';
 const ERDB_REQUEST_API_KEYS = getConfiguredErdbRequestKeys();
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
@@ -536,6 +545,7 @@ type RatingBadge = {
   sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  accentBarOffset?: number;
   iconScalePercent?: number;
   stackedLineVisible?: boolean;
   stackedLineWidthPercent?: number;
@@ -584,12 +594,7 @@ const AGGREGATE_BADGE_KEY_BY_SOURCE: Record<AggregateRatingSource, AggregateBadg
   critics: 'aggregate-critics',
   audience: 'aggregate-audience',
 };
-
-const AGGREGATE_BADGE_ACCENT_BY_SOURCE: Record<AggregateRatingSource, string> = {
-  overall: '#a78bfa',
-  critics: '#fb923c',
-  audience: '#34d399',
-};
+const AGGREGATE_BADGE_ACCENT_BY_SOURCE = AGGREGATE_RATING_SOURCE_ACCENTS;
 
 const EDITORIAL_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
   anime: 'Anime',
@@ -704,26 +709,38 @@ const parseDisplayRatingNumber = (value: string) => {
   return parseNumericRatingValue(numericCandidate);
 };
 
-const buildAggregateRatingBadge = ({
+const buildAggregateRatingBadgeForSource = ({
   requestedSource,
   presentation,
   renderablePreferences,
   ratingBadgeByProvider,
+  resolveAccentColor,
+  accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  allowFallbackToOverall = true,
 }: {
   requestedSource: AggregateRatingSource;
   presentation: RatingPresentation;
   renderablePreferences: RatingPreference[];
   ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
+  resolveAccentColor: (source: AggregateRatingSource) => string;
+  accentBarOffset?: number;
+  allowFallbackToOverall?: boolean;
 }): RatingBadge | null => {
   const availableProviders = renderablePreferences.filter((provider) => ratingBadgeByProvider.has(provider));
   if (availableProviders.length === 0) return null;
 
-  const selectedProviders = selectAggregateRatingProviders(requestedSource, availableProviders);
+  const hasProvidersForRequestedSource =
+    requestedSource === 'overall' ||
+    hasAggregateRatingProvidersForSource(requestedSource, availableProviders);
+  if (!allowFallbackToOverall && !hasProvidersForRequestedSource) {
+    return null;
+  }
+
   const resolvedSource =
-    requestedSource !== 'overall' &&
-    !hasAggregateRatingProvidersForSource(requestedSource, availableProviders)
+    allowFallbackToOverall && requestedSource !== 'overall' && !hasProvidersForRequestedSource
       ? 'overall'
       : requestedSource;
+  const selectedProviders = selectAggregateRatingProviders(requestedSource, availableProviders);
 
   const numericValues = selectedProviders
     .map((provider) => ({ provider, badge: ratingBadgeByProvider.get(provider) }))
@@ -747,9 +764,53 @@ const buildAggregateRatingBadge = ({
         : getAggregateRatingSourceLabel(effectiveSource),
     value: formatRatingNumber(averageValue),
     iconUrl: '',
-    accentColor: AGGREGATE_BADGE_ACCENT_BY_SOURCE[effectiveSource],
+    accentColor: resolveAccentColor(effectiveSource),
+    accentBarOffset,
     variant: presentation === 'minimal' ? 'minimal' : 'summary',
   };
+};
+
+const buildAggregateRatingBadges = ({
+  requestedSource,
+  presentation,
+  renderablePreferences,
+  ratingBadgeByProvider,
+  resolveAccentColor,
+  accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+}: {
+  requestedSource: AggregateRatingSource;
+  presentation: RatingPresentation;
+  renderablePreferences: RatingPreference[];
+  ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
+  resolveAccentColor: (source: AggregateRatingSource) => string;
+  accentBarOffset?: number;
+}) => {
+  if (presentation === 'dual') {
+    return (['critics', 'audience'] as const)
+      .map((source) =>
+        buildAggregateRatingBadgeForSource({
+          requestedSource: source,
+          presentation,
+          renderablePreferences,
+          ratingBadgeByProvider,
+          resolveAccentColor,
+          accentBarOffset,
+          allowFallbackToOverall: false,
+        }),
+      )
+      .filter((badge): badge is RatingBadge => badge !== null);
+  }
+
+  const badge = buildAggregateRatingBadgeForSource({
+    requestedSource,
+    presentation,
+    renderablePreferences,
+    ratingBadgeByProvider,
+    resolveAccentColor,
+    accentBarOffset,
+  });
+
+  return badge ? [badge] : [];
 };
 
 const BLOCKBUSTER_CALLOUT_PRIORITY = new Map<BadgeKey, number>([
@@ -4435,6 +4496,7 @@ const buildBadgeSvg = ({
   labelText,
   value,
   badgeVariant = 'standard',
+  accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   ratingStyle,
   iconScalePercent = DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
   stackedLineVisible = true,
@@ -4459,6 +4521,7 @@ const buildBadgeSvg = ({
   labelText?: string;
   value: string;
   badgeVariant?: 'standard' | 'minimal' | 'summary';
+  accentBarOffset?: number;
   ratingStyle: RatingStyle;
   iconScalePercent?: number;
   stackedLineVisible?: boolean;
@@ -4491,7 +4554,10 @@ const buildBadgeSvg = ({
         const accentRailWidth = Math.max(28, Math.round(width * 0.42));
         const accentRailHeight = Math.max(5, Math.round(height * 0.12));
         const accentRailX = Math.round((width - accentRailWidth) / 2);
-        const accentRailY = Math.max(6, Math.round(height * 0.16));
+        const accentRailY = Math.max(
+          4,
+          Math.min(height - accentRailHeight - 4, Math.round(height * 0.16) + accentBarOffset),
+        );
         const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
         const valueY = Math.round(centerY + 1);
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -4514,9 +4580,13 @@ ${plainDefs}
       const valueX = width - sideInset;
       const valueY = Math.round(centerY + fontSize * 0.22);
       const accentRailWidth = Math.max(24, Math.round(width * 0.14));
+      const accentRailY = Math.max(
+        4,
+        Math.min(height - 7, Math.round(height * 0.16) + accentBarOffset),
+      );
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
-<rect x="${sideInset}" y="${Math.max(6, Math.round(height * 0.16))}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />
+<rect x="${sideInset}" y="${accentRailY}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="start" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
 <text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
@@ -4560,7 +4630,10 @@ ${plainDefs}
       const accentRailWidth = Math.max(24, Math.round(width * 0.4));
       const accentRailHeight = Math.max(3, Math.round(height * 0.08));
       const accentRailX = Math.round((width - accentRailWidth) / 2);
-      const accentRailY = Math.max(6, Math.round(height * 0.18));
+      const accentRailY = Math.max(
+        4,
+        Math.min(height - accentRailHeight - 4, Math.round(height * 0.18) + accentBarOffset),
+      );
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
 ${variantChrome}
@@ -5496,6 +5569,7 @@ const renderWithSharp = async (
         labelText: badge.label,
         value: badge.value,
         badgeVariant: badge.variant || 'standard',
+        accentBarOffset: badge.accentBarOffset,
         ratingStyle: input.ratingStyle,
         iconScalePercent: badge.iconScalePercent,
         stackedLineVisible: badge.stackedLineVisible,
@@ -6482,6 +6556,16 @@ export async function GET(
       request.nextUrl.searchParams.get('aggregateRatingSource'),
     globalAggregateRatingSource,
   );
+  const aggregateAccentMode = normalizeAggregateAccentMode(
+    request.nextUrl.searchParams.get('aggregateAccentMode'),
+    DEFAULT_AGGREGATE_ACCENT_MODE,
+  );
+  const aggregateAccentColor =
+    normalizeHexColor(request.nextUrl.searchParams.get('aggregateAccentColor')) || null;
+  const aggregateAccentBarOffset = normalizeAggregateAccentBarOffset(
+    request.nextUrl.searchParams.get('aggregateAccentBarOffset'),
+    DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  );
   const imageTextParam =
     request.nextUrl.searchParams.get('imageText') || request.nextUrl.searchParams.get('posterText');
   const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
@@ -6772,6 +6856,9 @@ export async function GET(
     ratingPresentation,
     blockbusterDensity,
     aggregateRatingSource,
+    aggregateAccentMode,
+    aggregateAccentColor,
+    aggregateAccentBarOffset,
     ratingStyle,
     ratingValueMode,
     posterRatingBadgeScale,
@@ -8165,10 +8252,7 @@ export async function GET(
       const usePosterBadgeLayout = type === 'poster';
       const useBackdropBadgeLayout = type === 'backdrop';
       const useLogoBadgeLayout = type === 'logo';
-      const usesAggregatePresentation =
-        ratingPresentation === 'minimal' ||
-        ratingPresentation === 'average' ||
-        ratingPresentation === 'editorial';
+      const usesAggregatePresentation = usesAggregateRatingPresentation(ratingPresentation);
       const useEditorialPosterPresentation =
         imageType === 'poster' && ratingPresentation === 'editorial';
       const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
@@ -8267,33 +8351,47 @@ export async function GET(
           variant: 'standard',
         });
       }
-      const aggregateBadge = usesAggregatePresentation
-        ? buildAggregateRatingBadge({
+      const resolveAggregateAccentColor = (source: AggregateRatingSource) => {
+        if (aggregateAccentMode === 'custom' && aggregateAccentColor) {
+          return aggregateAccentColor;
+        }
+        if (aggregateAccentMode === 'genre' && primaryGenreFamily?.accentColor) {
+          return primaryGenreFamily.accentColor;
+        }
+        return AGGREGATE_BADGE_ACCENT_BY_SOURCE[source];
+      };
+      const aggregateBadges = usesAggregatePresentation
+        ? buildAggregateRatingBadges({
             requestedSource: aggregateRatingSource,
             presentation: ratingPresentation,
             renderablePreferences: renderableRatingPreferences,
             ratingBadgeByProvider,
+            resolveAccentColor: resolveAggregateAccentColor,
+            accentBarOffset: aggregateAccentBarOffset,
           })
-        : null;
+        : [];
+      const primaryAggregateBadge = aggregateBadges[0] || null;
+      const editorialAggregateSource =
+        primaryAggregateBadge?.key === 'aggregate-critics'
+          ? 'critics'
+          : primaryAggregateBadge?.key === 'aggregate-audience'
+            ? 'audience'
+            : 'overall';
       const editorialOverlay =
-        useEditorialPosterPresentation && aggregateBadge
+        useEditorialPosterPresentation && primaryAggregateBadge
           ? buildEditorialRatingOverlaySvg({
               outputWidth,
               outputHeight,
               eyebrowText: getEditorialEyebrowText(
                 primaryGenreFamily?.id || null,
-                aggregateRatingSource,
+                editorialAggregateSource,
               ),
-              valueText: aggregateBadge.value,
-              accentColor:
-                primaryGenreFamily?.accentColor ||
-                AGGREGATE_BADGE_ACCENT_BY_SOURCE[aggregateRatingSource],
+              valueText: primaryAggregateBadge.value,
+              accentColor: resolveAggregateAccentColor(editorialAggregateSource),
             })
           : null;
       const ratingBadges = usesAggregatePresentation
-        ? aggregateBadge
-          ? [aggregateBadge]
-          : []
+        ? aggregateBadges
         : selectAvailableRatingPreferences(
             renderableRatingPreferences,
             ratingBadgeByProvider.keys(),

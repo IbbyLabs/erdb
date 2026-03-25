@@ -6,12 +6,24 @@ export type RatingPresentation =
   | 'standard'
   | 'minimal'
   | 'average'
+  | 'dual'
   | 'editorial'
   | 'blockbuster';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
+export type AggregateAccentMode = 'source' | 'genre' | 'custom';
 
 export const DEFAULT_RATING_PRESENTATION: RatingPresentation = 'standard';
 export const DEFAULT_AGGREGATE_RATING_SOURCE: AggregateRatingSource = 'overall';
+export const DEFAULT_AGGREGATE_ACCENT_MODE: AggregateAccentMode = 'source';
+export const DEFAULT_AGGREGATE_ACCENT_COLOR = '#a78bfa';
+export const DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET = 0;
+export const MIN_AGGREGATE_ACCENT_BAR_OFFSET = -12;
+export const MAX_AGGREGATE_ACCENT_BAR_OFFSET = 12;
+export const AGGREGATE_RATING_SOURCE_ACCENTS: Record<AggregateRatingSource, string> = {
+  overall: '#a78bfa',
+  critics: '#fb923c',
+  audience: '#34d399',
+};
 
 export const RATING_PRESENTATION_OPTIONS: Array<{
   id: RatingPresentation;
@@ -32,6 +44,11 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
     id: 'average',
     label: 'Labeled Average',
     description: 'One average badge labeled Overall, Critics, or Audience.',
+  },
+  {
+    id: 'dual',
+    label: 'Critics + Audience',
+    description: 'Render separate critic and audience average badges at the same time.',
   },
   {
     id: 'editorial',
@@ -67,6 +84,28 @@ export const AGGREGATE_RATING_SOURCE_OPTIONS: Array<{
   },
 ];
 
+export const AGGREGATE_ACCENT_MODE_OPTIONS: Array<{
+  id: AggregateAccentMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'source',
+    label: 'Source',
+    description: 'Use the built in colour for the active aggregate source.',
+  },
+  {
+    id: 'genre',
+    label: 'Genre',
+    description: 'Match the resolved genre badge colour when a supported genre is available.',
+  },
+  {
+    id: 'custom',
+    label: 'Custom',
+    description: 'Use a custom accent colour for aggregate badges and overlays.',
+  },
+];
+
 const CRITICS_RATING_PROVIDERS = new Set<RatingPreference>([
   'mdblist',
   'tomatoes',
@@ -95,6 +134,7 @@ export const normalizeRatingPresentation = (
     normalized === 'standard' ||
     normalized === 'minimal' ||
     normalized === 'average' ||
+    normalized === 'dual' ||
     normalized === 'editorial' ||
     normalized === 'blockbuster'
   ) {
@@ -120,8 +160,45 @@ export const normalizeAggregateRatingSource = (
   return fallback;
 };
 
+export const normalizeAggregateAccentMode = (
+  value: unknown,
+  fallback: AggregateAccentMode = DEFAULT_AGGREGATE_ACCENT_MODE,
+): AggregateAccentMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (normalized === 'source' || normalized === 'genre' || normalized === 'custom') {
+    return normalized;
+  }
+  return fallback;
+};
+
+export const normalizeAggregateAccentBarOffset = (
+  value: unknown,
+  fallback = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+) => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(
+    MIN_AGGREGATE_ACCENT_BAR_OFFSET,
+    Math.min(MAX_AGGREGATE_ACCENT_BAR_OFFSET, Math.round(numericValue)),
+  );
+};
+
+export const usesAggregateRatingPresentation = (presentation: RatingPresentation) =>
+  presentation === 'minimal' ||
+  presentation === 'average' ||
+  presentation === 'dual' ||
+  presentation === 'editorial';
+
 export const usesAggregateRatingSource = (presentation: RatingPresentation) =>
   presentation === 'minimal' || presentation === 'average' || presentation === 'editorial';
+
+export const usesAggregateAccentBar = (presentation: RatingPresentation) =>
+  presentation === 'minimal' || presentation === 'average' || presentation === 'dual';
 
 export const preservesSelectedRatingLayout = (presentation: RatingPresentation) =>
   presentation !== 'blockbuster' && presentation !== 'editorial';

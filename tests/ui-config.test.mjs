@@ -81,9 +81,9 @@ const buildSampleSettings = () =>
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       logoAggregateRatingSource: 'overall',
-      aggregateAccentMode: 'source',
-      aggregateAccentColor: '#a78bfa',
-      aggregateAccentBarOffset: 0,
+      aggregateAccentMode: 'custom',
+      aggregateAccentColor: '#22d3ee',
+      aggregateAccentBarOffset: -3,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -154,9 +154,9 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       logoAggregateRatingSource: 'overall',
-      aggregateAccentMode: 'source',
-      aggregateAccentColor: '#a78bfa',
-      aggregateAccentBarOffset: 0,
+      aggregateAccentMode: 'custom',
+      aggregateAccentColor: '#22d3ee',
+      aggregateAccentBarOffset: -3,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -240,6 +240,9 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoRatingPresentation: 'blockbuster',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
+    aggregateAccentMode: 'custom',
+    aggregateAccentColor: '#22d3ee',
+    aggregateAccentBarOffset: -3,
     posterImageText: 'clean',
     backdropImageText: 'clean',
     posterArtworkSource: 'fanart',
@@ -303,6 +306,9 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoRatingPresentation: 'blockbuster',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
+    aggregateAccentMode: 'custom',
+    aggregateAccentColor: '#22d3ee',
+    aggregateAccentBarOffset: '-3',
     posterImageText: 'clean',
     backdropImageText: 'clean',
     posterArtworkSource: 'fanart',
@@ -355,6 +361,9 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.match(value, /backdropRatings=mdblist/);
     assert.match(value, /lang=fr/);
     assert.match(value, /qualityBadgesSide=right/);
+    assert.match(value, /aggregateAccentMode=custom/);
+    assert.match(value, /aggregateAccentColor=%2322d3ee/);
+    assert.match(value, /aggregateAccentBarOffset=-3/);
     assert.match(value, /posterRatingsLayout=top-bottom/);
     assert.match(value, /backdropRatingsLayout=right-vertical/);
     assert.match(

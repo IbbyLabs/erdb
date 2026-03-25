@@ -401,8 +401,11 @@ backdropQualityBadgesStyle| glass, square, plain, media, silver (backdrop only) 
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 providerAppearance     | base64url or JSON provider overrides for icon, accent, and stacked badge chrome | none
-ratingPresentation      | standard, minimal, average, editorial, blockbuster                   | standard
+ratingPresentation      | standard, minimal, average, dual, editorial, blockbuster             | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
+aggregateAccentMode     | source, genre, custom                                                | source
+aggregateAccentColor    | Hex color (used when aggregateAccentMode=custom)                     | #a78bfa
+aggregateAccentBarOffset| Number (-12 to 12, average badges only)                              | 0
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
 ratingStyle             | glass, square, plain, stacked                                        | glass
 genreBadgeScale         | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
@@ -458,6 +461,8 @@ Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRating
 Use cfg.ratingValueMode to keep provider native scales or normalize everything to ten point values.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
+Use cfg.aggregateAccentMode to keep source colours, match the genre badge, or force a custom aggregate accent through cfg.aggregateAccentColor.
+Use cfg.aggregateAccentBarOffset to nudge the average badge accent bar up or down a few pixels in compact, labeled, and dual aggregate layouts.
 Editorial presentation gives posters a fixed top left print style and falls back to the labeled average badge on backdrop and logo output.
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
@@ -469,7 +474,7 @@ Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -2710,7 +2715,7 @@ export default function Home() {
                         : 'Logo presentation keeps the output controls below available.'}
                     </p>
                   )}
-                  {showsAggregateRatingSource && (
+                  {usesAggregatePresentation && (
                     <div
                       className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
                       style={{
@@ -2718,49 +2723,122 @@ export default function Home() {
                         backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(activeAggregateAccent, 0.12)}, rgba(24,24,27,0.78) 58%)`,
                       }}
                     >
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
-                      <div className="flex flex-wrap gap-1">
-                        {AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => (
-                          (() => {
-                            const accentColor = AGGREGATE_SOURCE_ACCENT_BY_ID[option.id];
-                            const isSelected = activeAggregateRatingSource === option.id;
+                      {showsAggregateRatingSource && (
+                        <>
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
+                          <div className="flex flex-wrap gap-1">
+                            {AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => (
+                              (() => {
+                                const accentColor = AGGREGATE_SOURCE_ACCENT_BY_ID[option.id];
+                                const isSelected = activeAggregateRatingSource === option.id;
+                                return (
+                                  <button
+                                    key={option.id}
+                                    onClick={() => setAggregateRatingSourceForType(option.id)}
+                                    className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                                      isSelected
+                                        ? 'bg-zinc-800 text-white'
+                                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                                    }`}
+                                    style={
+                                      isSelected
+                                        ? {
+                                            borderColor: hexToRgbaCss(accentColor, 0.7),
+                                            backgroundImage: `linear-gradient(135deg, ${hexToRgbaCss(accentColor, 0.28)}, rgba(24,24,27,0.96))`,
+                                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${hexToRgbaCss(accentColor, 0.12)}`,
+                                          }
+                                        : undefined
+                                    }
+                                  >
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <span
+                                        className="h-2 w-2 rounded-full"
+                                        style={{
+                                          backgroundColor: accentColor,
+                                          boxShadow: `0 0 0 2px ${hexToRgbaCss(accentColor, 0.16)}`,
+                                        }}
+                                      />
+                                      {option.label}
+                                    </span>
+                                  </button>
+                                );
+                              })()
+                            ))}
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-zinc-500">
+                            {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
+                          </p>
+                        </>
+                      )}
+                      <div className="pt-1">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent</div>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {AGGREGATE_ACCENT_MODE_OPTIONS.map((option) => {
+                            const isSelected = aggregateAccentMode === option.id;
                             return (
                               <button
                                 key={option.id}
-                                onClick={() => setAggregateRatingSourceForType(option.id)}
+                                onClick={() => setAggregateAccentMode(option.id)}
                                 className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
                                   isSelected
                                     ? 'bg-zinc-800 text-white'
                                     : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
                                 }`}
-                                style={
-                                  isSelected
-                                    ? {
-                                        borderColor: hexToRgbaCss(accentColor, 0.7),
-                                        backgroundImage: `linear-gradient(135deg, ${hexToRgbaCss(accentColor, 0.28)}, rgba(24,24,27,0.96))`,
-                                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${hexToRgbaCss(accentColor, 0.12)}`,
-                                      }
-                                    : undefined
-                                }
                               >
-                                <span className="inline-flex items-center gap-1.5">
-                                  <span
-                                    className="h-2 w-2 rounded-full"
-                                    style={{
-                                      backgroundColor: accentColor,
-                                      boxShadow: `0 0 0 2px ${hexToRgbaCss(accentColor, 0.16)}`,
-                                    }}
-                                  />
-                                  {option.label}
-                                </span>
+                                {option.label}
                               </button>
                             );
-                          })()
-                        ))}
+                          })}
+                        </div>
+                        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                          {AGGREGATE_ACCENT_MODE_OPTIONS.find((option) => option.id === aggregateAccentMode)?.description}
+                          {aggregateAccentMode === 'genre'
+                            ? ' Editorial already behaves like this on posters; this extends genre matching to the other aggregate badge styles too.'
+                            : ''}
+                        </p>
                       </div>
-                      <p className="text-[11px] leading-relaxed text-zinc-500">
-                        {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
-                      </p>
+                      {aggregateAccentMode === 'custom' && (
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
+                          <div>
+                            <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                              Custom Accent
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={aggregateAccentColor}
+                                onChange={(event) => setAggregateAccentColor(event.target.value)}
+                                className="h-10 w-14 rounded-md border border-white/10 bg-black"
+                              />
+                              <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+                                {aggregateAccentColor}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {showsAggregateAccentBarOffset && (
+                        <div className="pt-1">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                              Accent Bar Offset
+                            </span>
+                            <span className="text-[11px] text-zinc-400">{aggregateAccentBarOffset}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={MIN_AGGREGATE_ACCENT_BAR_OFFSET}
+                            max={MAX_AGGREGATE_ACCENT_BAR_OFFSET}
+                            step={1}
+                            value={aggregateAccentBarOffset}
+                            onChange={(event) => setAggregateAccentBarOffset(Number(event.target.value))}
+                            className="mt-2 h-2 w-full accent-violet-500"
+                          />
+                          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                            Negative values move the aggregate accent bar upward a few pixels. This applies to compact and labeled average badges, including the new critics plus audience split mode.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -4382,7 +4460,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
-                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span> and <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>. Query values remain unchanged.
+                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span>, <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>, and <span className="font-semibold text-zinc-200">Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual</span>. Query values remain unchanged.
                   <br />
                   Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve; ambiguous combinations stay off.
                   <br />
@@ -4442,7 +4520,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>tmdb, fanart, cinemeta</div>
-                            <div>standard, minimal, average, editorial, blockbuster</div>
+                            <div>standard, minimal, average, dual, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -4479,7 +4557,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, editorial, blockbuster</div>
+                            <div>standard, minimal, average, dual, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -4519,7 +4597,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Direct image URLs support shared fallbacks like ratings, lang, ratingValueMode, genreBadge, genreBadgeStyle, genreBadgePosition, genreBadgeScale, ratingPresentation, aggregateRatingSource, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
+                  Direct image URLs support shared fallbacks like ratings, lang, ratingValueMode, genreBadge, genreBadgeStyle, genreBadgePosition, genreBadgeScale, ratingPresentation, aggregateRatingSource, aggregateAccentMode, aggregateAccentColor, aggregateAccentBarOffset, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit the per type fields instead and omit unchanged defaults.
                 </div>
               </div>
 
