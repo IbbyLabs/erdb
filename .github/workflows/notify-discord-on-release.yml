@@ -1,6 +1,10 @@
 name: Notify Discord On Release
 
 "on":
+  workflow_run:
+    workflows: ["Create GitHub Release"]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       tag:
@@ -11,12 +15,24 @@ name: Notify Discord On Release
 jobs:
   discord-release:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v')) }}
     permissions:
       contents: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Resolve release tag
+        id: release_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Check Discord webhook secret
         id: webhook
@@ -36,5 +52,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
         run: ./.github/scripts/post-discord-release.sh
