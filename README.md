@@ -1,6 +1,6 @@
 # Easy Ratings Database (ERDB): Stateless Edition
 
-ERDB generates poster/backdrop/logo images with dynamic ratings on the fly.
+ERDB generates poster/backdrop/logo images with dynamic ratings and quality badges on the fly.
 
 <!-- changelog-links:start -->
 
@@ -80,8 +80,8 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
 
 <table>
   <tr>
-    <td><strong>The Boys</strong><br>Dark canvas, glass ratings</td>
-    <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings</td>
+    <td><strong>The Boys</strong><br>Dark canvas, glass ratings, quality badges</td>
+    <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings and quality badges</td>
   </tr>
   <tr>
     <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-39-1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-39-1" alt="The Boys logo live preview" width="320"></a></td>

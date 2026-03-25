@@ -132,10 +132,13 @@ export type SharedErdbSettings = {
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterQualityBadgePreferences: MediaFeatureBadgeKey[];
   backdropQualityBadgePreferences: MediaFeatureBadgeKey[];
+  logoQualityBadgePreferences: MediaFeatureBadgeKey[];
   posterQualityBadgesStyle: QualityBadgeStyle;
   backdropQualityBadgesStyle: QualityBadgeStyle;
+  logoQualityBadgesStyle: QualityBadgeStyle;
   posterQualityBadgesMax: number | null;
   backdropQualityBadgesMax: number | null;
+  logoQualityBadgesMax: number | null;
   posterRatingsLayout: PosterRatingLayout;
   backdropRatingsLayout: BackdropRatingLayout;
   posterRatingsMax: number | null;
@@ -148,6 +151,7 @@ export type SharedErdbSettings = {
   logoRatingBadgeScale: number;
   posterQualityBadgeScale: number;
   backdropQualityBadgeScale: number;
+  logoQualityBadgeScale: number;
   posterRatingPresentation: RatingPresentation;
   backdropRatingPresentation: RatingPresentation;
   logoRatingPresentation: RatingPresentation;
@@ -242,10 +246,13 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterQualityBadgesPosition: 'auto',
   posterQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   backdropQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
+  logoQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   posterQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
   backdropQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
+  logoQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
   posterQualityBadgesMax: null,
   backdropQualityBadgesMax: null,
+  logoQualityBadgesMax: null,
   posterRatingsLayout: 'bottom',
   backdropRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
   posterRatingsMax: null,
@@ -258,6 +265,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   logoRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  logoQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterRatingPresentation: DEFAULT_RATING_PRESENTATION,
   backdropRatingPresentation: DEFAULT_RATING_PRESENTATION,
   logoRatingPresentation: DEFAULT_RATING_PRESENTATION,
@@ -583,14 +591,22 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.backdropQualityBadgePreferences,
       defaults.backdropQualityBadgePreferences,
     ),
+    logoQualityBadgePreferences: normalizeQualityBadgePreferencesList(
+      candidate.logoQualityBadgePreferences,
+      defaults.logoQualityBadgePreferences,
+    ),
     posterQualityBadgesStyle: normalizeQualityBadgeStyle(
       candidate.posterQualityBadgesStyle as string | null | undefined,
     ),
     backdropQualityBadgesStyle: normalizeQualityBadgeStyle(
       candidate.backdropQualityBadgesStyle as string | null | undefined,
     ),
+    logoQualityBadgesStyle: normalizeQualityBadgeStyle(
+      candidate.logoQualityBadgesStyle as string | null | undefined,
+    ),
     posterQualityBadgesMax: normalizeOptionalBadgeCount(candidate.posterQualityBadgesMax),
     backdropQualityBadgesMax: normalizeOptionalBadgeCount(candidate.backdropQualityBadgesMax),
+    logoQualityBadgesMax: normalizeOptionalBadgeCount(candidate.logoQualityBadgesMax),
     posterRatingsLayout: normalizePosterRatingLayout(candidate.posterRatingsLayout as string | null | undefined),
     backdropRatingsLayout: normalizeBackdropRatingLayout(
       candidate.backdropRatingsLayout as string | null | undefined,
@@ -659,6 +675,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     backdropQualityBadgeScale: normalizeBadgeScalePercent(
       candidate.backdropQualityBadgeScale,
       defaults.backdropQualityBadgeScale,
+    ),
+    logoQualityBadgeScale: normalizeBadgeScalePercent(
+      candidate.logoQualityBadgeScale,
+      defaults.logoQualityBadgeScale,
     ),
     posterRatingsMaxPerSide: normalizePosterRatingsMaxPerSide(candidate.posterRatingsMaxPerSide),
     posterEdgeOffset: normalizePosterEdgeOffset(candidate.posterEdgeOffset),
@@ -872,6 +892,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   const backdropQualityBadges = stringifyQualityBadgePreferencesAllowEmpty(
     settings.backdropQualityBadgePreferences,
   );
+  const logoQualityBadges = stringifyQualityBadgePreferencesAllowEmpty(
+    settings.logoQualityBadgePreferences,
+  );
   if (
     posterQualityBadges !==
     stringifyQualityBadgePreferencesAllowEmpty(DEFAULT_QUALITY_BADGE_PREFERENCES)
@@ -884,17 +907,29 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   ) {
     payload.backdropQualityBadges = backdropQualityBadges;
   }
+  if (
+    logoQualityBadges !==
+    stringifyQualityBadgePreferencesAllowEmpty(DEFAULT_QUALITY_BADGE_PREFERENCES)
+  ) {
+    payload.logoQualityBadges = logoQualityBadges;
+  }
   if (settings.posterQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
     payload.posterQualityBadgesStyle = settings.posterQualityBadgesStyle;
   }
   if (settings.backdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
     payload.backdropQualityBadgesStyle = settings.backdropQualityBadgesStyle;
   }
+  if (settings.logoQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+    payload.logoQualityBadgesStyle = settings.logoQualityBadgesStyle;
+  }
   if (settings.posterQualityBadgesMax !== null) {
     payload.posterQualityBadgesMax = settings.posterQualityBadgesMax;
   }
   if (settings.backdropQualityBadgesMax !== null) {
     payload.backdropQualityBadgesMax = settings.backdropQualityBadgesMax;
+  }
+  if (settings.logoQualityBadgesMax !== null) {
+    payload.logoQualityBadgesMax = settings.logoQualityBadgesMax;
   }
   if (settings.posterRatingsMax !== null) {
     payload.posterRatingsMax = settings.posterRatingsMax;
@@ -920,6 +955,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   }
   if (settings.backdropQualityBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.backdropQualityBadgeScale = settings.backdropQualityBadgeScale;
+  }
+  if (settings.logoQualityBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
+    payload.logoQualityBadgeScale = settings.logoQualityBadgeScale;
   }
   payload.posterImageText = settings.posterImageText;
   payload.backdropImageText = settings.backdropImageText;

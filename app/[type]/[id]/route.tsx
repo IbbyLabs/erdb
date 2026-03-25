@@ -8932,7 +8932,9 @@ export async function handleImageRequest(
             ? backdropRatingBadgeScale
             : logoRatingBadgeScale;
       const qualityBadgeScalePercent =
-        imageType === 'backdrop' ? backdropQualityBadgeScale : posterQualityBadgeScale;
+        imageType === 'backdrop'
+          ? backdropQualityBadgeScale
+          : posterQualityBadgeScale;
       const scaledBadgeMetrics = scaleBadgeMetrics(
         {
           iconSize: badgeIconSize,
@@ -9156,9 +9158,8 @@ export async function handleImageRequest(
             return Math.max(maxWidth, rowWidth);
           }, 0)
         : 0;
-      const qualityBadges = useLogoBadgeLayout
-        ? []
-        : typeof qualityBadgesMax === 'number'
+      const qualityBadges =
+        typeof qualityBadgesMax === 'number'
           ? streamBadges.slice(0, qualityBadgesMax)
           : streamBadges;
       const badgesForIcons = cappedRatingBadges;

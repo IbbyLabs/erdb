@@ -580,20 +580,20 @@ Use cfg.aggregateAccentBarOffset to nudge the aggregate badge accent bar up or d
 Editorial presentation gives posters a fixed top left print style and falls back to the labeled average badge on backdrop and logo output.
 Use cfg.posterEdgeOffset to push poster side rating stacks, side quality columns, and corner genre badges inward from the poster edges.
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
-Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
+Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges / cfg.logoQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle / cfg.logoQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax / cfg.logoQualityBadgesMax.
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge mode/style/position/scale can be set per type via cfg.posterGenreBadge* / cfg.backdropGenreBadge* / cfg.logoGenreBadge* and fall back to the shared cfg.genreBadge* fields.
-Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale.
+Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale / cfg.logoQualityBadgeScale.
 Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedWidthPercent":88,"stackedSurfaceOpacityPercent":72,"stackedAccentMode":"logo","stackedLineVisible":false,"stackedLineWidthPercent":88}}.
 Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0 to 100 vertical anchor.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&posterGenreBadge=\${cfg.posterGenreBadge}&backdropGenreBadge=\${cfg.backdropGenreBadge}&logoGenreBadge=\${cfg.logoGenreBadge}&posterGenreBadgeStyle=\${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=\${cfg.backdropGenreBadgeStyle}&logoGenreBadgeStyle=\${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=\${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=\${cfg.backdropGenreBadgePosition}&logoGenreBadgePosition=\${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=\${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=\${cfg.backdropGenreBadgeScale}&logoGenreBadgeScale=\${cfg.logoGenreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&posterEdgeOffset=\${cfg.posterEdgeOffset}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&posterGenreBadge=\${cfg.posterGenreBadge}&backdropGenreBadge=\${cfg.backdropGenreBadge}&logoGenreBadge=\${cfg.logoGenreBadge}&posterGenreBadgeStyle=\${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=\${cfg.backdropGenreBadgeStyle}&logoGenreBadgeStyle=\${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=\${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=\${cfg.backdropGenreBadgePosition}&logoGenreBadgePosition=\${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=\${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=\${cfg.backdropGenreBadgeScale}&logoGenreBadgeScale=\${cfg.logoGenreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&logoQualityBadges=\${cfg.logoQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&logoQualityBadgesStyle=\${cfg.logoQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&logoQualityBadgesMax=\${cfg.logoQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&logoQualityBadgeScale=\${cfg.logoQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&posterEdgeOffset=\${cfg.posterEdgeOffset}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
-Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable rating providers. Keep empty posterQualityBadges/backdropQualityBadges to hide all quality badges.`;
+Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRatings/logoRatings to disable rating providers. Keep empty posterQualityBadges/backdropQualityBadges/logoQualityBadges to hide all quality badges.`;
 
 const subscribeToNothing = () => () => {};
 
@@ -1034,12 +1034,16 @@ export default function Home() {
     useState<PosterQualityBadgesPosition>('auto');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [logoQualityBadgesStyle, setLogoQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [posterQualityBadgePreferences, setPosterQualityBadgePreferences] =
     useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
   const [backdropQualityBadgePreferences, setBackdropQualityBadgePreferences] =
     useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
+  const [logoQualityBadgePreferences, setLogoQualityBadgePreferences] =
+    useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
   const [posterQualityBadgesMax, setPosterQualityBadgesMax] = useState<number | null>(null);
   const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
+  const [logoQualityBadgesMax, setLogoQualityBadgesMax] = useState<number | null>(null);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [posterRatingsMax, setPosterRatingsMax] = useState<number | null>(null);
@@ -1062,6 +1066,8 @@ export default function Home() {
   const [posterQualityBadgeScale, setPosterQualityBadgeScale] =
     useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [backdropQualityBadgeScale, setBackdropQualityBadgeScale] =
+    useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [logoQualityBadgeScale, setLogoQualityBadgeScale] =
     useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [posterRatingPresentation, setPosterRatingPresentation] =
     useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
@@ -1158,23 +1164,46 @@ export default function Home() {
   const shouldShowQualityBadgesSide = previewType === 'poster' && shouldShowPosterQualityBadgesSide;
   const shouldShowQualityBadgesPosition =
     previewType === 'poster' && shouldShowPosterQualityBadgesPosition;
-  const qualityBadgeTypeLabel = previewType === 'backdrop' ? 'Backdrop' : 'Poster';
+  const qualityBadgeTypeLabel =
+    previewType === 'backdrop' ? 'Backdrop' : previewType === 'logo' ? 'Logo' : 'Poster';
   const activeStreamBadges = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
   const setActiveStreamBadges = previewType === 'backdrop' ? setBackdropStreamBadges : setPosterStreamBadges;
   const activeQualityBadgesStyle =
-    previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
+    previewType === 'backdrop'
+      ? backdropQualityBadgesStyle
+      : previewType === 'logo'
+        ? logoQualityBadgesStyle
+        : posterQualityBadgesStyle;
   const setActiveQualityBadgesStyle =
-    previewType === 'backdrop' ? setBackdropQualityBadgesStyle : setPosterQualityBadgesStyle;
+    previewType === 'backdrop'
+      ? setBackdropQualityBadgesStyle
+      : previewType === 'logo'
+        ? setLogoQualityBadgesStyle
+        : setPosterQualityBadgesStyle;
   const activeQualityBadgesMax =
-    previewType === 'backdrop' ? backdropQualityBadgesMax : posterQualityBadgesMax;
+    previewType === 'backdrop'
+      ? backdropQualityBadgesMax
+      : previewType === 'logo'
+        ? logoQualityBadgesMax
+        : posterQualityBadgesMax;
   const setActiveQualityBadgesMax =
-    previewType === 'backdrop' ? setBackdropQualityBadgesMax : setPosterQualityBadgesMax;
+    previewType === 'backdrop'
+      ? setBackdropQualityBadgesMax
+      : previewType === 'logo'
+        ? setLogoQualityBadgesMax
+        : setPosterQualityBadgesMax;
   const activeQualityBadgePreferences =
-    previewType === 'backdrop' ? backdropQualityBadgePreferences : posterQualityBadgePreferences;
+    previewType === 'backdrop'
+      ? backdropQualityBadgePreferences
+      : previewType === 'logo'
+        ? logoQualityBadgePreferences
+        : posterQualityBadgePreferences;
   const setActiveQualityBadgePreferences =
     previewType === 'backdrop'
       ? setBackdropQualityBadgePreferences
-      : setPosterQualityBadgePreferences;
+      : previewType === 'logo'
+        ? setLogoQualityBadgePreferences
+        : setPosterQualityBadgePreferences;
   const activeRatingBadgeScale =
     previewType === 'poster'
       ? posterRatingBadgeScale
@@ -1188,9 +1217,17 @@ export default function Home() {
         ? setBackdropRatingBadgeScale
         : setLogoRatingBadgeScale;
   const activeQualityBadgeScale =
-    previewType === 'backdrop' ? backdropQualityBadgeScale : posterQualityBadgeScale;
+    previewType === 'backdrop'
+      ? backdropQualityBadgeScale
+      : previewType === 'logo'
+        ? logoQualityBadgeScale
+        : posterQualityBadgeScale;
   const setActiveQualityBadgeScale =
-    previewType === 'backdrop' ? setBackdropQualityBadgeScale : setPosterQualityBadgeScale;
+    previewType === 'backdrop'
+      ? setBackdropQualityBadgeScale
+      : previewType === 'logo'
+        ? setLogoQualityBadgeScale
+        : setPosterQualityBadgeScale;
   const activeGenreBadgeMode =
     previewType === 'poster'
       ? posterGenreBadgeMode
@@ -1561,10 +1598,13 @@ export default function Home() {
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
       setPosterQualityBadgePreferences(normalized.settings.posterQualityBadgePreferences);
       setBackdropQualityBadgePreferences(normalized.settings.backdropQualityBadgePreferences);
+      setLogoQualityBadgePreferences(normalized.settings.logoQualityBadgePreferences);
       setPosterQualityBadgesStyle(normalized.settings.posterQualityBadgesStyle);
       setBackdropQualityBadgesStyle(normalized.settings.backdropQualityBadgesStyle);
+      setLogoQualityBadgesStyle(normalized.settings.logoQualityBadgesStyle);
       setPosterQualityBadgesMax(normalized.settings.posterQualityBadgesMax);
       setBackdropQualityBadgesMax(normalized.settings.backdropQualityBadgesMax);
+      setLogoQualityBadgesMax(normalized.settings.logoQualityBadgesMax);
       setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
       setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
       setPosterRatingsMax(normalized.settings.posterRatingsMax);
@@ -1580,6 +1620,7 @@ export default function Home() {
       setLogoRatingBadgeScale(normalized.settings.logoRatingBadgeScale);
       setPosterQualityBadgeScale(normalized.settings.posterQualityBadgeScale);
       setBackdropQualityBadgeScale(normalized.settings.backdropQualityBadgeScale);
+      setLogoQualityBadgeScale(normalized.settings.logoQualityBadgeScale);
       setPosterRatingPresentation(normalized.settings.posterRatingPresentation);
       setBackdropRatingPresentation(normalized.settings.backdropRatingPresentation);
       setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
@@ -1639,10 +1680,13 @@ export default function Home() {
         posterQualityBadgesPosition,
         posterQualityBadgePreferences,
         backdropQualityBadgePreferences,
+        logoQualityBadgePreferences,
         posterQualityBadgesStyle,
         backdropQualityBadgesStyle,
+        logoQualityBadgesStyle,
         posterQualityBadgesMax,
         backdropQualityBadgesMax,
+        logoQualityBadgesMax,
         posterRatingsLayout,
         backdropRatingsLayout,
         posterRatingsMax,
@@ -1658,6 +1702,7 @@ export default function Home() {
         logoRatingBadgeScale,
         posterQualityBadgeScale,
         backdropQualityBadgeScale,
+        logoQualityBadgeScale,
         posterRatingPresentation,
         backdropRatingPresentation,
         logoRatingPresentation,
@@ -1713,10 +1758,13 @@ export default function Home() {
       posterQualityBadgesPosition,
       posterQualityBadgePreferences,
       backdropQualityBadgePreferences,
+      logoQualityBadgePreferences,
       posterQualityBadgesStyle,
       backdropQualityBadgesStyle,
+      logoQualityBadgesStyle,
       posterQualityBadgesMax,
       backdropQualityBadgesMax,
+      logoQualityBadgesMax,
       posterRatingsLayout,
       backdropRatingsLayout,
       posterRatingsMax,
@@ -1732,6 +1780,7 @@ export default function Home() {
       logoRatingBadgeScale,
       posterQualityBadgeScale,
       backdropQualityBadgeScale,
+      logoQualityBadgeScale,
       posterRatingPresentation,
       backdropRatingPresentation,
       logoRatingPresentation,
@@ -1912,9 +1961,17 @@ export default function Home() {
     const imageTextForType = previewType === 'backdrop' ? backdropImageText : posterImageText;
     const streamBadgesForType = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
     const qualityBadgesStyleForType =
-      previewType === 'backdrop' ? backdropQualityBadgesStyle : posterQualityBadgesStyle;
+      previewType === 'backdrop'
+        ? backdropQualityBadgesStyle
+        : previewType === 'logo'
+          ? logoQualityBadgesStyle
+          : posterQualityBadgesStyle;
     const qualityBadgePreferencesForType =
-      previewType === 'backdrop' ? backdropQualityBadgePreferences : posterQualityBadgePreferences;
+      previewType === 'backdrop'
+        ? backdropQualityBadgePreferences
+        : previewType === 'logo'
+          ? logoQualityBadgePreferences
+          : posterQualityBadgePreferences;
     const ratingBadgeScaleForType =
       previewType === 'poster'
         ? posterRatingBadgeScale
@@ -1922,7 +1979,11 @@ export default function Home() {
           ? backdropRatingBadgeScale
           : logoRatingBadgeScale;
     const qualityBadgeScaleForType =
-      previewType === 'backdrop' ? backdropQualityBadgeScale : posterQualityBadgeScale;
+      previewType === 'backdrop'
+        ? backdropQualityBadgeScale
+        : previewType === 'logo'
+          ? logoQualityBadgeScale
+          : posterQualityBadgeScale;
     const ratingsMaxForType =
       previewType === 'poster'
         ? posterRatingsMax
@@ -2002,21 +2063,31 @@ export default function Home() {
     if (shouldShowQualityBadgesPosition && posterQualityBadgesPosition !== 'auto') {
       query.set('posterQualityBadgesPosition', posterQualityBadgesPosition);
     }
-    if (previewType !== 'logo' && qualityBadgesStyleForType !== DEFAULT_QUALITY_BADGES_STYLE) {
+    if (qualityBadgesStyleForType !== DEFAULT_QUALITY_BADGES_STYLE) {
       query.set(
-        previewType === 'backdrop' ? 'backdropQualityBadgesStyle' : 'posterQualityBadgesStyle',
+        previewType === 'backdrop'
+          ? 'backdropQualityBadgesStyle'
+          : previewType === 'logo'
+            ? 'logoQualityBadgesStyle'
+            : 'posterQualityBadgesStyle',
         qualityBadgesStyleForType
       );
     }
-    if (previewType !== 'logo') {
+    query.set(
+      previewType === 'backdrop'
+        ? 'backdropQualityBadges'
+        : previewType === 'logo'
+          ? 'logoQualityBadges'
+          : 'posterQualityBadges',
+      qualityBadgePreferencesForType.join(','),
+    );
+    if (activeQualityBadgesMax !== null) {
       query.set(
-        previewType === 'backdrop' ? 'backdropQualityBadges' : 'posterQualityBadges',
-        qualityBadgePreferencesForType.join(','),
-      );
-    }
-    if (previewType !== 'logo' && activeQualityBadgesMax !== null) {
-      query.set(
-        previewType === 'backdrop' ? 'backdropQualityBadgesMax' : 'posterQualityBadgesMax',
+        previewType === 'backdrop'
+          ? 'backdropQualityBadgesMax'
+          : previewType === 'logo'
+            ? 'logoQualityBadgesMax'
+            : 'posterQualityBadgesMax',
         String(activeQualityBadgesMax)
       );
     }
@@ -2082,9 +2153,13 @@ export default function Home() {
         String(ratingBadgeScaleForType),
       );
     }
-    if (previewType !== 'logo' && qualityBadgeScaleForType !== DEFAULT_BADGE_SCALE_PERCENT) {
+    if (qualityBadgeScaleForType !== DEFAULT_BADGE_SCALE_PERCENT) {
       query.set(
-        previewType === 'backdrop' ? 'backdropQualityBadgeScale' : 'posterQualityBadgeScale',
+        previewType === 'backdrop'
+          ? 'backdropQualityBadgeScale'
+          : previewType === 'logo'
+            ? 'logoQualityBadgeScale'
+            : 'posterQualityBadgeScale',
         String(qualityBadgeScaleForType),
       );
     }
@@ -3048,7 +3123,7 @@ export default function Home() {
         ) : null
       ) : (
         <>
-          <div className="mt-4 grid gap-3 xl:grid-cols-2">
+          <div className="mt-4 grid gap-3 2xl:grid-cols-2">
             {CONFIGURATOR_PRESETS.map((preset) => {
               const isSelected = selectedPresetId === preset.id;
               const presetIcon =
@@ -3065,7 +3140,7 @@ export default function Home() {
                   key={preset.id}
                   type="button"
                   onClick={() => handleApplyPreset(preset.id)}
-                  className={`rounded-2xl border p-4 text-left transition-colors ${
+                  className={`min-w-0 rounded-2xl border p-4 text-left transition-colors ${
                     isSelected
                       ? 'bg-zinc-900/80 text-white'
                       : 'border-white/10 bg-zinc-950/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-950'
@@ -3079,7 +3154,7 @@ export default function Home() {
                       : undefined
                   }
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex min-w-0 items-start gap-3">
                       <div
                         className="shrink-0 rounded-2xl border border-white/10 p-2.5"
@@ -3089,15 +3164,15 @@ export default function Home() {
                       >
                         <PresetIcon className="h-4 w-4" style={{ color: preset.accentColor }} />
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-white">{preset.label}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="break-words text-sm font-semibold text-white">{preset.label}</div>
                         <div className="mt-1 text-[11px] leading-5 text-zinc-500">
                           {preset.description}
                         </div>
                       </div>
                     </div>
                     <span
-                      className="shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                      className="max-w-full shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
                       style={{
                         borderColor: hexToRgbaCss(preset.accentColor, 0.45),
                         backgroundColor: hexToRgbaCss(preset.accentColor, 0.16),
@@ -3110,7 +3185,7 @@ export default function Home() {
                     {preset.bullets.map((bullet) => (
                       <div
                         key={`${preset.id}-${bullet}`}
-                        className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] leading-5 text-zinc-400"
+                        className="break-words rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] leading-5 text-zinc-400"
                       >
                         {bullet}
                       </div>
@@ -3841,6 +3916,39 @@ export default function Home() {
                 <button onClick={() => setLogoRatingsMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Default</button>
               </div>
             </div>
+            <div className="space-y-2 rounded-xl border border-white/10 bg-black/30 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Quality Badges</div>
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
+                <div className="flex flex-wrap gap-1">
+                  {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
+                    <button key={`logo-quality-style-${option.id}`} onClick={() => setLogoQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${logoQualityBadgesStyle === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
+                <input type="number" value={logoQualityBadgesMax ?? ''} onChange={(e) => setLogoQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                <button onClick={() => setLogoQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Visible Quality Badges</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUALITY_BADGE_OPTIONS.map((option) => (
+                    <button
+                      key={`logo-quality-${option.id}`}
+                      type="button"
+                      onClick={() => toggleQualityBadgePreference(option.id)}
+                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${logoQualityBadgePreferences.includes(option.id) ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
             {activeLogoSourceOptionMeta ? (
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 {activeLogoSourceOptionMeta.description.replace('artwork', 'logo assets')}
@@ -3851,7 +3959,7 @@ export default function Home() {
 
         <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Sizing</div>
-          <div className={`grid gap-3 ${previewType === 'logo' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating badges</span>
@@ -3886,25 +3994,23 @@ export default function Home() {
                 className="h-2 w-full accent-violet-500"
               />
             </div>
-            {previewType !== 'logo' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Quality badges</span>
-                  <span className="text-[11px] text-zinc-400">{activeQualityBadgeScale}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={MIN_BADGE_SCALE_PERCENT}
-                  max={MAX_BADGE_SCALE_PERCENT}
-                  step={1}
-                  value={activeQualityBadgeScale}
-                  onChange={(event) =>
-                    setActiveQualityBadgeScale(normalizeBadgeScalePercent(event.target.value))
-                  }
-                  className="h-2 w-full accent-violet-500"
-                />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Quality badges</span>
+                <span className="text-[11px] text-zinc-400">{activeQualityBadgeScale}%</span>
               </div>
-            )}
+              <input
+                type="range"
+                min={MIN_BADGE_SCALE_PERCENT}
+                max={MAX_BADGE_SCALE_PERCENT}
+                step={1}
+                value={activeQualityBadgeScale}
+                onChange={(event) =>
+                  setActiveQualityBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                }
+                className="h-2 w-full accent-violet-500"
+              />
+            </div>
           </div>
           <p className="text-[11px] leading-relaxed text-zinc-500">
             These sliders let people increase badge and tag legibility without forcing a new layout. ERDB will still fit the final output back into the selected poster, backdrop, or logo frame.
@@ -3914,18 +4020,20 @@ export default function Home() {
     </>
   );
 
-  const qualitySection = previewType !== 'logo' ? (
+  const qualitySection = (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
       <div className="text-[11px] font-semibold text-zinc-400">
         Quality Badges · {qualityBadgeTypeLabel}
       </div>
-      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-        {STREAM_BADGE_OPTIONS.map(option => (
-          <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeStreamBadges === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-            {option.label}
-          </button>
-        ))}
-      </div>
+      {previewType !== 'logo' && (
+        <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+          {STREAM_BADGE_OPTIONS.map(option => (
+            <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeStreamBadges === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div>
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
         <div className="flex flex-wrap gap-1">
@@ -3989,10 +4097,6 @@ export default function Home() {
       <p className="text-[11px] leading-relaxed text-zinc-500">
         Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, no background styling, and silver mark styling without losing context.
       </p>
-    </div>
-  ) : (
-    <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
-      Quality badge controls only apply to poster and backdrop output.
     </div>
   );
 
