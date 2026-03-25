@@ -59,6 +59,13 @@
 
 <a id="v2-35-0"></a>
 
+<a id="v2-35-1"></a>
+
+## [v2.35.1] - 25/03/2026
+
+### Fixed
+* add drama genre badge fallback
+
 ## [v2.35.0] - 25/03/2026
 
 ### Added
