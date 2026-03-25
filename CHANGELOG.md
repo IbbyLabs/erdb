@@ -67,6 +67,13 @@
 
 <a id="v2-35-4"></a>
 
+<a id="v2-35-5"></a>
+
+## [v2.35.5] - 25/03/2026
+
+### Documentation
+* clarify AIOM credential masking
+
 ## [v2.35.4] - 25/03/2026
 
 ### Fixed
