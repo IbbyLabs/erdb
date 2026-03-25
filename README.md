@@ -38,7 +38,9 @@ This intentional design allows you to host public ERDB proxy instances without p
 
 The configurator's `Hide credentials` toggle only masks the exported AIOMetadata URL patterns with placeholders. It does not change live ERDB request URLs or the BYOK behavior above.
 
-Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `ERDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server-wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
+Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `ERDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
+
+For `simkl`, ERDB resolves a Simkl item id using `https://api.simkl.com/redirect` and then loads the summary from `https://api.simkl.com/movies/{id}`, `https://api.simkl.com/tv/{id}`, or `https://api.simkl.com/anime/{id}` based on media type hints. Every Simkl request includes `client_id`, `app-name`, and `app-version` query parameters, plus `simkl-api-key` and a browser style `User-Agent` header.
 
 ## Live Preview Gallery
 
@@ -311,7 +313,7 @@ Main endpoint:
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `fanartKey` | Fanart API Key for fanart poster, backdrop, and logo sources | String (e.g. `your_key`) | Server fallback when available |
-| `simklClientId` | SIMKL client_id for direct SIMKL ratings | String (e.g. `your_client_id`) | None |
+| `simklClientId` | SIMKL client id for direct SIMKL ratings | String (e.g. `your_client_id`) | None |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
 | `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart` | `tmdb` |
 | `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart` | `tmdb` |
@@ -432,7 +434,7 @@ logoArtworkSource       | tmdb, fanart                                          
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
-simklClientId           | Your SIMKL client_id for direct SIMKL ratings                        | -
+simklClientId           | Your SIMKL client id for direct SIMKL ratings                        | -
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
@@ -629,7 +631,9 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | `ERDB_KITSU_API_BASE_URL` | `https://kitsu.io/api/edge` | Optional Kitsu API base URL override used by image rendering and proxy translation |
 | `ERDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
 | `ERDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
-| `SIMKL_CLIENT_ID` | (empty) | Optional SIMKL client_id used for direct `simkl` ratings (also `ERDB_SIMKL_CLIENT_ID`) |
+| `SIMKL_CLIENT_ID` | (empty) | Optional SIMKL client id used for direct `simkl` ratings (also `ERDB_SIMKL_CLIENT_ID`) |
+| `ERDB_SIMKL_APP_NAME` | `erdb` | Simkl app name sent in required `app-name` query parameter |
+| `ERDB_SIMKL_APP_VERSION` | `1.0` | Simkl app version sent in required `app-version` query parameter |
 | `ERDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
 | `ERDB_JIKAN_API_BASE_URL` | `https://api.jikan.moe/v4` | Optional Jikan API base URL override for unauthenticated MAL fallback |
 | `ERDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
@@ -646,6 +650,8 @@ hardcoding separate cache TTL values.
 | `ERDB_MDBLIST_CACHE_TTL_MS` | 3 days | 10 min | 30 days | MDBList ratings |
 | `ERDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
 | `ERDB_SIMKL_CACHE_TTL_MS` | 3 days | 10 min | 30 days | SIMKL ratings |
+| `ERDB_SIMKL_ID_CACHE_TTL_MS` | 30 days | 10 min | 30 days | Simkl id resolution cache |
+| `ERDB_SIMKL_ID_EMPTY_CACHE_TTL_MS` | 1 day | 10 min | 30 days | Simkl empty id lookup cache |
 | `ERDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
 | `ERDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
 | `ERDB_IMDB_DATASET_CACHE_TTL_MS` | 7 days | 1 hour | 365 days | Local IMDb dataset |

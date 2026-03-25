@@ -323,7 +323,13 @@ const SIMKL_CACHE_TTL_MS = parseCacheTtlMs(
 );
 const SIMKL_ID_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_SIMKL_ID_CACHE_TTL_MS,
-  3 * 24 * 60 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000,
+  10 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000
+);
+const SIMKL_ID_EMPTY_CACHE_TTL_MS = parseCacheTtlMs(
+  process.env.ERDB_SIMKL_ID_EMPTY_CACHE_TTL_MS,
+  24 * 60 * 60 * 1000,
   10 * 60 * 1000,
   30 * 24 * 60 * 60 * 1000
 );
@@ -612,6 +618,32 @@ const LOGO_MIN_WIDTH = 360;
 const LOGO_MAX_WIDTH = 2200;
 const BROWSER_LIKE_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
+const SIMKL_APP_NAME = String(process.env.ERDB_SIMKL_APP_NAME || process.env.npm_package_name || 'erdb').trim() || 'erdb';
+const SIMKL_APP_VERSION = String(process.env.ERDB_SIMKL_APP_VERSION || process.env.npm_package_version || '1.0').trim() || '1.0';
+
+const buildSimklRequiredQuery = (clientId: string) => {
+  const query = new URLSearchParams();
+  query.set('client_id', clientId);
+  query.set('app-name', SIMKL_APP_NAME);
+  query.set('app-version', SIMKL_APP_VERSION);
+  return query;
+};
+
+const resolveSimklSummaryType = ({
+  mediaType,
+  anilistId,
+  malId,
+  kitsuId,
+}: {
+  mediaType: 'movie' | 'tv';
+  anilistId?: string | null;
+  malId?: string | null;
+  kitsuId?: string | null;
+}): 'movies' | 'tv' | 'anime' => {
+  const hasAnimeHint = [anilistId, malId, kitsuId].some((value) => String(value || '').trim().length > 0);
+  if (hasAnimeHint) return 'anime';
+  return mediaType === 'movie' ? 'movies' : 'tv';
+};
 
 const buildProviderMonogram = (label: string) => {
   const cleaned = label.replace(/[^A-Za-z0-9]+/g, ' ').trim();
@@ -2465,7 +2497,7 @@ const fetchSimklId = async ({
 
   if (!normalizedClientId) return null;
 
-  const query = new URLSearchParams();
+  const query = buildSimklRequiredQuery(normalizedClientId);
   if (normalizedImdbId) {
     query.set('imdb', normalizedImdbId);
   } else if (normalizedTmdbId) {
@@ -2487,10 +2519,16 @@ const fetchSimklId = async ({
     (normalizedAnilistId ? `anilist:${normalizedAnilistId}` : '') ||
     (normalizedMalId ? `mal:${normalizedMalId}` : '') ||
     (normalizedKitsuId ? `kitsu:${normalizedKitsuId}` : '');
+  const clientHash = sha1Hex(normalizedClientId);
+  const idCacheKey = `simkl:id:${cacheIdSource}:client:${clientHash}`;
+  const emptyIdCacheKey = `${idCacheKey}:empty`;
+
+  const cachedEmpty = getMetadata<{ empty: true }>(emptyIdCacheKey);
+  if (cachedEmpty?.empty) return null;
 
   try {
     const response = await fetchJsonCached(
-      `simkl:id:${cacheIdSource}:client:${sha1Hex(normalizedClientId)}`,
+      idCacheKey,
       `https://api.simkl.com/redirect?${query.toString()}`,
       cacheTtlMs,
       phases,
@@ -2504,9 +2542,18 @@ const fetchSimklId = async ({
       }
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      if (response.status === 404) {
+        setMetadata(emptyIdCacheKey, { empty: true }, SIMKL_ID_EMPTY_CACHE_TTL_MS);
+      }
+      return null;
+    }
     const simklId = response.data?.id || response.data?.simkl_id;
-    return simklId ? String(simklId) : null;
+    if (!simklId) {
+      setMetadata(emptyIdCacheKey, { empty: true }, SIMKL_ID_EMPTY_CACHE_TTL_MS);
+      return null;
+    }
+    return String(simklId);
   } catch {
     return null;
   }
@@ -2550,10 +2597,19 @@ const fetchSimklRating = async ({
 
   if (!simklId) return null;
 
+  const simklSummaryType = resolveSimklSummaryType({
+    mediaType,
+    anilistId,
+    malId,
+    kitsuId,
+  });
+  const query = buildSimklRequiredQuery(normalizedClientId);
+  query.set('extended', 'full');
+
   try {
     const response = await fetchJsonCached(
-      `simkl:summary:${simklId}:client:${sha1Hex(normalizedClientId)}`,
-      `https://api.simkl.com/shows/${simklId}?extended=full`,
+      `simkl:summary:${simklSummaryType}:${simklId}:client:${sha1Hex(normalizedClientId)}`,
+      `https://api.simkl.com/${simklSummaryType}/${encodeURIComponent(simklId)}?${query.toString()}`,
       cacheTtlMs,
       phases,
       'mdb',
