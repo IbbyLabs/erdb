@@ -45,10 +45,14 @@ const buildSampleSettings = () =>
       backdropArtworkSource: 'fanart',
       logoArtworkSource: 'fanart',
       ratingValueMode: 'normalized',
-      genreBadgeMode: 'both',
-      genreBadgeStyle: 'square',
-      genreBadgePosition: 'bottomRight',
-      genreBadgeScale: 118,
+      posterGenreBadgeMode: 'both',
+      posterGenreBadgeStyle: 'square',
+      posterGenreBadgePosition: 'bottomRight',
+      posterGenreBadgeScale: 118,
+      logoGenreBadgeMode: 'text',
+      logoGenreBadgeStyle: 'plain',
+      logoGenreBadgePosition: 'bottomCenter',
+      logoGenreBadgeScale: 112,
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
       logoRatingPreferences: [],
@@ -117,10 +121,18 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       backdropArtworkSource: 'fanart',
       logoArtworkSource: 'fanart',
       ratingValueMode: 'normalized',
-      genreBadgeMode: 'both',
-      genreBadgeStyle: 'square',
-      genreBadgePosition: 'bottomRight',
-      genreBadgeScale: 118,
+      posterGenreBadgeMode: 'both',
+      backdropGenreBadgeMode: 'off',
+      logoGenreBadgeMode: 'text',
+      posterGenreBadgeStyle: 'square',
+      backdropGenreBadgeStyle: 'glass',
+      logoGenreBadgeStyle: 'plain',
+      posterGenreBadgePosition: 'bottomRight',
+      backdropGenreBadgePosition: 'topLeft',
+      logoGenreBadgePosition: 'bottomCenter',
+      posterGenreBadgeScale: 118,
+      backdropGenreBadgeScale: 100,
+      logoGenreBadgeScale: 112,
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
       logoRatingPreferences: [],
@@ -213,6 +225,44 @@ test('workspace normalization accepts hundred point rating value aliases and pre
   assert.equal(decodedConfig.ratingValueMode, 'normalized100');
 });
 
+test('legacy shared genre badge settings expand to per type fields and re-compress in payloads', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      genreBadgeMode: 'both',
+      genreBadgeStyle: 'square',
+      genreBadgePosition: 'bottomRight',
+      genreBadgeScale: 118,
+    },
+  });
+
+  assert.equal(config.settings.posterGenreBadgeMode, 'both');
+  assert.equal(config.settings.backdropGenreBadgeMode, 'both');
+  assert.equal(config.settings.logoGenreBadgeMode, 'both');
+  assert.equal(config.settings.posterGenreBadgeStyle, 'square');
+  assert.equal(config.settings.backdropGenreBadgeStyle, 'square');
+  assert.equal(config.settings.logoGenreBadgeStyle, 'square');
+  assert.equal(config.settings.posterGenreBadgePosition, 'bottomRight');
+  assert.equal(config.settings.backdropGenreBadgePosition, 'bottomRight');
+  assert.equal(config.settings.logoGenreBadgePosition, 'bottomRight');
+  assert.equal(config.settings.posterGenreBadgeScale, 118);
+  assert.equal(config.settings.backdropGenreBadgeScale, 118);
+  assert.equal(config.settings.logoGenreBadgeScale, 118);
+
+  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.genreBadge, 'both');
+  assert.equal(decodedConfig.genreBadgeStyle, 'square');
+  assert.equal(decodedConfig.genreBadgePosition, 'bottomRight');
+  assert.equal(decodedConfig.genreBadgeScale, 118);
+  assert.equal(decodedConfig.posterGenreBadge, undefined);
+  assert.equal(decodedConfig.backdropGenreBadge, undefined);
+  assert.equal(decodedConfig.logoGenreBadge, undefined);
+});
+
 test('workspace normalization preserves compact dual aggregate presentation aliases', () => {
   const config = normalizeSavedUiConfig({
     settings: {
@@ -253,10 +303,14 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoRatings: '',
     lang: 'fr',
     ratingValueMode: 'normalized',
-    genreBadge: 'both',
-    genreBadgeStyle: 'square',
-    genreBadgePosition: 'bottomRight',
-    genreBadgeScale: 118,
+    posterGenreBadge: 'both',
+    logoGenreBadge: 'text',
+    posterGenreBadgeStyle: 'square',
+    logoGenreBadgeStyle: 'plain',
+    posterGenreBadgePosition: 'bottomRight',
+    logoGenreBadgePosition: 'bottomCenter',
+    posterGenreBadgeScale: 118,
+    logoGenreBadgeScale: 112,
     posterStreamBadges: 'on',
     backdropStreamBadges: 'off',
     qualityBadgesSide: 'right',
@@ -319,10 +373,14 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoRatings: '',
     lang: 'fr',
     ratingValueMode: 'normalized',
-    genreBadge: 'both',
-    genreBadgeStyle: 'square',
-    genreBadgePosition: 'bottomRight',
-    genreBadgeScale: '118',
+    posterGenreBadge: 'both',
+    logoGenreBadge: 'text',
+    posterGenreBadgeStyle: 'square',
+    logoGenreBadgeStyle: 'plain',
+    posterGenreBadgePosition: 'bottomRight',
+    logoGenreBadgePosition: 'bottomCenter',
+    posterGenreBadgeScale: '118',
+    logoGenreBadgeScale: '112',
     posterStreamBadges: 'on',
     backdropStreamBadges: 'off',
     qualityBadgesSide: 'right',

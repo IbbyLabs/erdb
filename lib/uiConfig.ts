@@ -86,6 +86,7 @@ export type PosterImageTextPreference = 'original' | 'clean' | 'alternative';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta';
 export type LogoBackground = 'transparent' | 'dark';
+type ErdbImageType = 'poster' | 'backdrop' | 'logo';
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
   backgroundUrlPattern: string;
@@ -105,10 +106,18 @@ export type SharedErdbSettings = {
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
   ratingValueMode: RatingValueMode;
-  genreBadgeMode: GenreBadgeMode;
-  genreBadgeStyle: GenreBadgeStyle;
-  genreBadgePosition: GenreBadgePosition;
-  genreBadgeScale: number;
+  posterGenreBadgeMode: GenreBadgeMode;
+  backdropGenreBadgeMode: GenreBadgeMode;
+  logoGenreBadgeMode: GenreBadgeMode;
+  posterGenreBadgeStyle: GenreBadgeStyle;
+  backdropGenreBadgeStyle: GenreBadgeStyle;
+  logoGenreBadgeStyle: GenreBadgeStyle;
+  posterGenreBadgePosition: GenreBadgePosition;
+  backdropGenreBadgePosition: GenreBadgePosition;
+  logoGenreBadgePosition: GenreBadgePosition;
+  posterGenreBadgeScale: number;
+  backdropGenreBadgeScale: number;
+  logoGenreBadgeScale: number;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
   logoRatingPreferences: RatingPreference[];
@@ -205,10 +214,18 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
   ratingValueMode: DEFAULT_RATING_VALUE_MODE,
-  genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
-  genreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
-  genreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
-  genreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  posterGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
+  backdropGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
+  logoGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
+  posterGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
+  backdropGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
+  logoGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
+  posterGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
+  backdropGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
+  logoGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
+  posterGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  backdropGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  logoGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -438,6 +455,22 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
         candidate.backdropArtworkSource ?? candidate.backdropCleanSource,
         defaults.backdropArtworkSource
       );
+  const globalGenreBadgeMode = normalizeGenreBadgeMode(
+    candidate.genreBadgeMode ?? candidate.genreBadge,
+    DEFAULT_GENRE_BADGE_MODE,
+  );
+  const globalGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.genreBadgeStyle,
+    DEFAULT_GENRE_BADGE_STYLE,
+  );
+  const globalGenreBadgePosition = normalizeGenreBadgePosition(
+    candidate.genreBadgePosition,
+    DEFAULT_GENRE_BADGE_POSITION,
+  );
+  const globalGenreBadgeScale = normalizeBadgeScalePercent(
+    candidate.genreBadgeScale,
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
 
   return {
     erdbKey: typeof candidate.erdbKey === 'string' ? candidate.erdbKey.trim() : defaults.erdbKey,
@@ -456,13 +489,54 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       defaults.logoArtworkSource
     ),
     ratingValueMode: normalizeRatingValueMode(candidate.ratingValueMode, defaults.ratingValueMode),
-    genreBadgeMode: normalizeGenreBadgeMode(candidate.genreBadgeMode, defaults.genreBadgeMode),
-    genreBadgeStyle: normalizeGenreBadgeStyle(candidate.genreBadgeStyle, defaults.genreBadgeStyle),
-    genreBadgePosition: normalizeGenreBadgePosition(
-      candidate.genreBadgePosition,
-      defaults.genreBadgePosition,
+    posterGenreBadgeMode: normalizeGenreBadgeMode(
+      candidate.posterGenreBadgeMode ?? candidate.posterGenreBadge,
+      globalGenreBadgeMode,
     ),
-    genreBadgeScale: normalizeBadgeScalePercent(candidate.genreBadgeScale, defaults.genreBadgeScale),
+    backdropGenreBadgeMode: normalizeGenreBadgeMode(
+      candidate.backdropGenreBadgeMode ?? candidate.backdropGenreBadge,
+      globalGenreBadgeMode,
+    ),
+    logoGenreBadgeMode: normalizeGenreBadgeMode(
+      candidate.logoGenreBadgeMode ?? candidate.logoGenreBadge,
+      globalGenreBadgeMode,
+    ),
+    posterGenreBadgeStyle: normalizeGenreBadgeStyle(
+      candidate.posterGenreBadgeStyle,
+      globalGenreBadgeStyle,
+    ),
+    backdropGenreBadgeStyle: normalizeGenreBadgeStyle(
+      candidate.backdropGenreBadgeStyle,
+      globalGenreBadgeStyle,
+    ),
+    logoGenreBadgeStyle: normalizeGenreBadgeStyle(
+      candidate.logoGenreBadgeStyle,
+      globalGenreBadgeStyle,
+    ),
+    posterGenreBadgePosition: normalizeGenreBadgePosition(
+      candidate.posterGenreBadgePosition,
+      globalGenreBadgePosition,
+    ),
+    backdropGenreBadgePosition: normalizeGenreBadgePosition(
+      candidate.backdropGenreBadgePosition,
+      globalGenreBadgePosition,
+    ),
+    logoGenreBadgePosition: normalizeGenreBadgePosition(
+      candidate.logoGenreBadgePosition,
+      globalGenreBadgePosition,
+    ),
+    posterGenreBadgeScale: normalizeBadgeScalePercent(
+      candidate.posterGenreBadgeScale,
+      globalGenreBadgeScale,
+    ),
+    backdropGenreBadgeScale: normalizeBadgeScalePercent(
+      candidate.backdropGenreBadgeScale,
+      globalGenreBadgeScale,
+    ),
+    logoGenreBadgeScale: normalizeBadgeScalePercent(
+      candidate.logoGenreBadgeScale,
+      globalGenreBadgeScale,
+    ),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences,
       defaults.posterRatingPreferences,
@@ -635,6 +709,34 @@ export const parseSavedUiConfig = (raw: string): SavedUiConfig | null => {
 export const serializeSavedUiConfig = (config: SavedUiConfig) =>
   JSON.stringify(normalizeSavedUiConfig(config), null, 2);
 
+const ERDB_IMAGE_TYPES: ErdbImageType[] = ['poster', 'backdrop', 'logo'];
+
+const appendSharedOrPerTypePayload = <Value extends string | number>(options: {
+  payload: Record<string, string | number>;
+  globalKey: string;
+  perTypeKeys: Record<ErdbImageType, string>;
+  values: Record<ErdbImageType, Value>;
+  defaultValue: Value;
+}) => {
+  const { payload, globalKey, perTypeKeys, values, defaultValue } = options;
+  const [firstType, ...remainingTypes] = ERDB_IMAGE_TYPES;
+  const sharedValue = values[firstType];
+  const allValuesMatch = remainingTypes.every((type) => values[type] === sharedValue);
+
+  if (allValuesMatch) {
+    if (sharedValue !== defaultValue) {
+      payload[globalKey] = sharedValue;
+    }
+    return;
+  }
+
+  for (const type of ERDB_IMAGE_TYPES) {
+    if (values[type] !== defaultValue) {
+      payload[perTypeKeys[type]] = values[type];
+    }
+  }
+};
+
 const buildSharedPayload = (settings: SharedErdbSettings) => {
   const erdbKey = settings.erdbKey.trim();
   const tmdbKey = settings.tmdbKey.trim();
@@ -674,18 +776,66 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   if (settings.ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
     payload.ratingValueMode = settings.ratingValueMode;
   }
-  if (settings.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
-    payload.genreBadge = settings.genreBadgeMode;
-  }
-  if (settings.genreBadgeStyle !== DEFAULT_GENRE_BADGE_STYLE) {
-    payload.genreBadgeStyle = settings.genreBadgeStyle;
-  }
-  if (settings.genreBadgePosition !== DEFAULT_GENRE_BADGE_POSITION) {
-    payload.genreBadgePosition = settings.genreBadgePosition;
-  }
-  if (settings.genreBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
-    payload.genreBadgeScale = settings.genreBadgeScale;
-  }
+  appendSharedOrPerTypePayload({
+    payload,
+    globalKey: 'genreBadge',
+    perTypeKeys: {
+      poster: 'posterGenreBadge',
+      backdrop: 'backdropGenreBadge',
+      logo: 'logoGenreBadge',
+    },
+    values: {
+      poster: settings.posterGenreBadgeMode,
+      backdrop: settings.backdropGenreBadgeMode,
+      logo: settings.logoGenreBadgeMode,
+    },
+    defaultValue: DEFAULT_GENRE_BADGE_MODE,
+  });
+  appendSharedOrPerTypePayload({
+    payload,
+    globalKey: 'genreBadgeStyle',
+    perTypeKeys: {
+      poster: 'posterGenreBadgeStyle',
+      backdrop: 'backdropGenreBadgeStyle',
+      logo: 'logoGenreBadgeStyle',
+    },
+    values: {
+      poster: settings.posterGenreBadgeStyle,
+      backdrop: settings.backdropGenreBadgeStyle,
+      logo: settings.logoGenreBadgeStyle,
+    },
+    defaultValue: DEFAULT_GENRE_BADGE_STYLE,
+  });
+  appendSharedOrPerTypePayload({
+    payload,
+    globalKey: 'genreBadgePosition',
+    perTypeKeys: {
+      poster: 'posterGenreBadgePosition',
+      backdrop: 'backdropGenreBadgePosition',
+      logo: 'logoGenreBadgePosition',
+    },
+    values: {
+      poster: settings.posterGenreBadgePosition,
+      backdrop: settings.backdropGenreBadgePosition,
+      logo: settings.logoGenreBadgePosition,
+    },
+    defaultValue: DEFAULT_GENRE_BADGE_POSITION,
+  });
+  appendSharedOrPerTypePayload({
+    payload,
+    globalKey: 'genreBadgeScale',
+    perTypeKeys: {
+      poster: 'posterGenreBadgeScale',
+      backdrop: 'backdropGenreBadgeScale',
+      logo: 'logoGenreBadgeScale',
+    },
+    values: {
+      poster: settings.posterGenreBadgeScale,
+      backdrop: settings.backdropGenreBadgeScale,
+      logo: settings.logoGenreBadgeScale,
+    },
+    defaultValue: DEFAULT_BADGE_SCALE_PERCENT,
+  });
   if (settings.posterStreamBadges !== 'auto') {
     payload.posterStreamBadges = settings.posterStreamBadges;
   }

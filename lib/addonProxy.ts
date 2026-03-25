@@ -33,6 +33,10 @@ const ERDB_OPTIONAL_PARAMS = [
 ];
 const ERDB_TYPE_OPTIONAL_PARAMS = {
   poster: [
+    'posterGenreBadge',
+    'posterGenreBadgeStyle',
+    'posterGenreBadgePosition',
+    'posterGenreBadgeScale',
     'posterStreamBadges',
     'posterQualityBadges',
     'posterQualityBadgesStyle',
@@ -45,6 +49,10 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'posterArtworkSource',
   ],
   backdrop: [
+    'backdropGenreBadge',
+    'backdropGenreBadgeStyle',
+    'backdropGenreBadgePosition',
+    'backdropGenreBadgeScale',
     'backdropStreamBadges',
     'backdropQualityBadges',
     'backdropQualityBadgesStyle',
@@ -57,6 +65,10 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'backdropArtworkSource',
   ],
   logo: [
+    'logoGenreBadge',
+    'logoGenreBadgeStyle',
+    'logoGenreBadgePosition',
+    'logoGenreBadgeScale',
     'logoRatings',
     'logoRatingsMax',
     'logoBackground',
@@ -144,6 +156,18 @@ export type ProxyConfig = {
   genreBadgeStyle?: string;
   genreBadgePosition?: string;
   genreBadgeScale?: string;
+  posterGenreBadge?: string;
+  backdropGenreBadge?: string;
+  logoGenreBadge?: string;
+  posterGenreBadgeStyle?: string;
+  backdropGenreBadgeStyle?: string;
+  logoGenreBadgeStyle?: string;
+  posterGenreBadgePosition?: string;
+  backdropGenreBadgePosition?: string;
+  logoGenreBadgePosition?: string;
+  posterGenreBadgeScale?: string;
+  backdropGenreBadgeScale?: string;
+  logoGenreBadgeScale?: string;
   streamBadges?: string;
   posterStreamBadges?: string;
   backdropStreamBadges?: string;
@@ -215,6 +239,18 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'genreBadgeStyle',
   'genreBadgePosition',
   'genreBadgeScale',
+  'posterGenreBadge',
+  'backdropGenreBadge',
+  'logoGenreBadge',
+  'posterGenreBadgeStyle',
+  'backdropGenreBadgeStyle',
+  'logoGenreBadgeStyle',
+  'posterGenreBadgePosition',
+  'backdropGenreBadgePosition',
+  'logoGenreBadgePosition',
+  'posterGenreBadgeScale',
+  'backdropGenreBadgeScale',
+  'logoGenreBadgeScale',
   'streamBadges',
   'posterStreamBadges',
   'backdropStreamBadges',
