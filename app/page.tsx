@@ -208,6 +208,8 @@ const BRAND_DISCORD_AIO_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_URL || '
 const BRAND_DISCORD_AIO_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_LABEL || 'ERDB in AIOStreams';
 const BRAND_DISCORD_OFFICIAL_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_URL || 'https://discord.gg/wPY2pcqjmm';
 const BRAND_DISCORD_OFFICIAL_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_LABEL || 'Official ERDB Discord';
+const BRAND_DISCORD_DM_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_DM_URL || 'https://discord.com/users/947862578682548255';
+const BRAND_DISCORD_DM_HANDLE = process.env.NEXT_PUBLIC_BRAND_DISCORD_DM_HANDLE || '@ibbys89';
 const PACKAGE_VERSION = `v${String(packageJson.version || '').trim() || 'dev'}`;
 const DEPLOYMENT_VERSION = String(process.env.NEXT_PUBLIC_DEPLOYMENT_VERSION || PACKAGE_VERSION).trim() || 'dev';
 const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
@@ -294,16 +296,19 @@ const normalizeOptionalBadgeCountInput = (value: string) => {
 };
 const buildGenreSamplePreviewUrl = ({
   baseUrl,
+  erdbKey,
   tmdbKey,
   sample,
   mode,
 }: {
   baseUrl: string;
+  erdbKey: string;
   tmdbKey: string;
   sample: (typeof GENRE_BADGE_PREVIEW_SAMPLES)[number];
   mode: GenreBadgeMode;
 }) => {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const normalizedErdbKey = erdbKey.trim();
   const normalizedTmdbKey = tmdbKey.trim();
   if (!normalizedBaseUrl || !normalizedTmdbKey) {
     return '';
@@ -313,6 +318,9 @@ const buildGenreSamplePreviewUrl = ({
     tmdbKey: normalizedTmdbKey,
     lang: sample.lang,
   });
+  if (normalizedErdbKey) {
+    query.set('erdbKey', normalizedErdbKey);
+  }
   if (mode !== DEFAULT_GENRE_BADGE_MODE) {
     query.set('genreBadge', mode);
   }
@@ -324,6 +332,8 @@ const buildGenreSamplePreviewUrl = ({
 };
 const FANART_KEY_HELP_COPY =
   'Optional. Recommended. Your key is used first. If left blank, ERDB falls back to the service key when one exists. This helps if the shared service key is rate limited or blocked later.';
+const ERDB_REQUEST_KEY_HELP_COPY =
+  'Optional. Only needed when the ERDB host enables request protection. When present, the configurator carries it into previews, config strings, proxy manifests, and exported URL patterns.';
 const AI_DEVELOPER_PROMPT = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
 
 CONFIG INPUT
@@ -381,11 +391,13 @@ sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)  
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
 logoArtworkSource       | tmdb, fanart                                                          | tmdb
+erdbKey                | ERDB request key when the host enables route protection               | none
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | service fallback when available
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
+ACCESS NOTE: erdbKey is optional and only needed when the ERDB host protects render and proxy routes with ERDB_REQUEST_API_KEY or ERDB_REQUEST_API_KEYS.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
 FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
@@ -423,7 +435,7 @@ Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeScale=\${cfg.genreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeScale=\${cfg.genreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -835,6 +847,7 @@ export default function Home() {
   const [activeProviderEditorId, setActiveProviderEditorId] =
     useState<RatingPreference>('tmdb');
   const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
+  const [erdbKey, setErdbKey] = useState('');
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [fanartKey, setFanartKey] = useState('');
@@ -1140,6 +1153,7 @@ export default function Home() {
     (config: SavedUiConfig, status: 'loaded' | 'imported' = 'loaded') => {
       const normalized = normalizeSavedUiConfig(config);
 
+      setErdbKey(normalized.settings.erdbKey);
       setTmdbKey(normalized.settings.tmdbKey);
       setMdblistKey(normalized.settings.mdblistKey);
       setFanartKey(normalized.settings.fanartKey);
@@ -1202,6 +1216,7 @@ export default function Home() {
     (): SavedUiConfig => ({
       version: 1,
       settings: {
+        erdbKey: erdbKey.trim(),
         tmdbKey: tmdbKey.trim(),
         mdblistKey: mdblistKey.trim(),
         fanartKey: fanartKey.trim(),
@@ -1260,6 +1275,7 @@ export default function Home() {
       },
     }),
     [
+      erdbKey,
       tmdbKey,
       mdblistKey,
       fanartKey,
@@ -1405,6 +1421,7 @@ export default function Home() {
   }, []);
 
   const previewUrl = useMemo(() => {
+    const normalizedErdbKey = erdbKey.trim();
     const normalizedTmdbKey = tmdbKey.trim();
     const normalizedFanartKey = fanartKey.trim();
     const normalizedMediaId = mediaId.trim();
@@ -1461,6 +1478,9 @@ export default function Home() {
       ratingStyle: ratingStyleForType,
       lang,
     });
+    if (normalizedErdbKey) {
+      query.set('erdbKey', normalizedErdbKey);
+    }
     if (ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
       query.set('ratingValueMode', ratingValueMode);
     }
@@ -1659,6 +1679,7 @@ export default function Home() {
     shouldShowQualityBadgesSide,
     shouldShowQualityBadgesPosition,
     mdblistKey,
+    erdbKey,
     tmdbKey,
     fanartKey,
   ]);
@@ -1670,12 +1691,13 @@ export default function Home() {
         sample,
         url: buildGenreSamplePreviewUrl({
           baseUrl,
+          erdbKey,
           tmdbKey,
           sample,
           mode: genrePreviewMode,
         }),
       })),
-    [baseUrl, tmdbKey, genrePreviewMode]
+    [baseUrl, erdbKey, tmdbKey, genrePreviewMode]
   );
   const latestReleaseMatchesDeployment = latestReleaseTag && latestReleaseTag === DEPLOYMENT_VERSION;
   const versionStatusNote = isLatestReleaseLoading
@@ -1695,6 +1717,11 @@ export default function Home() {
 
       if (response.ok) {
         setPreviewErrorDetails('Preview request succeeded but the image could not be displayed.');
+        return;
+      }
+
+      if (response.status === 401 && body.toLowerCase().includes('request key')) {
+        setPreviewErrorDetails('This ERDB host requires an ERDB request key. Add it in Inputs and try again.');
         return;
       }
 
@@ -1805,7 +1832,7 @@ export default function Home() {
     .join('\n\n');
   const baseStructureTemplate = useMemo(
     () =>
-      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
+      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
     [baseUrl],
   );
   const displayedBaseStructureTemplate = useMemo(
@@ -2275,6 +2302,13 @@ export default function Home() {
                     title="Open the official ERDB Discord"
                   />
                 </div>
+                <span className="site-discord-fallback">
+                  If an invite does not open or has expired, message{' '}
+                  <a href={BRAND_DISCORD_DM_URL} target="_blank" rel="noreferrer">
+                    {BRAND_DISCORD_DM_HANDLE}
+                  </a>{' '}
+                  on Discord.
+                </span>
               </div>
               <div className="erdb-hero-strip">
                 <div className="erdb-hero-chip">Poster, backdrop, and logo output</div>
@@ -2434,7 +2468,11 @@ export default function Home() {
                 </div>
                 <div>
                   <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
-                  <div className="grid gap-2 md:grid-cols-3">
+                  <div className="grid gap-2 md:grid-cols-4">
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">ERDB Request</label>
+                      <input type="password" value={erdbKey} onChange={(e) => setErdbKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+                    </div>
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
                       <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
@@ -2448,6 +2486,9 @@ export default function Home() {
                       <input type="password" value={fanartKey} onChange={(e) => setFanartKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
                     </div>
                   </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                    {ERDB_REQUEST_KEY_HELP_COPY}
+                  </p>
                   <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
                     {FANART_KEY_HELP_COPY}
                   </p>
@@ -3539,7 +3580,7 @@ export default function Home() {
                           <span className="space-y-1">
                             <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
                             <span className="block text-[11px] leading-5 text-zinc-500">
-                              Replaces live keys with placeholders such as <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
+                              Replaces live keys with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
                             </span>
                           </span>
                         </label>
@@ -3889,7 +3930,7 @@ export default function Home() {
                   <ImageIcon className="w-5 h-5 text-violet-500" />
                 </div>
                 <h4 className="text-lg font-bold text-white">Dynamic Rendering</h4>
-                <p className="text-sm text-zinc-400">No tokens needed. Pass parameters in the query string and let ERDB handle metadata and rendering.</p>
+                <p className="text-sm text-zinc-400">Stateless by default. Pass parameters in the query string and let ERDB handle metadata and rendering. Protected hosts can also require erdbKey.</p>
               </div>
               <div className="erdb-feature-card p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-3 hover:border-blue-500/30 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -4138,6 +4179,11 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">erdbKey</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">ERDB request key when the host enables route protection</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">tmdbKey <span className="font-bold">(req)</span></td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">TMDB v3 API Key</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
@@ -4163,6 +4209,8 @@ export default function Home() {
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, <span className="font-semibold text-zinc-200">plain</span>, and <span className="font-semibold text-zinc-200">stacked</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                   <br />
                   Media quality badges use local asset based artwork for <span className="font-semibold text-zinc-200">4K</span>, <span className="font-semibold text-zinc-200">Bluray</span>, <span className="font-semibold text-zinc-200">HDR10</span>, <span className="font-semibold text-zinc-200">Dolby Vision</span>, and <span className="font-semibold text-zinc-200">Dolby Atmos</span>. Certification badges include a small <span className="font-semibold text-zinc-200">AGE</span> label above the rating.
+                  <br />
+                  <span className="font-mono text-zinc-200">erdbKey</span> is optional. Add it only when the ERDB host protects render or proxy routes with <span className="font-mono text-zinc-200">ERDB_REQUEST_API_KEY</span> or <span className="font-mono text-zinc-200">ERDB_REQUEST_API_KEYS</span>.
                   <br />
                   <span className="font-mono text-zinc-200">fanartKey</span> is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span> when the server has one.
                   <br />
@@ -4368,6 +4416,10 @@ export default function Home() {
                     <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
                       <span className="text-violet-500 font-bold">id (required):</span>
                       <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">IMDb ID (tt...), TMDB ID (prefer tmdb:movie:id or tmdb:tv:id), or Kitsu ID (kitsu:...).</span>
+                    </div>
+                    <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
+                      <span className="text-violet-500 font-bold">erdbKey (optional):</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Only needed when the ERDB host enables route protection.</span>
                     </div>
                     <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
                       <span className="text-violet-500 font-bold">tmdbKey (required):</span>

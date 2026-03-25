@@ -125,6 +125,11 @@ import {
   buildEditorialRatingOverlaySvg,
   type EditorialRatingOverlaySpec,
 } from '@/lib/editorialRatingOverlay';
+import {
+  ERDB_REQUEST_KEY_ERROR_MESSAGE,
+  getConfiguredErdbRequestKeys,
+  isErdbRequestAuthorized,
+} from '@/lib/erdbRequestKey';
 
 export const runtime = 'nodejs';
 
@@ -215,6 +220,7 @@ const normalizeBlockbusterDensity = (
   return fallback;
 };
 const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v71';
+const ERDB_REQUEST_API_KEYS = getConfiguredErdbRequestKeys();
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
   process.env.ERDB_MAL_API_BASE_URL?.trim() || 'https://api.myanimelist.net/v2';
@@ -6332,6 +6338,15 @@ export async function GET(
   const { type, id } = await params;
   if (!ALLOWED_IMAGE_TYPES.has(type)) {
     return respond('Invalid image type', 400);
+  }
+  if (
+    !isErdbRequestAuthorized({
+      configuredKeys: ERDB_REQUEST_API_KEYS,
+      searchParams: request.nextUrl.searchParams,
+      headers: request.headers,
+    })
+  ) {
+    return respond(ERDB_REQUEST_KEY_ERROR_MESSAGE, 401);
   }
   console.warn(`[ERDB] image request: /${type}/${id} streamBadges=${request.nextUrl.searchParams.get('posterStreamBadges') ?? request.nextUrl.searchParams.get('streamBadges') ?? 'none'}`);
   scheduleImdbDatasetSync();

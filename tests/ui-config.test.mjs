@@ -34,6 +34,7 @@ const SAMPLE_PROVIDER_APPEARANCE = {
 const buildSampleSettings = () =>
   normalizeSavedUiConfig({
     settings: {
+      erdbKey: 'shared-erdb-key-000',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -100,6 +101,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
   assert.deepEqual(parsed, {
     version: 1,
     settings: {
+      erdbKey: 'shared-erdb-key-000',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -193,6 +195,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.deepEqual(decodedConfig, {
     baseUrl: 'https://erdb.example.com',
+    erdbKey: 'shared-erdb-key-000',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
     fanartKey: 'fanart-key-789',
@@ -250,6 +253,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
   const decodedProxy = decodeProxyConfig(encodedConfig);
   assert.deepEqual(decodedProxy, {
     url: 'https://addon.example.com/manifest.json',
+    erdbKey: 'shared-erdb-key-000',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
     fanartKey: 'fanart-key-789',
@@ -329,6 +333,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   );
 
   for (const value of Object.values(patterns ?? {})) {
+    assert.match(value, /erdbKey=\{erdb_key\}/);
     assert.match(value, /tmdbKey=\{tmdb_key\}/);
     assert.match(value, /mdblistKey=\{mdblist_key\}/);
     assert.match(value, /fanartKey=\{fanart_key\}/);
@@ -345,6 +350,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.equal(value.includes('%7Btmdb_key%7D'), false);
     assert.equal(value.includes('%7Bmdblist_key%7D'), false);
     assert.equal(value.includes('%7Bfanart_key%7D'), false);
+    assert.equal(value.includes('%7Berdb_key%7D'), false);
   }
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
@@ -359,29 +365,30 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
   });
 
   assert.equal(
-    patterns?.posterUrlPattern.startsWith(
-      'https://erdb.example.com/poster/{imdb_id}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
-    ),
+    patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'),
     true,
   );
   assert.equal(
-    patterns?.backgroundUrlPattern.startsWith(
-      'https://erdb.example.com/backdrop/{tmdb_id}.jpg?idSource=tmdb&tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
-    ),
+    patterns?.backgroundUrlPattern.startsWith('https://erdb.example.com/backdrop/{tmdb_id}.jpg?idSource=tmdb&'),
     true,
   );
   assert.equal(
-    patterns?.logoUrlPattern.startsWith(
-      'https://erdb.example.com/logo/{tmdb_id}.png?idSource=tmdb&tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
-    ),
+    patterns?.logoUrlPattern.startsWith('https://erdb.example.com/logo/{tmdb_id}.png?idSource=tmdb&'),
     true,
   );
   assert.equal(
     patterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://erdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?tmdbKey=tmdb-key-123&mdblistKey=mdblist-key-456&fanartKey=fanart-key-789',
+      'https://erdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
     ),
     true,
   );
+
+  for (const value of Object.values(patterns ?? {})) {
+    assert.match(value, /tmdbKey=tmdb-key-123/);
+    assert.match(value, /mdblistKey=mdblist-key-456/);
+    assert.match(value, /erdbKey=shared-erdb-key-000/);
+    assert.match(value, /fanartKey=fanart-key-789/);
+  }
 });
 
 test('proxy manifest generation stops when required inputs are missing', () => {

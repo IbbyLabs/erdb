@@ -624,6 +624,23 @@ pre {
 	line-height: 1.55;
 }
 
+.site-discord-fallback a {
+	color: color-mix(in srgb, var(--brand-ink) 86%, var(--brand-muted) 14%);
+	text-decoration: none;
+	font-weight: 700;
+}
+
+.site-discord-fallback a:hover {
+	color: var(--brand-ink);
+	text-decoration: underline;
+}
+
+.site-discord-fallback a:focus-visible {
+	outline: 2px solid color-mix(in srgb, var(--glow) 72%, white 28%);
+	outline-offset: 3px;
+	border-radius: 0.35rem;
+}
+
 .site-page-credit {
 	display: inline-flex;
 	align-items: center;

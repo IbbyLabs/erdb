@@ -17,6 +17,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   };
   const uiConfig = normalizeSavedUiConfig({
     settings: {
+      erdbKey: 'proxy-erdb-key-123',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -46,6 +47,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
 
   const decodedProxyConfig = decodeProxyConfig(encodedConfig);
   assert.ok(decodedProxyConfig);
+  assert.equal(decodedProxyConfig.erdbKey, 'proxy-erdb-key-123');
 
   const rewrittenLogoUrl = new URL(
     buildErdbImageUrl({
@@ -62,6 +64,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
 
   assert.equal(rewrittenLogoUrl.origin, 'https://erdb.example.com');
   assert.equal(rewrittenLogoUrl.pathname, '/logo/mal%3A16498.jpg');
+  assert.equal(rewrittenLogoUrl.searchParams.get('erdbKey'), 'proxy-erdb-key-123');
   assert.equal(rewrittenLogoUrl.searchParams.get('tmdbKey'), 'tmdb-key-123');
   assert.equal(rewrittenLogoUrl.searchParams.get('mdblistKey'), 'mdblist-key-456');
   assert.equal(rewrittenLogoUrl.searchParams.get('fanartKey'), 'fanart-key-789');
@@ -118,6 +121,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   };
   const uiConfig = normalizeSavedUiConfig({
     settings: {
+      erdbKey: 'proxy-erdb-key-456',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -149,6 +153,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
 
   const decodedProxyConfig = decodeProxyConfig(encodedConfig);
   assert.ok(decodedProxyConfig);
+  assert.equal(decodedProxyConfig.erdbKey, 'proxy-erdb-key-456');
 
   const rewrittenPosterUrl = new URL(
     buildErdbImageUrl({
@@ -162,6 +167,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   );
 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,trakt,metacritic');
+  assert.equal(rewrittenPosterUrl.searchParams.get('erdbKey'), 'proxy-erdb-key-456');
   assert.equal(rewrittenPosterUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenPosterUrl.searchParams.get('ratingValueMode'), 'normalized');
   assert.equal(rewrittenPosterUrl.searchParams.get('genreBadgeScale'), '116');
@@ -184,6 +190,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
 test('proxy image rewrites carry artwork source selection for backdrops', () => {
   const uiConfig = normalizeSavedUiConfig({
     settings: {
+      erdbKey: 'proxy-erdb-key-789',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -208,6 +215,7 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
 
   const decodedProxyConfig = decodeProxyConfig(encodedConfig);
   assert.ok(decodedProxyConfig);
+  assert.equal(decodedProxyConfig.erdbKey, 'proxy-erdb-key-789');
 
   const rewrittenBackdropUrl = new URL(
     buildErdbImageUrl({
@@ -221,6 +229,7 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
   );
 
   assert.equal(rewrittenBackdropUrl.searchParams.get('imageText'), 'clean');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('erdbKey'), 'proxy-erdb-key-789');
   assert.equal(rewrittenBackdropUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenBackdropUrl.searchParams.get('genreBadgeScale'), '122');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropArtworkSource'), 'fanart');

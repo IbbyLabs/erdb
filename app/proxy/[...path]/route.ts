@@ -20,9 +20,15 @@ import {
   resolveTmdbTranslationFieldAvailability,
   resolveTmdbTranslationTarget,
 } from '@/lib/proxyMetaTranslation';
+import {
+  ERDB_REQUEST_KEY_ERROR_MESSAGE,
+  getConfiguredErdbRequestKeys,
+  isErdbRequestAuthorized,
+} from '@/lib/erdbRequestKey';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+const ERDB_REQUEST_API_KEYS = getConfiguredErdbRequestKeys();
 
 const getAllowedCorsOrigins = () => {
   const raw = process.env.ERDB_PROXY_ALLOWED_ORIGINS;
@@ -51,7 +57,7 @@ const buildCorsHeaders = (request: NextRequest) => {
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-ERDB-Key, X-API-Key',
     Vary: 'Origin',
   };
 };
@@ -520,6 +526,17 @@ export async function GET(
       return buildError(request, 'Invalid proxy config in path.');
     }
     resourceSegments = pathSegments.slice(1);
+  }
+
+  if (
+    !isErdbRequestAuthorized({
+      configuredKeys: ERDB_REQUEST_API_KEYS,
+      searchParams,
+      headers: request.headers,
+      fallbackKey: config.erdbKey,
+    })
+  ) {
+    return buildError(request, ERDB_REQUEST_KEY_ERROR_MESSAGE, 401);
   }
 
   if (resourceSegments.length === 0) {

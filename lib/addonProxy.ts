@@ -85,6 +85,7 @@ const ERDB_TYPE_STYLE_PARAMS = {
 
 export const ERDB_RESERVED_PARAMS = new Set<string>([
   'url',
+  'erdbKey',
   'tmdbKey',
   'mdblistKey',
   'fanartKey',
@@ -121,6 +122,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
 
 export type ProxyConfig = {
   url: string;
+  erdbKey?: string;
   tmdbKey: string;
   mdblistKey: string;
   fanartKey?: string;
@@ -191,6 +193,7 @@ export type ProxyConfig = {
 
 const PROXY_OPTIONAL_STRING_KEYS = [
   'translateMetaMode',
+  'erdbKey',
   'fanartKey',
   'ratings',
   'posterRatings',
@@ -422,11 +425,15 @@ export const decodeProxyConfig = (encoded: string): ProxyConfig | null => {
 
 export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyConfig | null => {
   const url = searchParams.get('url');
+  const erdbKey = searchParams.get('erdbKey');
   const tmdbKey = searchParams.get('tmdbKey');
   const mdblistKey = searchParams.get('mdblistKey');
   if (!url || !tmdbKey || !mdblistKey) return null;
 
   const config: ProxyConfig = { url, tmdbKey, mdblistKey };
+  if (erdbKey) {
+    config.erdbKey = erdbKey;
+  }
   for (const key of PROXY_OPTIONAL_STRING_KEYS) {
     const value = searchParams.get(key);
     if (value !== null) {
@@ -498,6 +505,10 @@ export const buildErdbImageUrl = (options: {
   const base = new URL(baseOverride || reqUrl.origin);
   base.pathname = `/${imageType}/${encodeURIComponent(erdbId)}.jpg`;
   base.search = '';
+  const erdbKey = getProxyParam(reqUrl, config, 'erdbKey');
+  if (erdbKey) {
+    base.searchParams.set('erdbKey', erdbKey);
+  }
   base.searchParams.set('tmdbKey', tmdbKey);
   base.searchParams.set('mdblistKey', mdblistKey);
 

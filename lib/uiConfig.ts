@@ -81,6 +81,7 @@ export type AiometadataUrlPatterns = {
 };
 
 export type SharedErdbSettings = {
+  erdbKey: string;
   tmdbKey: string;
   mdblistKey: string;
   fanartKey: string;
@@ -175,6 +176,7 @@ const normalizeBoolean = (value: unknown, fallback = false) => {
 };
 
 export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
+  erdbKey: '',
   tmdbKey: '',
   mdblistKey: '',
   fanartKey: '',
@@ -415,6 +417,7 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       );
 
   return {
+    erdbKey: typeof candidate.erdbKey === 'string' ? candidate.erdbKey.trim() : defaults.erdbKey,
     tmdbKey: typeof candidate.tmdbKey === 'string' ? candidate.tmdbKey.trim() : defaults.tmdbKey,
     mdblistKey:
       typeof candidate.mdblistKey === 'string' ? candidate.mdblistKey.trim() : defaults.mdblistKey,
@@ -595,6 +598,7 @@ export const serializeSavedUiConfig = (config: SavedUiConfig) =>
   JSON.stringify(normalizeSavedUiConfig(config), null, 2);
 
 const buildSharedPayload = (settings: SharedErdbSettings) => {
+  const erdbKey = settings.erdbKey.trim();
   const tmdbKey = settings.tmdbKey.trim();
   const mdblistKey = settings.mdblistKey.trim();
   const fanartKey = settings.fanartKey.trim();
@@ -606,6 +610,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     tmdbKey,
     mdblistKey,
   };
+  if (erdbKey) {
+    payload.erdbKey = erdbKey;
+  }
   if (fanartKey) {
     payload.fanartKey = fanartKey;
   }
@@ -790,12 +797,14 @@ export const buildConfigString = (baseUrl: string, settings: SharedErdbSettings)
 const AIO_TMDB_KEY_PLACEHOLDER = '{tmdb_key}';
 const AIO_MDBLIST_KEY_PLACEHOLDER = '{mdblist_key}';
 const AIO_FANART_KEY_PLACEHOLDER = '{fanart_key}';
+const AIO_ERDB_KEY_PLACEHOLDER = '{erdb_key}';
 
 const restoreAiometadataPlaceholders = (value: string) => {
   const placeholders = [
     AIO_TMDB_KEY_PLACEHOLDER,
     AIO_MDBLIST_KEY_PLACEHOLDER,
     AIO_FANART_KEY_PLACEHOLDER,
+    AIO_ERDB_KEY_PLACEHOLDER,
     '{imdb_id}',
     '{tmdb_id}',
     '{tvdb_id}',
@@ -857,6 +866,13 @@ export const buildAiometadataUrlPatterns = (
 
   const exportSettings: SharedErdbSettings = {
     ...settings,
+    erdbKey: settings.erdbKey.trim()
+      ? chooseAiometadataCredentialValue({
+          value: settings.erdbKey,
+          placeholder: AIO_ERDB_KEY_PLACEHOLDER,
+          hideCredentials,
+        })
+      : settings.erdbKey.trim(),
     tmdbKey: chooseAiometadataCredentialValue({
       value: settings.tmdbKey,
       placeholder: AIO_TMDB_KEY_PLACEHOLDER,
