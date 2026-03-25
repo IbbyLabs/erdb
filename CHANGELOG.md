@@ -69,6 +69,13 @@
 
 <a id="v2-35-5"></a>
 
+<a id="v2-35-6"></a>
+
+## [v2.35.6] - 25/03/2026
+
+### Fixed
+* prevent provider styling overlap
+
 ## [v2.35.5] - 25/03/2026
 
 ### Documentation
