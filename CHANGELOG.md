@@ -45,6 +45,17 @@
 
 <a id="v2-30-0"></a>
 
+<a id="v2-31-0"></a>
+
+## [v2.31.0] - 25/03/2026
+
+### Added
+* add optional ERDB request protection
+* add ERDB community Discord links
+
+### Other Changes
+* notify Discord after release workflow completes
+
 ## [v2.30.0] - 24/03/2026
 
 ### Added
