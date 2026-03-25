@@ -438,12 +438,14 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.equal(patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'), true);
   assert.equal(
     patterns?.backgroundUrlPattern.startsWith(
-      'https://erdb.example.com/backdrop/{tmdb_id}.jpg?idSource=tmdb&',
+      'https://erdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
-    patterns?.logoUrlPattern.startsWith('https://erdb.example.com/logo/{tmdb_id}.png?idSource=tmdb&'),
+    patterns?.logoUrlPattern.startsWith(
+      'https://erdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&',
+    ),
     true,
   );
   assert.equal(
@@ -494,11 +496,15 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
     true,
   );
   assert.equal(
-    patterns?.backgroundUrlPattern.startsWith('https://erdb.example.com/backdrop/{tmdb_id}.jpg?idSource=tmdb&'),
+    patterns?.backgroundUrlPattern.startsWith(
+      'https://erdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+    ),
     true,
   );
   assert.equal(
-    patterns?.logoUrlPattern.startsWith('https://erdb.example.com/logo/{tmdb_id}.png?idSource=tmdb&'),
+    patterns?.logoUrlPattern.startsWith(
+      'https://erdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&',
+    ),
     true,
   );
   assert.equal(
@@ -599,4 +605,5 @@ test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites'
   assert.equal(normalizeErdbId('tt0944947:2', 'series'), 'tt0944947:2');
   assert.equal(normalizeErdbId('imdb:tt0944947:2', 'series'), 'imdb:tt0944947:2');
   assert.equal(normalizeErdbId('tmdb:tv:1399:2', 'series'), 'tmdb:tv:1399:2');
+  assert.equal(normalizeErdbId('tmdb:series:1399:2', 'series'), 'tmdb:tv:1399:2');
 });

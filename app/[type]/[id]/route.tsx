@@ -106,6 +106,7 @@ import {
   type GenreBadgePosition,
   type GenreBadgeStyle,
 } from '@/lib/genreBadge';
+import { normalizeErdbId } from '@/lib/addonProxy';
 import {
   MEDIA_FEATURE_BADGE_ORDER,
   buildCertificationBadgeMeta,
@@ -6506,9 +6507,9 @@ const renderWithSharp = async (
   });
 };
 
-export async function GET(
+export async function handleImageRequest(
   request: NextRequest,
-  { params }: { params: Promise<{ type: string; id: string }> }
+  params: { type: string; id: string }
 ) {
   const requestStartedAt = performance.now();
   const phases: PhaseDurations = {
@@ -6526,7 +6527,7 @@ export async function GET(
     return new Response(body, { status, headers: finalHeaders });
   };
 
-  const { type, id } = await params;
+  const { type, id } = params;
   if (!ALLOWED_IMAGE_TYPES.has(type)) {
     return respond('Invalid image type', 400);
   }
@@ -6548,12 +6549,13 @@ export async function GET(
     .toLowerCase();
   const cleanIdWithoutExtension = id.replace(/\.(?:jpg|jpeg|png|webp)$/i, '');
   const explicitIdPrefix = cleanIdWithoutExtension.split(':')[0]?.trim().toLowerCase() || '';
-  const cleanId =
+  const requestedCleanId =
     EXPLICIT_ID_SOURCE_SET.has(requestedIdSourceCandidate) &&
     !EXPLICIT_ID_SOURCE_SET.has(explicitIdPrefix) &&
     !RAW_IMDB_ID_RE.test(cleanIdWithoutExtension)
       ? `${requestedIdSourceCandidate}:${cleanIdWithoutExtension}`
       : cleanIdWithoutExtension;
+  const cleanId = normalizeErdbId(requestedCleanId) ?? requestedCleanId;
 
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
   const ratingValueMode = normalizeRatingValueMode(
@@ -8061,7 +8063,7 @@ export async function GET(
           seasonIncludeImageLanguage?: string;
         }) => {
           let posterCollection = input.posters || [];
-          const backdropCollection = input.backdrops || [];
+          let backdropCollection = input.backdrops || [];
           const logoCollection = input.logos || [];
           const selectedLogo = pickByLanguageWithFallback(
             logoCollection,
@@ -8079,7 +8081,31 @@ export async function GET(
             posterCollection[0]?.file_path;
           const localizedBackdropPath =
             pickByLanguageWithFallback(backdropCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
+          let episodeStillPath: string | null = null;
+          if (type === 'backdrop' && mediaType === 'tv' && season && episode) {
+            const episodeDetailsResponse = await fetchJsonCached(
+              `tmdb:tv:${media.id}:season:${season}:episode:${episode}:details`,
+              `${TMDB_API_BASE_URL}/tv/${media.id}/season/${season}/episode/${episode}?api_key=${tmdbKey}`,
+              TMDB_CACHE_TTL_MS,
+              phases,
+              'tmdb'
+            );
+            if (episodeDetailsResponse.ok) {
+              const rawStillPath = episodeDetailsResponse.data?.still_path;
+              episodeStillPath =
+                typeof rawStillPath === 'string' && rawStillPath.trim().length > 0
+                  ? rawStillPath.trim()
+                  : null;
+              if (episodeStillPath) {
+                backdropCollection = [
+                  { file_path: episodeStillPath, iso_639_1: null },
+                  ...backdropCollection.filter((backdrop: any) => backdrop?.file_path !== episodeStillPath),
+                ];
+              }
+            }
+          }
           const originalBackdropPath =
+            episodeStillPath ||
             localizedBackdropPath ||
             details?.backdrop_path ||
             media?.backdrop_path ||
@@ -9076,4 +9102,11 @@ export async function GET(
     const stack = process.env.NODE_ENV !== 'production' && typeof e?.stack === 'string' ? `\n${e.stack}` : '';
     return respond(`Error: ${message}${stack}`, 500);
   }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ type: string; id: string }> }
+) {
+  return handleImageRequest(request, await params);
 }

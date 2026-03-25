@@ -376,8 +376,9 @@ export const normalizeErdbId = (
 
   if (prefix === 'tmdb') {
     const explicitTypeCandidate = (parts[1] || '').trim().toLowerCase();
-    if ((explicitTypeCandidate === 'movie' || explicitTypeCandidate === 'tv') && parts.length >= 3 && parts[2]) {
-      return `tmdb:${explicitTypeCandidate}:${parts.slice(2).join(':')}`;
+    const explicitType = normalizeStremioType(explicitTypeCandidate);
+    if (explicitType && parts.length >= 3 && parts[2]) {
+      return `tmdb:${explicitType}:${parts.slice(2).join(':')}`;
     }
 
     if (parts.length >= 2 && parts[1]) {
