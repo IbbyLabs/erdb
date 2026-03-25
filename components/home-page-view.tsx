@@ -60,6 +60,7 @@ type HomePageViewState = {
   supportedLanguages: SupportedLanguage[];
   tmdbKey: string;
   mdblistKey: string;
+  simklClientId: string;
   proxyManifestUrl: string;
   proxyEnabledTypes: ProxyEnabledTypes;
   proxyTranslateMeta: boolean;
@@ -111,6 +112,7 @@ type HomePageViewActions = {
   setLang: Dispatch<SetStateAction<string>>;
   setTmdbKey: Dispatch<SetStateAction<string>>;
   setMdblistKey: Dispatch<SetStateAction<string>>;
+  setSimklClientId: Dispatch<SetStateAction<string>>;
   setPosterRatingsLayout: Dispatch<SetStateAction<PosterRatingLayout>>;
   setPosterRatingsMaxPerSide: Dispatch<SetStateAction<number | null>>;
   setBackdropRatingsLayout: Dispatch<SetStateAction<BackdropRatingLayout>>;
@@ -166,6 +168,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
     supportedLanguages,
     tmdbKey,
     mdblistKey,
+    simklClientId,
     proxyManifestUrl,
     proxyEnabledTypes,
     proxyTranslateMeta,
@@ -215,6 +218,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
     setLang,
     setTmdbKey,
     setMdblistKey,
+    setSimklClientId,
     setPosterRatingsLayout,
     setPosterRatingsMaxPerSide,
     setBackdropRatingsLayout,
@@ -408,7 +412,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                 </div>
                 <div>
                   <div className="text-[11px] font-semibold text-slate-400 mb-2">Access Keys</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 block mb-1">TMDB</label>
                       <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-[#080b10] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
@@ -416,6 +420,10 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     <div>
                       <label className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 block mb-1">MDBList</label>
                       <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-[#080b10] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 block mb-1">SIMKL</label>
+                      <input type="password" value={simklClientId} onChange={(e) => setSimklClientId(e.target.value)} placeholder="client_id (optional)" className="w-full bg-[#080b10] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-orange-500/50 outline-none" />
                     </div>
                   </div>
                 </div>
@@ -836,22 +844,22 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (global fallback)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (global fallback)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (poster only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (poster only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropRatings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (backdrop only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (backdrop only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">logoRatings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, myanimelist, anilist, kitsu (logo only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (logo only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
@@ -999,7 +1007,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-slate-500">
-                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey. Use posterRatings/backdropRatings/logoRatings to override per type.
+                  Base params for all types: ratings (global fallback), lang, ratingStyle, tmdbKey, mdblistKey, simklClientId. Use posterRatings/backdropRatings/logoRatings to override per type.
                 </div>
               </div>
 
@@ -1073,6 +1081,8 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     <span className="text-orange-400 font-bold">tmdbKey</span>=<span className="text-slate-400 font-bold">{'{tmdbKey}'}</span>
                     <span className="text-white">&</span>
                     <span className="text-orange-400 font-bold">mdblistKey</span>=<span className="text-slate-400 font-bold">{'{mdbKey}'}</span>
+                    <span className="text-white">&</span>
+                    <span className="text-orange-400 font-bold">simklClientId</span>=<span className="text-slate-400 font-bold">{'{simklClientId}'}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
                     <div className="flex gap-2">
@@ -1090,6 +1100,10 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     <div className="flex gap-2">
                       <span className="text-orange-500 font-bold shrink-0">mdblistKey (required):</span>
                       <span className="text-slate-400">Your MDBList API Key.</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-orange-500 font-bold shrink-0">simklClientId (optional):</span>
+                      <span className="text-slate-400">Required only if you want direct SIMKL ratings.</span>
                     </div>
                   </div>
                 </div>
@@ -1142,17 +1156,17 @@ Parameter               | Values                                                
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (global fallback)                                     |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert,               |
+                        | myanimelist, anilist, kitsu (global fallback)                       |
 posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (poster only)                                         |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert,               |
+                        | myanimelist, anilist, kitsu (poster only)                           |
 backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (backdrop only)                                       |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert,               |
+                        | myanimelist, anilist, kitsu (backdrop only)                         |
 logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
-                        | anilist, kitsu (logo only)                                           |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert,               |
+                        | myanimelist, anilist, kitsu (logo only)                             |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
@@ -1169,6 +1183,7 @@ posterRatingsMaxPerSide | Number (1-20)                                         
 backdropRatingsLayout   | center, right, right vertical                                        | center
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
+simklClientId (OPTIONAL)| Your SIMKL client_id for direct SIMKL ratings                        | -
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 
@@ -1188,7 +1203,7 @@ Quality badges style can be set per type via cfg.posterQualityBadgesStyle / cfg.
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&simklClientId=\${cfg.simklClientId}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}
 
 Omit imageText when type=logo.
 

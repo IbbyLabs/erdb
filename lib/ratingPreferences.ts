@@ -57,6 +57,12 @@ export const RATING_PROVIDER_OPTIONS = [
     accentColor: '#8b5cf6',
   },
   {
+    id: 'simkl',
+    label: 'SIMKL',
+    iconUrl: 'https://www.google.com/s2/favicons?domain=simkl.com&sz=64',
+    accentColor: '#00b4ff',
+  },
+  {
     id: 'rogerebert',
     label: 'Roger Ebert',
     iconUrl: 'https://www.google.com/s2/favicons?domain=rogerebert.com&sz=64',
@@ -103,6 +109,7 @@ const ALIASES: Record<string, RatingPreference> = {
   metacritic: 'metacritic',
   metacriticuser: 'metacriticuser',
   trakt: 'trakt',
+  simkl: 'simkl',
   rogerebert: 'rogerebert',
   myanimelist: 'myanimelist',
   mal: 'myanimelist',
