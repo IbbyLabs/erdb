@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_GENRE_BADGE_MODE,
+  DEFAULT_GENRE_BADGE_POSITION,
+  DEFAULT_GENRE_BADGE_STYLE,
   GENRE_BADGE_FAMILY_META,
   GENRE_BADGE_PREVIEW_SAMPLES,
   normalizeGenreBadgeMode,
+  normalizeGenreBadgePosition,
+  normalizeGenreBadgeStyle,
   resolveGenreBadgeFamily,
 } from '../lib/genreBadge.ts';
 
@@ -14,6 +18,14 @@ test('genre badge mode normalization falls back safely', () => {
   assert.equal(normalizeGenreBadgeMode('ICON'), 'icon');
   assert.equal(normalizeGenreBadgeMode('unknown'), DEFAULT_GENRE_BADGE_MODE);
   assert.equal(normalizeGenreBadgeMode(null), DEFAULT_GENRE_BADGE_MODE);
+});
+
+test('genre badge style and position normalization accept friendly variants', () => {
+  assert.equal(normalizeGenreBadgeStyle('square'), 'square');
+  assert.equal(normalizeGenreBadgeStyle('unknown'), DEFAULT_GENRE_BADGE_STYLE);
+  assert.equal(normalizeGenreBadgePosition('top center'), 'topCenter');
+  assert.equal(normalizeGenreBadgePosition('bottom-right'), 'bottomRight');
+  assert.equal(normalizeGenreBadgePosition('unknown'), DEFAULT_GENRE_BADGE_POSITION);
 });
 
 test('genre badge family resolution prefers anime and curated literal buckets', () => {

@@ -45,8 +45,14 @@ import {
 } from './metadataTranslation.ts';
 import {
   DEFAULT_GENRE_BADGE_MODE,
+  DEFAULT_GENRE_BADGE_POSITION,
+  DEFAULT_GENRE_BADGE_STYLE,
   normalizeGenreBadgeMode,
+  normalizeGenreBadgePosition,
+  normalizeGenreBadgeStyle,
   type GenreBadgeMode,
+  type GenreBadgePosition,
+  type GenreBadgeStyle,
 } from './genreBadge.ts';
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
@@ -93,6 +99,8 @@ export type SharedErdbSettings = {
   logoArtworkSource: ArtworkSource;
   ratingValueMode: RatingValueMode;
   genreBadgeMode: GenreBadgeMode;
+  genreBadgeStyle: GenreBadgeStyle;
+  genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
@@ -188,6 +196,8 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   logoArtworkSource: 'tmdb',
   ratingValueMode: DEFAULT_RATING_VALUE_MODE,
   genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
+  genreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
+  genreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
   genreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -434,6 +444,11 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     ),
     ratingValueMode: normalizeRatingValueMode(candidate.ratingValueMode, defaults.ratingValueMode),
     genreBadgeMode: normalizeGenreBadgeMode(candidate.genreBadgeMode, defaults.genreBadgeMode),
+    genreBadgeStyle: normalizeGenreBadgeStyle(candidate.genreBadgeStyle, defaults.genreBadgeStyle),
+    genreBadgePosition: normalizeGenreBadgePosition(
+      candidate.genreBadgePosition,
+      defaults.genreBadgePosition,
+    ),
     genreBadgeScale: normalizeBadgeScalePercent(candidate.genreBadgeScale, defaults.genreBadgeScale),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences,
@@ -638,6 +653,12 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   }
   if (settings.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
     payload.genreBadge = settings.genreBadgeMode;
+  }
+  if (settings.genreBadgeStyle !== DEFAULT_GENRE_BADGE_STYLE) {
+    payload.genreBadgeStyle = settings.genreBadgeStyle;
+  }
+  if (settings.genreBadgePosition !== DEFAULT_GENRE_BADGE_POSITION) {
+    payload.genreBadgePosition = settings.genreBadgePosition;
   }
   if (settings.genreBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.genreBadgeScale = settings.genreBadgeScale;

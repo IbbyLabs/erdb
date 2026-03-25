@@ -10,6 +10,8 @@ const ERDB_OPTIONAL_PARAMS = [
   'lang',
   'ratingValueMode',
   'genreBadge',
+  'genreBadgeStyle',
+  'genreBadgePosition',
   'genreBadgeScale',
   'streamBadges',
   'qualityBadgesSide',
@@ -136,6 +138,8 @@ export type ProxyConfig = {
   lang?: string;
   ratingValueMode?: string;
   genreBadge?: string;
+  genreBadgeStyle?: string;
+  genreBadgePosition?: string;
   genreBadgeScale?: string;
   streamBadges?: string;
   posterStreamBadges?: string;
@@ -202,6 +206,8 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'lang',
   'ratingValueMode',
   'genreBadge',
+  'genreBadgeStyle',
+  'genreBadgePosition',
   'genreBadgeScale',
   'streamBadges',
   'posterStreamBadges',

@@ -1,4 +1,12 @@
 export type GenreBadgeMode = 'off' | 'text' | 'icon' | 'both';
+export type GenreBadgeStyle = 'glass' | 'square' | 'plain';
+export type GenreBadgePosition =
+  | 'topLeft'
+  | 'topCenter'
+  | 'topRight'
+  | 'bottomLeft'
+  | 'bottomCenter'
+  | 'bottomRight';
 export type GenreBadgeFamilyId =
   | 'anime'
   | 'horror'
@@ -29,6 +37,8 @@ export type GenreBadgePreviewSample = {
 };
 
 export const DEFAULT_GENRE_BADGE_MODE: GenreBadgeMode = 'off';
+export const DEFAULT_GENRE_BADGE_STYLE: GenreBadgeStyle = 'glass';
+export const DEFAULT_GENRE_BADGE_POSITION: GenreBadgePosition = 'topLeft';
 
 export const GENRE_BADGE_MODE_OPTIONS: Array<{
   id: GenreBadgeMode;
@@ -57,8 +67,70 @@ export const GENRE_BADGE_MODE_OPTIONS: Array<{
   },
 ];
 
+export const GENRE_BADGE_STYLE_OPTIONS: Array<{
+  id: GenreBadgeStyle;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'glass',
+    label: 'Pill Glass',
+    description: 'Use the current glossy pill treatment with a soft surface.',
+  },
+  {
+    id: 'square',
+    label: 'Square Dark',
+    description: 'Use a tighter squared dark plate for a cleaner badge block.',
+  },
+  {
+    id: 'plain',
+    label: 'No Background',
+    description: 'Render just the icon and text with no badge surface behind them.',
+  },
+];
+
+export const GENRE_BADGE_POSITION_OPTIONS: Array<{
+  id: GenreBadgePosition;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'topLeft',
+    label: 'Top Left',
+    description: 'Anchor the badge to the upper left corner.',
+  },
+  {
+    id: 'topCenter',
+    label: 'Top Center',
+    description: 'Anchor the badge to the upper center edge.',
+  },
+  {
+    id: 'topRight',
+    label: 'Top Right',
+    description: 'Anchor the badge to the upper right corner.',
+  },
+  {
+    id: 'bottomLeft',
+    label: 'Bottom Left',
+    description: 'Anchor the badge to the lower left corner.',
+  },
+  {
+    id: 'bottomCenter',
+    label: 'Bottom Center',
+    description: 'Anchor the badge to the lower center edge.',
+  },
+  {
+    id: 'bottomRight',
+    label: 'Bottom Right',
+    description: 'Anchor the badge to the lower right corner.',
+  },
+];
+
 const GENRE_BADGE_MODE_SET = new Set<GenreBadgeMode>(
   GENRE_BADGE_MODE_OPTIONS.map((option) => option.id),
+);
+const GENRE_BADGE_STYLE_SET = new Set<GenreBadgeStyle>(
+  GENRE_BADGE_STYLE_OPTIONS.map((option) => option.id),
 );
 
 export const normalizeGenreBadgeMode = (
@@ -69,6 +141,41 @@ export const normalizeGenreBadgeMode = (
   return GENRE_BADGE_MODE_SET.has(normalized as GenreBadgeMode)
     ? (normalized as GenreBadgeMode)
     : fallback;
+};
+
+export const normalizeGenreBadgeStyle = (
+  value: unknown,
+  fallback: GenreBadgeStyle = DEFAULT_GENRE_BADGE_STYLE,
+): GenreBadgeStyle => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return GENRE_BADGE_STYLE_SET.has(normalized as GenreBadgeStyle)
+    ? (normalized as GenreBadgeStyle)
+    : fallback;
+};
+
+export const normalizeGenreBadgePosition = (
+  value: unknown,
+  fallback: GenreBadgePosition = DEFAULT_GENRE_BADGE_POSITION,
+): GenreBadgePosition => {
+  const normalized =
+    typeof value === 'string' ? value.trim().toLowerCase().replace(/[^a-z]+/g, '') : '';
+
+  switch (normalized) {
+    case 'topleft':
+      return 'topLeft';
+    case 'topcenter':
+      return 'topCenter';
+    case 'topright':
+      return 'topRight';
+    case 'bottomleft':
+      return 'bottomLeft';
+    case 'bottomcenter':
+      return 'bottomCenter';
+    case 'bottomright':
+      return 'bottomRight';
+    default:
+      return fallback;
+  }
 };
 
 export const GENRE_BADGE_FAMILY_META: Record<GenreBadgeFamilyId, GenreBadgeFamilyMeta> = {

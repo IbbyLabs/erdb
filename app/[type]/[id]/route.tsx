@@ -80,10 +80,16 @@ import {
 } from '@/lib/ratingDisplay';
 import {
   DEFAULT_GENRE_BADGE_MODE,
+  DEFAULT_GENRE_BADGE_POSITION,
+  DEFAULT_GENRE_BADGE_STYLE,
   normalizeGenreBadgeMode,
+  normalizeGenreBadgePosition,
+  normalizeGenreBadgeStyle,
   resolveGenreBadgeFamily,
   type GenreBadgeFamilyId,
   type GenreBadgeMode,
+  type GenreBadgePosition,
+  type GenreBadgeStyle,
 } from '@/lib/genreBadge';
 import {
   MEDIA_FEATURE_BADGE_ORDER,
@@ -219,7 +225,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v71';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v72';
 const ERDB_REQUEST_API_KEYS = getConfiguredErdbRequestKeys();
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
@@ -544,6 +550,8 @@ type GenreBadgeSpec = {
   label: string;
   accentColor: string;
   mode: GenreBadgeMode;
+  style: GenreBadgeStyle;
+  position: GenreBadgePosition;
   scalePercent?: number;
 };
 type EditorialRatingOverlay = EditorialRatingOverlaySpec;
@@ -4321,15 +4329,30 @@ const buildGenreBadgeSvg = (
         ? 44
         : 40;
   const scaleRatio = Math.max(0.7, (genreBadge.scalePercent ?? DEFAULT_BADGE_SCALE_PERCENT) / 100);
-  const height = Math.max(30, Math.round(baseHeight * scaleRatio));
-  const radius = Math.round(height / 2);
-  const strokeWidth = imageType === 'backdrop' ? 1.5 : 1.4;
+  const height = Math.max(
+    genreBadge.style === 'plain' ? 26 : 30,
+    Math.round(baseHeight * scaleRatio),
+  );
+  const radius =
+    genreBadge.style === 'square' ? Math.max(10, Math.round(height * 0.28)) : Math.round(height / 2);
+  const strokeWidth = genreBadge.style === 'plain' ? 0 : imageType === 'backdrop' ? 1.5 : 1.4;
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
   const fontSize = genreBadge.mode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34);
   const label = genreBadge.label.trim().toUpperCase();
   const showIcon = genreBadge.mode === 'icon' || genreBadge.mode === 'both';
   const showText = genreBadge.mode === 'text' || genreBadge.mode === 'both';
-  const paddingX = showText ? (showIcon ? 16 : 18) : 14;
+  const paddingX =
+    genreBadge.style === 'plain'
+      ? showText
+        ? showIcon
+          ? 8
+          : 6
+        : 4
+      : showText
+        ? showIcon
+          ? 16
+          : 18
+        : 14;
   const iconGap = showIcon && showText ? Math.max(9, Math.round(height * 0.22)) : 0;
   const labelWidth = showText ? estimateGenreBadgeLabelWidth(label, fontSize) : 0;
   const width = Math.max(
@@ -4350,6 +4373,40 @@ const buildGenreBadgeSvg = (
   const textMarkup = showText
     ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}">${escapeXml(label)}</text>`
     : '';
+  const plainShadowFilter = `<defs><filter id="genreBadgeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" flood-color="rgba(0,0,0,0.68)"/><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="rgba(0,0,0,0.32)"/></filter></defs>`;
+
+  if (genreBadge.style === 'plain') {
+    return {
+      width,
+      height,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${plainShadowFilter}
+<g filter="url(#genreBadgeShadow)">
+${iconMarkup}
+${textMarkup}
+</g>
+</svg>`,
+    };
+  }
+
+  if (genreBadge.style === 'square') {
+    const capHeight = Math.max(4, Math.round(height * 0.14));
+    const capWidth = Math.min(width - 20, Math.max(Math.round(width * 0.34), 18));
+    const capLeft = Math.round((width - capWidth) / 2);
+    const capTop = 6;
+
+    return {
+      width,
+      height,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<rect x="0.7" y="0.7" width="${Math.max(0, width - 1.4)}" height="${Math.max(0, height - 1.4)}" rx="${radius}" fill="rgba(8,11,16,0.88)" stroke="rgba(255,255,255,0.09)" stroke-width="1.4"/>
+<rect x="${capLeft}" y="${capTop}" width="${capWidth}" height="${capHeight}" rx="${Math.round(capHeight / 2)}" fill="${genreBadge.accentColor}" opacity="0.92"/>
+<rect x="4" y="4" width="${Math.max(0, width - 8)}" height="${Math.max(0, height - 8)}" rx="${Math.max(8, radius - 3)}" fill="rgba(255,255,255,0.03)"/>
+${iconMarkup}
+${textMarkup}
+</svg>`,
+    };
+  }
 
   return {
     width,
@@ -5856,33 +5913,30 @@ const renderWithSharp = async (
       const spec = buildGenreBadgeSvg(input.genreBadge, input.imageType);
       const maxLeft = Math.max(12, input.outputWidth - spec.width - 12);
       const maxTop = Math.max(12, input.outputHeight - spec.height - 12);
-      let left = 12;
-      let top = Math.min(maxTop, Math.max(12, input.badgeTopOffset));
-
-      if (input.imageType === 'logo') {
-        top = 12;
-      } else if (input.imageType === 'poster') {
-        let align: 'left' | 'center' | 'right' = 'left';
-        if (input.posterRatingsLayout === 'left') {
-          align = 'right';
-        } else if (input.posterRatingsLayout === 'left-right') {
-          align = 'center';
-        }
-
-        if (posterTopRows.length > 0) {
-          top = Math.min(maxTop, Math.max(12, posterTopBlockBottom));
-          if (input.posterRatingsLayout === 'left-right') {
-            align = 'center';
-          }
-        }
-
-        left =
-          align === 'right'
-            ? maxLeft
-            : align === 'center'
-              ? Math.max(12, Math.min(maxLeft, Math.round((input.outputWidth - spec.width) / 2)))
-              : 12;
-      }
+      const topInset = Math.min(maxTop, Math.max(12, input.badgeTopOffset));
+      const bottomInset = Math.min(
+        maxTop,
+        Math.max(12, input.outputHeight - spec.height - input.badgeBottomOffset),
+      );
+      const centerLeft = Math.max(12, Math.min(maxLeft, Math.round((input.outputWidth - spec.width) / 2)));
+      let left =
+        input.genreBadge.position === 'topRight' || input.genreBadge.position === 'bottomRight'
+          ? maxLeft
+          : input.genreBadge.position === 'topCenter' || input.genreBadge.position === 'bottomCenter'
+            ? centerLeft
+            : 12;
+      let top =
+        input.genreBadge.position === 'bottomLeft' ||
+        input.genreBadge.position === 'bottomCenter' ||
+        input.genreBadge.position === 'bottomRight'
+          ? bottomInset
+          : topInset;
+      const verticalDirection =
+        input.genreBadge.position === 'bottomLeft' ||
+        input.genreBadge.position === 'bottomCenter' ||
+        input.genreBadge.position === 'bottomRight'
+          ? 'up'
+          : 'down';
 
       const collisionPadding = Math.max(8, Math.round(input.badgeGap * 0.9));
       let adjustedTop = top;
@@ -5896,9 +5950,12 @@ const renderWithSharp = async (
             adjustedTop < rect.top + rect.height + collisionPadding &&
             adjustedTop + spec.height > rect.top - collisionPadding;
           if (!overlapsHorizontally || !overlapsVertically) continue;
-          nextTop = Math.max(nextTop, rect.top + rect.height + collisionPadding);
+          nextTop =
+            verticalDirection === 'up'
+              ? Math.min(nextTop, rect.top - spec.height - collisionPadding)
+              : Math.max(nextTop, rect.top + rect.height + collisionPadding);
         }
-        const clampedNextTop = Math.min(maxTop, nextTop);
+        const clampedNextTop = Math.max(12, Math.min(maxTop, nextTop));
         if (clampedNextTop === adjustedTop) break;
         adjustedTop = clampedNextTop;
       }
@@ -6370,6 +6427,14 @@ export async function GET(
     DEFAULT_RATING_VALUE_MODE,
   );
   const genreBadgeMode = normalizeGenreBadgeMode(request.nextUrl.searchParams.get('genreBadge'));
+  const genreBadgeStyle = normalizeGenreBadgeStyle(
+    request.nextUrl.searchParams.get('genreBadgeStyle'),
+    DEFAULT_GENRE_BADGE_STYLE,
+  );
+  const genreBadgePosition = normalizeGenreBadgePosition(
+    request.nextUrl.searchParams.get('genreBadgePosition'),
+    DEFAULT_GENRE_BADGE_POSITION,
+  );
   const genreBadgeScale = normalizeBadgeScalePercent(
     request.nextUrl.searchParams.get('genreBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
@@ -6700,6 +6765,8 @@ export async function GET(
     ratingStyle,
     ratingValueMode,
     genreBadgeMode,
+    genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? genreBadgeStyle : '-',
+    genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? genreBadgePosition : '-',
     String(genreBadgeScale),
     imageType === 'logo' ? logoBackground : '-',
     effectiveRatingPreferences.join(',') || 'none',
@@ -6971,6 +7038,8 @@ export async function GET(
           label: family.label,
           accentColor: family.accentColor,
           mode: genreBadgeMode,
+          style: genreBadgeStyle,
+          position: genreBadgePosition,
           scalePercent: genreBadgeScale,
         };
       };

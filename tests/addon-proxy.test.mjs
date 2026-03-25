@@ -24,6 +24,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       lang: 'en',
       ratingValueMode: 'normalized',
       genreBadgeMode: 'text',
+      genreBadgeStyle: 'plain',
+      genreBadgePosition: 'bottomCenter',
       genreBadgeScale: 112,
       logoRatingPreferences: ['mdblist', 'tomatoes', 'letterboxd'],
       logoRatingStyle: 'stacked',
@@ -71,6 +73,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.searchParams.get('lang'), 'en');
   assert.equal(rewrittenLogoUrl.searchParams.get('ratingValueMode'), 'normalized');
   assert.equal(rewrittenLogoUrl.searchParams.get('genreBadge'), 'text');
+  assert.equal(rewrittenLogoUrl.searchParams.get('genreBadgeStyle'), 'plain');
+  assert.equal(rewrittenLogoUrl.searchParams.get('genreBadgePosition'), 'bottomCenter');
   assert.equal(rewrittenLogoUrl.searchParams.get('genreBadgeScale'), '112');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatings'), 'mdblist,tomatoes,letterboxd');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingsMax'), '3');
