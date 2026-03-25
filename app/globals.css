@@ -1234,10 +1234,6 @@ pre {
 		radial-gradient(circle at top right, rgba(118, 76, 220, 0.14), transparent 34%);
 }
 
-.erdb-panel-preview {
-	min-height: 100%;
-}
-
 .erdb-panel-note {
 	background: linear-gradient(180deg, rgba(13, 8, 26, 0.88), rgba(8, 5, 18, 0.82));
 }

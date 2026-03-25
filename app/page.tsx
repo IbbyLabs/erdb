@@ -2916,7 +2916,7 @@ export default function Home() {
 
   const setupModeSection = (
     <div className="rounded-2xl border border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))] p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/90">
             Setup Mode
@@ -2964,10 +2964,10 @@ export default function Home() {
                 : 'border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:bg-black/35'
             }`}
           >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-h-[3rem] flex-col items-start gap-2">
               <div className="min-w-0 text-base font-semibold">{option.label}</div>
               <span
-                className={`shrink-0 self-start rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
                   experienceMode === option.id
                     ? 'bg-violet-500/20 text-violet-100'
                     : 'bg-white/5 text-zinc-500'
@@ -2985,7 +2985,7 @@ export default function Home() {
 
   const presetHubSection = (
     <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             Guided Setup
@@ -3011,7 +3011,7 @@ export default function Home() {
         wizardRecommendedPreset ? (
           <div className="mt-4 space-y-4">
             <div className="rounded-2xl border border-violet-500/30 bg-[linear-gradient(145deg,rgba(76,29,149,0.18),rgba(9,9,11,0.88))] p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col items-start gap-3">
                 <div className="min-w-0">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
                     Wizard Recommendation
@@ -3024,7 +3024,7 @@ export default function Home() {
                   </p>
                 </div>
                 <span
-                  className="shrink-0 self-start rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                  className="shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
                   style={{
                     borderColor: hexToRgbaCss(wizardRecommendedPreset.accentColor, 0.55),
                     backgroundColor: hexToRgbaCss(wizardRecommendedPreset.accentColor, 0.16),
@@ -3154,7 +3154,7 @@ export default function Home() {
                       : undefined
                   }
                 >
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex flex-col items-start gap-2">
                     <div className="flex min-w-0 items-start gap-3">
                       <div
                         className="shrink-0 rounded-2xl border border-white/10 p-2.5"
@@ -3172,7 +3172,7 @@ export default function Home() {
                       </div>
                     </div>
                     <span
-                      className="max-w-full shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                      className="max-w-full shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
                       style={{
                         borderColor: hexToRgbaCss(preset.accentColor, 0.45),
                         backgroundColor: hexToRgbaCss(preset.accentColor, 0.16),
@@ -3401,10 +3401,10 @@ export default function Home() {
                 : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
             }`}
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold">{option.label}</span>
+            <div className="flex min-h-[3rem] flex-col items-start gap-2">
+              <span className="min-w-0 break-words text-sm font-semibold">{option.label}</span>
               {activeRatingPresentation === option.id && (
-                <span className="rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
                   Selected
                 </span>
               )}
@@ -5130,15 +5130,15 @@ export default function Home() {
 
                       return (
                         <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
-                          <div className="flex min-h-[3.5rem] flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0 flex-1">
+                          <div className="flex min-h-[3.5rem] flex-col items-start gap-2">
+                            <div className="min-w-0">
                               <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                                 {sample.typeLabel}
                               </div>
                               <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
                             </div>
                             <span
-                              className="shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
+                              className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
                               style={accentStyle}
                             >
                               {family.label}
@@ -5167,7 +5167,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="workspace-export" className="scroll-mt-24 xl:col-start-1 xl:col-span-2">
+            <div id="workspace-export" className="scroll-mt-24 xl:col-start-1">
               <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
@@ -5323,7 +5323,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="proxy" className="scroll-mt-24 xl:col-start-3">
+            <div id="proxy" className="scroll-mt-24 xl:col-start-3 xl:row-start-1">
               <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
                 <div className="erdb-panel-head">
                   <div>
