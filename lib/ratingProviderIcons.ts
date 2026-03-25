@@ -1,6 +1,7 @@
 import type { RatingPreference } from './ratingPreferences.ts';
 import {
   METACRITIC_LOGO_DATA_URI,
+  SIMKL_LOGO_DATA_URI,
   TRAKT_LOGO_DATA_URI,
 } from './ratingProviderBrandAssets.ts';
 
@@ -198,6 +199,12 @@ const resolveMetacriticUserAppearance = (sourceValue: string | null | undefined)
   };
 };
 
+const resolveSimklAppearance = () => ({
+  iconUrl: SIMKL_LOGO_DATA_URI,
+  accentColor: '#00b4ff',
+  label: 'SIMKL',
+});
+
 const resolveTraktAppearance = () => ({
   iconUrl: TRAKT_LOGO_DATA_URI,
   accentColor: '#8b5cf6',
@@ -228,6 +235,9 @@ export const resolveRatingProviderBadgeAppearance = ({
   }
   if (provider === 'metacriticuser') {
     return resolveMetacriticUserAppearance(sourceValue);
+  }
+  if (provider === 'simkl') {
+    return resolveSimklAppearance();
   }
   if (provider === 'trakt') {
     return resolveTraktAppearance();
