@@ -89,6 +89,13 @@
 
 <a id="v2-37-3"></a>
 
+<a id="v2-37-4"></a>
+
+## [v2.37.4] - 25/03/2026
+
+### Fixed
+* tighten mobile configurator layout and refresh renderer cache
+
 ## [v2.37.3] - 25/03/2026
 
 ### Documentation
