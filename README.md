@@ -5,7 +5,7 @@ ERDB generates poster/backdrop/logo images with dynamic ratings and quality badg
 <!-- changelog-links:start -->
 
 > [!TIP]
-> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v2-39-7).
+> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v2-39-8).
 
 <!-- changelog-links:end -->
 
@@ -59,9 +59,9 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
     <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-39-7" alt="The Boys poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-39-7" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-39-7" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-39-8" alt="The Boys poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-39-8" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-39-8" alt="Attack on Titan poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -73,8 +73,8 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
     <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-39-7" alt="Game of Thrones backdrop live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-39-7" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-39-8" alt="Game of Thrones backdrop live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-39-8" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -86,8 +86,8 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
     <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings and quality badges</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-39-7" alt="The Boys logo live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-39-7"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-39-7" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-39-8" alt="The Boys logo live preview" width="320"></a></td>
+    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-39-8"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-39-8" alt="Attack on Titan logo live preview" width="320"></a></td>
   </tr>
 </table>
 

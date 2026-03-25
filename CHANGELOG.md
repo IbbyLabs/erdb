@@ -115,6 +115,19 @@
 
 <a id="v2-39-7"></a>
 
+<a id="v2-39-8"></a>
+
+## [v2.39.8] - 25/03/2026
+
+### Fixed
+* expand workspace to full width shell
+  
+  Remove the fixed max width wrappers on the main page shell so the configurator, preview, proxy, docs, status, and footer sections can use the full viewport width on desktop screens.
+  
+  Update the workspace grid ratio from 1/0.82/0.84 to 1.18/1/1 so preview and proxy columns scale more naturally in fullscreen layouts.
+  
+  Keep existing scroll, sticky preview behavior, and section anchor structure intact while improving large screen space usage.
+
 ## [v2.39.7] - 25/03/2026
 
 ### Fixed
