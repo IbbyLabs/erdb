@@ -255,6 +255,7 @@ Main endpoint:
 | `posterRatings` | Poster rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `backdropRatings` | Backdrop rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalized100` | `native` |
 | `ratingStyle` (or `style`) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
@@ -287,7 +288,7 @@ Backdrop `backdropArtworkSource=fanart` uses fanart.tv `moviebackground` or `sho
 
 Future work: season aware fanart support is a strong next step for TV because fanart.tv exposes `seasonposter` and `seasonthumb` assets.
 
-All rendered ratings are normalized to a 0 to 10 display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
+Rendered ratings keep provider native scales by default. Set `ratingValueMode=normalized` to convert everything to a 0 to 10 display scale, or `ratingValueMode=normalized100` to convert everything to a rounded whole number out of 100. Providers that already use `/10` are shown without the suffix in ten point mode, percentage sources are converted to decimal (`69%` -> `6.9`) or whole number (`69`), `/5` sources are doubled (`4.2/5` -> `8.4`) or multiplied by twenty (`84`), and `/4` sources are multiplied by `2.5` (`3.5/4` -> `8.8` or `88`).
 
 When no explicit max is set, ERDB now renders all badges that fit the layout instead of applying a fixed poster or logo badge cap. Use the max params only when you want to intentionally tighten the visible badge count.
 
@@ -308,7 +309,7 @@ To integrate ERDB into your addon:
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call ERDB for that type).
 4. **Decode**: decode `erdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `genreBadge`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
+5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `poster artwork source`: `posterArtworkSource`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`

@@ -1,6 +1,6 @@
 import type { RatingPreference } from './ratingPreferences';
 
-export type RatingValueMode = 'native' | 'normalized';
+export type RatingValueMode = 'native' | 'normalized' | 'normalized100';
 
 export const DEFAULT_RATING_VALUE_MODE: RatingValueMode = 'native';
 
@@ -18,6 +18,11 @@ export const RATING_VALUE_MODE_OPTIONS: Array<{
     id: 'normalized',
     label: 'Normalised to Ten',
     description: 'Convert every source to a ten point value so different providers can be compared directly.',
+  },
+  {
+    id: 'normalized100',
+    label: 'Normalised to 100',
+    description: 'Convert every source to a rounded whole number out of 100 so badges stay more compact.',
   },
 ];
 
@@ -47,6 +52,14 @@ export const normalizeRatingValueMode = (
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
   if (normalized === 'native' || normalized === 'normalized') {
     return normalized;
+  }
+  if (
+    normalized === 'normalized100' ||
+    normalized === 'normalized-100' ||
+    normalized === 'normalizedhundred' ||
+    normalized === 'normalized-hundred'
+  ) {
+    return 'normalized100';
   }
   return fallback;
 };
@@ -87,6 +100,25 @@ export const normalizeRatingToTenPointValue = (
   return numericValue;
 };
 
+export const normalizeRatingToHundredPointValue = (
+  provider: RatingPreference,
+  baseValue: string,
+): number | null => {
+  const normalizedTenPointValue = normalizeRatingToTenPointValue(provider, baseValue);
+  if (normalizedTenPointValue === null) return null;
+  return Math.max(0, Math.min(100, Math.round(normalizedTenPointValue * 10)));
+};
+
+export const formatNormalizedRatingValue = (
+  normalizedTenPointValue: number,
+  valueMode: RatingValueMode = 'normalized',
+) => {
+  if (valueMode === 'normalized100') {
+    return String(Math.max(0, Math.min(100, Math.round(normalizedTenPointValue * 10))));
+  }
+  return formatRatingNumber(normalizedTenPointValue);
+};
+
 const formatNativeProviderValue = (
   provider: RatingPreference,
   baseValue: string,
@@ -122,10 +154,10 @@ export const formatDisplayRatingValue = (
 ) => {
   if (baseValue === 'N/A') return baseValue;
 
-  if (valueMode === 'normalized') {
+  if (valueMode === 'normalized' || valueMode === 'normalized100') {
     const normalizedValue = normalizeRatingToTenPointValue(provider, baseValue);
     if (normalizedValue !== null) {
-      return formatRatingNumber(normalizedValue);
+      return formatNormalizedRatingValue(normalizedValue, valueMode);
     }
     return baseValue;
   }

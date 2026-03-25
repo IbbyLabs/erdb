@@ -275,7 +275,7 @@ const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
 const SIDE_RATING_POSITION_DOC_VALUES = 'top, middle, bottom, custom';
 const SIDE_RATING_OFFSET_DOC_COPY = '0-100';
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
-const RATING_VALUE_MODE_DOC_VALUES = 'native, normalized';
+const RATING_VALUE_MODE_DOC_VALUES = 'native, normalized, normalized100';
 const GENRE_BADGE_STYLE_DOC_VALUES = 'glass, square, plain';
 const GENRE_BADGE_POSITION_DOC_VALUES =
   'topLeft, topCenter, topRight, bottomLeft, bottomCenter, bottomRight';
@@ -458,7 +458,7 @@ poster artwork source : use cfg.posterArtworkSource for poster original, clean, 
 backdrop artwork source : use cfg.backdropArtworkSource for backdrop original, clean, or alternative
 logo artwork source : use cfg.logoArtworkSource when rendering logo output
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings). Provider order is respected.
-Use cfg.ratingValueMode to keep provider native scales or normalize everything to ten point values.
+Use cfg.ratingValueMode to keep provider native scales or normalize everything to ten point or rounded hundred point values.
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, or force a custom aggregate accent through cfg.aggregateAccentColor.

@@ -195,6 +195,24 @@ test('workspace normalization ignores legacy proxy enabled flags', () => {
   });
 });
 
+test('workspace normalization accepts hundred point rating value aliases and preserves them in payloads', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      ratingValueMode: 'normalized-100',
+    },
+  });
+
+  assert.equal(config.settings.ratingValueMode, 'normalized100');
+
+  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.ratingValueMode, 'normalized100');
+});
+
 test('config string and proxy manifest use the same shared ERDB settings', () => {
   const config = buildSampleSettings();
   const baseUrl = 'https://erdb.example.com/';

@@ -79,6 +79,7 @@ import {
 import { getMetadata, setMetadata } from '@/lib/metadataCache';
 import {
   formatDisplayRatingValue,
+  formatNormalizedRatingValue,
   formatRatingNumber,
   normalizeRatingToTenPointValue,
   normalizeRatingValueMode,
@@ -718,6 +719,7 @@ const buildAggregateRatingBadgeForSource = ({
   resolveAccentColor,
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   allowFallbackToOverall = true,
+  valueMode = DEFAULT_RATING_VALUE_MODE,
 }: {
   requestedSource: AggregateRatingSource;
   presentation: RatingPresentation;
@@ -726,6 +728,7 @@ const buildAggregateRatingBadgeForSource = ({
   resolveAccentColor: (source: AggregateRatingSource) => string;
   accentBarOffset?: number;
   allowFallbackToOverall?: boolean;
+  valueMode?: RatingValueMode;
 }): RatingBadge | null => {
   const availableProviders = renderablePreferences.filter((provider) => ratingBadgeByProvider.has(provider));
   if (availableProviders.length === 0) return null;
@@ -763,7 +766,7 @@ const buildAggregateRatingBadgeForSource = ({
       presentation === 'minimal'
         ? getAggregateRatingSourceShortLabel(effectiveSource)
         : getAggregateRatingSourceLabel(effectiveSource),
-    value: formatRatingNumber(averageValue),
+    value: formatNormalizedRatingValue(averageValue, valueMode),
     iconUrl: '',
     accentColor: resolveAccentColor(effectiveSource),
     accentBarOffset,
@@ -778,6 +781,7 @@ const buildAggregateRatingBadges = ({
   ratingBadgeByProvider,
   resolveAccentColor,
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  valueMode = DEFAULT_RATING_VALUE_MODE,
 }: {
   requestedSource: AggregateRatingSource;
   presentation: RatingPresentation;
@@ -785,6 +789,7 @@ const buildAggregateRatingBadges = ({
   ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
   resolveAccentColor: (source: AggregateRatingSource) => string;
   accentBarOffset?: number;
+  valueMode?: RatingValueMode;
 }) => {
   if (presentation === 'dual') {
     return (['critics', 'audience'] as const)
@@ -797,6 +802,7 @@ const buildAggregateRatingBadges = ({
           resolveAccentColor,
           accentBarOffset,
           allowFallbackToOverall: false,
+          valueMode,
         }),
       )
       .filter((badge): badge is RatingBadge => badge !== null);
@@ -809,6 +815,7 @@ const buildAggregateRatingBadges = ({
     ratingBadgeByProvider,
     resolveAccentColor,
     accentBarOffset,
+    valueMode,
   });
 
   return badge ? [badge] : [];
@@ -8375,6 +8382,7 @@ export async function GET(
             ratingBadgeByProvider,
             resolveAccentColor: resolveAggregateAccentColor,
             accentBarOffset: aggregateAccentBarOffset,
+            valueMode: ratingValueMode,
           })
         : [];
       const primaryAggregateBadge = aggregateBadges[0] || null;
