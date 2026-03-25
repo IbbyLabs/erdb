@@ -66,6 +66,11 @@ import {
   resolveSideRatingOffsetFraction,
   type SideRatingPosition,
 } from '@/lib/sideRatingPosition';
+import {
+  DEFAULT_POSTER_EDGE_OFFSET,
+  POSTER_EDGE_INSET_BASE,
+  normalizePosterEdgeOffset,
+} from '@/lib/posterEdgeOffset';
 import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 import { resolveReverseMappedAnimeImageTarget } from '@/lib/animeReverseMapping';
@@ -2673,6 +2678,7 @@ type FastRenderInput = {
   qualityBadgeScalePercent: number;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
+  posterEdgeOffset: number;
   backdropRatingsLayout: BackdropRatingLayout;
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
@@ -4920,6 +4926,10 @@ const renderWithSharp = async (
     const badgeBaseHeight = input.badgeIconSize + input.badgePaddingY * 2;
     const ratingBadgeHeight = getBadgeHeightFromMetrics(sideColumnMetrics, input.ratingStyle);
     const qualityBadgeScaleRatio = Math.max(0.7, input.qualityBadgeScalePercent / 100);
+    const posterEdgeInset =
+      input.imageType === 'poster'
+        ? POSTER_EDGE_INSET_BASE + input.posterEdgeOffset
+        : POSTER_EDGE_INSET_BASE;
     const resolveSideBadgeStartY = (
       columnBadges: RatingBadge[],
       metrics: BadgeLayoutMetrics = sideColumnMetrics,
@@ -5096,8 +5106,8 @@ const renderWithSharp = async (
 
       const left =
         posterQualityBadgePlacement === 'right'
-          ? Math.max(0, input.outputWidth - uniformBadgeWidth - 12 - protectionPad)
-          : 0;
+          ? Math.max(0, input.outputWidth - uniformBadgeWidth - posterEdgeInset - protectionPad)
+          : Math.max(0, posterEdgeInset - protectionPad);
       return [
         {
           left,
@@ -5858,8 +5868,8 @@ const renderWithSharp = async (
       const badgeWidth = Math.min(estimatedWidth, maxBadgeWidth);
       const rowX =
         side === 'left'
-          ? 12
-          : Math.max(12, input.outputWidth - badgeWidth - 12);
+          ? posterEdgeInset
+          : Math.max(posterEdgeInset, input.outputWidth - badgeWidth - posterEdgeInset);
       pushBadgeOverlay({ badge, badgeWidth, rowX, rowY, compactText: false });
     };
     const composeBadgeColumn = (
@@ -5900,6 +5910,7 @@ const renderWithSharp = async (
             Math.max(72, input.outputWidth - 24)
           );
       let rowY = Math.max(input.badgeTopOffset, startY);
+      const rowEdgeInset = input.imageType === 'poster' ? posterEdgeInset : 12;
       for (let index = 0; index < columnBadges.length; index += 1) {
         const badge = columnBadges[index];
         const spec = buildQualityBadgeSvg(
@@ -5914,8 +5925,8 @@ const renderWithSharp = async (
         const badgeHeightForRow = spec.height;
         const rowX =
           side === 'right'
-            ? Math.max(12, input.outputWidth - badgeWidth - 12)
-            : 12;
+            ? Math.max(rowEdgeInset, input.outputWidth - badgeWidth - rowEdgeInset)
+            : rowEdgeInset;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
         trackGenreCollisionRect(rowX, rowY, badgeWidth, badgeHeightForRow);
         rowY += badgeHeightForRow + input.badgeGap;
@@ -5983,7 +5994,11 @@ const renderWithSharp = async (
         }
       }
       let rowX = Math.floor((input.outputWidth - rowWidth) / 2);
-      rowX = Math.max(12, Math.min(rowX, Math.max(12, input.outputWidth - rowWidth - 12)));
+      const rowEdgeInset = input.imageType === 'poster' ? posterEdgeInset : 12;
+      rowX = Math.max(
+        rowEdgeInset,
+        Math.min(rowX, Math.max(rowEdgeInset, input.outputWidth - rowWidth - rowEdgeInset))
+      );
       for (const spec of specs) {
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
         trackGenreCollisionRect(rowX, rowY, spec.width, spec.height);
@@ -6011,9 +6026,10 @@ const renderWithSharp = async (
         );
         if (!spec) continue;
         const badgeWidth = useIntrinsicWidths ? spec.width : uniformBadgeWidth;
+        const minX = input.imageType === 'poster' ? posterEdgeInset : 12;
         const adjustedX = Math.max(
-          12,
-          Math.min(clampedX, Math.max(12, input.outputWidth - badgeWidth - 12))
+          minX,
+          Math.min(clampedX, Math.max(minX, input.outputWidth - badgeWidth - minX))
         );
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: adjustedX });
         trackGenreCollisionRect(adjustedX, rowY, badgeWidth, spec.height);
@@ -6023,7 +6039,8 @@ const renderWithSharp = async (
     const composeGenreBadge = () => {
       if (!input.genreBadge) return;
       const spec = buildGenreBadgeSvg(input.genreBadge, input.imageType);
-      const maxLeft = Math.max(12, input.outputWidth - spec.width - 12);
+      const horizontalInset = input.imageType === 'poster' ? posterEdgeInset : 12;
+      const maxLeft = Math.max(horizontalInset, input.outputWidth - spec.width - horizontalInset);
       const maxTop = Math.max(12, input.outputHeight - spec.height - 12);
       const topInset = Math.min(maxTop, Math.max(12, input.badgeTopOffset));
       const bottomInset = Math.min(
@@ -6036,7 +6053,7 @@ const renderWithSharp = async (
           ? maxLeft
           : input.genreBadge.position === 'topCenter' || input.genreBadge.position === 'bottomCenter'
             ? centerLeft
-            : 12;
+            : horizontalInset;
       let top =
         input.genreBadge.position === 'bottomLeft' ||
         input.genreBadge.position === 'bottomCenter' ||
@@ -6711,6 +6728,10 @@ export async function GET(
   const fanartClientKey = request.nextUrl.searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
   const posterRatingsLayout = normalizePosterRatingLayout(request.nextUrl.searchParams.get('posterRatingsLayout'));
   const posterRatingsMaxPerSide = normalizePosterRatingsMaxPerSide(request.nextUrl.searchParams.get('posterRatingsMaxPerSide'));
+  const posterEdgeOffset = normalizePosterEdgeOffset(
+    request.nextUrl.searchParams.get('posterEdgeOffset'),
+    DEFAULT_POSTER_EDGE_OFFSET
+  );
   const logoRatingsMax = normalizeOptionalBadgeCount(request.nextUrl.searchParams.get('logoRatingsMax'));
   const backdropRatingsLayout = normalizeBackdropRatingLayout(request.nextUrl.searchParams.get('backdropRatingsLayout'));
   const sideRatingsPosition = normalizeSideRatingPosition(
@@ -6964,6 +6985,7 @@ export async function GET(
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     posterRatingsMax,
+    posterEdgeOffset,
     backdropRatingsLayout,
     backdropRatingsMax,
     logoRatingsMax,
@@ -8995,6 +9017,7 @@ export async function GET(
           qualityBadgeScalePercent,
           posterRatingsLayout: effectivePosterRatingsLayout,
           posterRatingsMaxPerSide: effectivePosterRatingsMaxPerSide,
+          posterEdgeOffset,
           backdropRatingsLayout: effectiveBackdropRatingsLayout,
           sideRatingsPosition,
           sideRatingsOffset,

@@ -16,6 +16,7 @@ const createInput = (overrides = {}) => ({
   posterRatingsLayout: 'left-right',
   posterRatingsMaxPerSide: 2,
   posterRatingsMax: 3,
+  posterEdgeOffset: 0,
   backdropRatingsLayout: 'right-vertical',
   backdropRatingsMax: 2,
   logoRatingsMax: 3,
@@ -57,6 +58,15 @@ test('final image render seed changes when poster rating badge scale changes', (
   );
 
   assert.notEqual(baseKey, scaledKey);
+});
+
+test('final image render seed changes when poster edge offset changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const offsetKey = buildFinalImageRenderSeedKey(
+    createInput({ posterEdgeOffset: 24 }),
+  );
+
+  assert.notEqual(baseKey, offsetKey);
 });
 
 test('final image render seed changes when quality badge settings change', () => {

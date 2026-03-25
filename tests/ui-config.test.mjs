@@ -69,6 +69,7 @@ const buildSampleSettings = () =>
       backdropRatingsLayout: 'right-vertical',
       posterRatingsMax: 5,
       backdropRatingsMax: 4,
+      posterEdgeOffset: 24,
       sideRatingsPosition: 'custom',
       sideRatingsOffset: 62,
       posterRatingStyle: 'square',
@@ -150,6 +151,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       backdropRatingsLayout: 'right-vertical',
       posterRatingsMax: 5,
       backdropRatingsMax: 4,
+      posterEdgeOffset: 24,
       sideRatingsPosition: 'custom',
       sideRatingsOffset: 62,
       posterRatingStyle: 'square',
@@ -342,6 +344,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropArtworkSource: 'fanart',
     posterRatingsLayout: 'top-bottom',
     posterRatingsMax: 5,
+    posterEdgeOffset: 24,
     backdropRatingsLayout: 'right-vertical',
     backdropRatingsMax: 4,
     sideRatingsPosition: 'custom',
@@ -412,6 +415,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropArtworkSource: 'fanart',
     posterRatingsLayout: 'top-bottom',
     posterRatingsMax: '5',
+    posterEdgeOffset: '24',
     backdropRatingsLayout: 'right-vertical',
     backdropRatingsMax: '4',
     sideRatingsPosition: 'custom',
@@ -462,6 +466,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.match(value, /aggregateAccentColor=%2322d3ee/);
     assert.match(value, /aggregateAccentBarOffset=-3/);
     assert.match(value, /posterRatingsLayout=top-bottom/);
+    assert.match(value, /posterEdgeOffset=24/);
     assert.match(value, /backdropRatingsLayout=right-vertical/);
     assert.match(
       value,
@@ -545,6 +550,16 @@ test('workspace normalization accepts spaced layout values from the page docs', 
 
   assert.equal(config.settings.posterRatingsLayout, 'left-right');
   assert.equal(config.settings.backdropRatingsLayout, 'right-vertical');
+});
+
+test('workspace normalization clamps poster edge offset into the supported range', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterEdgeOffset: 999,
+    },
+  });
+
+  assert.equal(config.settings.posterEdgeOffset, 80);
 });
 
 test('workspace normalization maps legacy fanart poster mode into artwork source state', () => {
