@@ -154,6 +154,11 @@ import {
   getConfiguredErdbRequestKeys,
   isErdbRequestAuthorized,
 } from '@/lib/erdbRequestKey';
+import {
+  ANIME_MAPPING_BASE_URL,
+  KITSU_API_BASE_URL,
+  TMDB_API_BASE_URL,
+} from '@/lib/serviceBaseUrls';
 
 export const runtime = 'nodejs';
 
@@ -2024,7 +2029,7 @@ const fetchAnimeReverseMappingPayload = async ({
   const normalizedSeason = normalizeAnimeMappingSeason(season);
   const seasonQuery = normalizedSeason ? `?s=${encodeURIComponent(normalizedSeason)}` : '';
   const cacheKey = `anime:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`;
-  const url = `https://animemapping.stremio.dpdns.org/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
+  const url = `${ANIME_MAPPING_BASE_URL}/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
 
   try {
     const response = await fetchJsonCached(
@@ -2120,7 +2125,7 @@ const fetchTmdbIdFromReverseMapping = async ({
   const normalizedSeason = normalizeAnimeMappingSeason(season);
   const seasonQuery = normalizedSeason ? `?s=${encodeURIComponent(normalizedSeason)}` : '';
   const cacheKey = `tmdb:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`;
-  const url = `https://animemapping.stremio.dpdns.org/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
+  const url = `${ANIME_MAPPING_BASE_URL}/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`;
 
   try {
     const response = await fetchJsonCached(
@@ -2146,7 +2151,7 @@ const fetchKitsuAnimeAttributes = async (kitsuId: string, phases: PhaseDurations
   try {
     const response = await fetchJsonCached(
       `kitsu:anime:${normalizedKitsuId}:details`,
-      `https://kitsu.io/api/edge/anime/${encodeURIComponent(normalizedKitsuId)}`,
+      `${KITSU_API_BASE_URL}/anime/${encodeURIComponent(normalizedKitsuId)}`,
       KITSU_CACHE_TTL_MS,
       phases,
       'mdb',
@@ -7045,7 +7050,7 @@ export async function GET(
         if (explicitTmdbMediaType) {
           const tmdbResponse = await fetchJsonCached(
             `tmdb:${explicitTmdbMediaType}:${mediaId}`,
-            `https://api.themoviedb.org/3/${explicitTmdbMediaType}/${mediaId}?api_key=${tmdbKey}`,
+            `${TMDB_API_BASE_URL}/${explicitTmdbMediaType}/${mediaId}?api_key=${tmdbKey}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
@@ -7057,7 +7062,7 @@ export async function GET(
         } else {
           const movieResponse = await fetchJsonCached(
             `tmdb:movie:${mediaId}`,
-            `https://api.themoviedb.org/3/movie/${mediaId}?api_key=${tmdbKey}`,
+            `${TMDB_API_BASE_URL}/movie/${mediaId}?api_key=${tmdbKey}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
@@ -7068,7 +7073,7 @@ export async function GET(
           } else {
             const tvResponse = await fetchJsonCached(
               `tmdb:tv:${mediaId}`,
-              `https://api.themoviedb.org/3/tv/${mediaId}?api_key=${tmdbKey}`,
+              `${TMDB_API_BASE_URL}/tv/${mediaId}?api_key=${tmdbKey}`,
               TMDB_CACHE_TTL_MS,
               phases,
               'tmdb'
@@ -7080,7 +7085,7 @@ export async function GET(
           }
         }
       } else if (isKitsu) {
-        let mappingUrl = `https://animemapping.stremio.dpdns.org/kitsu/${mediaId}`;
+        let mappingUrl = `${ANIME_MAPPING_BASE_URL}/kitsu/${mediaId}`;
         if (episode) {
           mappingUrl += `?ep=${episode}`;
         }
@@ -7121,7 +7126,7 @@ export async function GET(
         if (mappingSubtype !== 'movie' && !season) {
           const seasonProbeResponse = await fetchJsonCached(
             `kitsu:mapping:${mediaId}:1`,
-            `https://animemapping.stremio.dpdns.org/kitsu/${mediaId}?ep=1`,
+            `${ANIME_MAPPING_BASE_URL}/kitsu/${mediaId}?ep=1`,
             KITSU_CACHE_TTL_MS,
             phases,
             'tmdb'
@@ -7152,7 +7157,7 @@ export async function GET(
           for (const mappedMediaType of mappedMediaTypeCandidates) {
             const mappedMediaResponse = await fetchJsonCached(
               `tmdb:${mappedMediaType}:${tmdbId}`,
-              `https://api.themoviedb.org/3/${mappedMediaType}/${tmdbId}?api_key=${tmdbKey}`,
+              `${TMDB_API_BASE_URL}/${mappedMediaType}/${tmdbId}?api_key=${tmdbKey}`,
               TMDB_CACHE_TTL_MS,
               phases,
               'tmdb'
@@ -7202,7 +7207,7 @@ export async function GET(
           fetchTmdbMedia: async (mappedTmdbId, mappedMediaType) => {
             const mappedMediaResponse = await fetchJsonCached(
               `tmdb:${mappedMediaType}:${mappedTmdbId}`,
-              `https://api.themoviedb.org/3/${mappedMediaType}/${mappedTmdbId}?api_key=${tmdbKey}`,
+              `${TMDB_API_BASE_URL}/${mappedMediaType}/${mappedTmdbId}?api_key=${tmdbKey}`,
               TMDB_CACHE_TTL_MS,
               phases,
               'tmdb'
@@ -7232,7 +7237,7 @@ export async function GET(
       } else {
         const findResponse = await fetchJsonCached(
           `tmdb:find:${mediaId}`,
-          `https://api.themoviedb.org/3/find/${mediaId}?api_key=${tmdbKey}&external_source=imdb_id`,
+          `${TMDB_API_BASE_URL}/find/${mediaId}?api_key=${tmdbKey}&external_source=imdb_id`,
           TMDB_CACHE_TTL_MS,
           phases,
           'tmdb'
@@ -7368,7 +7373,7 @@ export async function GET(
           const certificationAppendTarget =
             mediaType === 'movie' ? 'release_dates' : mediaType === 'tv' ? 'content_ratings' : null;
           const buildDetailsUrl = (language: string) =>
-            `https://api.themoviedb.org/3/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguage)}`;
+            `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguage)}`;
 
           const [detailsResponse, fallbackDetailsResponse] = await Promise.all([
             fetchJsonCached(
@@ -8091,14 +8096,14 @@ export async function GET(
             const [seasonDetailsResponse, seasonImagesResponse] = await Promise.all([
               fetchJsonCached(
                 `tmdb:season_details:${media.id}:${season}:${requestedImageLang}`,
-                `https://api.themoviedb.org/3/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${requestedImageLang}`,
+                `${TMDB_API_BASE_URL}/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${requestedImageLang}`,
                 TMDB_CACHE_TTL_MS,
                 phases,
                 'tmdb'
               ),
               fetchJsonCached(
                 seasonImagesCacheKey,
-                `https://api.themoviedb.org/3/tv/${media.id}/season/${season}/images?api_key=${tmdbKey}${seasonImagesQuery}`,
+                `${TMDB_API_BASE_URL}/tv/${media.id}/season/${season}/images?api_key=${tmdbKey}${seasonImagesQuery}`,
                 TMDB_CACHE_TTL_MS,
                 phases,
                 'tmdb'
@@ -8116,7 +8121,7 @@ export async function GET(
             if (!seasonPosterPath && requestedImageLang !== FALLBACK_IMAGE_LANGUAGE) {
               const seasonFallbackDetailsResponse = await fetchJsonCached(
                 `tmdb:season_details:${media.id}:${season}:${FALLBACK_IMAGE_LANGUAGE}`,
-                `https://api.themoviedb.org/3/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}`,
+                `${TMDB_API_BASE_URL}/tv/${media.id}/season/${season}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}`,
                 TMDB_CACHE_TTL_MS,
                 phases,
                 'tmdb'
@@ -8279,7 +8284,7 @@ export async function GET(
         ) {
           const logoFallbackImagesResponse = await fetchJsonCached(
             `tmdb:${mediaType}:${media.id}:images:all`,
-            `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
+            `${TMDB_API_BASE_URL}/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
@@ -8306,7 +8311,7 @@ export async function GET(
         if (!imgPath && !imgUrl) {
           const fallbackImagesResponse = await fetchJsonCached(
             `tmdb:${mediaType}:${media.id}:images:all`,
-            `https://api.themoviedb.org/3/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
+            `${TMDB_API_BASE_URL}/${mediaType}/${media.id}/images?api_key=${tmdbKey}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
@@ -8611,7 +8616,7 @@ export async function GET(
             [1, 2, 3].map((page) =>
               fetchJsonCached(
                 `tmdb:${mediaType}:${media.id}:reviews:${language}:page:${page}`,
-                `https://api.themoviedb.org/3/${mediaType}/${media.id}/reviews?api_key=${tmdbKey}&language=${language}&page=${page}`,
+                `${TMDB_API_BASE_URL}/${mediaType}/${media.id}/reviews?api_key=${tmdbKey}&language=${language}&page=${page}`,
                 TMDB_CACHE_TTL_MS,
                 phases,
                 'tmdb'

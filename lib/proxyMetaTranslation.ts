@@ -3,6 +3,11 @@ import {
   normalizeMetadataTranslationMode,
   type MetadataTranslationMode,
 } from './metadataTranslation.ts';
+import {
+  ANIME_MAPPING_BASE_URL,
+  KITSU_API_BASE_URL,
+  TMDB_API_BASE_URL,
+} from './serviceBaseUrls.ts';
 
 export type TmdbMediaType = 'movie' | 'tv';
 
@@ -93,10 +98,6 @@ type RequestedLanguage = {
   region: string | null;
 };
 
-const TMDB_BASE_URL = process.env.ERDB_TMDB_API_BASE_URL?.trim() || 'https://api.themoviedb.org/3';
-const ANIME_MAPPING_BASE_URL =
-  process.env.ERDB_ANIME_MAPPING_BASE_URL?.trim() || 'https://animemapping.stremio.dpdns.org';
-const KITSU_BASE_URL = process.env.ERDB_KITSU_API_BASE_URL?.trim() || 'https://kitsu.io/api/edge';
 const IMDB_RE = /^tt\d+$/i;
 const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>(['mal', 'anilist', 'kitsu', 'anidb']);
 
@@ -242,7 +243,7 @@ const buildTmdbDetailsUrl = (
   tmdbKey: string,
   lang: string | null,
 ) => {
-  const url = new URL(`${TMDB_BASE_URL}/${type}/${tmdbId}`);
+  const url = new URL(`${TMDB_API_BASE_URL}/${type}/${tmdbId}`);
   url.searchParams.set('api_key', tmdbKey);
   if (lang) {
     url.searchParams.set('language', lang);
@@ -271,7 +272,7 @@ const buildTmdbTranslationsUrl = ({
         : seasonNumber
           ? `/tv/${tmdbId}/season/${seasonNumber}/translations`
           : `/tv/${tmdbId}/translations`;
-  const url = new URL(`${TMDB_BASE_URL}${basePath}`);
+  const url = new URL(`${TMDB_API_BASE_URL}${basePath}`);
   url.searchParams.set('api_key', tmdbKey);
   return url.toString();
 };
@@ -346,7 +347,7 @@ export const resolveTmdbTranslationTarget = async ({
   }
 
   if (IMDB_RE.test(erdbId)) {
-    const findUrl = new URL(`${TMDB_BASE_URL}/find/${encodeURIComponent(erdbId)}`);
+    const findUrl = new URL(`${TMDB_API_BASE_URL}/find/${encodeURIComponent(erdbId)}`);
     findUrl.searchParams.set('api_key', tmdbKey);
     findUrl.searchParams.set('external_source', 'imdb_id');
     if (lang) {
@@ -725,7 +726,7 @@ export const resolveAnimeTextFallback = async ({
     toNonEmptyString((mappingData as any)?.requested?.resolvedKitsuId) ||
     toNonEmptyString((mappingData as any)?.kitsu?.id);
   if (resolvedKitsuId) {
-    const kitsuData = await fetchKitsuJson(`${KITSU_BASE_URL}/anime/${encodeURIComponent(resolvedKitsuId)}`);
+    const kitsuData = await fetchKitsuJson(`${KITSU_API_BASE_URL}/anime/${encodeURIComponent(resolvedKitsuId)}`);
     const kitsuAttributes =
       kitsuData &&
       typeof kitsuData === 'object' &&

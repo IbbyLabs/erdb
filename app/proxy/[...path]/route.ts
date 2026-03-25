@@ -25,6 +25,7 @@ import {
   getConfiguredErdbRequestKeys,
   isErdbRequestAuthorized,
 } from '@/lib/erdbRequestKey';
+import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -79,7 +80,6 @@ const parseForwardedHost = (value: string | null) => {
   }
 };
 
-const TMDB_BASE_URL = process.env.ERDB_TMDB_API_BASE_URL?.trim() || 'https://api.themoviedb.org/3';
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const ANILIST_MEDIA_QUERY = `
   query ErdbAnimeTextFallback($id: Int) {
@@ -338,7 +338,7 @@ const translateMetaPayload = async (
 
     const seasonDataMap = new Map<number, any>();
     await mapWithConcurrency(Array.from(seasonValues), 6, async (seasonValue) => {
-      const seasonUrl = new URL(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${seasonValue}`);
+      const seasonUrl = new URL(`${TMDB_API_BASE_URL}/tv/${tmdbId}/season/${seasonValue}`);
       seasonUrl.searchParams.set('api_key', config.tmdbKey);
       seasonUrl.searchParams.set('language', lang);
       const seasonData = await fetchTmdbJson(seasonUrl.toString());
