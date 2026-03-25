@@ -342,8 +342,9 @@ const POSTER_RATINGS_MAX_DOC_COPY = '1+';
 const OPTIONAL_BADGE_MAX_DOC_COPY = '1+';
 const BACKDROP_LAYOUT_DOC_VALUES = 'center, right, right vertical';
 const SIDE_RATING_POSITION_DOC_VALUES = 'top, middle, bottom, custom';
-const SIDE_RATING_OFFSET_DOC_COPY = '0-100';
-const POSTER_EDGE_OFFSET_DOC_COPY = `0-${MAX_POSTER_EDGE_OFFSET}`;
+const SIDE_RATING_OFFSET_DOC_COPY = '0 to 100';
+const POSTER_EDGE_OFFSET_DOC_COPY = `0 to ${MAX_POSTER_EDGE_OFFSET}`;
+const BADGE_SCALE_DOC_COPY = `${MIN_BADGE_SCALE_PERCENT} to ${MAX_BADGE_SCALE_PERCENT}`;
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
 const RATING_VALUE_MODE_DOC_VALUES = 'native, normalized, normalized100';
 const GENRE_BADGE_STYLE_DOC_VALUES = 'glass, square, plain';
@@ -514,15 +515,15 @@ aggregateAccentColor    | Hex color (used when aggregateAccentMode=custom)      
 aggregateAccentBarOffset| Number (-12 to 12, aggregate badges only)                            | 0
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
 ratingStyle             | glass, square, plain, stacked                                        | glass
-genreBadgeScale         | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT}) (global fallback) | 100
-posterGenreBadgeScale   | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-backdropGenreBadgeScale | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-logoGenreBadgeScale     | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-posterRatingBadgeScale | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-backdropRatingBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-logoRatingBadgeScale   | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-posterQualityBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
-backdropQualityBadgeScale| Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})     | 100
+genreBadgeScale         | Number (${BADGE_SCALE_DOC_COPY}) (global fallback)                  | 100
+posterGenreBadgeScale   | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+backdropGenreBadgeScale | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+logoGenreBadgeScale     | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+posterRatingBadgeScale | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+backdropRatingBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+logoRatingBadgeScale   | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+posterQualityBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+backdropQualityBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                                  | 100
 imageText               | original, clean, alternative                                         | original
 posterArtworkSource     | tmdb, fanart, cinemeta (poster artwork source)                       | tmdb
 backdropArtworkSource   | tmdb, fanart (backdrop artwork source)                               | tmdb
@@ -582,7 +583,7 @@ Quality badge visibility/style/max can be set per type via cfg.posterQualityBadg
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge mode/style/position/scale can be set per type via cfg.posterGenreBadge* / cfg.backdropGenreBadge* / cfg.logoGenreBadge* and fall back to the shared cfg.genreBadge* fields.
 Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale.
 Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedWidthPercent":88,"stackedSurfaceOpacityPercent":72,"stackedAccentMode":"logo","stackedLineVisible":false,"stackedLineWidthPercent":88}}.
-Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0-100 vertical anchor.
+Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0 to 100 vertical anchor.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
@@ -3776,7 +3777,7 @@ export default function Home() {
               </div>
             )}
             <p className="text-[11px] leading-relaxed text-zinc-500">
-              Applies to poster side stacks and the backdrop right-vertical layout, including blockbuster mode.
+              Applies to poster side stacks and the backdrop right vertical layout, including blockbuster mode.
             </p>
           </div>
         )}
@@ -5522,32 +5523,32 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">genreBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale, global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale, global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterRatingBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropRatingBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoRatingBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterQualityBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropQualityBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
@@ -5714,18 +5715,18 @@ export default function Home() {
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
                             <div>{GENRE_BADGE_POSITION_DOC_VALUES}</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
-                            <div>{POSTER_EDGE_OFFSET_DOC_COPY} (edge-aligned poster badges)</div>
+                            <div>{POSTER_EDGE_OFFSET_DOC_COPY} (edge aligned poster badges)</div>
                             <div>{SIDE_RATING_POSITION_DOC_VALUES} (side layouts only)</div>
                             <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
                             <div>{QUALITY_BADGE_DOC_VALUES} (empty string hides all)</div>
                             <div>auto, left, right (top or bottom layouts only)</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
                           </div>
                         </td>
                       </tr>
@@ -5760,15 +5761,15 @@ export default function Home() {
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
                             <div>{GENRE_BADGE_POSITION_DOC_VALUES}</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{SIDE_RATING_POSITION_DOC_VALUES} (right vertical only)</div>
                             <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
                             <div>{QUALITY_BADGE_DOC_VALUES} (empty string hides all)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
                           </div>
                         </td>
                       </tr>
@@ -5798,8 +5799,8 @@ export default function Home() {
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
                             <div>{GENRE_BADGE_POSITION_DOC_VALUES}</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
-                            <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
                           </div>
                         </td>
                       </tr>
