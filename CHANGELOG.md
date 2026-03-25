@@ -49,6 +49,14 @@
 
 <a id="v2-31-1"></a>
 
+<a id="v2-31-2"></a>
+
+## [v2.31.2] - 25/03/2026
+
+### Fixed
+* post Discord releases from project workflows
+* clarify pending release state
+
 ## [v2.31.1] - 25/03/2026
 
 ### Fixed
