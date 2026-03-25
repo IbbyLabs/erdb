@@ -127,6 +127,7 @@ import {
   computeStackedBadgeLayout,
   getStackedBadgeHeight,
 } from '@/lib/stackedBadgeLayout';
+import { buildFinalImageRenderSeedKey } from '@/lib/finalImageRenderSeed';
 import {
   buildEditorialRatingOverlaySvg,
   type EditorialRatingOverlaySpec,
@@ -6737,57 +6738,59 @@ export async function GET(
   const renderCacheBuster = (request.nextUrl.searchParams.get('cb') || '').trim();
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
-  const renderSeedKey = [
-    FINAL_IMAGE_RENDERER_CACHE_VERSION,
+  const usesFanartArtwork =
+    (imageType === 'poster' && posterArtworkSource === 'fanart') ||
+    (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
+    (imageType === 'logo' && logoArtworkSource === 'fanart');
+  const fanartKeyHash = usesFanartArtwork ? sha1Hex(fanartKey || '').slice(0, 12) : '-';
+  const fanartClientKeyHash = usesFanartArtwork
+    ? sha1Hex(fanartClientKey || '').slice(0, 12)
+    : '-';
+  const renderSeedKey = buildFinalImageRenderSeedKey({
+    cacheVersion: FINAL_IMAGE_RENDERER_CACHE_VERSION,
     imageType,
     outputFormat,
     cleanId,
     requestedImageLang,
     posterTextPreference,
-    imageType === 'poster' ? posterArtworkSource : '-',
-    imageType === 'backdrop' ? backdropArtworkSource : '-',
-    imageType === 'logo' ? logoArtworkSource : '-',
-    imageType === 'poster' ? posterRatingsLayout : '-',
-    imageType === 'poster' ? String(posterRatingsMaxPerSide ?? 'auto') : '-',
-    imageType === 'logo' ? String(logoRatingsMax ?? 'auto') : '-',
-    imageType === 'poster' ? qualityBadgesSide : '-',
-    imageType === 'poster' && (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom')
-      ? posterQualityBadgesPosition
-      : '-',
-    imageType !== 'logo' ? qualityBadgesStyle : '-',
-    imageType !== 'logo' ? String(qualityBadgesMax ?? 'auto') : '-',
-    imageType === 'backdrop' ? backdropRatingsLayout : '-',
-    imageType === 'poster' || imageType === 'backdrop' ? sideRatingsPosition : '-',
-    imageType === 'poster' || imageType === 'backdrop' ? String(sideRatingsOffset) : '-',
+    posterArtworkSource,
+    backdropArtworkSource,
+    logoArtworkSource,
+    posterRatingsLayout,
+    posterRatingsMaxPerSide,
+    posterRatingsMax,
+    backdropRatingsLayout,
+    backdropRatingsMax,
+    logoRatingsMax,
+    qualityBadgesSide,
+    posterQualityBadgesPosition,
+    qualityBadgesStyle,
+    qualityBadgesMax,
+    qualityBadgePreferences,
+    sideRatingsPosition,
+    sideRatingsOffset,
     ratingPresentation,
-    imageType === 'poster' ? blockbusterDensity : '-',
+    blockbusterDensity,
     aggregateRatingSource,
     ratingStyle,
     ratingValueMode,
+    posterRatingBadgeScale,
+    backdropRatingBadgeScale,
+    logoRatingBadgeScale,
+    posterQualityBadgeScale,
+    backdropQualityBadgeScale,
     genreBadgeMode,
-    genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? genreBadgeStyle : '-',
-    genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? genreBadgePosition : '-',
-    String(genreBadgeScale),
-    imageType === 'logo' ? logoBackground : '-',
-    effectiveRatingPreferences.join(',') || 'none',
+    genreBadgeStyle,
+    genreBadgePosition,
+    genreBadgeScale,
+    logoBackground,
+    effectiveRatingPreferences,
+    providerAppearanceOverrides,
     streamBadgesCacheKeySeed,
-    (
-      (imageType === 'poster' && posterArtworkSource === 'fanart') ||
-      (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
-      (imageType === 'logo' && logoArtworkSource === 'fanart')
-    )
-      ? sha1Hex(fanartKey || '').slice(0, 12)
-      : '-',
-    (
-      (imageType === 'poster' && posterArtworkSource === 'fanart') ||
-      (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
-      (imageType === 'logo' && logoArtworkSource === 'fanart')
-    )
-      ? sha1Hex(fanartClientKey || '').slice(0, 12)
-      : '-',
-    renderCacheBuster || '-',
-    'v2',
-  ].join('|');
+    fanartKeyHash,
+    fanartClientKeyHash,
+    renderCacheBuster,
+  });
   const objectStorageEnabled = isObjectStorageConfigured();
 
   if (!tmdbKey) {
