@@ -26,3 +26,11 @@ test('enabled ordered preferences round-trip through row state', () => {
   const disabledTail = rows.slice(3);
   assert.ok(disabledTail.every((row) => row.enabled === false));
 });
+
+test('empty enabled order keeps every provider available but disabled', () => {
+  const rows = enabledOrderedToRows([]);
+
+  assert.equal(rowsToEnabledOrdered(rows).length, 0);
+  assert.ok(rows.length > 0);
+  assert.ok(rows.every((row) => row.enabled === false));
+});

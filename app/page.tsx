@@ -2391,6 +2391,15 @@ export default function Home() {
     );
   };
 
+  const setAllRatingPreferencesEnabled = (enabled: boolean) => {
+    updateRatingRowsForType(previewType, (current) =>
+      current.map((row) => ({
+        ...row,
+        enabled,
+      }))
+    );
+  };
+
   const reorderRatingPreference = (fromIndex: number, toIndex: number) => {
     updateRatingRowsForType(previewType, (current) => {
       if (
@@ -3976,11 +3985,34 @@ export default function Home() {
 
   const providersSection = (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
-        {providersLabel} · drag to reorder
-      </span>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
+            {providersLabel} · drag to reorder
+          </span>
+          <div className="mt-1 text-[11px] text-zinc-500">
+            {ratingProviderRows.filter((row) => row.enabled).length} of {ratingProviderRows.length} enabled
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setAllRatingPreferencesEnabled(false)}
+            className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+          >
+            Hide All Ratings
+          </button>
+          <button
+            type="button"
+            onClick={() => setAllRatingPreferencesEnabled(true)}
+            className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+          >
+            Enable All
+          </button>
+        </div>
+      </div>
       <p className="text-[10px] leading-4 text-zinc-500">
-        ERDB respects this order when rendering badges. Disabled providers stay available but are skipped.
+        ERDB respects this order when rendering badges. Disabled providers stay available but are skipped. When every provider is off, the image renders without rating badges.
       </p>
       <RatingProviderSortableList
         rows={ratingProviderRows}

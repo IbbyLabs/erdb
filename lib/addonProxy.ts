@@ -107,6 +107,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'tmdbKey',
   'mdblistKey',
   'fanartKey',
+  'fallbackUrl',
   'erdbBase',
   'translateMeta',
   'translateMetaMode',
@@ -553,9 +554,10 @@ export const buildErdbImageUrl = (options: {
   erdbId: string;
   tmdbKey: string;
   mdblistKey: string;
+  fallbackUrl?: string | null;
   config?: ProxyConfig | null;
 }) => {
-  const { reqUrl, imageType, erdbId, tmdbKey, mdblistKey, config = null } = options;
+  const { reqUrl, imageType, erdbId, tmdbKey, mdblistKey, fallbackUrl = null, config = null } = options;
   const baseOverride = getProxyParam(reqUrl, config, 'erdbBase');
   const base = new URL(baseOverride || reqUrl.origin);
   base.pathname = `/${imageType}/${encodeURIComponent(erdbId)}.jpg`;
@@ -586,6 +588,11 @@ export const buildErdbImageUrl = (options: {
     const imageText =
       styleParams.imageText.map((key) => getProxyParam(reqUrl, config, key)).find((value) => value) || null;
     if (imageText) base.searchParams.set('imageText', imageText);
+  }
+
+  const normalizedFallbackUrl = typeof fallbackUrl === 'string' ? fallbackUrl.trim() : '';
+  if (normalizedFallbackUrl) {
+    base.searchParams.set('fallbackUrl', normalizedFallbackUrl);
   }
 
   return base.toString();

@@ -51,6 +51,7 @@ type FinalImageRenderSeedInput = {
   streamBadgesCacheKeySeed: string;
   fanartKeyHash: string;
   fanartClientKeyHash: string;
+  sourceFallbackKey: string;
   renderCacheBuster: string;
 };
 
@@ -117,6 +118,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.streamBadgesCacheKeySeed,
     input.fanartKeyHash || '-',
     input.fanartClientKeyHash || '-',
+    input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
     'v4',
   ].join('|');

@@ -47,6 +47,7 @@ const createInput = (overrides = {}) => ({
   streamBadgesCacheKeySeed: 'off',
   fanartKeyHash: 'fanart-hash',
   fanartClientKeyHash: 'fanart-client-hash',
+  sourceFallbackKey: '-',
   renderCacheBuster: '',
   ...overrides,
 });
@@ -108,4 +109,13 @@ test('final image render seed includes canonical provider appearance overrides',
 
   assert.equal(baseKey, reorderedKey);
   assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed changes when the fallback image source changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const fallbackKey = buildFinalImageRenderSeedKey(
+    createInput({ sourceFallbackKey: 'fallback-hash-123' }),
+  );
+
+  assert.notEqual(baseKey, fallbackKey);
 });

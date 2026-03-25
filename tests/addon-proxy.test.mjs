@@ -205,6 +205,29 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   );
 });
 
+test('proxy image rewrites can preserve the upstream image as a fallback URL', () => {
+  const rewrittenPosterUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/movie/example.json'),
+      imageType: 'poster',
+      erdbId: 'tt11003218',
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      fallbackUrl: 'https://images.example.com/posters/tt11003218.jpg',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    })
+  );
+
+  assert.equal(
+    rewrittenPosterUrl.searchParams.get('fallbackUrl'),
+    'https://images.example.com/posters/tt11003218.jpg',
+  );
+});
+
 test('proxy image rewrites carry artwork source selection for backdrops', () => {
   const uiConfig = normalizeSavedUiConfig({
     settings: {

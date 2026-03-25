@@ -107,6 +107,7 @@ import {
   type GenreBadgeStyle,
 } from '@/lib/genreBadge';
 import { normalizeErdbId } from '@/lib/addonProxy';
+import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
 import {
   MEDIA_FEATURE_BADGE_ORDER,
   buildCertificationBadgeMeta,
@@ -2656,6 +2657,7 @@ type FastRenderInput = {
   blockbusterDensity: BlockbusterDensity;
   outputFormat: OutputFormat;
   imgUrl: string;
+  imgFallbackUrl?: string | null;
   outputWidth: number;
   outputHeight: number;
   imageWidth?: number;
@@ -2969,6 +2971,36 @@ const getSourceImagePayload = async (
 
     return payload;
   });
+};
+
+const normalizeSafeFallbackImageUrl = async (value: string | null | undefined) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+
+  try {
+    return (await assertSafeUpstreamUrl(normalized)).toString();
+  } catch {
+    return null;
+  }
+};
+
+const getSourceImagePayloadWithFallback = async (options: {
+  imgUrl: string;
+  fallbackUrl?: string | null;
+  fallbackTtlMs?: number;
+}) => {
+  const { imgUrl, fallbackUrl = null, fallbackTtlMs = TMDB_CACHE_TTL_MS } = options;
+  const normalizedPrimaryUrl = String(imgUrl || '').trim();
+  const normalizedFallbackUrl = await normalizeSafeFallbackImageUrl(fallbackUrl);
+
+  try {
+    return await getSourceImagePayload(normalizedPrimaryUrl, fallbackTtlMs);
+  } catch (error) {
+    if (!normalizedFallbackUrl || normalizedFallbackUrl === normalizedPrimaryUrl) {
+      throw error;
+    }
+    return getSourceImagePayload(normalizedFallbackUrl, fallbackTtlMs);
+  }
 };
 
 type FanartImageAsset = {
@@ -4877,7 +4909,10 @@ const renderWithSharp = async (
     const imageWidth = input.imageWidth ?? input.outputWidth;
     const imageHeight = input.imageHeight ?? input.outputHeight;
     const imageLeft = Math.max(0, Math.floor((input.outputWidth - imageWidth) / 2));
-    const sourcePayload = await getSourceImagePayload(input.imgUrl);
+    const sourcePayload = await getSourceImagePayloadWithFallback({
+      imgUrl: input.imgUrl,
+      fallbackUrl: input.imgFallbackUrl,
+    });
     const sourceBuffer = Buffer.from(sourcePayload.body);
     const overlays: Array<{ input: Buffer; top: number; left: number }> = [];
     type GenreCollisionRect = { left: number; top: number; width: number; height: number };
@@ -6556,6 +6591,7 @@ export async function handleImageRequest(
       ? `${requestedIdSourceCandidate}:${cleanIdWithoutExtension}`
       : cleanIdWithoutExtension;
   const cleanId = normalizeErdbId(requestedCleanId) ?? requestedCleanId;
+  const requestedFallbackUrl = request.nextUrl.searchParams.get('fallbackUrl');
 
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
   const ratingValueMode = normalizeRatingValueMode(
@@ -6979,6 +7015,8 @@ export async function handleImageRequest(
   const fanartClientKeyHash = usesFanartArtwork
     ? sha1Hex(fanartClientKey || '').slice(0, 12)
     : '-';
+  const sourceFallbackUrl = await normalizeSafeFallbackImageUrl(requestedFallbackUrl);
+  const sourceFallbackKey = sourceFallbackUrl ? sha1Hex(sourceFallbackUrl).slice(0, 12) : '-';
   const renderSeedKey = buildFinalImageRenderSeedKey({
     cacheVersion: FINAL_IMAGE_RENDERER_CACHE_VERSION,
     imageType,
@@ -7026,6 +7064,7 @@ export async function handleImageRequest(
     streamBadgesCacheKeySeed,
     fanartKeyHash,
     fanartClientKeyHash,
+    sourceFallbackKey,
     renderCacheBuster,
   });
   const objectStorageEnabled = isObjectStorageConfigured();
@@ -8367,11 +8406,11 @@ export async function handleImageRequest(
         }
       }
 
-      if (!imgUrl && !imgPath) {
-        throw new HttpError('Image not found', 404);
+      if (!imgUrl) {
+        imgUrl = imgPath ? buildTmdbImageUrl(imageType, imgPath, outputWidth) : sourceFallbackUrl || '';
       }
       if (!imgUrl) {
-        imgUrl = buildTmdbImageUrl(imageType, imgPath, outputWidth);
+        throw new HttpError('Image not found', 404);
       }
       const shouldApplyPosterCleanOverlay =
         imageType === 'poster' && posterTextPreference === 'clean' && selectedPosterIsTextless;
@@ -8387,7 +8426,10 @@ export async function handleImageRequest(
             : buildTmdbImageUrl('logo', selectedPosterLogoPath, outputWidth))
           : null;
       if (!shouldRenderBadges && !posterTitleText && !posterLogoUrl) {
-        return getSourceImagePayload(imgUrl);
+        return getSourceImagePayloadWithFallback({
+          imgUrl,
+          fallbackUrl: sourceFallbackUrl,
+        });
       }
       if (providerRatingsPromise) {
         providerRatings = await providerRatingsPromise;
@@ -9020,6 +9062,7 @@ export async function handleImageRequest(
           blockbusterDensity,
           outputFormat,
           imgUrl,
+          imgFallbackUrl: sourceFallbackUrl,
           outputWidth: finalOutputWidth,
           outputHeight: useLogoBadgeLayout ? logoImageHeight : outputHeight,
           imageWidth: useLogoBadgeLayout ? logoImageWidth : undefined,

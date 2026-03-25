@@ -458,6 +458,9 @@ const rewriteMetaImages = (
   if (!erdbId) return meta;
 
   const nextMeta: Record<string, unknown> = { ...meta };
+  const upstreamPosterUrl = typeof meta.poster === 'string' ? meta.poster.trim() : '';
+  const upstreamBackdropUrl = typeof meta.background === 'string' ? meta.background.trim() : '';
+  const upstreamLogoUrl = typeof meta.logo === 'string' ? meta.logo.trim() : '';
 
   if (isTypeEnabled(config, 'poster')) {
     nextMeta.poster = buildErdbImageUrl({
@@ -466,6 +469,7 @@ const rewriteMetaImages = (
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
+      fallbackUrl: upstreamPosterUrl || null,
       config,
     });
   }
@@ -477,6 +481,7 @@ const rewriteMetaImages = (
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
+      fallbackUrl: upstreamBackdropUrl || null,
       config,
     });
   }
@@ -488,6 +493,7 @@ const rewriteMetaImages = (
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
+      fallbackUrl: upstreamLogoUrl || null,
       config,
     });
   }
