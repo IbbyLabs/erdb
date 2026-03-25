@@ -115,6 +115,7 @@ import {
   METADATA_TRANSLATION_MODE_OPTIONS,
   type MetadataTranslationMode,
 } from '@/lib/metadataTranslation';
+import { compareReleaseTagVersions } from '@/lib/githubRelease';
 import {
   DEFAULT_GENRE_BADGE_MODE,
   GENRE_BADGE_FAMILY_META,
@@ -532,29 +533,45 @@ function LatestReleasePill({
   releaseTag,
   releaseUrl,
   loading,
+  pendingTag = '',
 }: {
   compact?: boolean;
   releaseTag: string;
   releaseUrl: string;
   loading: boolean;
+  pendingTag?: string;
 }) {
-  const value = loading ? 'Checking' : releaseTag || 'Unknown';
+  const hasPendingRelease = !loading && Boolean(pendingTag);
+  const value = loading ? 'Checking' : hasPendingRelease ? pendingTag : releaseTag || 'Unknown';
+  const label = loading
+    ? compact
+      ? 'Latest'
+      : 'Latest release'
+    : hasPendingRelease
+      ? compact
+        ? 'Publishing'
+        : 'Release publishing'
+      : compact
+        ? 'Latest'
+        : 'Latest release';
   const title = loading
     ? 'Checking GitHub for the latest release.'
-    : releaseUrl
+    : hasPendingRelease
+      ? releaseTag
+        ? `${pendingTag} is still publishing. Latest published GitHub release is ${releaseTag}.`
+        : `${pendingTag} is still publishing on GitHub.`
+      : releaseUrl
       ? `Open ${value} on GitHub`
       : 'Latest GitHub release is unavailable right now.';
   const content = (
     <>
       <Tag className="erdb-release-pill-icon" aria-hidden="true" />
-      <span className="erdb-release-pill-label font-mono">
-        {compact ? 'Latest' : 'Latest release'}
-      </span>
+      <span className="erdb-release-pill-label font-mono">{label}</span>
       <span className="erdb-release-pill-value font-mono">{value}</span>
     </>
   );
 
-  if (releaseUrl) {
+  if (!hasPendingRelease && releaseUrl) {
     return (
       <a
         className={`erdb-release-pill erdb-release-pill-link${compact ? ' erdb-release-pill-compact' : ''}`}
@@ -571,8 +588,8 @@ function LatestReleasePill({
 
   return (
     <span
-      className={`erdb-release-pill${compact ? ' erdb-release-pill-compact' : ''}`}
-      aria-label={`Latest release version ${value}`}
+      className={`erdb-release-pill${hasPendingRelease ? ' erdb-release-pill-pending' : ''}${compact ? ' erdb-release-pill-compact' : ''}`}
+      aria-label={`${hasPendingRelease ? 'Release publishing' : 'Latest release version'} ${value}`}
       title={title}
     >
       {content}
@@ -1700,12 +1717,18 @@ export default function Home() {
     [baseUrl, erdbKey, tmdbKey, genrePreviewMode]
   );
   const latestReleaseMatchesDeployment = latestReleaseTag && latestReleaseTag === DEPLOYMENT_VERSION;
+  const latestReleaseBehindDeployment =
+    !isLatestReleaseLoading &&
+    Boolean(latestReleaseTag) &&
+    compareReleaseTagVersions(DEPLOYMENT_VERSION, latestReleaseTag) > 0;
   const versionStatusNote = isLatestReleaseLoading
     ? 'Checking the latest release on GitHub now.'
     : latestReleaseTag
       ? latestReleaseMatchesDeployment
         ? 'Live matches the latest release on GitHub.'
-        : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
+        : latestReleaseBehindDeployment
+          ? `${DEPLOYMENT_VERSION} is still publishing on GitHub. Latest published release is ${latestReleaseTag}.`
+          : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
       : 'Live shows the running container. The latest release is unavailable right now.';
 
   const handlePreviewImageError = useCallback(async (url: string) => {
@@ -2235,6 +2258,7 @@ export default function Home() {
               releaseTag={latestReleaseTag}
               releaseUrl={latestReleaseUrl}
               loading={isLatestReleaseLoading}
+              pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
             />
           </div>
           <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
@@ -2261,6 +2285,7 @@ export default function Home() {
                     releaseTag={latestReleaseTag}
                     releaseUrl={latestReleaseUrl}
                     loading={isLatestReleaseLoading}
+                    pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
                   />
                 </div>
               </div>

@@ -1,4 +1,10 @@
 name: CI
+run-name: >-
+  ${{
+    github.event_name == 'pull_request'
+      && format('Pull request checks #{0}', github.event.pull_request.number)
+      || format('Main checks for {0}', github.sha)
+  }}
 
 on:
   push:

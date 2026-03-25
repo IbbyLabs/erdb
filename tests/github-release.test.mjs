@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  compareReleaseTagVersions,
   fetchLatestGitHubRelease,
   parseGitHubRepositoryUrl,
 } from '../lib/githubRelease.ts';
@@ -33,6 +34,13 @@ test('parseGitHubRepositoryUrl resolves repository metadata from GitHub URLs', (
 test('parseGitHubRepositoryUrl ignores non GitHub URLs', () => {
   assert.equal(parseGitHubRepositoryUrl('https://example.com/IbbyLabs/erdb'), null);
   assert.equal(parseGitHubRepositoryUrl(''), null);
+});
+
+test('compareReleaseTagVersions orders semantic release tags numerically', () => {
+  assert.equal(compareReleaseTagVersions('v2.31.1', 'v2.31.0') > 0, true);
+  assert.equal(compareReleaseTagVersions('v2.31.0', 'v2.31.1') < 0, true);
+  assert.equal(compareReleaseTagVersions('v2.31.0', 'v2.31.0'), 0);
+  assert.equal(compareReleaseTagVersions('v2.31.10', 'v2.31.9') > 0, true);
 });
 
 test('fetchLatestGitHubRelease returns the latest release payload', async () => {

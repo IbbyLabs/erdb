@@ -240,6 +240,27 @@ pre {
 	transition: min-height 0.24s ease, padding 0.24s ease, font-size 0.24s ease;
 }
 
+.erdb-release-pill-pending {
+	border-color: color-mix(in srgb, rgba(251, 191, 36, 0.8) 62%, var(--border) 38%);
+	background:
+		linear-gradient(180deg, rgba(42, 24, 8, 0.95), rgba(29, 17, 6, 0.92)),
+		radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 42%);
+	color: color-mix(in srgb, var(--brand-ink) 88%, #fef3c7 12%);
+	box-shadow: 0 16px 32px -24px rgba(245, 158, 11, 0.42);
+}
+
+.erdb-release-pill-pending .erdb-release-pill-icon {
+	color: #fbbf24;
+}
+
+.erdb-release-pill-pending .erdb-release-pill-label {
+	color: color-mix(in srgb, var(--brand-muted) 60%, #fde68a 40%);
+}
+
+.erdb-release-pill-pending .erdb-release-pill-value {
+	color: #fef3c7;
+}
+
 .erdb-release-pill-link {
 	text-decoration: none;
 	transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;

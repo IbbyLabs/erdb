@@ -103,7 +103,7 @@ function parseReleaseVersionParts(tagName: string): number[] | null {
   return parts.map((part) => Number(part));
 }
 
-function compareReleaseTagVersions(leftTagName: string, rightTagName: string): number {
+export function compareReleaseTagVersions(leftTagName: string, rightTagName: string): number {
   const leftParts = parseReleaseVersionParts(leftTagName);
   const rightParts = parseReleaseVersionParts(rightTagName);
 

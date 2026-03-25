@@ -1,4 +1,10 @@
 name: Build and Push Docker
+run-name: >-
+  ${{
+    github.event_name == 'workflow_dispatch'
+      && 'Docker publish (manual)'
+      || format('Docker publish {0}', github.ref_name)
+  }}
 
 "on":
   push:
