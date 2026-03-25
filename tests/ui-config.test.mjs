@@ -115,6 +115,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
+      simklClientId: '',
       lang: 'fr',
       posterImageText: 'clean',
       backdropImageText: 'clean',
