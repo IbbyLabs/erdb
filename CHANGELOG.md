@@ -101,6 +101,13 @@
 
 <a id="v2-39-0"></a>
 
+<a id="v2-39-1"></a>
+
+## [v2.39.1] - 25/03/2026
+
+### Fixed
+* add simklClientId to round trip expected output
+
 ## [v2.39.0] - 25/03/2026
 
 ### Added
