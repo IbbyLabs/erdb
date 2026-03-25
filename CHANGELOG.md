@@ -61,6 +61,13 @@
 
 <a id="v2-35-1"></a>
 
+<a id="v2-35-2"></a>
+
+## [v2.35.2] - 25/03/2026
+
+### Fixed
+* normalize GHCR image name for latest promotion
+
 ## [v2.35.1] - 25/03/2026
 
 ### Fixed
