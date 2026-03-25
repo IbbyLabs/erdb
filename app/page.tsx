@@ -3827,7 +3827,7 @@ export default function Home() {
                           <span className="space-y-1">
                             <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
                             <span className="block text-[11px] leading-5 text-zinc-500">
-                              Replaces live keys with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
+                              Only affects the exported AIOMetadata patterns below. Live ERDB request URLs still use the real keys you provide and are replaced here with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
                             </span>
                           </span>
                         </label>

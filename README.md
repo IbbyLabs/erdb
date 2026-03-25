@@ -36,6 +36,8 @@ This means that the ERDB server itself does not permanently store or centrally m
 
 This intentional design allows you to host public ERDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
+The configurator's `Hide credentials` toggle only masks the exported AIOMetadata URL patterns with placeholders. It does not change live ERDB request URLs or the BYOK behavior above.
+
 Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, and `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
 
 ## Live Preview Gallery
