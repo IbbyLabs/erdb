@@ -4521,6 +4521,7 @@ const buildBadgeSvg = ({
   stackedLineGapPercent = DEFAULT_STACKED_LINE_GAP_PERCENT,
   stackedSurfaceOpacityPercent = DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
   stackedAccentMode = DEFAULT_STACKED_ACCENT_MODE,
+  preferReadablePlainSurface = false,
   preferNeutralGlassPlate = false,
   compactText = false,
 }: {
@@ -4546,6 +4547,7 @@ const buildBadgeSvg = ({
   stackedLineGapPercent?: number;
   stackedSurfaceOpacityPercent?: number;
   stackedAccentMode?: StackedAccentMode;
+  preferReadablePlainSurface?: boolean;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
 }) => {
@@ -4556,7 +4558,24 @@ const buildBadgeSvg = ({
       : `<rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${ratingStyle === 'square' ? '1.5' : '1'}" />`;
   const plainBadgeDefs =
     ratingStyle === 'plain'
-      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter></defs>`
+      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter>${preferReadablePlainSurface ? `<filter id="plain-badge-surface-shadow" x="-28%" y="-40%" width="156%" height="190%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2.1" stdDeviation="3.8" flood-color="#020617" flood-opacity="0.72" /><feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="#020617" flood-opacity="0.34" /></filter><linearGradient id="plain-badge-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#020617" stop-opacity="0.22" /><stop offset="100%" stop-color="#0f172a" stop-opacity="0.15" /></linearGradient>` : ''}</defs>`
+      : '';
+  const plainBadgeSurface =
+    ratingStyle === 'plain' && preferReadablePlainSurface
+      ? (() => {
+          const surfaceInsetX = Math.max(3.5, Math.round(height * 0.1));
+          const surfaceInsetY = Math.max(4, Math.round(height * 0.14));
+          const surfaceWidth = Math.max(0, width - surfaceInsetX * 2);
+          const surfaceHeight = Math.max(0, height - surfaceInsetY * 2);
+          const surfaceRadius = Math.max(10, Math.round(surfaceHeight / 2));
+          const highlightInsetX = surfaceInsetX + 1.25;
+          const highlightInsetY = surfaceInsetY + 1.25;
+          const highlightWidth = Math.max(0, width - highlightInsetX * 2);
+          const highlightHeight = Math.max(0, Math.round(surfaceHeight * 0.42));
+          const highlightRadius = Math.max(8, Math.round(highlightHeight / 2));
+          return `<rect x="${surfaceInsetX}" y="${surfaceInsetY}" width="${surfaceWidth}" height="${surfaceHeight}" rx="${surfaceRadius}" fill="url(#plain-badge-surface-fill)" stroke="rgba(255,255,255,0.16)" stroke-width="1" filter="url(#plain-badge-surface-shadow)" />
+<rect x="${highlightInsetX}" y="${highlightInsetY}" width="${highlightWidth}" height="${highlightHeight}" rx="${highlightRadius}" fill="rgba(255,255,255,0.05)" />`;
+        })()
       : '';
   const valueFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
   if (badgeVariant !== 'standard') {
@@ -4827,6 +4846,7 @@ ${monogramText}
     : valueX;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainBadgeDefs}
+${plainBadgeSurface}
 ${outerRect}
 ${iconShape}
 ${iconImage}
@@ -5594,6 +5614,7 @@ const renderWithSharp = async (
         stackedLineGapPercent: badge.stackedLineGapPercent,
         stackedSurfaceOpacityPercent: badge.stackedSurfaceOpacityPercent,
         stackedAccentMode: badge.stackedAccentMode,
+        preferReadablePlainSurface: input.imageType === 'poster' || input.imageType === 'backdrop',
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
         compactText,
