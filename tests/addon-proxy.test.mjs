@@ -151,6 +151,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       posterQualityBadgesStyle: 'plain',
       posterQualityBadgeScale: 118,
       posterRatingBadgeScale: 111,
+      posterEdgeOffset: 22,
       sideRatingsPosition: 'custom',
       sideRatingsOffset: 68,
       ratingProviderAppearanceOverrides: providerAppearance,
@@ -195,6 +196,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   assert.equal(rewrittenPosterUrl.searchParams.get('posterQualityBadgesStyle'), 'plain');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterQualityBadgeScale'), '118');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingBadgeScale'), '111');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterEdgeOffset'), '22');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsPosition'), 'custom');
   assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsOffset'), '68');
   assert.equal(

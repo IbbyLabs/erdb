@@ -79,6 +79,10 @@ import {
   normalizeSideRatingPosition,
   type SideRatingPosition,
 } from './sideRatingPosition.ts';
+import {
+  DEFAULT_POSTER_EDGE_OFFSET,
+  normalizePosterEdgeOffset,
+} from './posterEdgeOffset.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -153,6 +157,7 @@ export type SharedErdbSettings = {
   aggregateAccentColor: string;
   aggregateAccentBarOffset: number;
   posterRatingsMaxPerSide: number | null;
+  posterEdgeOffset: number;
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   logoRatingsMax: number | null;
@@ -261,6 +266,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
+  posterEdgeOffset: DEFAULT_POSTER_EDGE_OFFSET,
   sideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
   sideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   logoRatingsMax: null,
@@ -651,6 +657,7 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       defaults.backdropQualityBadgeScale,
     ),
     posterRatingsMaxPerSide: normalizePosterRatingsMaxPerSide(candidate.posterRatingsMaxPerSide),
+    posterEdgeOffset: normalizePosterEdgeOffset(candidate.posterEdgeOffset),
     sideRatingsPosition: normalizeSideRatingPosition(candidate.sideRatingsPosition),
     sideRatingsOffset: normalizeSideRatingOffset(candidate.sideRatingsOffset),
     logoRatingsMax: normalizeOptionalBadgeCount(candidate.logoRatingsMax),
@@ -954,6 +961,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     settings.posterRatingsMaxPerSide !== null
   ) {
     payload.posterRatingsMaxPerSide = settings.posterRatingsMaxPerSide;
+  }
+  if (settings.posterEdgeOffset !== DEFAULT_POSTER_EDGE_OFFSET) {
+    payload.posterEdgeOffset = settings.posterEdgeOffset;
   }
   if (settings.sideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION) {
     payload.sideRatingsPosition = settings.sideRatingsPosition;

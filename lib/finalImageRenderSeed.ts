@@ -17,6 +17,7 @@ type FinalImageRenderSeedInput = {
   posterRatingsLayout: string;
   posterRatingsMaxPerSide: number | null;
   posterRatingsMax: number | null;
+  posterEdgeOffset: number;
   backdropRatingsLayout: string;
   backdropRatingsMax: number | null;
   logoRatingsMax: number | null;
@@ -83,6 +84,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster ? input.posterRatingsLayout : '-',
     isPoster ? String(input.posterRatingsMaxPerSide ?? 'auto') : '-',
     isPoster ? String(input.posterRatingsMax ?? 'auto') : '-',
+    isPoster ? String(input.posterEdgeOffset) : '-',
     isBackdrop ? String(input.backdropRatingsMax ?? 'auto') : '-',
     isLogo ? String(input.logoRatingsMax ?? 'auto') : '-',
     isPoster ? input.qualityBadgesSide : '-',
@@ -116,6 +118,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.fanartKeyHash || '-',
     input.fanartClientKeyHash || '-',
     input.renderCacheBuster || '-',
-    'v3',
+    'v4',
   ].join('|');
 };
