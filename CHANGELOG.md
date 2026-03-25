@@ -65,6 +65,13 @@
 
 <a id="v2-35-3"></a>
 
+<a id="v2-35-4"></a>
+
+## [v2.35.4] - 25/03/2026
+
+### Fixed
+* improve plain rating badge readability
+
 ## [v2.35.3] - 25/03/2026
 
 ### Fixed
