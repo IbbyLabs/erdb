@@ -51,6 +51,13 @@
 
 <a id="v2-31-2"></a>
 
+<a id="v2-32-0"></a>
+
+## [v2.32.0] - 25/03/2026
+
+### Added
+* add genre badge style and placement controls
+
 ## [v2.31.2] - 25/03/2026
 
 ### Fixed
