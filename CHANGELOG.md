@@ -77,6 +77,13 @@
 
 <a id="v2-36-2"></a>
 
+<a id="v2-36-3"></a>
+
+## [v2.36.3] - 25/03/2026
+
+### Documentation
+* add public fast preset and correct sharp defaults
+
 ## [v2.36.2] - 25/03/2026
 
 ### Fixed
