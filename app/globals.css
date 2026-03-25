@@ -90,6 +90,7 @@ pre {
 	position: relative;
 	overflow: clip;
 	--scroll-compact-progress: 0;
+	--workspace-sticky-top: 96px;
 }
 
 .erdb-page::before,

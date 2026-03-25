@@ -83,12 +83,22 @@ import {
   type RatingStyle,
 } from '@/lib/ratingStyle';
 import {
+  AGGREGATE_ACCENT_MODE_OPTIONS,
+  AGGREGATE_RATING_SOURCE_ACCENTS,
+  DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  DEFAULT_AGGREGATE_ACCENT_COLOR,
+  DEFAULT_AGGREGATE_ACCENT_MODE,
   AGGREGATE_RATING_SOURCE_OPTIONS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
+  MAX_AGGREGATE_ACCENT_BAR_OFFSET,
+  MIN_AGGREGATE_ACCENT_BAR_OFFSET,
   preservesSelectedRatingLayout,
   RATING_PRESENTATION_OPTIONS,
+  usesAggregateAccentBar,
+  usesAggregateRatingPresentation,
   usesAggregateRatingSource,
+  type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
@@ -269,11 +279,7 @@ const RATING_VALUE_MODE_DOC_VALUES = 'native, normalized';
 const GENRE_BADGE_STYLE_DOC_VALUES = 'glass, square, plain';
 const GENRE_BADGE_POSITION_DOC_VALUES =
   'topLeft, topCenter, topRight, bottomLeft, bottomCenter, bottomRight';
-const AGGREGATE_SOURCE_ACCENT_BY_ID: Record<AggregateRatingSource, string> = {
-  overall: '#a78bfa',
-  critics: '#fb923c',
-  audience: '#34d399',
-};
+const AGGREGATE_SOURCE_ACCENT_BY_ID = AGGREGATE_RATING_SOURCE_ACCENTS;
 
 const hexToRgbaCss = (value: string, alpha: number) => {
   const normalized = value.trim().replace(/^#/, '');
@@ -885,6 +891,12 @@ export default function Home() {
     useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [logoAggregateRatingSource, setLogoAggregateRatingSource] =
     useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
+  const [aggregateAccentMode, setAggregateAccentMode] =
+    useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
+  const [aggregateAccentColor, setAggregateAccentColor] =
+    useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
+  const [aggregateAccentBarOffset, setAggregateAccentBarOffset] =
+    useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
@@ -1047,11 +1059,13 @@ export default function Home() {
 
     const page = pageRef.current;
     const hero = heroRef.current;
-    if (!page || !hero) {
+    const nav = navRef.current;
+    if (!page || !hero || !nav) {
       return;
     }
 
     let frame = 0;
+    let navResizeObserver: ResizeObserver | null = null;
 
     const updateCompactProgress = () => {
       frame = 0;
@@ -1059,6 +1073,10 @@ export default function Home() {
       const progress = Math.min(1, Math.max(0, window.scrollY / maxDistance));
       page.style.setProperty('--scroll-compact-progress', progress.toFixed(3));
       page.dataset.compactNav = progress > 0.04 ? 'true' : 'false';
+      page.style.setProperty(
+        '--workspace-sticky-top',
+        `${Math.ceil((navRef.current ?? nav).getBoundingClientRect().height + 16)}px`,
+      );
     };
 
     const queueUpdate = () => {
@@ -1071,14 +1089,20 @@ export default function Home() {
     updateCompactProgress();
     window.addEventListener('scroll', queueUpdate, { passive: true });
     window.addEventListener('resize', queueUpdate);
+    if (typeof ResizeObserver !== 'undefined') {
+      navResizeObserver = new ResizeObserver(queueUpdate);
+      navResizeObserver.observe(nav);
+    }
 
     return () => {
       if (frame) {
         window.cancelAnimationFrame(frame);
       }
+      navResizeObserver?.disconnect();
       window.removeEventListener('scroll', queueUpdate);
       window.removeEventListener('resize', queueUpdate);
       page.style.removeProperty('--scroll-compact-progress');
+      page.style.removeProperty('--workspace-sticky-top');
       delete page.dataset.compactNav;
     };
   }, []);
@@ -1247,6 +1271,9 @@ export default function Home() {
       setPosterAggregateRatingSource(normalized.settings.posterAggregateRatingSource);
       setBackdropAggregateRatingSource(normalized.settings.backdropAggregateRatingSource);
       setLogoAggregateRatingSource(normalized.settings.logoAggregateRatingSource);
+      setAggregateAccentMode(normalized.settings.aggregateAccentMode);
+      setAggregateAccentColor(normalized.settings.aggregateAccentColor);
+      setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
@@ -1312,6 +1339,9 @@ export default function Home() {
         posterAggregateRatingSource,
         backdropAggregateRatingSource,
         logoAggregateRatingSource,
+        aggregateAccentMode,
+        aggregateAccentColor,
+        aggregateAccentBarOffset,
         posterRatingsMaxPerSide,
         logoRatingsMax,
         logoBackground,
@@ -1373,6 +1403,9 @@ export default function Home() {
       posterAggregateRatingSource,
       backdropAggregateRatingSource,
       logoAggregateRatingSource,
+      aggregateAccentMode,
+      aggregateAccentColor,
+      aggregateAccentBarOffset,
       posterRatingsMaxPerSide,
       logoRatingsMax,
       logoBackground,
@@ -1569,6 +1602,25 @@ export default function Home() {
         aggregateRatingSourceForType
       );
     }
+    if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      aggregateAccentMode !== DEFAULT_AGGREGATE_ACCENT_MODE
+    ) {
+      query.set('aggregateAccentMode', aggregateAccentMode);
+    }
+    if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (aggregateAccentMode === 'custom' ||
+        aggregateAccentColor !== DEFAULT_AGGREGATE_ACCENT_COLOR)
+    ) {
+      query.set('aggregateAccentColor', aggregateAccentColor);
+    }
+    if (
+      usesAggregateAccentBar(ratingPresentationForType) &&
+      aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET
+    ) {
+      query.set('aggregateAccentBarOffset', String(aggregateAccentBarOffset));
+    }
     if (previewType === 'poster') {
       query.set('posterRatings', ratingsQuery);
     } else if (previewType === 'backdrop') {
@@ -1732,6 +1784,9 @@ export default function Home() {
     posterAggregateRatingSource,
     backdropAggregateRatingSource,
     logoAggregateRatingSource,
+    aggregateAccentMode,
+    aggregateAccentColor,
+    aggregateAccentBarOffset,
     logoRatingsMax,
     logoBackground,
     logoArtworkSource,
@@ -2184,7 +2239,13 @@ export default function Home() {
       : previewType === 'backdrop'
         ? backdropAggregateRatingSource
         : logoAggregateRatingSource;
-  const activeAggregateAccent = AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
+  const usesAggregatePresentation = usesAggregateRatingPresentation(activeRatingPresentation);
+  const activeAggregateAccent =
+    aggregateAccentMode === 'custom'
+      ? aggregateAccentColor
+      : activeRatingPresentation === 'dual'
+        ? AGGREGATE_SOURCE_ACCENT_BY_ID.critics
+        : AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
   const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
   const activeImageTextOptions =
     previewType === 'backdrop' ? BACKDROP_IMAGE_TEXT_OPTIONS : POSTER_IMAGE_TEXT_OPTIONS;
@@ -2228,6 +2289,7 @@ export default function Home() {
   const activeProviderAppearanceOverride =
     (activeProviderMeta && ratingProviderAppearanceOverrides[activeProviderMeta.id]) || {};
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
+  const showsAggregateAccentBarOffset = usesAggregateAccentBar(activeRatingPresentation);
   const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
   const isEditorialPresentation = activeRatingPresentation === 'editorial';
   const usesStackedRatingStyle = activeRatingStyle === 'stacked';
@@ -3722,139 +3784,141 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-5">
-              <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <div className="erdb-panel-head">
-                  <div>
-                    <p className="erdb-panel-eyebrow font-mono">Output</p>
-                    <h3 className="text-xl font-semibold text-white">Preview Output</h3>
-                    <p className="mt-2 text-sm text-zinc-400">
-                      Stateless dynamic layout generated via query parameters.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  {(['poster', 'backdrop', 'logo'] as const).map((type) => (
-                    <span
-                      key={`preview-pill-${type}`}
-                      className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
-                        previewType === type
-                          ? 'border-violet-500/60 bg-zinc-800 text-white'
-                          : 'border-white/10 bg-zinc-950 text-zinc-400'
-                      }`}
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[320px] flex items-center justify-center flex-col">
-                  {previewUrl && !previewErrored ? (
-                    <div className="z-10 w-full flex flex-col items-center gap-8">
-                      <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
-                        ? 'aspect-[2/3] w-72'
-                        : previewType === 'logo'
-                          ? 'h-48 w-full max-w-xl'
-                          : 'aspect-video w-full max-w-2xl'
-                        }`}>
-                        <Image
-                          key={previewUrl}
-                          src={previewUrl}
-                          alt="Preview"
-                          unoptimized
-                          fill
-                          className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
-                          onError={() => {
-                            void handlePreviewImageError(previewUrl);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-zinc-500 text-center max-w-sm leading-6">
-                      {previewErrored
-                        ? previewErrorDetails || 'Preview could not be rendered with the current media ID or settings.'
-                        : tmdbKey.trim()
-                          ? 'No preview available.'
-                          : 'Add a TMDB key to enable live preview.'}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/60 p-4 space-y-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-5 xl:self-stretch">
+              <div className="xl:sticky xl:top-[var(--workspace-sticky-top)]">
+                <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+                  <div className="erdb-panel-head">
                     <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre Badge Samples</div>
-                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                        Curated movie, show, and anime renders that keep the badge decision fixed while you compare mode, style, and placement.
+                      <p className="erdb-panel-eyebrow font-mono">Output</p>
+                      <h3 className="text-xl font-semibold text-white">Preview Output</h3>
+                      <p className="mt-2 text-sm text-zinc-400">
+                        Stateless dynamic layout generated via query parameters.
                       </p>
                     </div>
-                    <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-zinc-900">
-                      {GENRE_BADGE_MODE_OPTIONS.map((option) => (
-                        <button
-                          key={`genre-preview-mode-${option.id}`}
-                          type="button"
-                          onClick={() => setGenrePreviewMode(option.id)}
-                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                            genrePreviewMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                          }`}
-                          title={option.description}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
-                  {tmdbKey.trim() ? (
-                    <div className="grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1 min-[1900px]:grid-cols-2">
-                      {genrePreviewCards.map(({ sample, url }) => {
-                        const family = GENRE_BADGE_FAMILY_META[sample.familyId];
-                        const accentStyle = {
-                          borderColor: hexToRgbaCss(family.accentColor, 0.45),
-                          backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(family.accentColor, 0.18)}, rgba(24,24,27,0.88) 62%)`,
-                        };
-                        const mediaFrameClass =
-                          sample.previewType === 'poster'
-                            ? 'aspect-[2/3]'
-                            : sample.previewType === 'logo'
-                              ? 'h-40'
-                              : 'aspect-video';
-
-                        return (
-                          <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
-                            <div className="flex min-h-[3.5rem] flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0 flex-1">
-                                <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                                  {sample.typeLabel}
-                                </div>
-                                <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
-                              </div>
-                              <span
-                                className="shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
-                                style={accentStyle}
-                              >
-                                {family.label}
-                              </span>
-                            </div>
-                            <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-black/70 shadow-xl shadow-black/40 ${mediaFrameClass}`}>
-                              <Image
-                                key={url}
-                                src={url}
-                                alt={`${sample.title} ${sample.typeLabel} genre sample`}
-                                unoptimized
-                                fill
-                                className={sample.previewType === 'logo' ? 'object-contain' : 'object-cover'}
-                              />
-                            </div>
-                            <p className="text-[11px] leading-5 text-zinc-400">{sample.decision}</p>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
-                      Add a TMDB key above to load the curated sample board.
-                    </div>
-                  )}
+                  <div className="mt-4 flex flex-wrap justify-end gap-2">
+                    {(['poster', 'backdrop', 'logo'] as const).map((type) => (
+                      <span
+                        key={`preview-pill-${type}`}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
+                          previewType === type
+                            ? 'border-violet-500/60 bg-zinc-800 text-white'
+                            : 'border-white/10 bg-zinc-950 text-zinc-400'
+                        }`}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[320px] flex items-center justify-center flex-col">
+                    {previewUrl && !previewErrored ? (
+                      <div className="z-10 w-full flex flex-col items-center gap-8">
+                        <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
+                          ? 'aspect-[2/3] w-72'
+                          : previewType === 'logo'
+                            ? 'h-48 w-full max-w-xl'
+                            : 'aspect-video w-full max-w-2xl'
+                          }`}>
+                          <Image
+                            key={previewUrl}
+                            src={previewUrl}
+                            alt="Preview"
+                            unoptimized
+                            fill
+                            className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                            onError={() => {
+                              void handlePreviewImageError(previewUrl);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-zinc-500 text-center max-w-sm leading-6">
+                        {previewErrored
+                          ? previewErrorDetails || 'Preview could not be rendered with the current media ID or settings.'
+                          : tmdbKey.trim()
+                            ? 'No preview available.'
+                            : 'Add a TMDB key to enable live preview.'}
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </div>
+              <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre Badge Samples</div>
+                    <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                      Curated movie, show, and anime renders that keep the badge decision fixed while you compare mode, style, and placement.
+                    </p>
+                  </div>
+                  <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-zinc-900">
+                    {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                      <button
+                        key={`genre-preview-mode-${option.id}`}
+                        type="button"
+                        onClick={() => setGenrePreviewMode(option.id)}
+                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                          genrePreviewMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                        }`}
+                        title={option.description}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {tmdbKey.trim() ? (
+                  <div className="mt-5 grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1 min-[1900px]:grid-cols-2">
+                    {genrePreviewCards.map(({ sample, url }) => {
+                      const family = GENRE_BADGE_FAMILY_META[sample.familyId];
+                      const accentStyle = {
+                        borderColor: hexToRgbaCss(family.accentColor, 0.45),
+                        backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(family.accentColor, 0.18)}, rgba(24,24,27,0.88) 62%)`,
+                      };
+                      const mediaFrameClass =
+                        sample.previewType === 'poster'
+                          ? 'aspect-[2/3]'
+                          : sample.previewType === 'logo'
+                            ? 'h-40'
+                            : 'aspect-video';
+
+                      return (
+                        <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
+                          <div className="flex min-h-[3.5rem] flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                                {sample.typeLabel}
+                              </div>
+                              <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
+                            </div>
+                            <span
+                              className="shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
+                              style={accentStyle}
+                            >
+                              {family.label}
+                            </span>
+                          </div>
+                          <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-black/70 shadow-xl shadow-black/40 ${mediaFrameClass}`}>
+                            <Image
+                              key={url}
+                              src={url}
+                              alt={`${sample.title} ${sample.typeLabel} genre sample`}
+                              unoptimized
+                              fill
+                              className={sample.previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                            />
+                          </div>
+                          <p className="text-[11px] leading-5 text-zinc-400">{sample.decision}</p>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
+                    Add a TMDB key above to load the curated sample board.
+                  </div>
+                )}
               </div>
             </div>
 
