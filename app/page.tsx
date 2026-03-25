@@ -3864,7 +3864,7 @@ export default function Home() {
             </div>
 
             <div className="space-y-5 xl:self-stretch">
-              <div className="xl:sticky xl:top-[var(--workspace-sticky-top)]">
+              <div className="xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-20">
                 <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
                   <div className="erdb-panel-head">
                     <div>
