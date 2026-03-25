@@ -204,8 +204,10 @@ type ProxyEnabledTypes = Record<ProxyType, boolean>;
 const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/erdb';
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
-const BRAND_DISCORD_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_URL || 'https://discordapp.com/users/947862578682548255';
-const BRAND_DISCORD_HANDLE = process.env.NEXT_PUBLIC_BRAND_DISCORD_HANDLE || '@ibbys89';
+const BRAND_DISCORD_AIO_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_URL || 'https://discord.gg/5S2nTdV2uD';
+const BRAND_DISCORD_AIO_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_LABEL || 'ERDB in AIOStreams';
+const BRAND_DISCORD_OFFICIAL_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_URL || 'https://discord.gg/wPY2pcqjmm';
+const BRAND_DISCORD_OFFICIAL_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_LABEL || 'Official ERDB Discord';
 const PACKAGE_VERSION = `v${String(packageJson.version || '').trim() || 'dev'}`;
 const DEPLOYMENT_VERSION = String(process.env.NEXT_PUBLIC_DEPLOYMENT_VERSION || PACKAGE_VERSION).trim() || 'dev';
 const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
@@ -566,15 +568,15 @@ function LatestReleasePill({
   );
 }
 
-function DiscordPill({ label = BRAND_DISCORD_HANDLE }: { label?: string }) {
+function DiscordPill({ href, label, title }: { href: string; label: string; title: string }) {
   return (
     <a
       className="site-discord-pill"
-      href={BRAND_DISCORD_URL}
+      href={href}
       target="_blank"
       rel="noreferrer"
-      aria-label="Message IbbyLabs on Discord"
-      title="Message IbbyLabs on Discord"
+      aria-label={title}
+      title={title}
     >
       <svg className="site-discord-icon" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
         <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.33,46,96.22,53,91.08,65.69,84.69,65.69Z" />
@@ -2259,11 +2261,19 @@ export default function Home() {
               <div className="site-discord-callout">
                 <p className="site-discord-callout-title">Need help with ERDB, ratings, or the addon proxy?</p>
                 <p className="site-discord-callout-copy">
-                  If you hit a rendering issue, need help with badges or language, or want a hand wiring this project into your setup, message me on Discord.
+                  Join the ERDB communities for help with rendering issues, badges, language settings, or addon setup. The AIOStreams channel is great for shared troubleshooting, and the official ERDB server is the direct project home.
                 </p>
                 <div className="site-discord-callout-actions">
-                  <DiscordPill />
-                  <span className="site-discord-fallback">If the button does not open, search for {BRAND_DISCORD_HANDLE} in Discord.</span>
+                  <DiscordPill
+                    href={BRAND_DISCORD_AIO_URL}
+                    label={BRAND_DISCORD_AIO_LABEL}
+                    title="Open the ERDB channel in the AIOStreams Discord"
+                  />
+                  <DiscordPill
+                    href={BRAND_DISCORD_OFFICIAL_URL}
+                    label={BRAND_DISCORD_OFFICIAL_LABEL}
+                    title="Open the official ERDB Discord"
+                  />
                 </div>
               </div>
               <div className="erdb-hero-strip">
@@ -4459,6 +4469,8 @@ export default function Home() {
             <a href="#proxy" onClick={handleAnchorClick} className="erdb-footer-link">Addon Proxy</a>
             <a href="#docs" onClick={handleAnchorClick} className="erdb-footer-link">API Docs</a>
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">github</a>
+            <a href={BRAND_DISCORD_AIO_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">ERDB in AIOStreams</a>
+            <a href={BRAND_DISCORD_OFFICIAL_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">Official ERDB Discord</a>
           </div>
           <div className="site-page-credit">
             <Image src="/favicon.png" alt="" aria-hidden="true" width={20} height={20} />
