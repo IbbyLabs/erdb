@@ -65,11 +65,13 @@ jobs:
         if: ${{ steps.latest_tag.outputs.promote == 'true' }}
         env:
           CURRENT_TAG: ${{ steps.latest_tag.outputs.current_tag }}
-          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          REPOSITORY: ${{ github.repository }}
         run: |
+          image_name="ghcr.io/$(printf '%s' "${REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+
           docker buildx imagetools create \
-            --tag "${IMAGE_NAME}:latest" \
-            "${IMAGE_NAME}:${CURRENT_TAG}"
+            --tag "${image_name}:latest" \
+            "${image_name}:${CURRENT_TAG}"
 
       - name: Skip non-latest tag
         if: ${{ steps.latest_tag.outputs.promote != 'true' }}
