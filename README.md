@@ -38,7 +38,7 @@ This intentional design allows you to host public ERDB proxy instances without p
 
 The configurator's `Hide credentials` toggle only masks the exported AIOMetadata URL patterns with placeholders. It does not change live ERDB request URLs or the BYOK behavior above.
 
-Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, and `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
+Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `ERDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server-wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
 
 ## Live Preview Gallery
 
@@ -302,15 +302,16 @@ Main endpoint:
 | `aggregateAccentMode` | Aggregate accent source | `source`, `genre`, `custom` | `source` |
 | `aggregateAccentColor` | Aggregate accent color when `aggregateAccentMode=custom` | Hex color | `#a78bfa` |
 | `aggregateAccentBarOffset` | Average badge accent bar offset | Number (-12 to 12) | `0` |
-| `ratings` | Rating providers (global fallback) | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `posterRatings` | Poster rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `backdropRatings` | Backdrop rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `ratings` | Rating providers (global fallback) | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `posterRatings` | Poster rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `backdropRatings` | Backdrop rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalized100` | `native` |
 | `ratingStyle` (or `style`) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `fanartKey` | Fanart API Key for fanart poster, backdrop, and logo sources | String (e.g. `your_key`) | Server fallback when available |
+| `simklClientId` | SIMKL client_id for direct SIMKL ratings | String (e.g. `your_client_id`) | None |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
 | `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart` | `tmdb` |
 | `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart` | `tmdb` |
@@ -390,16 +391,16 @@ Parameter               | Values                                                
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL          | -
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
                         | anilist, kitsu (global fallback)                                     |
 posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
                         | anilist, kitsu (poster only)                                         |
 backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
                         | anilist, kitsu (backdrop only)                                       |
 logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, rogerebert, myanimelist,          |
+                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
                         | anilist, kitsu (logo only)                                           |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
 genreBadge             | off, text, icon, both (global fallback)                              | off
@@ -431,6 +432,7 @@ logoArtworkSource       | tmdb, fanart                                          
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
+simklClientId           | Your SIMKL client_id for direct SIMKL ratings                        | -
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
@@ -627,6 +629,7 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | `ERDB_KITSU_API_BASE_URL` | `https://kitsu.io/api/edge` | Optional Kitsu API base URL override used by image rendering and proxy translation |
 | `ERDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
 | `ERDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
+| `SIMKL_CLIENT_ID` | (empty) | Optional SIMKL client_id used for direct `simkl` ratings (also `ERDB_SIMKL_CLIENT_ID`) |
 | `ERDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
 | `ERDB_JIKAN_API_BASE_URL` | `https://api.jikan.moe/v4` | Optional Jikan API base URL override for unauthenticated MAL fallback |
 | `ERDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
@@ -642,6 +645,7 @@ hardcoding separate cache TTL values.
 | `ERDB_TMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | TMDB metadata |
 | `ERDB_MDBLIST_CACHE_TTL_MS` | 3 days | 10 min | 30 days | MDBList ratings |
 | `ERDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
+| `ERDB_SIMKL_CACHE_TTL_MS` | 3 days | 10 min | 30 days | SIMKL ratings |
 | `ERDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
 | `ERDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
 | `ERDB_IMDB_DATASET_CACHE_TTL_MS` | 7 days | 1 hour | 365 days | Local IMDb dataset |

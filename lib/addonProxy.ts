@@ -106,6 +106,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'erdbKey',
   'tmdbKey',
   'mdblistKey',
+  'simklClientId',
   'fanartKey',
   'fallbackUrl',
   'erdbBase',
@@ -144,6 +145,7 @@ export type ProxyConfig = {
   erdbKey?: string;
   tmdbKey: string;
   mdblistKey: string;
+  simklClientId?: string;
   fanartKey?: string;
   translateMeta?: boolean;
   translateMetaMode?: MetadataTranslationMode;
@@ -231,6 +233,7 @@ export type ProxyConfig = {
 const PROXY_OPTIONAL_STRING_KEYS = [
   'translateMetaMode',
   'erdbKey',
+  'simklClientId',
   'fanartKey',
   'ratings',
   'posterRatings',
@@ -554,10 +557,11 @@ export const buildErdbImageUrl = (options: {
   erdbId: string;
   tmdbKey: string;
   mdblistKey: string;
+  simklClientId?: string | null;
   fallbackUrl?: string | null;
   config?: ProxyConfig | null;
 }) => {
-  const { reqUrl, imageType, erdbId, tmdbKey, mdblistKey, fallbackUrl = null, config = null } = options;
+  const { reqUrl, imageType, erdbId, tmdbKey, mdblistKey, simklClientId = null, fallbackUrl = null, config = null } = options;
   const baseOverride = getProxyParam(reqUrl, config, 'erdbBase');
   const base = new URL(baseOverride || reqUrl.origin);
   base.pathname = `/${imageType}/${encodeURIComponent(erdbId)}.jpg`;
@@ -568,6 +572,10 @@ export const buildErdbImageUrl = (options: {
   }
   base.searchParams.set('tmdbKey', tmdbKey);
   base.searchParams.set('mdblistKey', mdblistKey);
+  const resolvedSimklClientId = simklClientId || getProxyParam(reqUrl, config, 'simklClientId');
+  if (resolvedSimklClientId) {
+    base.searchParams.set('simklClientId', resolvedSimklClientId);
+  }
 
   for (const key of ERDB_OPTIONAL_PARAMS) {
     const value = getProxyParam(reqUrl, config, key as keyof ProxyConfig);

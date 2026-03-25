@@ -103,6 +103,7 @@ export type SharedErdbSettings = {
   tmdbKey: string;
   mdblistKey: string;
   fanartKey: string;
+  simklClientId: string;
   lang: string;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
@@ -212,6 +213,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   tmdbKey: '',
   mdblistKey: '',
   fanartKey: '',
+  simklClientId: '',,
   lang: 'en',
   posterImageText: 'clean',
   backdropImageText: 'clean',
@@ -485,6 +487,8 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       typeof candidate.mdblistKey === 'string' ? candidate.mdblistKey.trim() : defaults.mdblistKey,
     fanartKey:
       typeof candidate.fanartKey === 'string' ? candidate.fanartKey.trim() : defaults.fanartKey,
+    simklClientId:
+      typeof candidate.simklClientId === 'string' ? candidate.simklClientId.trim() : defaults.simklClientId,
     lang: typeof candidate.lang === 'string' && candidate.lang.trim() ? candidate.lang.trim() : defaults.lang,
     posterImageText,
     backdropImageText,
@@ -763,6 +767,10 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   if (fanartKey) {
     payload.fanartKey = fanartKey;
   }
+  const simklClientId = settings.simklClientId.trim();
+  if (simklClientId) {
+    payload.simklClientId = simklClientId;
+  }
 
   const posterRatings = stringifyRatingPreferencesAllowEmpty(settings.posterRatingPreferences);
   const backdropRatings = stringifyRatingPreferencesAllowEmpty(settings.backdropRatingPreferences);
@@ -1014,6 +1022,7 @@ const AIO_TMDB_KEY_PLACEHOLDER = '{tmdb_key}';
 const AIO_MDBLIST_KEY_PLACEHOLDER = '{mdblist_key}';
 const AIO_FANART_KEY_PLACEHOLDER = '{fanart_key}';
 const AIO_ERDB_KEY_PLACEHOLDER = '{erdb_key}';
+const AIO_SIMKL_CLIENT_ID_PLACEHOLDER = '{simkl_client_id}';
 
 const restoreAiometadataPlaceholders = (value: string) => {
   const placeholders = [
@@ -1021,6 +1030,7 @@ const restoreAiometadataPlaceholders = (value: string) => {
     AIO_MDBLIST_KEY_PLACEHOLDER,
     AIO_FANART_KEY_PLACEHOLDER,
     AIO_ERDB_KEY_PLACEHOLDER,
+    AIO_SIMKL_CLIENT_ID_PLACEHOLDER,
     '{imdb_id}',
     '{tmdb_id}',
     '{tvdb_id}',
@@ -1106,6 +1116,13 @@ export const buildAiometadataUrlPatterns = (
           hideCredentials,
         })
       : settings.fanartKey.trim(),
+    simklClientId: settings.simklClientId.trim()
+      ? chooseAiometadataCredentialValue({
+          value: settings.simklClientId,
+          placeholder: AIO_SIMKL_CLIENT_ID_PLACEHOLDER,
+          hideCredentials,
+        })
+      : settings.simklClientId.trim(),
   };
 
   const payload = buildSharedPayload(exportSettings);

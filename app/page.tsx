@@ -542,6 +542,7 @@ erdbKey                | ERDB request key when the host enables route protection
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | service fallback when available
+simklClientId           | Your SIMKL client_id for direct SIMKL ratings                        | none
 
 TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
 ACCESS NOTE: erdbKey is optional and only needed when the ERDB host protects render and proxy routes with ERDB_REQUEST_API_KEY or ERDB_REQUEST_API_KEYS.
@@ -1093,6 +1094,7 @@ export default function Home() {
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [fanartKey, setFanartKey] = useState('');
+  const [simklClientId, setSimklClientId] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
   const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
   const [proxyTranslateMetaMode, setProxyTranslateMetaMode] =
@@ -1531,6 +1533,7 @@ export default function Home() {
       setTmdbKey(normalized.settings.tmdbKey);
       setMdblistKey(normalized.settings.mdblistKey);
       setFanartKey(normalized.settings.fanartKey);
+      setSimklClientId(normalized.settings.simklClientId);
       setLang(normalized.settings.lang);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
@@ -1608,6 +1611,7 @@ export default function Home() {
         tmdbKey: tmdbKey.trim(),
         mdblistKey: mdblistKey.trim(),
         fanartKey: fanartKey.trim(),
+        simklClientId: simklClientId.trim(),
         lang,
         posterImageText,
         backdropImageText,
@@ -1681,6 +1685,7 @@ export default function Home() {
       tmdbKey,
       mdblistKey,
       fanartKey,
+      simklClientId,
       lang,
       posterImageText,
       backdropImageText,
@@ -2019,6 +2024,9 @@ export default function Home() {
     if (mdblistKey) {
       query.set('mdblistKey', mdblistKey);
     }
+    if (simklClientId.trim()) {
+      query.set('simklClientId', simklClientId.trim());
+    }
     query.set('tmdbKey', normalizedTmdbKey);
     const shouldSendFanartKey =
       (previewType === 'poster' && posterArtworkSource === 'fanart') ||
@@ -2162,6 +2170,7 @@ export default function Home() {
     erdbKey,
     tmdbKey,
     fanartKey,
+    simklClientId,
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
@@ -3232,7 +3241,7 @@ export default function Home() {
   const accessKeysSection = (
     <div>
       <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
-      <div className="grid gap-2 md:grid-cols-4">
+      <div className="grid gap-2 md:grid-cols-5">
         <div>
           <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">ERDB Request</label>
           <input type="password" value={erdbKey} onChange={(e) => setErdbKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
@@ -3248,6 +3257,10 @@ export default function Home() {
         <div>
           <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Fanart</label>
           <input type="password" value={fanartKey} onChange={(e) => setFanartKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">SIMKL</label>
+          <input type="password" value={simklClientId} onChange={(e) => setSimklClientId(e.target.value)} placeholder="client_id (optional)" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
@@ -5672,6 +5685,11 @@ export default function Home() {
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">fanartKey</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">Fanart API Key for fanart poster, backdrop, and logo sources</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">service fallback when available</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">simklClientId</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">SIMKL client_id for direct SIMKL ratings</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                     </tbody>
                   </table>

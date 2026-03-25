@@ -469,6 +469,7 @@ const rewriteMetaImages = (
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
+      simklClientId: config.simklClientId,
       fallbackUrl: upstreamPosterUrl || null,
       config,
     });
@@ -481,6 +482,7 @@ const rewriteMetaImages = (
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
+      simklClientId: config.simklClientId,
       fallbackUrl: upstreamBackdropUrl || null,
       config,
     });
@@ -493,6 +495,7 @@ const rewriteMetaImages = (
       erdbId,
       tmdbKey: config.tmdbKey,
       mdblistKey: config.mdblistKey,
+      simklClientId: config.simklClientId,
       fallbackUrl: upstreamLogoUrl || null,
       config,
     });

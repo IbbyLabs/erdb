@@ -39,6 +39,7 @@ const NATIVE_SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, str
   tmdb: '/10',
   imdb: '/10',
   trakt: '/10',
+  simkl: '/10',
   metacriticuser: '/10',
   letterboxd: '/5',
   myanimelist: '/10',

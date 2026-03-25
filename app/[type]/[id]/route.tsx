@@ -315,6 +315,12 @@ const KITSU_CACHE_TTL_MS = parseCacheTtlMs(
   10 * 60 * 1000,
   30 * 24 * 60 * 60 * 1000
 );
+const SIMKL_CACHE_TTL_MS = parseCacheTtlMs(
+  process.env.ERDB_SIMKL_CACHE_TTL_MS,
+  3 * 24 * 60 * 60 * 1000,
+  10 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000
+);
 const TORRENTIO_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TORRENTIO_CACHE_TTL_MS,
   6 * 60 * 60 * 1000,
@@ -348,6 +354,11 @@ const PROVIDER_ICON_CACHE_MAX_ENTRIES = 64;
 const PROVIDER_ICON_CACHE_VERSION = 'v2';
 const TMDB_ANIMATION_GENRE_ID = 16;
 const MDBLIST_API_KEYS = parseApiKeyList(process.env.MDBLIST_API_KEYS, process.env.MDBLIST_API_KEY);
+const SIMKL_CLIENT_ID =
+  process.env.SIMKL_CLIENT_ID ||
+  process.env.SIMKL_API_KEY ||
+  process.env.ERDB_SIMKL_CLIENT_ID ||
+  '';
 type TimedCacheEntry<T> = {
   value: T;
   expiresAt: number;
@@ -2413,6 +2424,86 @@ const fetchTraktRating = async ({
     if (!response.ok) return null;
 
     return normalizeRatingValue(response.data?.trakt?.rating ?? response.data?.rating);
+  } catch {
+    return null;
+  }
+};
+
+const fetchSimklRating = async ({
+  clientId,
+  imdbId,
+  tmdbId,
+  mediaType,
+  anilistId,
+  malId,
+  kitsuId,
+  cacheTtlMs,
+  phases,
+}: {
+  clientId: string;
+  imdbId?: string | null;
+  tmdbId?: string | null;
+  mediaType: 'movie' | 'tv';
+  anilistId?: string | null;
+  malId?: string | null;
+  kitsuId?: string | null;
+  cacheTtlMs: number;
+  phases: PhaseDurations;
+}) => {
+  const normalizedClientId = String(clientId || '').trim();
+  const normalizedImdbId = String(imdbId || '').trim();
+  const normalizedTmdbId = String(tmdbId || '').trim();
+  const normalizedAnilistId = String(anilistId || '').trim();
+  const normalizedMalId = String(malId || '').trim();
+  const normalizedKitsuId = String(kitsuId || '').trim();
+
+  if (!normalizedClientId) return null;
+
+  const query = new URLSearchParams();
+  query.set('client_id', normalizedClientId);
+  query.set('fields', 'simkl');
+
+  if (normalizedImdbId) {
+    query.set('imdb', normalizedImdbId);
+  } else if (normalizedTmdbId) {
+    query.set('tmdb', normalizedTmdbId);
+    query.set('type', mediaType);
+  } else if (normalizedAnilistId) {
+    query.set('anilist', normalizedAnilistId);
+  } else if (normalizedMalId) {
+    query.set('mal', normalizedMalId);
+  } else if (normalizedKitsuId) {
+    query.set('kitsu', normalizedKitsuId);
+  } else {
+    return null;
+  }
+
+  const cacheIdSource =
+    normalizedImdbId ||
+    (normalizedTmdbId ? `tmdb:${mediaType}:${normalizedTmdbId}` : '') ||
+    (normalizedAnilistId ? `anilist:${normalizedAnilistId}` : '') ||
+    (normalizedMalId ? `mal:${normalizedMalId}` : '') ||
+    (normalizedKitsuId ? `kitsu:${normalizedKitsuId}` : '');
+
+  try {
+    const response = await fetchJsonCached(
+      `simkl:ratings:${cacheIdSource}:client:${sha1Hex(normalizedClientId)}`,
+      `https://api.simkl.com/ratings?${query.toString()}`,
+      cacheTtlMs,
+      phases,
+      'mdb',
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'simkl-api-key': normalizedClientId,
+        },
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const rating = normalizeRatingValue(response.data?.simkl?.rating);
+    return rating && !isNegativeRatingValue(rating) ? rating : null;
   } catch {
     return null;
   }
@@ -6885,6 +6976,10 @@ export async function handleImageRequest(
   );
   const mdblistKey = request.nextUrl.searchParams.get('mdblistKey') || request.nextUrl.searchParams.get('mdblist_key');
   const tmdbKey = request.nextUrl.searchParams.get('tmdbKey') || request.nextUrl.searchParams.get('tmdb_key');
+  const simklClientId =
+    request.nextUrl.searchParams.get('simklClientId') ||
+    request.nextUrl.searchParams.get('simkl_client_id') ||
+    SIMKL_CLIENT_ID;
 
   const parts = cleanId.split(':');
   const idPrefix = (parts[0] || '').trim().toLowerCase();
@@ -7351,6 +7446,7 @@ export async function handleImageRequest(
       const needsKitsuRating = requestedExternalRatings.has('kitsu');
       const needsMyAnimeListRating = requestedExternalRatings.has('myanimelist');
       const needsTraktRating = requestedExternalRatings.has('trakt');
+      const needsSimklRating = requestedExternalRatings.has('simkl');
       const hasMdbListApiKey = MDBLIST_API_KEYS.length > 0;
       const shouldRenderRawKitsuFallbackRating =
         useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
@@ -7593,6 +7689,7 @@ export async function handleImageRequest(
               let hasFetchedKitsu = false;
               let hasFetchedMyAnimeList = false;
               let hasFetchedTrakt = false;
+              let hasFetchedSimkl = false;
 
               const ensureImdbId = async () => {
                 if (imdbId) return imdbId;
@@ -7775,6 +7872,41 @@ export async function handleImageRequest(
                 return combinedRatings.get('trakt') || null;
               };
 
+              const ensureSimklRating = async () => {
+                if (hasFetchedSimkl) return combinedRatings.get('simkl') || null;
+                hasFetchedSimkl = true;
+                if (!simklClientId) return null;
+                const resolvedImdbId = await ensureImdbId();
+                const tmdbIdForSimkl =
+                  media?.id != null ? String(media.id) : isTmdb && mediaId ? String(mediaId) : null;
+                try {
+                  const simklCacheTtlMs = getRatingCacheTtlMs({
+                    id: resolvedImdbId || tmdbIdForSimkl || aniListId || malId || kitsuId || cleanId,
+                    mediaType: resolvedRatingMediaType,
+                    releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
+                    defaultTtlMs: SIMKL_CACHE_TTL_MS,
+                    oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+                  });
+                  const simklRating = await fetchSimklRating({
+                    clientId: simklClientId,
+                    imdbId: resolvedImdbId,
+                    tmdbId: tmdbIdForSimkl,
+                    mediaType: resolvedRatingMediaType,
+                    anilistId: aniListId,
+                    malId,
+                    kitsuId,
+                    cacheTtlMs: simklCacheTtlMs,
+                    phases,
+                  });
+                  if (simklRating) {
+                    combinedRatings.set('simkl', simklRating);
+                    renderedRatingTtlByProvider.set('simkl', simklCacheTtlMs);
+                  }
+                } catch {
+                }
+                return combinedRatings.get('simkl') || null;
+              };
+
               const resolveProvider = async (provider: RatingPreference) => {
                 if (provider === 'tmdb') return tmdbRating;
 
@@ -7826,6 +7958,10 @@ export async function handleImageRequest(
                   if (traktRating) return traktRating;
                   await ensureMdbRatings();
                   return combinedRatings.get('trakt') || null;
+                }
+
+                if (provider === 'simkl') {
+                  return ensureSimklRating();
                 }
 
                 if (ANIME_ONLY_RATING_PROVIDER_SET.has(provider)) {
@@ -7975,6 +8111,34 @@ export async function handleImageRequest(
                 if (traktRating) {
                   combinedRatings.set('trakt', traktRating);
                   renderedRatingTtlByProvider.set('trakt', traktCacheTtlMs);
+                }
+              } catch {
+              }
+            }
+
+            if (needsSimklRating && simklClientId) {
+              try {
+                const simklCacheTtlMs = getRatingCacheTtlMs({
+                  id: imdbId || tmdbIdForCache || aniListId || malId || kitsuId || cleanId,
+                  mediaType: resolvedRatingMediaType,
+                  releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
+                  defaultTtlMs: SIMKL_CACHE_TTL_MS,
+                  oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+                });
+                const simklRating = await fetchSimklRating({
+                  clientId: simklClientId,
+                  imdbId,
+                  tmdbId: tmdbIdForCache,
+                  mediaType: resolvedRatingMediaType,
+                  anilistId: aniListId,
+                  malId,
+                  kitsuId,
+                  cacheTtlMs: simklCacheTtlMs,
+                  phases,
+                });
+                if (simklRating) {
+                  combinedRatings.set('simkl', simklRating);
+                  renderedRatingTtlByProvider.set('simkl', simklCacheTtlMs);
                 }
               } catch {
               }
