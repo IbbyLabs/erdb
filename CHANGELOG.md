@@ -105,6 +105,22 @@
 
 <a id="v2-39-2"></a>
 
+<a id="v2-39-3"></a>
+
+## [v2.39.3] - 25/03/2026
+
+### Added
+* Simkl API compliance—add ID resolution cache TTL, implement two stage redirect+summary lookup, enforce header based auth
+  
+  Changes:
+  • Add SIMKL_ID_CACHE_TTL_MS constant with configurable TTL (default: 3 days, min: 10 min, max: 30 days)
+  • Implement fetchSimklId() function to resolve Simkl item IDs via /redirect endpoint
+  • Refactor fetchSimklRating() to two stage flow: resolve ID first, then fetch ratings by ID
+  • Enforce simkl api key header authentication (remove query param leakage)
+  • Update .env.example with ERDB_SIMKL_ID_CACHE_TTL_MS documentation
+  
+  Addresses Simkl API requirements for proper authentication and endpoint usage.
+
 ## [v2.39.2] - 25/03/2026
 
 ### Fixed
