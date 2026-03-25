@@ -85,6 +85,13 @@
 
 <a id="v2-37-1"></a>
 
+<a id="v2-37-2"></a>
+
+## [v2.37.2] - 25/03/2026
+
+### Fixed
+* mobile navigation and image routing
+
 ## [v2.37.1] - 25/03/2026
 
 ### Other Changes
