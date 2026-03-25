@@ -5,6 +5,7 @@ import {
   buildMediaFeatureBadgesFromFlags,
   buildCertificationBadgeMeta,
   collectMediaFeatureFlags,
+  hasMoviePhysicalMediaRelease,
   normalizeCertificationBadgeLabel,
   normalizeUserFacingMediaBadgeLabel,
   parseMediaFeatureFlagsFromFilename,
@@ -78,6 +79,19 @@ test('media feature flag collection merges multiple filenames', () => {
   assert.equal(flags.hasBluray, false);
 });
 
+test('4k web streams do not infer bluray badges', () => {
+  const flags = parseMediaFeatureFlagsFromFilename(
+    'Movie.2024.2160p.WEB-DL.DV.HDR.Atmos.mkv',
+  );
+
+  assert.equal(flags.has4k, true);
+  assert.equal(flags.hasBluray, false);
+  assert.equal(
+    buildMediaFeatureBadgesFromFlags(flags).some((badge) => badge.key === 'bluray'),
+    false,
+  );
+});
+
 test('certification labels remove user facing hyphens and unknown values', () => {
   assert.equal(normalizeCertificationBadgeLabel('pg-13'), 'PG 13');
   assert.equal(normalizeCertificationBadgeLabel('tv-ma'), 'TV MA');
@@ -112,6 +126,34 @@ test('movie certification resolution prefers the requested region first', () => 
   );
 
   assert.equal(certification, '15');
+});
+
+test('movie physical media release only counts when a physical date has landed', () => {
+  const beforeRelease = hasMoviePhysicalMediaRelease(
+    {
+      results: [
+        {
+          iso_3166_1: 'US',
+          release_dates: [{ type: 5, release_date: '2026-04-15T00:00:00.000Z' }],
+        },
+      ],
+    },
+    Date.parse('2026-04-01T00:00:00.000Z'),
+  );
+  const afterRelease = hasMoviePhysicalMediaRelease(
+    {
+      results: [
+        {
+          iso_3166_1: 'US',
+          release_dates: [{ type: 5, release_date: '2026-04-15T00:00:00.000Z' }],
+        },
+      ],
+    },
+    Date.parse('2026-04-16T00:00:00.000Z'),
+  );
+
+  assert.equal(beforeRelease, false);
+  assert.equal(afterRelease, true);
 });
 
 test('tv certification resolution falls back to available regions', () => {

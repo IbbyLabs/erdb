@@ -248,6 +248,30 @@ export const resolveMovieCertificationBadge = (
   return null;
 };
 
+export const hasMoviePhysicalMediaRelease = (
+  releaseDatesPayload: any,
+  nowMs = Date.now(),
+) => {
+  const results = Array.isArray(releaseDatesPayload?.results) ? releaseDatesPayload.results : [];
+
+  for (const result of results) {
+    const entries = Array.isArray(result?.release_dates) ? result.release_dates : [];
+    for (const entry of entries) {
+      if (Number(entry?.type) !== 5) continue;
+
+      const releaseTimestamp = Date.parse(String(entry?.release_date || ''));
+      if (!Number.isFinite(releaseTimestamp)) {
+        return true;
+      }
+      if (releaseTimestamp <= nowMs) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
 export const resolveTvCertificationBadge = (
   contentRatingsPayload: any,
   requestedLanguage?: string | null,

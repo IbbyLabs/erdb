@@ -104,6 +104,7 @@ import {
   buildCertificationBadgeMeta,
   buildMediaFeatureBadgesFromFlags,
   collectMediaFeatureFlags,
+  hasMoviePhysicalMediaRelease,
   isMediaFeatureBadgeKey,
   normalizeUserFacingMediaBadgeLabel,
   resolveMovieCertificationBadge,
@@ -7150,6 +7151,7 @@ export async function GET(
       let selectedPosterLogoPath: string | null = null;
       let selectedPosterIsTextless = false;
       let certificationBadgeLabel: string | null = null;
+      let movieHasPhysicalMediaRelease: boolean | null = null;
       const requestedExternalRatings = new Set([...selectedRatings]);
       const needsAnimeOnlyRatings = [...requestedExternalRatings].some((provider) =>
         ANIME_ONLY_RATING_PROVIDER_SET.has(provider)
@@ -7858,6 +7860,8 @@ export async function GET(
         } = await detailsBundlePromise;
         tmdbRating = bundledRating;
         if (shouldRenderStreamBadges) {
+          movieHasPhysicalMediaRelease =
+            mediaType === 'movie' ? hasMoviePhysicalMediaRelease(bundledCertificationPayload) : null;
           certificationBadgeLabel =
             mediaType === 'movie'
               ? resolveMovieCertificationBadge(bundledCertificationPayload, requestedImageLang)
@@ -8234,6 +8238,9 @@ export async function GET(
           },
           ...streamBadges,
         ];
+      }
+      if (mediaType === 'movie' && movieHasPhysicalMediaRelease === false) {
+        streamBadges = streamBadges.filter((badge) => badge.key !== 'bluray' && badge.key !== 'remux');
       }
       if (imageType !== 'logo') {
         const enabledQualityBadgeSet = new Set(qualityBadgePreferences);
