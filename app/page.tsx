@@ -13,6 +13,7 @@ import {
   useSyncExternalStore,
   type ChangeEvent,
   type MouseEvent,
+  type ReactNode,
 } from 'react';
 import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff, Tag } from 'lucide-react';
 import {
@@ -121,6 +122,21 @@ import {
   type SavedUiConfig,
   type StreamBadgesSetting,
 } from '@/lib/uiConfig';
+import {
+  CONFIGURATOR_PRESETS,
+  CONFIGURATOR_WIZARD_QUESTION_ORDER,
+  CONFIGURATOR_WIZARD_QUESTIONS,
+  DEFAULT_CONFIGURATOR_EXPERIENCE_MODE,
+  applyConfiguratorPreset,
+  getConfiguratorPreset,
+  isConfiguratorExperienceMode,
+  isConfiguratorPresetId,
+  recommendConfiguratorPreset,
+  type ConfiguratorExperienceMode,
+  type ConfiguratorPresetId,
+  type ConfiguratorWizardAnswers,
+  type ConfiguratorWizardQuestionId,
+} from '@/lib/configuratorPresets';
 import {
   DEFAULT_METADATA_TRANSLATION_MODE,
   METADATA_TRANSLATION_MODE_OPTIONS,
@@ -292,6 +308,30 @@ const UI_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.uiConfig.settings.v1';
 const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'erdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'erdb.apiKeyConfig.settings.v1';
 const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
+type LocalUiSettingsStorage = {
+  autoSave?: boolean;
+  experienceMode?: ConfiguratorExperienceMode;
+  presetId?: ConfiguratorPresetId | null;
+};
+type AdvancedConfiguratorSectionId =
+  | 'essentials'
+  | 'presentation'
+  | 'look'
+  | 'quality'
+  | 'providers';
+const DEFAULT_ADVANCED_OPEN_SECTIONS: AdvancedConfiguratorSectionId[] = [
+  'essentials',
+  'presentation',
+  'look',
+  'quality',
+  'providers',
+];
+const SIMPLE_PRESENTATION_IDS: RatingPresentation[] = [
+  'standard',
+  'minimal',
+  'average',
+  'blockbuster',
+];
 const RATING_PROVIDER_DOC_VALUES = ALL_RATING_PREFERENCES.join(', ');
 const QUALITY_BADGE_DOC_VALUES = QUALITY_BADGE_OPTIONS.map((option) => option.id).join(', ');
 const TMDB_LANGUAGE_DOC_COPY = 'Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)';
@@ -746,6 +786,49 @@ function SectionHeader({
   );
 }
 
+function ConfiguratorAccordionSection({
+  title,
+  description,
+  isOpen,
+  onToggle,
+  tone = 'default',
+  children,
+}: {
+  title: string;
+  description: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  tone?: 'default' | 'accent';
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={`rounded-2xl border ${
+        tone === 'accent'
+          ? 'border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))]'
+          : 'border-white/10 bg-black/30'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left"
+      >
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-white">{title}</div>
+          <div className="mt-1 text-[11px] leading-5 text-zinc-500">{description}</div>
+        </div>
+        <ChevronRight
+          className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+            isOpen ? 'rotate-90 text-violet-300' : ''
+          }`}
+        />
+      </button>
+      {isOpen ? <div className="border-t border-white/10 px-4 py-4">{children}</div> : null}
+    </section>
+  );
+}
+
 const formatCommitTimestamp = (value: string, nowMs: number) => {
   const commitMs = Date.parse(value);
   if (!Number.isFinite(commitMs)) {
@@ -1032,9 +1115,24 @@ export default function Home() {
   const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(true);
   const [nowMs, setNowMs] = useState(Date.now());
   const [savedConfigStatus, setSavedConfigStatus] = useState<
-    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'error' | 'invalid'
+    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'error' | 'invalid'
   >('');
   const [configAutoSave, setConfigAutoSave] = useState(false);
+  const [experienceMode, setExperienceMode] = useState<ConfiguratorExperienceMode>(
+    DEFAULT_CONFIGURATOR_EXPERIENCE_MODE,
+  );
+  const [experienceModeDraft, setExperienceModeDraft] = useState<ConfiguratorExperienceMode>(
+    DEFAULT_CONFIGURATOR_EXPERIENCE_MODE,
+  );
+  const [showExperienceModal, setShowExperienceModal] = useState(false);
+  const [uiSettingsLoaded, setUiSettingsLoaded] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<ConfiguratorPresetId | null>(null);
+  const [wizardAnswers, setWizardAnswers] = useState<Partial<ConfiguratorWizardAnswers>>({});
+  const [wizardQuestionIndex, setWizardQuestionIndex] = useState(0);
+  const [isWizardActive, setIsWizardActive] = useState(false);
+  const [openAdvancedSections, setOpenAdvancedSections] = useState<
+    AdvancedConfiguratorSectionId[]
+  >(DEFAULT_ADVANCED_OPEN_SECTIONS);
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
 
   const [copied, setCopied] = useState(false);
@@ -1381,7 +1479,7 @@ export default function Home() {
   }, []);
 
   const applySavedUiConfig = useCallback(
-    (config: SavedUiConfig, status: 'loaded' | 'imported' = 'loaded') => {
+    (config: SavedUiConfig, status: 'loaded' | 'imported' | 'preset' = 'loaded') => {
       const normalized = normalizeSavedUiConfig(config);
 
       setErdbKey(normalized.settings.erdbKey);
@@ -1615,8 +1713,20 @@ export default function Home() {
         window.localStorage.getItem(UI_CONFIG_SETTINGS_STORAGE_KEY) ||
         window.localStorage.getItem(LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY);
       if (settingsRaw) {
-        const settings = JSON.parse(settingsRaw) as { autoSave?: boolean };
+        const settings = JSON.parse(settingsRaw) as LocalUiSettingsStorage;
         setConfigAutoSave(Boolean(settings.autoSave));
+        if (isConfiguratorExperienceMode(settings.experienceMode)) {
+          setExperienceMode(settings.experienceMode);
+          setExperienceModeDraft(settings.experienceMode);
+          setShowExperienceModal(false);
+        } else {
+          setShowExperienceModal(true);
+        }
+        if (isConfiguratorPresetId(settings.presetId)) {
+          setSelectedPresetId(settings.presetId);
+        }
+      } else {
+        setShowExperienceModal(true);
       }
 
       const raw = window.localStorage.getItem(UI_CONFIG_STORAGE_KEY);
@@ -1624,14 +1734,17 @@ export default function Home() {
         const parsed = parseSavedUiConfig(raw);
         if (!parsed) {
           setSavedConfigStatus('error');
+          setUiSettingsLoaded(true);
           return;
         }
         applySavedUiConfig(parsed, 'loaded');
+        setUiSettingsLoaded(true);
         return;
       }
 
       const legacyRaw = window.localStorage.getItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
       if (!legacyRaw) {
+        setUiSettingsLoaded(true);
         return;
       }
 
@@ -1660,8 +1773,10 @@ export default function Home() {
         }),
         'loaded'
       );
+      setUiSettingsLoaded(true);
     } catch {
       setSavedConfigStatus('error');
+      setUiSettingsLoaded(true);
     }
   }, [applySavedUiConfig]);
 
@@ -1686,6 +1801,23 @@ export default function Home() {
     }
     persistUiConfig(false);
   }, [configAutoSave, buildCurrentUiConfig, persistUiConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !uiSettingsLoaded) {
+      return;
+    }
+
+    try {
+      const payload: LocalUiSettingsStorage = {
+        autoSave: configAutoSave,
+        experienceMode,
+        presetId: selectedPresetId,
+      };
+      window.localStorage.setItem(UI_CONFIG_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      setSavedConfigStatus('error');
+    }
+  }, [configAutoSave, experienceMode, selectedPresetId, uiSettingsLoaded]);
 
   const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(AI_DEVELOPER_PROMPT);
@@ -2374,23 +2506,11 @@ export default function Home() {
   }, []);
 
   const handleToggleConfigAutoSave = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
     const next = !configAutoSave;
     setConfigAutoSave(next);
 
-    try {
-      window.localStorage.setItem(
-        UI_CONFIG_SETTINGS_STORAGE_KEY,
-        JSON.stringify({ autoSave: next })
-      );
-      if (next) {
-        persistUiConfig(false);
-      }
-    } catch {
-      setSavedConfigStatus('error');
+    if (next) {
+      persistUiConfig(false);
     }
   }, [configAutoSave, persistUiConfig]);
 
@@ -2434,6 +2554,78 @@ export default function Home() {
     },
     [applySavedUiConfig]
   );
+
+  const handleApplyPreset = useCallback(
+    (presetId: ConfiguratorPresetId) => {
+      applySavedUiConfig(applyConfiguratorPreset(buildCurrentUiConfig(), presetId), 'preset');
+      setSelectedPresetId(presetId);
+      setIsWizardActive(false);
+    },
+    [applySavedUiConfig, buildCurrentUiConfig]
+  );
+
+  const handleBeginWizard = useCallback(() => {
+    setWizardAnswers({});
+    setWizardQuestionIndex(0);
+    setIsWizardActive(true);
+  }, []);
+
+  const handleExitWizard = useCallback(() => {
+    setWizardAnswers({});
+    setWizardQuestionIndex(0);
+    setIsWizardActive(false);
+  }, []);
+
+  const handleWizardBack = useCallback(() => {
+    setWizardQuestionIndex((currentIndex) => Math.max(0, currentIndex - 1));
+  }, []);
+
+  const handleWizardAnswer = useCallback(
+    (
+      questionId: ConfiguratorWizardQuestionId,
+      value: ConfiguratorWizardAnswers[ConfiguratorWizardQuestionId],
+    ) => {
+      setWizardAnswers((current) => ({
+        ...current,
+        [questionId]: value,
+      }));
+      setWizardQuestionIndex((currentIndex) =>
+        Math.min(currentIndex + 1, CONFIGURATOR_WIZARD_QUESTION_ORDER.length - 1),
+      );
+    },
+    []
+  );
+
+  const handleToggleAdvancedSection = useCallback((sectionId: AdvancedConfiguratorSectionId) => {
+    setOpenAdvancedSections((current) =>
+      current.includes(sectionId)
+        ? current.filter((entry) => entry !== sectionId)
+        : [...current, sectionId]
+    );
+  }, []);
+
+  const handleSelectExperienceMode = useCallback((nextMode: ConfiguratorExperienceMode) => {
+    setExperienceMode(nextMode);
+    setExperienceModeDraft(nextMode);
+    setShowExperienceModal(false);
+  }, []);
+
+  const handleContinueExperienceMode = useCallback(() => {
+    setExperienceMode(experienceModeDraft);
+    setShowExperienceModal(false);
+  }, [experienceModeDraft]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !showExperienceModal) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showExperienceModal]);
 
   const canGenerateConfig = Boolean(configString);
   const canGenerateProxy = Boolean(proxyUrl);
@@ -2515,6 +2707,23 @@ export default function Home() {
       : previewType === 'backdrop'
         ? 'center, right, or right vertical'
         : null;
+  const selectedPresetMeta = selectedPresetId ? getConfiguratorPreset(selectedPresetId) : null;
+  const wizardActiveQuestionId = CONFIGURATOR_WIZARD_QUESTION_ORDER[wizardQuestionIndex] || null;
+  const wizardActiveQuestion = wizardActiveQuestionId
+    ? CONFIGURATOR_WIZARD_QUESTIONS[wizardActiveQuestionId]
+    : null;
+  const wizardIsComplete = CONFIGURATOR_WIZARD_QUESTION_ORDER.every(
+    (questionId) => questionId in wizardAnswers,
+  );
+  const wizardRecommendedPresetId = wizardIsComplete
+    ? recommendConfiguratorPreset(wizardAnswers)
+    : null;
+  const wizardRecommendedPreset = wizardRecommendedPresetId
+    ? getConfiguratorPreset(wizardRecommendedPresetId)
+    : null;
+  const quickPresentationOptions = SIMPLE_PRESENTATION_IDS.map((id) =>
+    RATING_PRESENTATION_OPTIONS.find((option) => option.id === id),
+  ).filter((option): option is (typeof RATING_PRESENTATION_OPTIONS)[number] => Boolean(option));
 
   useEffect(() => {
     if (ratingProviderRows.some((row) => row.id === activeProviderEditorId)) {
@@ -2566,6 +2775,1812 @@ export default function Home() {
     }
     setPosterImageText(value);
   };
+
+  const setupModeSection = (
+    <div className="rounded-2xl border border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))] p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/90">
+            Setup Mode
+          </div>
+          <h4 className="mt-2 text-lg font-semibold text-white">
+            {experienceMode === 'simple' ? 'Simple View' : 'Advanced View'}
+          </h4>
+          <p className="mt-2 max-w-2xl text-[12px] leading-6 text-zinc-400">
+            {experienceMode === 'simple'
+              ? 'Simple keeps the high signal controls in front of you. Presets, keys, media targeting, and the most visible artwork switches stay easy to reach.'
+              : 'Advanced exposes the full ERDB configurator, including provider ordering, sizing, stacked badge tuning, and manual layout controls.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setExperienceModeDraft(experienceMode);
+            setShowExperienceModal(true);
+          }}
+          className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-300 hover:bg-black/50"
+        >
+          Reopen Intro
+        </button>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {([
+          {
+            id: 'simple',
+            label: 'Simple',
+            description: 'Essentials only, tuned around presets and the most visible artwork controls.',
+          },
+          {
+            id: 'advanced',
+            label: 'Advanced',
+            description: 'Everything in the current configurator, reorganized so the dense controls stay easier to scan.',
+          },
+        ] as const).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => handleSelectExperienceMode(option.id)}
+            className={`rounded-2xl border p-4 text-left transition-colors ${
+              experienceMode === option.id
+                ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                : 'border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:bg-black/35'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-base font-semibold">{option.label}</div>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                  experienceMode === option.id
+                    ? 'bg-violet-500/20 text-violet-100'
+                    : 'bg-white/5 text-zinc-500'
+                }`}
+              >
+                {experienceMode === option.id ? 'Active' : 'Switch'}
+              </span>
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-zinc-500">{option.description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const presetHubSection = (
+    <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+            Guided Setup
+          </div>
+          <h4 className="mt-2 text-lg font-semibold text-white">Preset Studio</h4>
+          <p className="mt-2 max-w-2xl text-[12px] leading-6 text-zinc-400">
+            Start from a preset, or answer a few questions and let ERDB recommend one for you.
+            Presets only touch rendering and proxy defaults. Your keys and manifest URL stay intact.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={isWizardActive ? handleExitWizard : handleBeginWizard}
+            className="rounded-full border border-white/10 bg-zinc-950 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-200 hover:bg-zinc-900"
+          >
+            {isWizardActive ? 'Exit Guide' : 'Guide Me'}
+          </button>
+        </div>
+      </div>
+
+      {isWizardActive ? (
+        wizardRecommendedPreset ? (
+          <div className="mt-4 space-y-4">
+            <div className="rounded-2xl border border-violet-500/30 bg-[linear-gradient(145deg,rgba(76,29,149,0.18),rgba(9,9,11,0.88))] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
+                    Wizard Recommendation
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    {wizardRecommendedPreset.label}
+                  </div>
+                  <p className="mt-2 text-[12px] leading-6 text-zinc-400">
+                    {wizardRecommendedPreset.description}
+                  </p>
+                </div>
+                <span
+                  className="rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                  style={{
+                    borderColor: hexToRgbaCss(wizardRecommendedPreset.accentColor, 0.55),
+                    backgroundColor: hexToRgbaCss(wizardRecommendedPreset.accentColor, 0.16),
+                  }}
+                >
+                  {wizardRecommendedPreset.badge}
+                </span>
+              </div>
+              <div className="mt-4 grid gap-2 md:grid-cols-3">
+                {wizardRecommendedPreset.bullets.map((bullet) => (
+                  <div
+                    key={`${wizardRecommendedPreset.id}-${bullet}`}
+                    className="rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-[11px] leading-5 text-zinc-300"
+                  >
+                    {bullet}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset(wizardRecommendedPreset.id)}
+                  className="rounded-lg bg-violet-500 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-400"
+                >
+                  Apply {wizardRecommendedPreset.label}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBeginWizard}
+                  className="rounded-lg border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-900"
+                >
+                  Restart Guide
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : wizardActiveQuestion ? (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  Question {wizardQuestionIndex + 1} of {CONFIGURATOR_WIZARD_QUESTION_ORDER.length}
+                </div>
+                <div className="mt-2 text-lg font-semibold text-white">
+                  {wizardActiveQuestion.title}
+                </div>
+                <p className="mt-2 text-[12px] leading-6 text-zinc-400">
+                  {wizardActiveQuestion.description}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {wizardActiveQuestion.options.map((option) => {
+                const isSelected = wizardAnswers[wizardActiveQuestion.id] === option.value;
+                return (
+                  <button
+                    key={`${wizardActiveQuestion.id}-${option.value}`}
+                    type="button"
+                    onClick={() => handleWizardAnswer(wizardActiveQuestion.id, option.value)}
+                    className={`rounded-2xl border p-4 text-left transition-colors ${
+                      isSelected
+                        ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                        : 'border-white/10 bg-black/30 text-zinc-300 hover:border-white/20 hover:bg-black/40'
+                    }`}
+                  >
+                    <div className="text-sm font-semibold">{option.label}</div>
+                    <div className="mt-1 text-[11px] leading-5 text-zinc-500">
+                      {option.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleWizardBack}
+                disabled={wizardQuestionIndex === 0}
+                className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                  wizardQuestionIndex === 0
+                    ? 'cursor-not-allowed bg-zinc-900 text-zinc-600'
+                    : 'border border-white/10 bg-zinc-950 text-zinc-300 hover:bg-zinc-900'
+                }`}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleExitWizard}
+                className="rounded-lg border border-white/10 bg-zinc-950 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-900"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null
+      ) : (
+        <>
+          <div className="mt-4 grid gap-3 xl:grid-cols-2">
+            {CONFIGURATOR_PRESETS.map((preset) => {
+              const isSelected = selectedPresetId === preset.id;
+              const presetIcon =
+                preset.id === 'starter'
+                  ? Settings2
+                  : preset.id === 'balanced'
+                    ? Sparkles
+                    : preset.id === 'public-fast'
+                      ? Cpu
+                      : Layers;
+              const PresetIcon = presetIcon;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => handleApplyPreset(preset.id)}
+                  className={`rounded-2xl border p-4 text-left transition-colors ${
+                    isSelected
+                      ? 'bg-zinc-900/80 text-white'
+                      : 'border-white/10 bg-zinc-950/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-950'
+                  }`}
+                  style={
+                    isSelected
+                      ? {
+                          borderColor: hexToRgbaCss(preset.accentColor, 0.65),
+                          boxShadow: `inset 0 0 0 1px ${hexToRgbaCss(preset.accentColor, 0.18)}`,
+                        }
+                      : undefined
+                  }
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="rounded-2xl border border-white/10 p-2.5"
+                        style={{
+                          backgroundColor: hexToRgbaCss(preset.accentColor, 0.16),
+                        }}
+                      >
+                        <PresetIcon className="h-4 w-4" style={{ color: preset.accentColor }} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-white">{preset.label}</div>
+                        <div className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          {preset.description}
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      className="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                      style={{
+                        borderColor: hexToRgbaCss(preset.accentColor, 0.45),
+                        backgroundColor: hexToRgbaCss(preset.accentColor, 0.16),
+                      }}
+                    >
+                      {preset.badge}
+                    </span>
+                  </div>
+                  <div className="mt-4 grid gap-2">
+                    {preset.bullets.map((bullet) => (
+                      <div
+                        key={`${preset.id}-${bullet}`}
+                        className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] leading-5 text-zinc-400"
+                      >
+                        {bullet}
+                      </div>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-zinc-950/40 p-4">
+            <div className="text-sm font-semibold text-white">Not sure what to pick?</div>
+            <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+              The guide recommends a preset based on deployment, density, and how much manual tuning
+              you expect to do afterwards.
+            </p>
+            <button
+              type="button"
+              onClick={handleBeginWizard}
+              className="mt-4 rounded-lg border border-white/10 bg-black/40 px-4 py-2 text-xs font-semibold text-white hover:bg-black/60"
+            >
+              Guide me to a preset
+            </button>
+          </div>
+        </>
+      )}
+
+      <div className="mt-4 rounded-xl border border-white/10 bg-zinc-950/60 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+            Wizard Summary
+          </div>
+          <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-300">
+            {selectedPresetMeta ? selectedPresetMeta.badge : 'Custom'}
+          </span>
+        </div>
+        <div className="mt-3 text-sm font-semibold text-white">
+          {selectedPresetMeta ? selectedPresetMeta.label : 'No preset applied yet'}
+        </div>
+        <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+          {selectedPresetMeta
+            ? `${selectedPresetMeta.description} ${
+                selectedPresetMeta.recommendedExperienceMode === 'advanced'
+                  ? 'This preset pairs best with advanced mode once you want to tune it further.'
+                  : 'This preset is designed to work well in simple mode too.'
+              }`
+            : 'Apply a preset to get a curated starting point, then keep tuning from there.'}
+        </p>
+      </div>
+    </div>
+  );
+
+  const workspaceManagementSection = (
+    <div>
+      <div className="text-[11px] font-semibold text-zinc-400 mb-2">Workspace</div>
+      <p className="mb-2 text-[11px] text-zinc-500">
+        Save the shared ERDB settings plus proxy manifest setup to this browser, or export them as a JSON file.
+      </p>
+      <p className="mb-2 text-[11px] text-zinc-500">
+        Saved workspace values only affect this page. Share the config string or the generated proxy manifest if you want the same settings somewhere else.
+      </p>
+      <input
+        ref={workspaceImportInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={handleImportWorkspace}
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleSaveWorkspaceConfig}
+          className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
+        >
+          Save workspace
+        </button>
+        <button
+          type="button"
+          onClick={handleDownloadWorkspace}
+          className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+        >
+          Download JSON
+        </button>
+        <button
+          type="button"
+          onClick={handlePromptWorkspaceImport}
+          className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+        >
+          Import JSON
+        </button>
+        <button
+          type="button"
+          onClick={handleClearSavedWorkspace}
+          className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300"
+        >
+          Clear saved
+        </button>
+        <label className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300">
+          <input
+            type="checkbox"
+            checked={configAutoSave}
+            onChange={handleToggleConfigAutoSave}
+            className="h-3 w-3 accent-violet-500"
+          />
+          <span>Auto save</span>
+        </label>
+        {savedConfigStatus ? (
+          <span className={`text-[10px] ${savedConfigStatus === 'error' || savedConfigStatus === 'invalid' ? 'text-rose-400' : 'text-zinc-500'}`}>
+            {savedConfigStatus === 'loaded'
+              ? 'Saved workspace loaded.'
+              : savedConfigStatus === 'saved'
+                ? 'Workspace saved.'
+                : savedConfigStatus === 'cleared'
+                  ? 'Saved workspace cleared.'
+                  : savedConfigStatus === 'imported'
+                    ? 'Workspace imported.'
+                    : savedConfigStatus === 'preset'
+                      ? 'Preset applied.'
+                      : savedConfigStatus === 'invalid'
+                        ? 'Invalid workspace file.'
+                        : 'Unable to access local storage.'}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  const accessKeysSection = (
+    <div>
+      <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
+      <div className="grid gap-2 md:grid-cols-4">
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">ERDB Request</label>
+          <input type="password" value={erdbKey} onChange={(e) => setErdbKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
+          <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
+          <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Fanart</label>
+          <input type="password" value={fanartKey} onChange={(e) => setFanartKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+        {ERDB_REQUEST_KEY_HELP_COPY}
+      </p>
+      <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+        {FANART_KEY_HELP_COPY}
+      </p>
+    </div>
+  );
+
+  const mediaTargetSection = (
+    <div>
+      <div className="text-[11px] font-semibold text-zinc-400 mb-2">Media Target</div>
+      <div className="flex flex-wrap gap-2 items-end">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
+          <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            {(['poster', 'backdrop', 'logo'] as const).map(type => (
+              <button key={type} onClick={() => setPreviewType(type)} className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${previewType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                {type === 'poster' && <ImageIcon className="w-3.5 h-3.5" />}
+                {type === 'backdrop' && <MonitorPlay className="w-3.5 h-3.5" />}
+                {type === 'logo' && <Layers className="w-3.5 h-3.5" />}
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 min-w-[140px]">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Media ID</span>
+          <input type="text" value={mediaId} onChange={(e) => setMediaId(e.target.value)} placeholder="tt0133093" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
+        </div>
+        {tmdbKey ? (
+          <div className="w-32">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
+            <div className="relative">
+              <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-violet-500/50">
+                {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
+              </select>
+              <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
+            </div>
+          </div>
+        ) : (
+          <div className="p-2 rounded-lg bg-black border border-white/10 text-[10px] text-zinc-500 flex items-center gap-1.5">
+            <Globe2 className="w-3 h-3 shrink-0" /> Add TMDB key for lang
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const presentationSection = (
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+      <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
+      <div className="grid gap-2 md:grid-cols-2">
+        {RATING_PRESENTATION_OPTIONS.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => setRatingPresentationForType(option.id)}
+            className={`rounded-xl border p-3 text-left transition-colors ${
+              activeRatingPresentation === option.id
+                ? 'border-violet-500/60 bg-violet-500/10 text-white'
+                : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold">{option.label}</span>
+              {activeRatingPresentation === option.id && (
+                <span className="rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                  Selected
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+              {option.description}
+            </p>
+          </button>
+        ))}
+      </div>
+      {layoutPlacementHelp ? (
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          {isEditorialPresentation
+            ? previewType === 'poster'
+              ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
+              : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
+            : activePresentationPreservesLayout
+              ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
+              : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
+        </p>
+      ) : (
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          {isEditorialPresentation
+            ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
+            : 'Logo presentation keeps the output controls below available.'}
+        </p>
+      )}
+      {usesAggregatePresentation && (
+        <div
+          className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
+          style={{
+            borderColor: hexToRgbaCss(activeAggregateAccent, 0.24),
+            backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(activeAggregateAccent, 0.12)}, rgba(24,24,27,0.78) 58%)`,
+          }}
+        >
+          {showsAggregateRatingSource && (
+            <>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
+              <div className="flex flex-wrap gap-1">
+                {AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => (
+                  (() => {
+                    const accentColor = AGGREGATE_SOURCE_ACCENT_BY_ID[option.id];
+                    const isSelected = activeAggregateRatingSource === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => setAggregateRatingSourceForType(option.id)}
+                        className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          isSelected
+                            ? 'bg-zinc-800 text-white'
+                            : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                        }`}
+                        style={
+                          isSelected
+                            ? {
+                                borderColor: hexToRgbaCss(accentColor, 0.7),
+                                backgroundImage: `linear-gradient(135deg, ${hexToRgbaCss(accentColor, 0.28)}, rgba(24,24,27,0.96))`,
+                                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${hexToRgbaCss(accentColor, 0.12)}`,
+                              }
+                            : undefined
+                        }
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{
+                              backgroundColor: accentColor,
+                              boxShadow: `0 0 0 2px ${hexToRgbaCss(accentColor, 0.16)}`,
+                            }}
+                          />
+                          {option.label}
+                        </span>
+                      </button>
+                    );
+                  })()
+                ))}
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
+              </p>
+            </>
+          )}
+          <div className="pt-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent</div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {AGGREGATE_ACCENT_MODE_OPTIONS.map((option) => {
+                const isSelected = aggregateAccentMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => setAggregateAccentMode(option.id)}
+                    className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-zinc-800 text-white'
+                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+              {AGGREGATE_ACCENT_MODE_OPTIONS.find((option) => option.id === aggregateAccentMode)?.description}
+              {aggregateAccentMode === 'genre'
+                ? ' Editorial already behaves like this on posters; this extends genre matching to the other aggregate badge styles too.'
+                : ''}
+            </p>
+          </div>
+          {aggregateAccentMode === 'custom' && (
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <div>
+                <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                  Custom Accent
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={aggregateAccentColor}
+                    onChange={(event) => setAggregateAccentColor(event.target.value)}
+                    className="h-10 w-14 rounded-md border border-white/10 bg-black"
+                  />
+                  <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+                    {aggregateAccentColor}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {showsAggregateAccentBarOffset && (
+            <div className="pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Accent Bar Offset
+                </span>
+                <span className="text-[11px] text-zinc-400">{aggregateAccentBarOffset}px</span>
+              </div>
+              <input
+                type="range"
+                min={MIN_AGGREGATE_ACCENT_BAR_OFFSET}
+                max={MAX_AGGREGATE_ACCENT_BAR_OFFSET}
+                step={1}
+                value={aggregateAccentBarOffset}
+                onChange={(event) => setAggregateAccentBarOffset(Number(event.target.value))}
+                className="mt-2 h-2 w-full accent-violet-500"
+              />
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                Negative values move the aggregate accent bar upward a few pixels. This applies to compact and labeled average badges, including the new critics plus audience split mode.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const lookSection = (
+    <>
+      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
+            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {RATING_STYLE_OPTIONS.map(opt => (
+                <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+              ))}
+            </div>
+          </div>
+          {previewType !== 'logo' && (
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
+              <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                {activeImageTextOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setImageTextForType(option.id)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}
+                    title={option.description}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Rating Values</span>
+            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {RATING_VALUE_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setRatingValueMode(option.id)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    ratingValueMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
+            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveGenreBadgeMode(option.id)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    activeGenreBadgeMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Style</span>
+            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {GENRE_BADGE_STYLE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveGenreBadgeStyle(option.id)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    activeGenreBadgeStyle === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
+            <div className="erdb-toggle-group flex flex-wrap gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveGenreBadgePosition(option.id)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    activeGenreBadgePosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
+          Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
+        </p>
+        {(previewType === 'poster' || previewType === 'backdrop') ? (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
+            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {activeArtworkSourceOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    if (previewType === 'backdrop') {
+                      setBackdropArtworkSource(option.id);
+                      return;
+                    }
+                    setPosterArtworkSource(option.id);
+                  }}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    activeArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {activeArtworkSourceOptionMeta ? (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {previewType === 'backdrop'
+                  ? activeArtworkSourceOptionMeta.description.replace('poster', 'backdrop')
+                  : activeArtworkSourceOptionMeta.description}
+                {activeArtworkSource === 'fanart'
+                  ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
+                  : ''}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {previewType !== 'logo' && activeImageTextOptionMeta ? (
+          <p className="text-[11px] leading-relaxed text-zinc-500">
+            {activeImageTextOptionMeta.description}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+        <div className="text-[11px] font-semibold text-zinc-400">Layouts</div>
+        {previewType === 'poster' && (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Poster Layout</div>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <div className="flex flex-wrap gap-1">
+                  {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
+                    <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${posterRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                  ))}
+                </div>
+              </div>
+              {isVerticalPosterRatingLayout(posterRatingsLayout) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
+                  <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                  <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
+                <input
+                  type="number"
+                  value={posterRatingsMax ?? ''}
+                  onChange={(e) => setPosterRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))}
+                  placeholder="Auto"
+                  min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
+                  className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                />
+                <button
+                  onClick={() => setPosterRatingsMax(null)}
+                  className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                >
+                  Auto
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Use this to cap how many rating badges render after ordering. Keep the provider list below enabled for the sources you still want available.
+            </p>
+          </div>
+        )}
+
+        {previewType === 'backdrop' && (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop Layout</div>
+            <div className="flex flex-wrap gap-1">
+              {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
+                <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
+              <input
+                type="number"
+                value={backdropRatingsMax ?? ''}
+                onChange={(e) => setBackdropRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))}
+                placeholder="Auto"
+                min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
+                className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+              />
+              <button
+                onClick={() => setBackdropRatingsMax(null)}
+                className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+              >
+                Auto
+              </button>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.
+            </p>
+          </div>
+        )}
+
+        {previewType === 'poster' && (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Poster Edge Offset
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={MAX_POSTER_EDGE_OFFSET}
+                step={1}
+                value={posterEdgeOffset}
+                onChange={(event) => setPosterEdgeOffset(Number(event.target.value))}
+                className="h-2 w-40 accent-violet-500"
+              />
+              <input
+                type="number"
+                min={0}
+                max={MAX_POSTER_EDGE_OFFSET}
+                step={1}
+                value={posterEdgeOffset}
+                onChange={(event) => {
+                  setPosterEdgeOffset(normalizePosterEdgeOffset(event.target.value));
+                }}
+                className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+              />
+              <button
+                onClick={() => setPosterEdgeOffset(DEFAULT_POSTER_EDGE_OFFSET)}
+                className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+              >
+                Reset
+              </button>
+              <span className="text-[11px] text-zinc-500">Extra inset from poster edges</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Moves poster side rating stacks, side quality columns, and corner genre badges inward so external app buttons are less likely to cover them.
+            </p>
+          </div>
+        )}
+
+        {shouldShowSideRatingPlacement && (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Side Rating Placement
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {SIDE_RATING_POSITION_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setSideRatingsPosition(option.id)}
+                  className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    sideRatingsPosition === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {sideRatingsPosition === 'custom' && (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Vertical Offset
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={sideRatingsOffset}
+                  onChange={(event) => setSideRatingsOffset(Number(event.target.value))}
+                  className="h-2 w-40 accent-violet-500"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={sideRatingsOffset}
+                  onChange={(event) => {
+                    const parsed = Number(event.target.value);
+                    setSideRatingsOffset(
+                      Number.isFinite(parsed)
+                        ? Math.max(0, Math.min(100, Math.round(parsed)))
+                        : DEFAULT_SIDE_RATING_OFFSET
+                    );
+                  }}
+                  className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                />
+                <span className="text-[11px] text-zinc-500">0 = top, 100 = bottom</span>
+              </div>
+            )}
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Applies to poster side stacks and the backdrop right-vertical layout, including blockbuster mode.
+            </p>
+          </div>
+        )}
+
+        {previewType === 'logo' && (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Output</div>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Artwork Source</span>
+                <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                  {LOGO_ARTWORK_SOURCE_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setLogoArtworkSource(option.id)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        logoArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Background</span>
+                <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                  {(['transparent', 'dark'] as const).map((option) => (
+                    <button key={option} onClick={() => setLogoBackground(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${logoBackground === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                      {option === 'dark' ? 'Dark' : 'Transparent'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
+                <input type="number" value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-20 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+                <button onClick={() => setLogoRatingsMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Default</button>
+              </div>
+            </div>
+            {activeLogoSourceOptionMeta ? (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {activeLogoSourceOptionMeta.description.replace('artwork', 'logo assets')}
+              </p>
+            ) : null}
+          </div>
+        )}
+
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Sizing</div>
+          <div className={`grid gap-3 ${previewType === 'logo' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating badges</span>
+                <span className="text-[11px] text-zinc-400">{activeRatingBadgeScale}%</span>
+              </div>
+              <input
+                type="range"
+                min={MIN_BADGE_SCALE_PERCENT}
+                max={MAX_BADGE_SCALE_PERCENT}
+                step={1}
+                value={activeRatingBadgeScale}
+                onChange={(event) =>
+                  setActiveRatingBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                }
+                className="h-2 w-full accent-violet-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre badge</span>
+                <span className="text-[11px] text-zinc-400">{activeGenreBadgeScale}%</span>
+              </div>
+              <input
+                type="range"
+                min={MIN_BADGE_SCALE_PERCENT}
+                max={MAX_BADGE_SCALE_PERCENT}
+                step={1}
+                value={activeGenreBadgeScale}
+                onChange={(event) =>
+                  setActiveGenreBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                }
+                className="h-2 w-full accent-violet-500"
+              />
+            </div>
+            {previewType !== 'logo' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Quality badges</span>
+                  <span className="text-[11px] text-zinc-400">{activeQualityBadgeScale}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={MIN_BADGE_SCALE_PERCENT}
+                  max={MAX_BADGE_SCALE_PERCENT}
+                  step={1}
+                  value={activeQualityBadgeScale}
+                  onChange={(event) =>
+                    setActiveQualityBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                  }
+                  className="h-2 w-full accent-violet-500"
+                />
+              </div>
+            )}
+          </div>
+          <p className="text-[11px] leading-relaxed text-zinc-500">
+            These sliders let people increase badge and tag legibility without forcing a new layout. ERDB will still fit the final output back into the selected poster, backdrop, or logo frame.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+
+  const qualitySection = previewType !== 'logo' ? (
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+      <div className="text-[11px] font-semibold text-zinc-400">
+        Quality Badges · {qualityBadgeTypeLabel}
+      </div>
+      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+        {STREAM_BADGE_OPTIONS.map(option => (
+          <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeStreamBadges === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div>
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
+        <div className="flex flex-wrap gap-1">
+          {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
+            <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
+        <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+        <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+      </div>
+      <div>
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+          Visible Quality Badges
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          {QUALITY_BADGE_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => toggleQualityBadgePreference(option.id)}
+              className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                activeQualityBadgePreferences.includes(option.id)
+                  ? 'border-violet-500/60 bg-zinc-800 text-white'
+                  : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {shouldShowQualityBadgesSide && (
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
+          <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
+              <button key={option.id} onClick={() => setQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${qualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {shouldShowQualityBadgesPosition && (
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Position</span>
+          <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            {QUALITY_BADGE_POSITION_OPTIONS.map(option => (
+              <button key={option.id} onClick={() => setPosterQualityBadgesPosition(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${posterQualityBadgesPosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <p className="text-[11px] leading-relaxed text-zinc-500">
+        Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, no background styling, and silver mark styling without losing context.
+      </p>
+    </div>
+  ) : (
+    <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
+      Quality badge controls only apply to poster and backdrop output.
+    </div>
+  );
+
+  const providersSection = (
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
+        {providersLabel} · drag to reorder
+      </span>
+      <p className="text-[10px] leading-4 text-zinc-500">
+        ERDB respects this order when rendering badges. Disabled providers stay available but are skipped.
+      </p>
+      <RatingProviderSortableList
+        rows={ratingProviderRows}
+        onReorder={reorderRatingPreference}
+        onToggle={toggleRatingPreference}
+        fillDirection="row"
+      />
+      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Provider Styling
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+              Customise the icon URL, accent colour, icon size, and stacked accent line behavior per source. Leave a field blank to keep the default ERDB art.
+              </p>
+            </div>
+          <button
+            type="button"
+            onClick={() =>
+              activeProviderMeta &&
+              updateProviderAppearanceOverride(activeProviderMeta.id, () => ({}))
+            }
+            className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+          >
+            Reset {activeProviderMeta?.label}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {ratingProviderRows.map((row) => {
+            const meta = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === row.id);
+            const isSelected = row.id === activeProviderEditorId;
+            const hasOverride = Boolean(ratingProviderAppearanceOverrides[row.id]);
+            return (
+              <button
+                key={`provider-editor-${row.id}`}
+                type="button"
+                onClick={() => setActiveProviderEditorId(row.id)}
+                className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                  isSelected
+                    ? 'border-violet-500/60 bg-zinc-800 text-white'
+                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                }`}
+              >
+                {meta?.label || row.id}
+                {hasOverride ? ' *' : ''}
+              </button>
+            );
+          })}
+        </div>
+        {activeProviderMeta ? (
+          <div className="provider-editor-layout">
+            <div className="min-w-0 space-y-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                    Accent Colour
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={
+                        activeProviderAppearanceOverride.accentColor ||
+                        activeProviderMeta.accentColor
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          accentColor: event.target.value,
+                        }))
+                      }
+                      className="h-10 w-14 rounded-md border border-white/10 bg-black"
+                    />
+                    <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+                      {activeProviderAppearanceOverride.accentColor ||
+                        activeProviderMeta.accentColor}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                    Icon Size
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={MIN_PROVIDER_ICON_SCALE_PERCENT}
+                      max={MAX_PROVIDER_ICON_SCALE_PERCENT}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.iconScalePercent ||
+                        DEFAULT_PROVIDER_ICON_SCALE_PERCENT
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          iconScalePercent: normalizeProviderIconScalePercent(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                    <span className="w-14 text-right text-[11px] text-zinc-400">
+                      {activeProviderAppearanceOverride.iconScalePercent ||
+                        DEFAULT_PROVIDER_ICON_SCALE_PERCENT}
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-zinc-950/50 p-3 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                      Stacked Badge
+                    </div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                      Applies when the current rating style is stacked. Fine tune the badge width, body opacity, accent placement, and the top line for this source.
+                    </p>
+                  </div>
+                  <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-[11px] font-medium text-zinc-300">
+                    <input
+                      type="checkbox"
+                      checked={activeProviderAppearanceOverride.stackedLineVisible !== false}
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedLineVisible: event.target.checked ? undefined : false,
+                        }))
+                      }
+                      className="h-3.5 w-3.5 accent-violet-500"
+                    />
+                    <span>{activeProviderAppearanceOverride.stackedLineVisible === false ? 'Hidden' : 'Visible'}</span>
+                  </label>
+                </div>
+                <div className={`grid gap-3 ${usesStackedRatingStyle ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2 xl:grid-cols-3 opacity-75'}`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Width</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedWidthPercent ||
+                          DEFAULT_STACKED_WIDTH_PERCENT}
+                        %
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_WIDTH_PERCENT}
+                      max={MAX_STACKED_WIDTH_PERCENT}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedWidthPercent ||
+                        DEFAULT_STACKED_WIDTH_PERCENT
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedWidthPercent: normalizeStackedWidthPercent(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Body Opacity</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
+                          DEFAULT_STACKED_SURFACE_OPACITY_PERCENT}
+                        %
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_SURFACE_OPACITY_PERCENT}
+                      max={MAX_STACKED_SURFACE_OPACITY_PERCENT}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
+                        DEFAULT_STACKED_SURFACE_OPACITY_PERCENT
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedSurfaceOpacityPercent: normalizeStackedSurfaceOpacityPercent(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2 xl:col-span-1 md:col-span-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent Placement</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedAccentMode === 'logo'
+                          ? 'Logo only'
+                          : 'Badge'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                            ...current,
+                            stackedAccentMode: 'badge',
+                          }))
+                        }
+                        className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                          (activeProviderAppearanceOverride.stackedAccentMode ||
+                            DEFAULT_STACKED_ACCENT_MODE) === 'badge'
+                            ? 'border-violet-500/60 bg-violet-500/20 text-white'
+                            : 'border-white/10 bg-black text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Badge
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                            ...current,
+                            stackedAccentMode: 'logo',
+                          }))
+                        }
+                        className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                          (activeProviderAppearanceOverride.stackedAccentMode ||
+                            DEFAULT_STACKED_ACCENT_MODE) === 'logo'
+                            ? 'border-violet-500/60 bg-violet-500/20 text-white'
+                            : 'border-white/10 bg-black text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Logo only
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Width</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedLineWidthPercent ||
+                          DEFAULT_STACKED_LINE_WIDTH_PERCENT}
+                        %
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_LINE_WIDTH_PERCENT}
+                      max={MAX_STACKED_LINE_WIDTH_PERCENT}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedLineWidthPercent ||
+                        DEFAULT_STACKED_LINE_WIDTH_PERCENT
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedLineWidthPercent: normalizeStackedLineWidthPercent(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Thickness</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedLineHeightPercent ||
+                          DEFAULT_STACKED_LINE_HEIGHT_PERCENT}
+                        %
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_LINE_HEIGHT_PERCENT}
+                      max={MAX_STACKED_LINE_HEIGHT_PERCENT}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedLineHeightPercent ||
+                        DEFAULT_STACKED_LINE_HEIGHT_PERCENT
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedLineHeightPercent: normalizeStackedLineHeightPercent(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Gap</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedLineGapPercent ||
+                          DEFAULT_STACKED_LINE_GAP_PERCENT}
+                        %
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_LINE_GAP_PERCENT}
+                      max={MAX_STACKED_LINE_GAP_PERCENT}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedLineGapPercent ||
+                        DEFAULT_STACKED_LINE_GAP_PERCENT
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedLineGapPercent: normalizeStackedLineGapPercent(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                </div>
+                {!usesStackedRatingStyle ? (
+                  <p className="text-[11px] leading-relaxed text-zinc-500">
+                    You can set these now and they will apply the moment this output switches to stacked badges.
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                  Custom Icon URL
+                </label>
+                <input
+                  type="url"
+                  value={activeProviderAppearanceOverride.iconUrl || ''}
+                  onChange={(event) =>
+                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                      ...current,
+                      iconUrl: event.target.value,
+                    }))
+                  }
+                  placeholder="https://example.com/logo.svg or data:image/svg+xml,..."
+                  className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
+                />
+                <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                  Paste a direct image URL or a data URI. The expected format stays visible here while you edit so you do not have to remember it after adding a custom logo.
+                </p>
+              </div>
+            </div>
+            <div className="provider-editor-preview self-start rounded-xl border border-white/10 bg-black/60 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Active Preview
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[auto,1fr] sm:items-start">
+                <div
+                  className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.28)]"
+                  style={{
+                    backgroundColor:
+                      activeProviderAppearanceOverride.accentColor ||
+                      activeProviderMeta.accentColor,
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={activeProviderAppearanceOverride.iconUrl || activeProviderMeta.iconUrl}
+                    alt={`${activeProviderMeta.label} icon`}
+                    className="max-h-8 max-w-8 object-contain"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white">
+                    {activeProviderMeta.label}
+                  </div>
+                  <div className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                    Current icon and accent preview for poster, backdrop, and logo output. Stacked controls adjust width, surface opacity, and accent placement for this source.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  const simpleQuickTuneSection = (
+    <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+        Quick Tune
+      </div>
+      <h4 className="mt-2 text-lg font-semibold text-white">Everyday artwork controls</h4>
+      <p className="mt-2 text-[12px] leading-6 text-zinc-400">
+        Simple mode keeps the obvious artwork switches here. Advanced mode reveals manual provider
+        ordering, badge sizing, layout offsets, and per source styling.
+      </p>
+      <div className="mt-4 space-y-4">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+            Presentation
+          </div>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">
+            {quickPresentationOptions.map((option) => (
+              <button
+                key={`simple-presentation-${option.id}`}
+                type="button"
+                onClick={() => setRatingPresentationForType(option.id)}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  activeRatingPresentation === option.id
+                    ? 'border-violet-500/60 bg-violet-500/10 text-white'
+                    : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+                }`}
+              >
+                <div className="text-sm font-semibold">{option.label}</div>
+                <div className="mt-1 text-[11px] leading-5 text-zinc-500">{option.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Rating Style
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {RATING_STYLE_OPTIONS.map((option) => (
+                <button
+                  key={`simple-style-${option.id}`}
+                  type="button"
+                  onClick={() => setRatingStyleForType(option.id)}
+                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                    activeRatingStyle === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {previewType !== 'logo' ? (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Artwork Text
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {activeImageTextOptions.map((option) => (
+                  <button
+                    key={`simple-text-${option.id}`}
+                    type="button"
+                    onClick={() => setImageTextForType(option.id)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                      activeImageText === option.id
+                        ? 'border-violet-500/60 bg-zinc-800 text-white'
+                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Logo Background
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {(['transparent', 'dark'] as const).map((option) => (
+                  <button
+                    key={`simple-logo-background-${option}`}
+                    type="button"
+                    onClick={() => setLogoBackground(option)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                      logoBackground === option
+                        ? 'border-violet-500/60 bg-zinc-800 text-white'
+                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {option === 'dark' ? 'Dark' : 'Transparent'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Artwork Source
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(previewType === 'logo' ? LOGO_ARTWORK_SOURCE_OPTIONS : activeArtworkSourceOptions).map((option) => (
+                <button
+                  key={`simple-art-${option.id}`}
+                  type="button"
+                  onClick={() => {
+                    if (previewType === 'logo') {
+                      setLogoArtworkSource(option.id as ArtworkSource);
+                      return;
+                    }
+                    if (previewType === 'backdrop') {
+                      setBackdropArtworkSource(option.id as ArtworkSource);
+                      return;
+                    }
+                    setPosterArtworkSource(option.id as ArtworkSource);
+                  }}
+                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                    (previewType === 'logo'
+                      ? logoArtworkSource
+                      : activeArtworkSource) === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Genre Badge
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {GENRE_BADGE_MODE_OPTIONS.filter((option) =>
+                option.id === 'off' || option.id === 'text' || option.id === 'both',
+              ).map((option) => (
+                <button
+                  key={`simple-genre-${option.id}`}
+                  type="button"
+                  onClick={() => setActiveGenreBadgeMode(option.id)}
+                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                    activeGenreBadgeMode === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {previewType !== 'logo' ? (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Stream Badges
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {STREAM_BADGE_OPTIONS.map((option) => (
+                  <button
+                    key={`simple-stream-${option.id}`}
+                    type="button"
+                    onClick={() => setActiveStreamBadges(option.id)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                      activeStreamBadges === option.id
+                        ? 'border-violet-500/60 bg-zinc-800 text-white'
+                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+
+  const simpleConfiguratorContent = (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-white/10 bg-black/35 p-4 space-y-4">
+        {workspaceManagementSection}
+        <div className="border-t border-white/10" />
+        {accessKeysSection}
+        <div className="border-t border-white/10" />
+        {mediaTargetSection}
+      </div>
+      {simpleQuickTuneSection}
+    </div>
+  );
+
+  const advancedConfiguratorContent = (
+    <div className="space-y-3">
+      <ConfiguratorAccordionSection
+        title="Essentials"
+        description="Workspace actions, access keys, and the active media target."
+        isOpen={openAdvancedSections.includes('essentials')}
+        onToggle={() => handleToggleAdvancedSection('essentials')}
+        tone="accent"
+      >
+        <div className="space-y-4">
+          {workspaceManagementSection}
+          <div className="border-t border-white/10" />
+          {accessKeysSection}
+          <div className="border-t border-white/10" />
+          {mediaTargetSection}
+        </div>
+      </ConfiguratorAccordionSection>
+      <ConfiguratorAccordionSection
+        title="Presentation"
+        description="Choose the overall badge treatment, aggregate source, and accent behavior."
+        isOpen={openAdvancedSections.includes('presentation')}
+        onToggle={() => handleToggleAdvancedSection('presentation')}
+      >
+        {presentationSection}
+      </ConfiguratorAccordionSection>
+      <ConfiguratorAccordionSection
+        title="Look & Layout"
+        description="Artwork source, genre badges, layouts, logo output, and badge sizing."
+        isOpen={openAdvancedSections.includes('look')}
+        onToggle={() => handleToggleAdvancedSection('look')}
+      >
+        <div className="space-y-3">{lookSection}</div>
+      </ConfiguratorAccordionSection>
+      <ConfiguratorAccordionSection
+        title="Quality Badges"
+        description="Stream badges, visible media marks, and quality badge positioning."
+        isOpen={openAdvancedSections.includes('quality')}
+        onToggle={() => handleToggleAdvancedSection('quality')}
+      >
+        {qualitySection}
+      </ConfiguratorAccordionSection>
+      <ConfiguratorAccordionSection
+        title="Providers"
+        description="Manual ordering, per provider enablement, and custom styling overrides."
+        isOpen={openAdvancedSections.includes('providers')}
+        onToggle={() => handleToggleAdvancedSection('providers')}
+      >
+        {providersSection}
+      </ConfiguratorAccordionSection>
+    </div>
+  );
 
   return (
     <div
@@ -2738,1222 +4753,19 @@ export default function Home() {
             </div>
             <div className="mt-6 erdb-surface-grid grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)_minmax(0,0.84fr)] items-start">
             <div className="space-y-5">
-              <div className="erdb-panel erdb-panel-form space-y-3 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
+              <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Inputs</p>
                     <h3 className="erdb-panel-title text-white">Configurator</h3>
-                    <p className="erdb-panel-copy text-zinc-400">Adjust parameters once. The config string, live preview, and addon proxy export all reuse this same ERDB setup.</p>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] font-semibold text-zinc-400 mb-2">Workspace</div>
-                  <p className="mb-2 text-[11px] text-zinc-500">
-                    Save the shared ERDB settings plus proxy manifest setup to this browser, or export them as a JSON file.
-                  </p>
-                  <p className="mb-2 text-[11px] text-zinc-500">
-                    Saved workspace values only affect this page. Share the config string or the generated proxy manifest if you want the same settings somewhere else.
-                  </p>
-                  <input
-                    ref={workspaceImportInputRef}
-                    type="file"
-                    accept=".json,application/json"
-                    className="hidden"
-                    onChange={handleImportWorkspace}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleSaveWorkspaceConfig}
-                      className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
-                    >
-                      Save workspace
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDownloadWorkspace}
-                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
-                    >
-                      Download JSON
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handlePromptWorkspaceImport}
-                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
-                    >
-                      Import JSON
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClearSavedWorkspace}
-                      className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300"
-                    >
-                      Clear saved
-                    </button>
-                    <label className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300">
-                      <input
-                        type="checkbox"
-                        checked={configAutoSave}
-                        onChange={handleToggleConfigAutoSave}
-                        className="h-3 w-3 accent-violet-500"
-                      />
-                      <span>Auto save</span>
-                    </label>
-                    {savedConfigStatus ? (
-                      <span className={`text-[10px] ${savedConfigStatus === 'error' || savedConfigStatus === 'invalid' ? 'text-rose-400' : 'text-zinc-500'}`}>
-                        {savedConfigStatus === 'loaded'
-                          ? 'Saved workspace loaded.'
-                          : savedConfigStatus === 'saved'
-                            ? 'Workspace saved.'
-                            : savedConfigStatus === 'cleared'
-                              ? 'Saved workspace cleared.'
-                              : savedConfigStatus === 'imported'
-                                ? 'Workspace imported.'
-                                : savedConfigStatus === 'invalid'
-                                  ? 'Invalid workspace file.'
-                                  : 'Unable to access local storage.'}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] font-semibold text-zinc-400 mb-2">Access Keys</div>
-                  <div className="grid gap-2 md:grid-cols-4">
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">ERDB Request</label>
-                      <input type="password" value={erdbKey} onChange={(e) => setErdbKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB</label>
-                      <input type="password" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} placeholder="v3 Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">MDBList</label>
-                      <input type="password" value={mdblistKey} onChange={(e) => setMdblistKey(e.target.value)} placeholder="Key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Fanart</label>
-                      <input type="password" value={fanartKey} onChange={(e) => setFanartKey(e.target.value)} placeholder="Optional key" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                    {ERDB_REQUEST_KEY_HELP_COPY}
-                  </p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                    {FANART_KEY_HELP_COPY}
-                  </p>
-                </div>
-
-                <div>
-                  <div className="text-[11px] font-semibold text-zinc-400 mb-2">Media Target</div>
-                  <div className="flex flex-wrap gap-2 items-end">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Type</span>
-                      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {(['poster', 'backdrop', 'logo'] as const).map(type => (
-                          <button key={type} onClick={() => setPreviewType(type)} className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${previewType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                            {type === 'poster' && <ImageIcon className="w-3.5 h-3.5" />}
-                            {type === 'backdrop' && <MonitorPlay className="w-3.5 h-3.5" />}
-                            {type === 'logo' && <Layers className="w-3.5 h-3.5" />}
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-[140px]">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Media ID</span>
-                      <input type="text" value={mediaId} onChange={(e) => setMediaId(e.target.value)} placeholder="tt0133093" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
-                    </div>
-                    {tmdbKey ? (
-                      <div className="w-32">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 flex items-center gap-1 mb-1"><Globe2 className="w-3 h-3" /> Lang</span>
-                        <div className="relative">
-                          <select value={lang} onChange={(e) => setLang(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white appearance-none outline-none focus:border-violet-500/50">
-                            {supportedLanguages.map(l => <option key={l.code} value={l.code} className="bg-zinc-900">{l.flag} {l.code}</option>)}
-                          </select>
-                          <ChevronRight className="w-3 h-3 text-zinc-500 absolute right-2 top-2.5 pointer-events-none stroke-2 rotate-90" />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-2 rounded-lg bg-black border border-white/10 text-[10px] text-zinc-500 flex items-center gap-1.5">
-                        <Globe2 className="w-3 h-3 shrink-0" /> Add TMDB key for lang
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
-                  <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {RATING_PRESENTATION_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => setRatingPresentationForType(option.id)}
-                        className={`rounded-xl border p-3 text-left transition-colors ${
-                          activeRatingPresentation === option.id
-                            ? 'border-violet-500/60 bg-violet-500/10 text-white'
-                            : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-semibold">{option.label}</span>
-                          {activeRatingPresentation === option.id && (
-                            <span className="rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
-                              Selected
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
-                          {option.description}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                  {layoutPlacementHelp ? (
-                    <p className="text-[11px] leading-relaxed text-zinc-500">
-                      {isEditorialPresentation
-                        ? previewType === 'poster'
-                          ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
-                          : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
-                        : activePresentationPreservesLayout
-                        ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
-                        : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
-                    </p>
-                  ) : (
-                    <p className="text-[11px] leading-relaxed text-zinc-500">
-                      {isEditorialPresentation
-                        ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
-                        : 'Logo presentation keeps the output controls below available.'}
-                    </p>
-                  )}
-                  {usesAggregatePresentation && (
-                    <div
-                      className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
-                      style={{
-                        borderColor: hexToRgbaCss(activeAggregateAccent, 0.24),
-                        backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(activeAggregateAccent, 0.12)}, rgba(24,24,27,0.78) 58%)`,
-                      }}
-                    >
-                      {showsAggregateRatingSource && (
-                        <>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
-                          <div className="flex flex-wrap gap-1">
-                            {AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => (
-                              (() => {
-                                const accentColor = AGGREGATE_SOURCE_ACCENT_BY_ID[option.id];
-                                const isSelected = activeAggregateRatingSource === option.id;
-                                return (
-                                  <button
-                                    key={option.id}
-                                    onClick={() => setAggregateRatingSourceForType(option.id)}
-                                    className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                      isSelected
-                                        ? 'bg-zinc-800 text-white'
-                                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                                    }`}
-                                    style={
-                                      isSelected
-                                        ? {
-                                            borderColor: hexToRgbaCss(accentColor, 0.7),
-                                            backgroundImage: `linear-gradient(135deg, ${hexToRgbaCss(accentColor, 0.28)}, rgba(24,24,27,0.96))`,
-                                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${hexToRgbaCss(accentColor, 0.12)}`,
-                                          }
-                                        : undefined
-                                    }
-                                  >
-                                    <span className="inline-flex items-center gap-1.5">
-                                      <span
-                                        className="h-2 w-2 rounded-full"
-                                        style={{
-                                          backgroundColor: accentColor,
-                                          boxShadow: `0 0 0 2px ${hexToRgbaCss(accentColor, 0.16)}`,
-                                        }}
-                                      />
-                                      {option.label}
-                                    </span>
-                                  </button>
-                                );
-                              })()
-                            ))}
-                          </div>
-                          <p className="text-[11px] leading-relaxed text-zinc-500">
-                            {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
-                          </p>
-                        </>
-                      )}
-                      <div className="pt-1">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent</div>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {AGGREGATE_ACCENT_MODE_OPTIONS.map((option) => {
-                            const isSelected = aggregateAccentMode === option.id;
-                            return (
-                              <button
-                                key={option.id}
-                                onClick={() => setAggregateAccentMode(option.id)}
-                                className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                  isSelected
-                                    ? 'bg-zinc-800 text-white'
-                                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                                }`}
-                              >
-                                {option.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                          {AGGREGATE_ACCENT_MODE_OPTIONS.find((option) => option.id === aggregateAccentMode)?.description}
-                          {aggregateAccentMode === 'genre'
-                            ? ' Editorial already behaves like this on posters; this extends genre matching to the other aggregate badge styles too.'
-                            : ''}
-                        </p>
-                      </div>
-                      {aggregateAccentMode === 'custom' && (
-                        <div className="flex flex-wrap items-center gap-3 pt-1">
-                          <div>
-                            <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
-                              Custom Accent
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="color"
-                                value={aggregateAccentColor}
-                                onChange={(event) => setAggregateAccentColor(event.target.value)}
-                                className="h-10 w-14 rounded-md border border-white/10 bg-black"
-                              />
-                              <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
-                                {aggregateAccentColor}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {showsAggregateAccentBarOffset && (
-                        <div className="pt-1">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                              Accent Bar Offset
-                            </span>
-                            <span className="text-[11px] text-zinc-400">{aggregateAccentBarOffset}px</span>
-                          </div>
-                          <input
-                            type="range"
-                            min={MIN_AGGREGATE_ACCENT_BAR_OFFSET}
-                            max={MAX_AGGREGATE_ACCENT_BAR_OFFSET}
-                            step={1}
-                            value={aggregateAccentBarOffset}
-                            onChange={(event) => setAggregateAccentBarOffset(Number(event.target.value))}
-                            className="mt-2 h-2 w-full accent-violet-500"
-                          />
-                          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                            Negative values move the aggregate accent bar upward a few pixels. This applies to compact and labeled average badges, including the new critics plus audience split mode.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
-                  <div className="flex flex-wrap gap-3 items-center">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
-                      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {RATING_STYLE_OPTIONS.map(opt => (
-                          <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                        ))}
-                      </div>
-                    </div>
-                    {previewType !== 'logo' && (
-                      <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
-                        <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {activeImageTextOptions.map((option) => (
-                            <button
-                              key={option.id}
-                              onClick={() => setImageTextForType(option.id)}
-                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}
-                              title={option.description}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Rating Values</span>
-                      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {RATING_VALUE_MODE_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => setRatingValueMode(option.id)}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              ratingValueMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                            }`}
-                            title={option.description}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
-                      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {GENRE_BADGE_MODE_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => setActiveGenreBadgeMode(option.id)}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              activeGenreBadgeMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                            }`}
-                            title={option.description}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Style</span>
-                      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {GENRE_BADGE_STYLE_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => setActiveGenreBadgeStyle(option.id)}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              activeGenreBadgeStyle === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                            }`}
-                            title={option.description}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
-                      <div className="erdb-toggle-group flex flex-wrap gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => setActiveGenreBadgePosition(option.id)}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              activeGenreBadgePosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                            }`}
-                            title={option.description}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-zinc-500">
-                    {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
-                    Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
-                  </p>
-                  {(previewType === 'poster' || previewType === 'backdrop') ? (
-                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
-                      <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                        {activeArtworkSourceOptions.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => {
-                              if (previewType === 'backdrop') {
-                                setBackdropArtworkSource(option.id);
-                                return;
-                              }
-                              setPosterArtworkSource(option.id);
-                            }}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              activeArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                            }`}
-                            title={option.description}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                      {activeArtworkSourceOptionMeta ? (
-                        <p className="text-[11px] leading-relaxed text-zinc-500">
-                          {previewType === 'backdrop'
-                            ? activeArtworkSourceOptionMeta.description.replace('poster', 'backdrop')
-                            : activeArtworkSourceOptionMeta.description}
-                          {activeArtworkSource === 'fanart'
-                            ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
-                            : ''}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  {previewType !== 'logo' && activeImageTextOptionMeta ? (
-                    <p className="text-[11px] leading-relaxed text-zinc-500">
-                      {activeImageTextOptionMeta.description}
-                    </p>
-                  ) : null}
-                </div>
-
-                {(previewType === 'poster' || previewType === 'backdrop' || previewType === 'logo') && (
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
-                    <div className="text-[11px] font-semibold text-zinc-400">Layouts</div>
-                    {previewType === 'poster' && (
-                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Poster Layout</div>
-                        <div className="flex flex-wrap gap-3 items-end">
-                          <div>
-                            <div className="flex flex-wrap gap-1">
-                              {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                                <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${posterRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                              ))}
-                            </div>
-                          </div>
-                          {isVerticalPosterRatingLayout(posterRatingsLayout) && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max/side</span>
-                              <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
-                              <button onClick={() => setPosterRatingsMaxPerSide(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
-                            <input
-                              type="number"
-                              value={posterRatingsMax ?? ''}
-                              onChange={(e) => setPosterRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))}
-                              placeholder="Auto"
-                              min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
-                              className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
-                            />
-                            <button
-                              onClick={() => setPosterRatingsMax(null)}
-                              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
-                            >
-                              Auto
-                            </button>
-                          </div>
-                        </div>
-                        <p className="text-[11px] leading-relaxed text-zinc-500">
-                          Use this to cap how many rating badges render after ordering. Keep the provider list below enabled for the sources you still want available.
-                        </p>
-                      </div>
-                    )}
-
-                    {previewType === 'backdrop' && (
-                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop Layout</div>
-                        <div className="flex flex-wrap gap-1">
-                          {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                            <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${backdropRatingsLayout === opt.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>{opt.label}</button>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
-                          <input
-                            type="number"
-                            value={backdropRatingsMax ?? ''}
-                            onChange={(e) => setBackdropRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))}
-                            placeholder="Auto"
-                            min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
-                            className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
-                          />
-                          <button
-                            onClick={() => setBackdropRatingsMax(null)}
-                            className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
-                          >
-                            Auto
-                          </button>
-                        </div>
-                        <p className="text-[11px] leading-relaxed text-zinc-500">
-                          Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.
-                        </p>
-                      </div>
-                    )}
-
-                    {previewType === 'poster' && (
-                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                          Poster Edge Offset
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <input
-                            type="range"
-                            min={0}
-                            max={MAX_POSTER_EDGE_OFFSET}
-                            step={1}
-                            value={posterEdgeOffset}
-                            onChange={(event) => setPosterEdgeOffset(Number(event.target.value))}
-                            className="h-2 w-40 accent-violet-500"
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            max={MAX_POSTER_EDGE_OFFSET}
-                            step={1}
-                            value={posterEdgeOffset}
-                            onChange={(event) => {
-                              setPosterEdgeOffset(normalizePosterEdgeOffset(event.target.value));
-                            }}
-                            className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
-                          />
-                          <button
-                            onClick={() => setPosterEdgeOffset(DEFAULT_POSTER_EDGE_OFFSET)}
-                            className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
-                          >
-                            Reset
-                          </button>
-                          <span className="text-[11px] text-zinc-500">Extra inset from poster edges</span>
-                        </div>
-                        <p className="text-[11px] leading-relaxed text-zinc-500">
-                          Moves poster side rating stacks, side quality columns, and corner genre badges inward so external app buttons are less likely to cover them.
-                        </p>
-                      </div>
-                    )}
-
-                    {shouldShowSideRatingPlacement && (
-                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                          Side Rating Placement
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {SIDE_RATING_POSITION_OPTIONS.map((option) => (
-                            <button
-                              key={option.id}
-                              onClick={() => setSideRatingsPosition(option.id)}
-                              className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                                sideRatingsPosition === option.id
-                                  ? 'border-violet-500/60 bg-zinc-800 text-white'
-                                  : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                        {sideRatingsPosition === 'custom' && (
-                          <div className="flex flex-wrap items-center gap-3">
-                            <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                              Vertical Offset
-                            </label>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={sideRatingsOffset}
-                              onChange={(event) => setSideRatingsOffset(Number(event.target.value))}
-                              className="h-2 w-40 accent-violet-500"
-                            />
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={sideRatingsOffset}
-                              onChange={(event) => {
-                                const parsed = Number(event.target.value);
-                                setSideRatingsOffset(
-                                  Number.isFinite(parsed)
-                                    ? Math.max(0, Math.min(100, Math.round(parsed)))
-                                    : DEFAULT_SIDE_RATING_OFFSET
-                                );
-                              }}
-                              className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
-                            />
-                            <span className="text-[11px] text-zinc-500">0 = top, 100 = bottom</span>
-                          </div>
-                        )}
-                        <p className="text-[11px] leading-relaxed text-zinc-500">
-                          Applies to poster side stacks and the backdrop right-vertical layout, including blockbuster mode.
-                        </p>
-                      </div>
-                    )}
-
-                    {previewType === 'logo' && (
-                      <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Output</div>
-                        <div className="flex flex-wrap gap-3 items-end">
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Artwork Source</span>
-                            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {LOGO_ARTWORK_SOURCE_OPTIONS.map((option) => (
-                                <button
-                                  key={option.id}
-                                  onClick={() => setLogoArtworkSource(option.id)}
-                                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                    logoArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                                  }`}
-                                  title={option.description}
-                                >
-                                  {option.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Background</span>
-                            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                              {(['transparent', 'dark'] as const).map((option) => (
-                                <button key={option} onClick={() => setLogoBackground(option)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${logoBackground === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                                  {option === 'dark' ? 'Dark' : 'Transparent'}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max ratings</span>
-                            <input type="number" value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-20 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
-                            <button onClick={() => setLogoRatingsMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Default</button>
-                          </div>
-                        </div>
-                        {activeLogoSourceOptionMeta ? (
-                          <p className="text-[11px] leading-relaxed text-zinc-500">
-                            {activeLogoSourceOptionMeta.description.replace('artwork', 'logo assets')}
-                          </p>
-                        ) : null}
-                      </div>
-                    )}
-
-                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Sizing</div>
-                      <div className={`grid gap-3 ${previewType === 'logo' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating badges</span>
-                            <span className="text-[11px] text-zinc-400">{activeRatingBadgeScale}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min={MIN_BADGE_SCALE_PERCENT}
-                            max={MAX_BADGE_SCALE_PERCENT}
-                            step={1}
-                            value={activeRatingBadgeScale}
-                            onChange={(event) =>
-                              setActiveRatingBadgeScale(normalizeBadgeScalePercent(event.target.value))
-                            }
-                            className="h-2 w-full accent-violet-500"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre badge</span>
-                            <span className="text-[11px] text-zinc-400">{activeGenreBadgeScale}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min={MIN_BADGE_SCALE_PERCENT}
-                            max={MAX_BADGE_SCALE_PERCENT}
-                            step={1}
-                            value={activeGenreBadgeScale}
-                            onChange={(event) =>
-                              setActiveGenreBadgeScale(normalizeBadgeScalePercent(event.target.value))
-                            }
-                            className="h-2 w-full accent-violet-500"
-                          />
-                        </div>
-                        {previewType !== 'logo' && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Quality badges</span>
-                              <span className="text-[11px] text-zinc-400">{activeQualityBadgeScale}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={MIN_BADGE_SCALE_PERCENT}
-                              max={MAX_BADGE_SCALE_PERCENT}
-                              step={1}
-                              value={activeQualityBadgeScale}
-                              onChange={(event) =>
-                                setActiveQualityBadgeScale(normalizeBadgeScalePercent(event.target.value))
-                              }
-                              className="h-2 w-full accent-violet-500"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[11px] leading-relaxed text-zinc-500">
-                        These sliders let people increase badge and tag legibility without forcing a new layout. ERDB will still fit the final output back into the selected poster, backdrop, or logo frame.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {previewType !== 'logo' && (
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                    <div className="text-[11px] font-semibold text-zinc-400">
-                      Quality Badges · {qualityBadgeTypeLabel}
-                    </div>
-                    <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                      {STREAM_BADGE_OPTIONS.map(option => (
-                        <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeStreamBadges === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
-                      <div className="flex flex-wrap gap-1">
-                        {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
-                          <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
-                      <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
-                      <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
-                        Visible Quality Badges
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {QUALITY_BADGE_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => toggleQualityBadgePreference(option.id)}
-                            className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                              activeQualityBadgePreferences.includes(option.id)
-                                ? 'border-violet-500/60 bg-zinc-800 text-white'
-                                : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {shouldShowQualityBadgesSide && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
-                        <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
-                            <button key={option.id} onClick={() => setQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${qualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {shouldShowQualityBadgesPosition && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Position</span>
-                        <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-                          {QUALITY_BADGE_POSITION_OPTIONS.map(option => (
-                            <button key={option.id} onClick={() => setPosterQualityBadgesPosition(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${posterQualityBadgesPosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <p className="text-[11px] leading-relaxed text-zinc-500">
-                      Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, no background styling, and silver mark styling without losing context.
+                    <p className="erdb-panel-copy text-zinc-400">
+                      Pick a setup mode, start from a preset, then tune the same state that powers the preview, config string, and addon proxy.
                     </p>
                   </div>
-                )}
-
-                <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
-                    {providersLabel} · drag to reorder
-                  </span>
-                  <p className="text-[10px] leading-4 text-zinc-500">
-                    ERDB respects this order when rendering badges. Disabled providers stay available but are skipped.
-                  </p>
-                  <RatingProviderSortableList
-                    rows={ratingProviderRows}
-                    onReorder={reorderRatingPreference}
-                    onToggle={toggleRatingPreference}
-                    fillDirection="row"
-                  />
-                  <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                            Provider Styling
-                          </div>
-                          <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                          Customise the icon URL, accent colour, icon size, and stacked accent line behavior per source. Leave a field blank to keep the default ERDB art.
-                          </p>
-                        </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          activeProviderMeta &&
-                          updateProviderAppearanceOverride(activeProviderMeta.id, () => ({}))
-                        }
-                        className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
-                      >
-                        Reset {activeProviderMeta?.label}
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ratingProviderRows.map((row) => {
-                        const meta = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === row.id);
-                        const isSelected = row.id === activeProviderEditorId;
-                        const hasOverride = Boolean(ratingProviderAppearanceOverrides[row.id]);
-                        return (
-                          <button
-                            key={`provider-editor-${row.id}`}
-                            type="button"
-                            onClick={() => setActiveProviderEditorId(row.id)}
-                            className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                              isSelected
-                                ? 'border-violet-500/60 bg-zinc-800 text-white'
-                                : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                            }`}
-                          >
-                            {meta?.label || row.id}
-                            {hasOverride ? ' *' : ''}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {activeProviderMeta ? (
-                      <div className="provider-editor-layout">
-                        <div className="min-w-0 space-y-3">
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <div>
-                              <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
-                                Accent Colour
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="color"
-                                  value={
-                                    activeProviderAppearanceOverride.accentColor ||
-                                    activeProviderMeta.accentColor
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      accentColor: event.target.value,
-                                    }))
-                                  }
-                                  className="h-10 w-14 rounded-md border border-white/10 bg-black"
-                                />
-                                <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
-                                  {activeProviderAppearanceOverride.accentColor ||
-                                    activeProviderMeta.accentColor}
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
-                                Icon Size
-                              </label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="range"
-                                  min={MIN_PROVIDER_ICON_SCALE_PERCENT}
-                                  max={MAX_PROVIDER_ICON_SCALE_PERCENT}
-                                  step={1}
-                                  value={
-                                    activeProviderAppearanceOverride.iconScalePercent ||
-                                    DEFAULT_PROVIDER_ICON_SCALE_PERCENT
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      iconScalePercent: normalizeProviderIconScalePercent(
-                                        event.target.value,
-                                      ),
-                                    }))
-                                  }
-                                  className="h-2 w-full accent-violet-500"
-                                />
-                                <span className="w-14 text-right text-[11px] text-zinc-400">
-                                  {activeProviderAppearanceOverride.iconScalePercent ||
-                                    DEFAULT_PROVIDER_ICON_SCALE_PERCENT}
-                                  %
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="rounded-xl border border-white/10 bg-zinc-950/50 p-3 space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                                  Stacked Badge
-                                </div>
-                                <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                                  Applies when the current rating style is stacked. Fine tune the badge width, body opacity, accent placement, and the top line for this source.
-                                </p>
-                              </div>
-                              <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-[11px] font-medium text-zinc-300">
-                                <input
-                                  type="checkbox"
-                                  checked={activeProviderAppearanceOverride.stackedLineVisible !== false}
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      stackedLineVisible: event.target.checked ? undefined : false,
-                                    }))
-                                  }
-                                  className="h-3.5 w-3.5 accent-violet-500"
-                                />
-                                <span>{activeProviderAppearanceOverride.stackedLineVisible === false ? 'Hidden' : 'Visible'}</span>
-                              </label>
-                            </div>
-                            <div className={`grid gap-3 ${usesStackedRatingStyle ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2 xl:grid-cols-3 opacity-75'}`}>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Width</span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    {activeProviderAppearanceOverride.stackedWidthPercent ||
-                                      DEFAULT_STACKED_WIDTH_PERCENT}
-                                    %
-                                  </span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={MIN_STACKED_WIDTH_PERCENT}
-                                  max={MAX_STACKED_WIDTH_PERCENT}
-                                  step={1}
-                                  value={
-                                    activeProviderAppearanceOverride.stackedWidthPercent ||
-                                    DEFAULT_STACKED_WIDTH_PERCENT
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      stackedWidthPercent: normalizeStackedWidthPercent(
-                                        event.target.value,
-                                      ),
-                                    }))
-                                  }
-                                  className="h-2 w-full accent-violet-500"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Body Opacity</span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    {activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
-                                      DEFAULT_STACKED_SURFACE_OPACITY_PERCENT}
-                                    %
-                                  </span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={MIN_STACKED_SURFACE_OPACITY_PERCENT}
-                                  max={MAX_STACKED_SURFACE_OPACITY_PERCENT}
-                                  step={1}
-                                  value={
-                                    activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
-                                    DEFAULT_STACKED_SURFACE_OPACITY_PERCENT
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      stackedSurfaceOpacityPercent: normalizeStackedSurfaceOpacityPercent(
-                                        event.target.value,
-                                      ),
-                                    }))
-                                  }
-                                  className="h-2 w-full accent-violet-500"
-                                />
-                              </div>
-                              <div className="space-y-2 xl:col-span-1 md:col-span-2">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent Placement</span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    {activeProviderAppearanceOverride.stackedAccentMode === 'logo'
-                                      ? 'Logo only'
-                                      : 'Badge'}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                        ...current,
-                                        stackedAccentMode: 'badge',
-                                      }))
-                                    }
-                                    className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
-                                      (activeProviderAppearanceOverride.stackedAccentMode ||
-                                        DEFAULT_STACKED_ACCENT_MODE) === 'badge'
-                                        ? 'border-violet-500/60 bg-violet-500/20 text-white'
-                                        : 'border-white/10 bg-black text-zinc-400 hover:text-white'
-                                    }`}
-                                  >
-                                    Badge
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                        ...current,
-                                        stackedAccentMode: 'logo',
-                                      }))
-                                    }
-                                    className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
-                                      (activeProviderAppearanceOverride.stackedAccentMode ||
-                                        DEFAULT_STACKED_ACCENT_MODE) === 'logo'
-                                        ? 'border-violet-500/60 bg-violet-500/20 text-white'
-                                        : 'border-white/10 bg-black text-zinc-400 hover:text-white'
-                                    }`}
-                                  >
-                                    Logo only
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Width</span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    {activeProviderAppearanceOverride.stackedLineWidthPercent ||
-                                      DEFAULT_STACKED_LINE_WIDTH_PERCENT}
-                                    %
-                                  </span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={MIN_STACKED_LINE_WIDTH_PERCENT}
-                                  max={MAX_STACKED_LINE_WIDTH_PERCENT}
-                                  step={1}
-                                  value={
-                                    activeProviderAppearanceOverride.stackedLineWidthPercent ||
-                                    DEFAULT_STACKED_LINE_WIDTH_PERCENT
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      stackedLineWidthPercent: normalizeStackedLineWidthPercent(
-                                        event.target.value,
-                                      ),
-                                    }))
-                                  }
-                                  className="h-2 w-full accent-violet-500"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Thickness</span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    {activeProviderAppearanceOverride.stackedLineHeightPercent ||
-                                      DEFAULT_STACKED_LINE_HEIGHT_PERCENT}
-                                    %
-                                  </span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={MIN_STACKED_LINE_HEIGHT_PERCENT}
-                                  max={MAX_STACKED_LINE_HEIGHT_PERCENT}
-                                  step={1}
-                                  value={
-                                    activeProviderAppearanceOverride.stackedLineHeightPercent ||
-                                    DEFAULT_STACKED_LINE_HEIGHT_PERCENT
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      stackedLineHeightPercent: normalizeStackedLineHeightPercent(
-                                        event.target.value,
-                                      ),
-                                    }))
-                                  }
-                                  className="h-2 w-full accent-violet-500"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Gap</span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    {activeProviderAppearanceOverride.stackedLineGapPercent ||
-                                      DEFAULT_STACKED_LINE_GAP_PERCENT}
-                                    %
-                                  </span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={MIN_STACKED_LINE_GAP_PERCENT}
-                                  max={MAX_STACKED_LINE_GAP_PERCENT}
-                                  step={1}
-                                  value={
-                                    activeProviderAppearanceOverride.stackedLineGapPercent ||
-                                    DEFAULT_STACKED_LINE_GAP_PERCENT
-                                  }
-                                  onChange={(event) =>
-                                    updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                      ...current,
-                                      stackedLineGapPercent: normalizeStackedLineGapPercent(
-                                        event.target.value,
-                                      ),
-                                    }))
-                                  }
-                                  className="h-2 w-full accent-violet-500"
-                                />
-                              </div>
-                            </div>
-                            {!usesStackedRatingStyle ? (
-                              <p className="text-[11px] leading-relaxed text-zinc-500">
-                                You can set these now and they will apply the moment this output switches to stacked badges.
-                              </p>
-                            ) : null}
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
-                              Custom Icon URL
-                            </label>
-                            <input
-                              type="url"
-                              value={activeProviderAppearanceOverride.iconUrl || ''}
-                              onChange={(event) =>
-                                updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
-                                  ...current,
-                                  iconUrl: event.target.value,
-                                }))
-                              }
-                              placeholder="https://example.com/logo.svg or data:image/svg+xml,..."
-                              className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
-                            />
-                            <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                              Paste a direct image URL or a data URI. The expected format stays visible here while you edit so you do not have to remember it after adding a custom logo.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="provider-editor-preview self-start rounded-xl border border-white/10 bg-black/60 p-3">
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                            Active Preview
-                          </div>
-                          <div className="mt-3 grid gap-3 sm:grid-cols-[auto,1fr] sm:items-start">
-                            <div
-                              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.28)]"
-                              style={{
-                                backgroundColor:
-                                  activeProviderAppearanceOverride.accentColor ||
-                                  activeProviderMeta.accentColor,
-                              }}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={activeProviderAppearanceOverride.iconUrl || activeProviderMeta.iconUrl}
-                                alt={`${activeProviderMeta.label} icon`}
-                                className="max-h-8 max-w-8 object-contain"
-                              />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-semibold text-white">
-                                {activeProviderMeta.label}
-                              </div>
-                              <div className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                                Current icon and accent preview for poster, backdrop, and logo output. Stacked controls adjust width, surface opacity, and accent placement for this source.
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
                 </div>
+                {setupModeSection}
+                {presetHubSection}
+                {experienceMode === 'simple' ? simpleConfiguratorContent : advancedConfiguratorContent}
               </div>
 
               <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
@@ -4294,7 +5106,7 @@ export default function Home() {
                       </span>
                     </label>
 
-                    {proxyTranslateMeta && (
+                    {proxyTranslateMeta && experienceMode === 'advanced' && (
                       <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-3">
                         <div>
                           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Merge mode</div>
@@ -4333,6 +5145,12 @@ export default function Home() {
                             </span>
                           </span>
                         </label>
+                      </div>
+                    )}
+                    {proxyTranslateMeta && experienceMode === 'simple' && (
+                      <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[11px] leading-5 text-zinc-500">
+                        Simple mode keeps proxy translation on with the safe defaults from the preset.
+                        Switch to advanced mode if you want to change merge mode or attach debug provenance.
                       </div>
                     )}
                   </div>
@@ -5032,6 +5850,99 @@ export default function Home() {
         </div>
         </section>
       </main>
+
+      {showExperienceModal ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,10,20,0.98),rgba(6,5,12,0.98))] p-5 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)] md:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
+                  <Sparkles className="h-3.5 w-3.5 text-violet-300" />
+                  Welcome to ERDB
+                </div>
+                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+                  Choose how you want to configure it.
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-7 text-zinc-400">
+                  Simple keeps the main decisions visible. Advanced opens the full ERDB surface,
+                  including provider ordering, layout offsets, badge sizing, and custom source styling.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
+              {([
+                {
+                  id: 'simple',
+                  label: 'Simple',
+                  summary: 'Preset first workflow with just the everyday switches.',
+                  lines: [
+                    'Best if you want the fastest path to a working config.',
+                    'Keeps presets, keys, media targeting, and visible artwork choices upfront.',
+                  ],
+                },
+                {
+                  id: 'advanced',
+                  label: 'Advanced',
+                  summary: 'Every ERDB control, reorganized into sections.',
+                  lines: [
+                    'Best if you plan to tune provider order, badge styling, or manual layout details.',
+                    'Matches the full configurator behavior with a cleaner structure.',
+                  ],
+                },
+              ] as const).map((option) => (
+                <button
+                  key={`modal-mode-${option.id}`}
+                  type="button"
+                  onClick={() => setExperienceModeDraft(option.id)}
+                  className={`rounded-[1.5rem] border p-4 text-left transition-colors ${
+                    experienceModeDraft === option.id
+                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                      : 'border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:bg-black/35'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xl font-semibold">{option.label}</div>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                        experienceModeDraft === option.id
+                          ? 'bg-violet-500/20 text-violet-100'
+                          : 'bg-white/5 text-zinc-500'
+                      }`}
+                    >
+                      {experienceModeDraft === option.id ? 'Selected' : 'Choose'}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-300">{option.summary}</p>
+                  <div className="mt-4 grid gap-2">
+                    {option.lines.map((line) => (
+                      <div
+                        key={`${option.id}-${line}`}
+                        className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] leading-5 text-zinc-400"
+                      >
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[11px] leading-5 text-zinc-500">
+                You can switch modes later from the configurator without changing your saved ERDB settings.
+              </p>
+              <button
+                type="button"
+                onClick={handleContinueExperienceMode}
+                className="rounded-xl bg-violet-500 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-400"
+              >
+                Continue with {experienceModeDraft === 'simple' ? 'Simple' : 'Advanced'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="max-w-7xl mx-auto px-6 pb-6 md:pb-10" aria-label="Status board information">
         <div className="rounded-2xl border border-white/10 bg-zinc-950/65 p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
