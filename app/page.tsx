@@ -15,7 +15,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
-import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff, Tag } from 'lucide-react';
+import { Image as ImageIcon, Settings2, Globe2, Layers, Cpu, Code2, Terminal, ExternalLink, Zap, ChevronRight, Hash, Sparkles, MonitorPlay, Bot, Clipboard, Check, Eye, EyeOff, Tag, Menu, X } from 'lucide-react';
 import {
   ALL_RATING_PREFERENCES,
   RATING_PROVIDER_OPTIONS,
@@ -1104,6 +1104,7 @@ export default function Home() {
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
   const [previewErrorDetails, setPreviewErrorDetails] = useState('');
   const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
@@ -1257,17 +1258,22 @@ export default function Home() {
     window.scrollTo({ top, behavior });
   }, [isNavSticky]);
 
+  const closeMobileNav = useCallback(() => {
+    setIsMobileNavOpen(false);
+  }, []);
+
   const handleAnchorClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
       const href = event.currentTarget.getAttribute('href');
       if (!href || !href.startsWith('#')) return;
       event.preventDefault();
+      closeMobileNav();
       if (typeof window !== 'undefined') {
         window.history.pushState(null, '', href);
       }
       scrollToHash(href);
     },
-    [scrollToHash]
+    [closeMobileNav, scrollToHash]
   );
 
   useEffect(() => {
@@ -1306,6 +1312,44 @@ export default function Home() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [scrollToHash]);
+
+  useEffect(() => {
+    if (!isMobileNavOpen || typeof window === 'undefined') {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const nav = navRef.current;
+      if (nav && event.target instanceof Node && !nav.contains(event.target)) {
+        setIsMobileNavOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMobileNavOpen(false);
+      }
+    };
+    const handleViewportChange = () => {
+      if (window.innerWidth > 860) {
+        setIsMobileNavOpen(false);
+      }
+    };
+    const handleScroll = () => {
+      setIsMobileNavOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isMobileNavOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -2284,19 +2328,19 @@ export default function Home() {
           key: 'background',
           label: 'Background URL Pattern',
           value: aiometadataPatterns.backgroundUrlPattern,
-          description: 'Matches the live AIOMetadata background preset and uses TMDB IDs.',
+          description: 'Matches the live AIOMetadata background preset and prefixes TMDB IDs with {type} to avoid movie versus series collisions.',
         },
         {
           key: 'logo',
           label: 'Logo URL Pattern',
           value: aiometadataPatterns.logoUrlPattern,
-          description: 'Matches the live AIOMetadata logo preset and uses TMDB IDs.',
+          description: 'Matches the live AIOMetadata logo preset and prefixes TMDB IDs with {type} so TV logos do not collide with movie IDs.',
         },
         {
           key: 'episode',
           label: 'Episode Thumbnail URL Pattern',
           value: aiometadataPatterns.episodeThumbnailUrlPattern,
-          description: 'Matches the live AIOMetadata episode thumb preset and keeps the wide ERDB thumb render.',
+          description: 'Matches the live AIOMetadata episode thumb preset and uses TMDB episode stills when they exist, then falls back to the series backdrop.',
         },
       ]
     : [];
@@ -4588,27 +4632,75 @@ export default function Home() {
       className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30"
     >
       <nav ref={navRef} className="erdb-chrome sticky top-0 z-50">
-        <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4 min-w-0">
+        <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4">
+          <div className="erdb-nav-desktop flex flex-wrap items-center justify-between gap-4">
+            <div className="erdb-nav-primary min-w-0">
+              <BrandLockup compact />
+              <span className="erdb-brand-tag">Stateless ratings engine</span>
+              <DeploymentVersionPill compact />
+              <LatestReleasePill
+                compact
+                releaseTag={latestReleaseTag}
+                releaseUrl={latestReleaseUrl}
+                loading={isLatestReleaseLoading}
+                pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
+              />
+            </div>
+            <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
+              <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
+              <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
+              <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
+              <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-nav-link">github</a>
+              <UptimePill label="Uptime" />
+              <SupportPill label="Support" />
+            </div>
+          </div>
+          <div className="erdb-nav-mobile-row">
             <BrandLockup compact />
-            <span className="erdb-brand-tag">Stateless ratings engine</span>
-            <DeploymentVersionPill compact />
-            <LatestReleasePill
-              compact
-              releaseTag={latestReleaseTag}
-              releaseUrl={latestReleaseUrl}
-              loading={isLatestReleaseLoading}
-              pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
-            />
+            <button
+              type="button"
+              className="erdb-nav-menu-button"
+              aria-expanded={isMobileNavOpen}
+              aria-controls="site-mobile-nav"
+              aria-label={isMobileNavOpen ? 'Close site navigation' : 'Open site navigation'}
+              onClick={() => setIsMobileNavOpen((current) => !current)}
+            >
+              {isMobileNavOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
+              <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
+                {isMobileNavOpen ? 'Close' : 'Menu'}
+              </span>
+            </button>
           </div>
-          <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
-            <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
-            <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
-            <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
-            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-nav-link">github</a>
-            <UptimePill label="Uptime" />
-            <SupportPill label="Support" />
-          </div>
+          {isMobileNavOpen ? (
+            <div id="site-mobile-nav" className="erdb-mobile-nav-drawer">
+              <div className="erdb-mobile-nav-status">
+                <DeploymentVersionPill compact />
+                <LatestReleasePill
+                  compact
+                  releaseTag={latestReleaseTag}
+                  releaseUrl={latestReleaseUrl}
+                  loading={isLatestReleaseLoading}
+                  pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
+                />
+              </div>
+              <div className="erdb-mobile-nav-links">
+                <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
+                <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
+                <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
+                <a
+                  href={BRAND_GITHUB_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="erdb-nav-link"
+                  onClick={closeMobileNav}
+                >
+                  github
+                </a>
+                <UptimePill label="Uptime" />
+                <SupportPill label="Support" />
+              </div>
+            </div>
+          ) : null}
         </div>
       </nav>
 
@@ -4751,8 +4843,8 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="mt-6 erdb-surface-grid grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)_minmax(0,0.84fr)] items-start">
-            <div className="space-y-5">
+            <div className="mt-6 erdb-surface-grid grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)_minmax(0,0.84fr)] xl:gap-6">
+            <div id="workspace-settings" className="space-y-5 scroll-mt-24 xl:col-start-1">
               <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
@@ -4763,167 +4855,22 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
+                <div className="flex flex-wrap gap-2 min-[861px]:hidden">
+                  <a
+                    href="#workspace-preview"
+                    onClick={handleAnchorClick}
+                    className="erdb-nav-link text-[11px]"
+                  >
+                    Jump to preview
+                  </a>
+                </div>
                 {setupModeSection}
                 {presetHubSection}
                 {experienceMode === 'simple' ? simpleConfiguratorContent : advancedConfiguratorContent}
               </div>
-
-              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
-                <div className="erdb-panel-head">
-                  <div>
-                    <p className="erdb-panel-eyebrow font-mono">Export</p>
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-violet-500" /> ERDB Config String
-                    </h3>
-                    <p className="mt-2 text-sm text-zinc-400">
-                      Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                  Use this when another tool expects one ERDB config field. The settings travel inside this string, not inside your saved workspace by itself.
-                </p>
-                <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4 overflow-hidden">
-                  <div className={`font-mono text-xs text-zinc-300 break-all${!showConfigString && configString ? ' select-none' : ''}`}>
-                    {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={handleCopyConfig}
-                    disabled={!canGenerateConfig}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateConfig ? (configCopied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
-                  >
-                    {configCopied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>COPIED</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clipboard className="w-3.5 h-3.5" />
-                        <span>COPY STRING</span>
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setShowConfigString((prev) => !prev)}
-                    disabled={!canGenerateConfig}
-                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateConfig ? 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 hover:text-white border border-violet-500/30' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'}`}
-                    aria-label={showConfigString ? 'Hide config string' : 'Show config string'}
-                  >
-                    {showConfigString ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showConfigString ? 'HIDE' : 'SHOW'}</span>
-                  </button>
-                </div>
-                {!canGenerateConfig && (
-                  <p className="mt-3 text-[11px] text-zinc-500">
-                    Add TMDB key and MDBList key to generate a valid config string.
-                  </p>
-                )}
-                <div className="mt-5 border-t border-white/10 pt-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                        AIOMetadata URLs
-                      </div>
-                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                        Ready to paste URL patterns for the AIOMetadata art override fields.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleCopyAiometadata}
-                      disabled={!aiometadataPatternRows.length}
-                      className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                        aiometadataPatternRows.length
-                          ? aiometadataCopied
-                            ? 'bg-green-500 text-white'
-                            : 'bg-violet-500 text-white hover:bg-violet-400'
-                          : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {aiometadataCopied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>COPIED</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clipboard className="w-3.5 h-3.5" />
-                          <span>COPY ALL</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                    These presets match the live AIOMetadata defaults: poster uses IMDb, background and logo use TMDB, and episode thumbs use IMDb with season and episode placeholders.
-                  </p>
-                  <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
-                    <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
-                        <div className="text-[11px] font-semibold text-zinc-200">Preset mapping</div>
-                        <p className="mt-2 text-[11px] leading-5 text-zinc-500">
-                          Poster: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>
-                        </p>
-                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                          Background: <span className="font-mono text-zinc-300">{'{tmdb_id}'}</span>
-                        </p>
-                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                          Logo: <span className="font-mono text-zinc-300">{'{tmdb_id}'}</span>
-                        </p>
-                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                          Episode thumb: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>, <span className="font-mono text-zinc-300">{'{season}'}</span>, <span className="font-mono text-zinc-300">{'{episode}'}</span>
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
-                        <label className="flex items-start gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={hideAiometadataCredentials}
-                            onChange={(event) => setHideAiometadataCredentials(event.target.checked)}
-                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
-                          />
-                          <span className="space-y-1">
-                            <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
-                            <span className="block text-[11px] leading-5 text-zinc-500">
-                              Only affects the exported AIOMetadata patterns below. Live ERDB request URLs still use the real keys you provide and are replaced here with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
-                            </span>
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      {aiometadataPatternRows.map((row) => (
-                        <div key={row.key} className="rounded-xl border border-white/10 bg-black/60 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <div className="text-[11px] font-semibold text-zinc-200">{row.label}</div>
-                              <div className="mt-1 text-[11px] leading-5 text-zinc-500">{row.description}</div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void navigator.clipboard.writeText(row.value);
-                              }}
-                              className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
-                            >
-                              Copy
-                            </button>
-                          </div>
-                          <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all">
-                            {row.value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            <div className="space-y-5 xl:self-stretch">
+            <div id="workspace-preview" className="space-y-5 scroll-mt-24 xl:col-start-2 xl:self-stretch">
               <div className="xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-20">
                 <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
                   <div className="erdb-panel-head">
@@ -4934,6 +4881,15 @@ export default function Home() {
                         Stateless dynamic layout generated via query parameters.
                       </p>
                     </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 min-[861px]:hidden">
+                    <a
+                      href="#workspace-settings"
+                      onClick={handleAnchorClick}
+                      className="erdb-nav-link text-[11px]"
+                    >
+                      Back to settings
+                    </a>
                   </div>
                   <div className="mt-4 flex flex-wrap justify-end gap-2">
                     {(['poster', 'backdrop', 'logo'] as const).map((type) => (
@@ -4949,11 +4905,11 @@ export default function Home() {
                       </span>
                     ))}
                   </div>
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[320px] flex items-center justify-center flex-col">
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[280px] sm:min-h-[320px] flex items-center justify-center flex-col">
                     {previewUrl && !previewErrored ? (
                       <div className="z-10 w-full flex flex-col items-center gap-8">
                         <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
-                          ? 'aspect-[2/3] w-72'
+                          ? 'aspect-[2/3] w-full max-w-[18rem]'
                           : previewType === 'logo'
                             ? 'h-48 w-full max-w-xl'
                             : 'aspect-video w-full max-w-2xl'
@@ -5061,7 +5017,163 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="proxy" className="scroll-mt-24">
+            <div id="workspace-export" className="scroll-mt-24 xl:col-start-1">
+              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
+                <div className="erdb-panel-head">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Export</p>
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Code2 className="w-5 h-5 text-violet-500" /> ERDB Config String
+                    </h3>
+                    <p className="mt-2 text-sm text-zinc-400">
+                      Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] leading-5 text-zinc-500">
+                  Use this when another tool expects one ERDB config field. The settings travel inside this string, not inside your saved workspace by itself.
+                </p>
+                <div className="mt-3 rounded-2xl border border-white/10 bg-black/70 p-4 overflow-hidden">
+                  <div className={`font-mono text-xs text-zinc-300 break-all${!showConfigString && configString ? ' select-none' : ''}`}>
+                    {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleCopyConfig}
+                    disabled={!canGenerateConfig}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${canGenerateConfig ? (configCopied ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-400') : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
+                  >
+                    {configCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>COPIED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Clipboard className="w-3.5 h-3.5" />
+                        <span>COPY STRING</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setShowConfigString((prev) => !prev)}
+                    disabled={!canGenerateConfig}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${canGenerateConfig ? 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 hover:text-white border border-violet-500/30' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'}`}
+                    aria-label={showConfigString ? 'Hide config string' : 'Show config string'}
+                  >
+                    {showConfigString ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showConfigString ? 'HIDE' : 'SHOW'}</span>
+                  </button>
+                </div>
+                {!canGenerateConfig && (
+                  <p className="mt-3 text-[11px] text-zinc-500">
+                    Add TMDB key and MDBList key to generate a valid config string.
+                  </p>
+                )}
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        AIOMetadata URLs
+                      </div>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                        Ready to paste URL patterns for the AIOMetadata art override fields.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyAiometadata}
+                      disabled={!aiometadataPatternRows.length}
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                        aiometadataPatternRows.length
+                          ? aiometadataCopied
+                            ? 'bg-green-500 text-white'
+                            : 'bg-violet-500 text-white hover:bg-violet-400'
+                          : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {aiometadataCopied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>COPIED</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clipboard className="w-3.5 h-3.5" />
+                          <span>COPY ALL</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-3 text-[11px] leading-5 text-zinc-500">
+                    These presets match the live AIOMetadata defaults: poster uses IMDb, background and logo use type aware TMDB IDs, and episode thumbs use IMDb with season and episode placeholders.
+                  </p>
+                  <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                        <div className="text-[11px] font-semibold text-zinc-200">Preset mapping</div>
+                        <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+                          Poster: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          Background: <span className="font-mono text-zinc-300">tmdb:{'{type}'}:{'{tmdb_id}'}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          Logo: <span className="font-mono text-zinc-300">tmdb:{'{type}'}:{'{tmdb_id}'}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                          Episode thumb: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>, <span className="font-mono text-zinc-300">{'{season}'}</span>, <span className="font-mono text-zinc-300">{'{episode}'}</span>
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={hideAiometadataCredentials}
+                            onChange={(event) => setHideAiometadataCredentials(event.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                          />
+                          <span className="space-y-1">
+                            <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
+                            <span className="block text-[11px] leading-5 text-zinc-500">
+                              Only affects the exported AIOMetadata patterns below. Live ERDB request URLs still use the real keys you provide and are replaced here with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
+                            </span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {aiometadataPatternRows.map((row) => (
+                        <div key={row.key} className="rounded-xl border border-white/10 bg-black/60 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-[11px] font-semibold text-zinc-200">{row.label}</div>
+                              <div className="mt-1 text-[11px] leading-5 text-zinc-500">{row.description}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(row.value);
+                              }}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all">
+                            {row.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="proxy" className="scroll-mt-24 xl:col-start-3">
               <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
                 <div className="erdb-panel-head">
                   <div>

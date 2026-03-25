@@ -1130,8 +1130,8 @@ export const buildAiometadataUrlPatterns = (
 
   return {
     posterUrlPattern: `${origin}/poster/{imdb_id}.jpg?${buildQueryString()}`,
-    backgroundUrlPattern: `${origin}/backdrop/{tmdb_id}.jpg?${buildQueryString({ idSource: 'tmdb' })}`,
-    logoUrlPattern: `${origin}/logo/{tmdb_id}.png?${buildQueryString({ idSource: 'tmdb' })}`,
+    backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString({ idSource: 'tmdb' })}`,
+    logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString({ idSource: 'tmdb' })}`,
     episodeThumbnailUrlPattern: `${origin}/thumbnail/{imdb_id}/S{season}E{episode}.jpg?${buildQueryString()}`,
   };
 };

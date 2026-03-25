@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import {
   ERDB_REQUEST_KEY_ERROR_MESSAGE,
   getConfiguredErdbRequestKeys,
   isErdbRequestAuthorized,
 } from '@/lib/erdbRequestKey';
+import { handleImageRequest } from '@/app/[type]/[id]/route';
 
 const EPISODE_THUMBNAIL_TOKEN_RE = /^S(\d+)E(\d+)(?:\.(?:jpg|jpeg|png|webp))?$/i;
 const ERDB_REQUEST_API_KEYS = getConfiguredErdbRequestKeys();
@@ -31,8 +32,18 @@ export async function GET(
     return new Response('Invalid episode thumbnail token', { status: 400 });
   }
 
-  const redirectUrl = new URL(requestUrl);
-  redirectUrl.pathname = `/backdrop/${id}:${season}:${episode}.jpg`;
+  const backdropId = `${id}:${season}:${episode}.jpg`;
+  const backdropUrl = new URL(requestUrl);
+  backdropUrl.pathname = `/backdrop/${backdropId}`;
 
-  return NextResponse.redirect(redirectUrl, 307);
+  return handleImageRequest(
+    new NextRequest(backdropUrl, {
+      headers: request.headers,
+      method: request.method,
+    }),
+    {
+      type: 'backdrop',
+      id: backdropId,
+    },
+  );
 }
