@@ -1176,6 +1176,23 @@ pre {
 	margin-bottom: 0.15rem;
 }
 
+.erdb-toggle-group {
+	display: flex;
+	flex-wrap: wrap;
+	width: 100%;
+}
+
+.erdb-toggle-group > button {
+	flex: 1 1 5.75rem;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	white-space: normal;
+	line-height: 1.35;
+}
+
 .provider-editor-layout {
 	display: grid;
 	align-items: start;
@@ -1367,12 +1384,46 @@ pre {
 }
 
 @media (max-width: 860px) {
-	.erdb-nav-shell {
-		justify-content: center;
+	.erdb-chrome {
+		position: static;
+		top: auto;
 	}
 
+	.erdb-nav-shell {
+		justify-content: flex-start;
+		align-items: stretch;
+		padding-inline: 1rem;
+	}
+
+	.erdb-nav-shell > :first-child,
 	.erdb-nav-links {
-		justify-content: center;
+		width: 100%;
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		overflow-x: auto;
+		overflow-y: hidden;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		overscroll-behavior-x: contain;
+	}
+
+	.erdb-nav-shell > :first-child::-webkit-scrollbar,
+	.erdb-nav-links::-webkit-scrollbar {
+		display: none;
+	}
+
+	.erdb-nav-shell > :first-child > *,
+	.erdb-nav-links > * {
+		flex: 0 0 auto;
+	}
+
+	.erdb-panel-form :where(.flex.flex-wrap.items-center.gap-3, .flex.flex-wrap.items-end.gap-3, .flex.flex-wrap.items-end.gap-2) > div {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+
+	.erdb-panel-form :where(.flex.items-center.gap-2) {
+		flex-wrap: wrap;
 	}
 
 	.erdb-brand-tag {
@@ -1381,6 +1432,18 @@ pre {
 }
 
 @media (max-width: 720px) {
+	.erdb-chrome .site-brand-copy {
+		gap: 0;
+	}
+
+	.erdb-chrome .site-brand-eyebrow {
+		display: none;
+	}
+
+	.erdb-chrome .site-brand-name {
+		font-size: 0.9rem;
+	}
+
 	.erdb-hero-meta .erdb-version-pill-group {
 		width: 100%;
 	}
