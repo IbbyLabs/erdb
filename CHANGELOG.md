@@ -47,6 +47,13 @@
 
 <a id="v2-31-0"></a>
 
+<a id="v2-31-1"></a>
+
+## [v2.31.1] - 25/03/2026
+
+### Fixed
+* tighten provider preview layout
+
 ## [v2.31.0] - 25/03/2026
 
 ### Added
