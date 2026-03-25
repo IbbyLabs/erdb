@@ -87,6 +87,13 @@
 
 <a id="v2-37-2"></a>
 
+<a id="v2-37-3"></a>
+
+## [v2.37.3] - 25/03/2026
+
+### Documentation
+* normalize configurator copy
+
 ## [v2.37.2] - 25/03/2026
 
 ### Fixed
