@@ -111,6 +111,13 @@
 
 <a id="v2-39-5"></a>
 
+<a id="v2-39-6"></a>
+
+## [v2.39.6] - 25/03/2026
+
+### Fixed
+* stabilize fullscreen workspace layout
+
 ## [v2.39.5] - 25/03/2026
 
 ### Fixed
