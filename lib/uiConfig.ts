@@ -213,7 +213,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   tmdbKey: '',
   mdblistKey: '',
   fanartKey: '',
-  simklClientId: '',,
+  simklClientId: '',
   lang: 'en',
   posterImageText: 'clean',
   backdropImageText: 'clean',
