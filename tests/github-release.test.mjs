@@ -5,6 +5,8 @@ import {
   compareReleaseTagVersions,
   fetchLatestGitHubRelease,
   parseGitHubRepositoryUrl,
+  selectLatestPublishedReleaseEntry,
+  selectPreviousPublishedReleaseTag,
 } from '../lib/githubRelease.ts';
 
 test('parseGitHubRepositoryUrl resolves repository metadata from GitHub URLs', () => {
@@ -133,6 +135,57 @@ test('fetchLatestGitHubRelease ignores drafts and prereleases while choosing the
     url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.24.10',
     publishedAt: '2026-03-23T22:00:00Z',
   });
+});
+
+test('selectLatestPublishedReleaseEntry prefers the highest semver even when an older release was published later', () => {
+  const release = selectLatestPublishedReleaseEntry([
+    {
+      id: 11,
+      tag_name: 'v2.37.6',
+      html_url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.37.6',
+      published_at: '2026-03-25T16:43:44Z',
+      draft: false,
+      prerelease: false,
+    },
+    {
+      id: 12,
+      tag_name: 'v2.37.5',
+      html_url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.37.5',
+      published_at: '2026-03-25T16:43:46Z',
+      draft: false,
+      prerelease: false,
+    },
+  ]);
+
+  assert.equal(release?.tag_name, 'v2.37.6');
+});
+
+test('selectPreviousPublishedReleaseTag uses semantic version order instead of API response order', () => {
+  const previousTag = selectPreviousPublishedReleaseTag(
+    [
+      {
+        tag_name: 'v2.37.5',
+        published_at: '2026-03-25T16:43:46Z',
+        draft: false,
+        prerelease: false,
+      },
+      {
+        tag_name: 'v2.37.6',
+        published_at: '2026-03-25T16:43:44Z',
+        draft: false,
+        prerelease: false,
+      },
+      {
+        tag_name: 'v2.37.4',
+        published_at: '2026-03-25T16:39:13Z',
+        draft: false,
+        prerelease: false,
+      },
+    ],
+    'v2.37.6'
+  );
+
+  assert.equal(previousTag, 'v2.37.5');
 });
 
 test('fetchLatestGitHubRelease falls back to null when the release is unavailable', async () => {

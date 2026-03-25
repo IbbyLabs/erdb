@@ -2,6 +2,11 @@
 
 import { pathToFileURL } from 'node:url';
 
+import {
+  selectLatestPublishedReleaseEntry,
+  selectPreviousPublishedReleaseTag,
+} from '../../lib/githubRelease.ts';
+
 const DISCORD_EMBED_COLOR = 0x7c3aed;
 const MAX_RELEASE_LOOKUP_ATTEMPTS = Number(process.env.RELEASE_LOOKUP_ATTEMPTS || 5);
 const RELEASE_LOOKUP_DELAY_SECONDS = Number(process.env.RELEASE_LOOKUP_DELAY_SECONDS || 2);
@@ -294,12 +299,22 @@ async function fetchJson(url, token) {
 async function lookupRelease({ apiUrl, releaseTag, token }) {
   const endpoint = releaseTag
     ? `${apiUrl}/releases/tags/${encodeURIComponent(releaseTag)}`
-    : `${apiUrl}/releases/latest`;
+    : `${apiUrl}/releases?per_page=100`;
 
   let lastError = null;
   for (let attempt = 1; attempt <= MAX_RELEASE_LOOKUP_ATTEMPTS; attempt += 1) {
     try {
-      return await fetchJson(endpoint, token);
+      const payload = await fetchJson(endpoint, token);
+      if (releaseTag) {
+        return payload;
+      }
+
+      const release = Array.isArray(payload) ? selectLatestPublishedReleaseEntry(payload) : null;
+      if (release) {
+        return release;
+      }
+
+      throw new Error('Unable to resolve the highest published release tag from GitHub');
     } catch (error) {
       lastError = error;
       if (attempt === MAX_RELEASE_LOOKUP_ATTEMPTS) {
@@ -322,21 +337,7 @@ async function resolvePreviousPublishedReleaseTag({ apiUrl, token, currentTag })
       return '';
     }
 
-    const published = releases.filter(
-      (release) =>
-        release &&
-        release.draft !== true &&
-        release.prerelease !== true &&
-        typeof release.tag_name === 'string' &&
-        release.tag_name.trim()
-    );
-
-    const currentIndex = published.findIndex((release) => release.tag_name === currentTag);
-    if (currentIndex === -1) {
-      return '';
-    }
-
-    return String(published[currentIndex + 1]?.tag_name || '').trim();
+    return selectPreviousPublishedReleaseTag(releases, currentTag);
   } catch {
     return '';
   }

@@ -15,7 +15,8 @@ export type LatestGitHubRelease = {
   publishedAt: string | null;
 };
 
-type GitHubReleaseApiResponse = {
+export type GitHubReleaseApiResponse = {
+  id?: unknown;
   tag_name?: unknown;
   html_url?: unknown;
   published_at?: unknown;
@@ -135,48 +136,117 @@ function parsePublishedTimestamp(value: string | null): number {
   return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
 }
 
-function selectLatestPublishedRelease(
-  payload: GitHubReleaseApiResponse[],
-  repository: GitHubRepository
-): LatestGitHubRelease | null {
-  const releases = payload
-    .filter((entry) => entry?.draft !== true && entry?.prerelease !== true)
-    .map((entry) => {
-      const tagName = normalizeReleaseTag(entry.tag_name);
-      if (!tagName) {
-        return null;
-      }
+function normalizePublishedAt(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
 
-      const url =
-        typeof entry.html_url === 'string' && entry.html_url.trim()
-          ? entry.html_url.trim()
-          : `${repository.htmlUrl}/releases/tag/${tagName}`;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
 
-      return {
-        tagName,
-        url,
-        publishedAt:
-          typeof entry.published_at === 'string' && entry.published_at.trim()
-            ? entry.published_at.trim()
-            : null,
-      } satisfies LatestGitHubRelease;
-    })
-    .filter((entry): entry is LatestGitHubRelease => Boolean(entry));
+function parseReleaseId(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return Number(value.trim());
+  }
+
+  return Number.NEGATIVE_INFINITY;
+}
+
+function isPublishedReleaseEntry(entry: GitHubReleaseApiResponse): boolean {
+  return (
+    entry?.draft !== true &&
+    entry?.prerelease !== true &&
+    Boolean(normalizeReleaseTag(entry.tag_name))
+  );
+}
+
+export function selectLatestPublishedReleaseEntry(
+  payload: GitHubReleaseApiResponse[]
+): GitHubReleaseApiResponse | null {
+  const releases = payload.filter(isPublishedReleaseEntry);
 
   if (!releases.length) {
     return null;
   }
 
   releases.sort((left, right) => {
-    const versionDifference = compareReleaseTagVersions(left.tagName, right.tagName);
+    const versionDifference = compareReleaseTagVersions(
+      normalizeReleaseTag(left.tag_name) || '',
+      normalizeReleaseTag(right.tag_name) || ''
+    );
     if (versionDifference !== 0) {
       return versionDifference;
     }
 
-    return parsePublishedTimestamp(left.publishedAt) - parsePublishedTimestamp(right.publishedAt);
+    const publishedDifference =
+      parsePublishedTimestamp(normalizePublishedAt(left.published_at)) -
+      parsePublishedTimestamp(normalizePublishedAt(right.published_at));
+    if (publishedDifference !== 0) {
+      return publishedDifference;
+    }
+
+    return parseReleaseId(left.id) - parseReleaseId(right.id);
   });
 
   return releases.at(-1) ?? null;
+}
+
+export function selectPreviousPublishedReleaseTag(
+  payload: GitHubReleaseApiResponse[],
+  currentTagName: string
+): string {
+  const currentTag = normalizeReleaseTag(currentTagName);
+  if (!currentTag) {
+    return '';
+  }
+
+  const publishedTags = Array.from(
+    new Set(
+      payload
+        .filter(isPublishedReleaseEntry)
+        .map((entry) => normalizeReleaseTag(entry.tag_name))
+        .filter((entry): entry is string => Boolean(entry))
+    )
+  );
+
+  if (!publishedTags.length) {
+    return '';
+  }
+
+  publishedTags.sort(compareReleaseTagVersions);
+
+  const currentIndex = publishedTags.findIndex((tagName) => tagName === currentTag);
+  if (currentIndex <= 0) {
+    return '';
+  }
+
+  return publishedTags[currentIndex - 1] || '';
+}
+
+function selectLatestPublishedRelease(
+  payload: GitHubReleaseApiResponse[],
+  repository: GitHubRepository
+): LatestGitHubRelease | null {
+  const release = selectLatestPublishedReleaseEntry(payload);
+  const tagName = normalizeReleaseTag(release?.tag_name);
+
+  if (!release || !tagName) {
+    return null;
+  }
+
+  return {
+    tagName,
+    url:
+      typeof release.html_url === 'string' && release.html_url.trim()
+        ? release.html_url.trim()
+        : `${repository.htmlUrl}/releases/tag/${tagName}`,
+    publishedAt: normalizePublishedAt(release.published_at),
+  };
 }
 
 export function resolveGitHubRepository(): GitHubRepository | null {

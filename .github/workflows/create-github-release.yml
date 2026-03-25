@@ -69,6 +69,12 @@ jobs:
           body_path: .github/release-notes.md
           make_latest: ${{ steps.latest_tag.outputs.make_latest }}
 
+      - name: Reconcile latest release marker
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: node .github/scripts/reconcile-github-release-latest.mjs
+
       - name: Check Discord webhook secret
         id: webhook
         env:
