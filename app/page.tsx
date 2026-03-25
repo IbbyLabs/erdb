@@ -4782,7 +4782,7 @@ export default function Home() {
       className="erdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30"
     >
       <nav ref={navRef} className="erdb-chrome sticky top-0 z-50">
-        <div className="erdb-nav-shell max-w-7xl mx-auto px-6 py-4">
+        <div className="erdb-nav-shell w-full px-6 py-4 2xl:px-8">
           <div className="erdb-nav-desktop flex flex-wrap items-center justify-between gap-4">
             <div className="erdb-nav-primary min-w-0">
               <BrandLockup compact />
@@ -4854,7 +4854,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="erdb-main max-w-7xl mx-auto px-6 py-16 md:py-20">
+      <main className="erdb-main w-full px-6 py-16 md:py-20 2xl:px-8">
         <section ref={heroRef} className="erdb-hero-section relative">
           <div className="erdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
           <div className="erdb-hero-grid">
@@ -4993,7 +4993,7 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="mt-6 erdb-surface-grid grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)_minmax(0,0.84fr)] xl:gap-6">
+            <div className="mt-6 erdb-surface-grid grid items-start gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)_minmax(0,1fr)] xl:gap-6">
             <div id="workspace-settings" className="space-y-5 scroll-mt-24 xl:col-start-1">
               <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
@@ -5493,7 +5493,7 @@ export default function Home() {
       </section>
 
         <section id="docs" className="erdb-section scroll-mt-24 pb-20">
-          <div className="max-w-5xl mx-auto space-y-8">
+          <div className="w-full space-y-8">
             <SectionHeader
               eyebrow="Developers"
               title="Reference surfaces with clearer grouping"
@@ -6211,7 +6211,7 @@ export default function Home() {
         </div>
       ) : null}
 
-      <section className="max-w-7xl mx-auto px-6 pb-6 md:pb-10" aria-label="Status board information">
+      <section className="w-full px-6 pb-6 md:pb-10 2xl:px-8" aria-label="Status board information">
         <div className="rounded-2xl border border-white/10 bg-zinc-950/65 p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
             <h3 className="text-sm md:text-base font-semibold text-white">What is IbbyLabs Uptime Tracker?</h3>
@@ -6226,7 +6226,7 @@ export default function Home() {
       </section>
 
       <footer className="erdb-footer py-8">
-        <div className="max-w-7xl mx-auto px-6 space-y-4">
+        <div className="w-full px-6 space-y-4 2xl:px-8">
           <div className="site-page-footer-top">
             <BrandLockup compact />
             <UptimePill />
