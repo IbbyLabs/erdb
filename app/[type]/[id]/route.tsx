@@ -321,6 +321,12 @@ const SIMKL_CACHE_TTL_MS = parseCacheTtlMs(
   10 * 60 * 1000,
   30 * 24 * 60 * 60 * 1000
 );
+const SIMKL_ID_CACHE_TTL_MS = parseCacheTtlMs(
+  process.env.ERDB_SIMKL_ID_CACHE_TTL_MS,
+  3 * 24 * 60 * 60 * 1000,
+  10 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000
+);
 const TORRENTIO_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TORRENTIO_CACHE_TTL_MS,
   6 * 60 * 60 * 1000,
@@ -2429,7 +2435,7 @@ const fetchTraktRating = async ({
   }
 };
 
-const fetchSimklRating = async ({
+const fetchSimklId = async ({
   clientId,
   imdbId,
   tmdbId,
@@ -2449,7 +2455,7 @@ const fetchSimklRating = async ({
   kitsuId?: string | null;
   cacheTtlMs: number;
   phases: PhaseDurations;
-}) => {
+}): Promise<string | null> => {
   const normalizedClientId = String(clientId || '').trim();
   const normalizedImdbId = String(imdbId || '').trim();
   const normalizedTmdbId = String(tmdbId || '').trim();
@@ -2460,9 +2466,6 @@ const fetchSimklRating = async ({
   if (!normalizedClientId) return null;
 
   const query = new URLSearchParams();
-  query.set('client_id', normalizedClientId);
-  query.set('fields', 'simkl');
-
   if (normalizedImdbId) {
     query.set('imdb', normalizedImdbId);
   } else if (normalizedTmdbId) {
@@ -2487,22 +2490,85 @@ const fetchSimklRating = async ({
 
   try {
     const response = await fetchJsonCached(
-      `simkl:ratings:${cacheIdSource}:client:${sha1Hex(normalizedClientId)}`,
-      `https://api.simkl.com/ratings?${query.toString()}`,
+      `simkl:id:${cacheIdSource}:client:${sha1Hex(normalizedClientId)}`,
+      `https://api.simkl.com/redirect?${query.toString()}`,
       cacheTtlMs,
       phases,
       'mdb',
       {
         headers: {
-          'Content-Type': 'application/json',
           'simkl-api-key': normalizedClientId,
+          'Accept': 'application/json',
+          'User-Agent': BROWSER_LIKE_USER_AGENT,
+        },
+      }
+    );
+
+    if (!response.ok) return null;
+    const simklId = response.data?.id || response.data?.simkl_id;
+    return simklId ? String(simklId) : null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchSimklRating = async ({
+  clientId,
+  imdbId,
+  tmdbId,
+  mediaType,
+  anilistId,
+  malId,
+  kitsuId,
+  cacheTtlMs,
+  phases,
+}: {
+  clientId: string;
+  imdbId?: string | null;
+  tmdbId?: string | null;
+  mediaType: 'movie' | 'tv';
+  anilistId?: string | null;
+  malId?: string | null;
+  kitsuId?: string | null;
+  cacheTtlMs: number;
+  phases: PhaseDurations;
+}) => {
+  const normalizedClientId = String(clientId || '').trim();
+  if (!normalizedClientId) return null;
+
+  const simklId = await fetchSimklId({
+    clientId: normalizedClientId,
+    imdbId,
+    tmdbId,
+    mediaType,
+    anilistId,
+    malId,
+    kitsuId,
+    cacheTtlMs: SIMKL_ID_CACHE_TTL_MS,
+    phases,
+  });
+
+  if (!simklId) return null;
+
+  try {
+    const response = await fetchJsonCached(
+      `simkl:summary:${simklId}:client:${sha1Hex(normalizedClientId)}`,
+      `https://api.simkl.com/shows/${simklId}?extended=full`,
+      cacheTtlMs,
+      phases,
+      'mdb',
+      {
+        headers: {
+          'simkl-api-key': normalizedClientId,
+          'Accept': 'application/json',
+          'User-Agent': BROWSER_LIKE_USER_AGENT,
         },
       }
     );
 
     if (!response.ok) return null;
 
-    const rating = normalizeRatingValue(response.data?.simkl?.rating);
+    const rating = normalizeRatingValue(response.data?.rating);
     return rating && !isNegativeRatingValue(rating) ? rating : null;
   } catch {
     return null;
