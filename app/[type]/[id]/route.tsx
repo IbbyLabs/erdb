@@ -6538,19 +6538,103 @@ export async function GET(
     request.nextUrl.searchParams.get('ratingValueMode'),
     DEFAULT_RATING_VALUE_MODE,
   );
-  const genreBadgeMode = normalizeGenreBadgeMode(request.nextUrl.searchParams.get('genreBadge'));
-  const genreBadgeStyle = normalizeGenreBadgeStyle(
+  const globalGenreBadgeMode = normalizeGenreBadgeMode(request.nextUrl.searchParams.get('genreBadge'));
+  const globalGenreBadgeStyle = normalizeGenreBadgeStyle(
     request.nextUrl.searchParams.get('genreBadgeStyle'),
     DEFAULT_GENRE_BADGE_STYLE,
   );
-  const genreBadgePosition = normalizeGenreBadgePosition(
+  const globalGenreBadgePosition = normalizeGenreBadgePosition(
     request.nextUrl.searchParams.get('genreBadgePosition'),
     DEFAULT_GENRE_BADGE_POSITION,
   );
-  const genreBadgeScale = normalizeBadgeScalePercent(
+  const globalGenreBadgeScale = normalizeBadgeScalePercent(
     request.nextUrl.searchParams.get('genreBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
   );
+  const posterGenreBadgeMode = normalizeGenreBadgeMode(
+    request.nextUrl.searchParams.get('posterGenreBadge') ??
+      request.nextUrl.searchParams.get('genreBadge'),
+    globalGenreBadgeMode,
+  );
+  const backdropGenreBadgeMode = normalizeGenreBadgeMode(
+    request.nextUrl.searchParams.get('backdropGenreBadge') ??
+      request.nextUrl.searchParams.get('genreBadge'),
+    globalGenreBadgeMode,
+  );
+  const logoGenreBadgeMode = normalizeGenreBadgeMode(
+    request.nextUrl.searchParams.get('logoGenreBadge') ??
+      request.nextUrl.searchParams.get('genreBadge'),
+    globalGenreBadgeMode,
+  );
+  const posterGenreBadgeStyle = normalizeGenreBadgeStyle(
+    request.nextUrl.searchParams.get('posterGenreBadgeStyle') ??
+      request.nextUrl.searchParams.get('genreBadgeStyle'),
+    globalGenreBadgeStyle,
+  );
+  const backdropGenreBadgeStyle = normalizeGenreBadgeStyle(
+    request.nextUrl.searchParams.get('backdropGenreBadgeStyle') ??
+      request.nextUrl.searchParams.get('genreBadgeStyle'),
+    globalGenreBadgeStyle,
+  );
+  const logoGenreBadgeStyle = normalizeGenreBadgeStyle(
+    request.nextUrl.searchParams.get('logoGenreBadgeStyle') ??
+      request.nextUrl.searchParams.get('genreBadgeStyle'),
+    globalGenreBadgeStyle,
+  );
+  const posterGenreBadgePosition = normalizeGenreBadgePosition(
+    request.nextUrl.searchParams.get('posterGenreBadgePosition') ??
+      request.nextUrl.searchParams.get('genreBadgePosition'),
+    globalGenreBadgePosition,
+  );
+  const backdropGenreBadgePosition = normalizeGenreBadgePosition(
+    request.nextUrl.searchParams.get('backdropGenreBadgePosition') ??
+      request.nextUrl.searchParams.get('genreBadgePosition'),
+    globalGenreBadgePosition,
+  );
+  const logoGenreBadgePosition = normalizeGenreBadgePosition(
+    request.nextUrl.searchParams.get('logoGenreBadgePosition') ??
+      request.nextUrl.searchParams.get('genreBadgePosition'),
+    globalGenreBadgePosition,
+  );
+  const posterGenreBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('posterGenreBadgeScale') ??
+      request.nextUrl.searchParams.get('genreBadgeScale'),
+    globalGenreBadgeScale,
+  );
+  const backdropGenreBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('backdropGenreBadgeScale') ??
+      request.nextUrl.searchParams.get('genreBadgeScale'),
+    globalGenreBadgeScale,
+  );
+  const logoGenreBadgeScale = normalizeBadgeScalePercent(
+    request.nextUrl.searchParams.get('logoGenreBadgeScale') ??
+      request.nextUrl.searchParams.get('genreBadgeScale'),
+    globalGenreBadgeScale,
+  );
+  const genreBadgeMode =
+    imageType === 'poster'
+      ? posterGenreBadgeMode
+      : imageType === 'backdrop'
+        ? backdropGenreBadgeMode
+        : logoGenreBadgeMode;
+  const genreBadgeStyle =
+    imageType === 'poster'
+      ? posterGenreBadgeStyle
+      : imageType === 'backdrop'
+        ? backdropGenreBadgeStyle
+        : logoGenreBadgeStyle;
+  const genreBadgePosition =
+    imageType === 'poster'
+      ? posterGenreBadgePosition
+      : imageType === 'backdrop'
+        ? backdropGenreBadgePosition
+        : logoGenreBadgePosition;
+  const genreBadgeScale =
+    imageType === 'poster'
+      ? posterGenreBadgeScale
+      : imageType === 'backdrop'
+        ? backdropGenreBadgeScale
+        : logoGenreBadgeScale;
   const globalRatings = request.nextUrl.searchParams.get('ratings');
   const posterRatings = request.nextUrl.searchParams.get('posterRatings') ?? globalRatings;
   const backdropRatings = request.nextUrl.searchParams.get('backdropRatings') ?? globalRatings;
