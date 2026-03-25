@@ -97,6 +97,15 @@
 
 <a id="v2-37-7"></a>
 
+<a id="v2-38-0"></a>
+
+## [v2.38.0] - 25/03/2026
+
+### Added
+* added a 'Hide All Ratings' option and an 'Enable All' option.
+  
+  feat: added a proxy/image fallback support so rewwritten urls keep upstream images.
+
 ## [v2.37.7] - 25/03/2026
 
 ### Fixed
