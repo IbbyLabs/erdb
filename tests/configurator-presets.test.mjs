@@ -8,7 +8,7 @@ import {
 } from '../lib/configuratorPresets.ts';
 import { createDefaultSavedUiConfig } from '../lib/uiConfig.ts';
 
-test('public-fast preset preserves existing keys and manifest while applying shared-host defaults', () => {
+test('public-fast preset preserves existing keys and manifest while applying public-instance defaults', () => {
   const current = createDefaultSavedUiConfig();
   current.settings.tmdbKey = 'tmdb-key';
   current.settings.mdblistKey = 'mdblist-key';
@@ -50,7 +50,7 @@ test('full-stack preset enables dense layouts and full rating coverage', () => {
   assert.deepEqual(next.settings.posterRatingPreferences, next.settings.logoRatingPreferences);
 });
 
-test('wizard recommendation favors public-fast for shared hosts and richer presets for manual tuning', () => {
+test('wizard recommendation favors public-fast for public instances and richer presets for manual tuning', () => {
   assert.equal(
     recommendConfiguratorPreset({
       deployment: 'public',

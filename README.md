@@ -204,7 +204,7 @@ Recommended proxy or addon settings:
 | `posterRatings` | `imdb,tmdb,mdblist` | Good coverage without fetching a long tail of providers on every poster. |
 | `backdropRatings` | `imdb,tmdb,mdblist` | Same tradeoff as posters. |
 | `logoRatings` | `imdb,tmdb` | Logos usually benefit less from a dense rating stack. |
-| `posterStreamBadges` | `off` | Torrentio calls are one of the largest latency spikes on shared hosts. |
+| `posterStreamBadges` | `off` | Torrentio calls are one of the largest latency spikes on public instances. |
 | `backdropStreamBadges` | `off` | Same reason as posters. |
 | `translateMeta` | `true` | Keeps proxy metadata improvements on. |
 | `translateMetaMode` | `fill-missing` | Conservative proxy behavior that usually helps more than it hurts. |

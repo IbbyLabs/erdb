@@ -146,8 +146,8 @@ export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
   {
     id: 'public-fast',
     label: 'Public Fast',
-    badge: 'Shared Host',
-    description: 'Optimized for public or shared ERDB hosts where predictable latency matters more than long tail coverage.',
+    badge: 'Public Instance',
+    description: 'Optimized for public ERDB instances where predictable latency matters more than long tail coverage.',
     bullets: [
       'Matches the README Public Fast guidance for ratings and proxy translation.',
       'Disables poster and backdrop stream badges to avoid latency spikes.',
