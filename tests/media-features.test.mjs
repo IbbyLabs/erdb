@@ -51,6 +51,22 @@ test('media feature badges prefer bluray over remux and dolby vision over hdr', 
   );
 });
 
+test('remux sources also expose bluray coverage when explicit bluray tokens are absent', () => {
+  const badges = buildMediaFeatureBadgesFromFlags({
+    has4k: true,
+    hasBluray: false,
+    hasHdr: true,
+    hasDolbyVision: true,
+    hasDolbyAtmos: true,
+    hasRemux: true,
+  });
+
+  assert.deepEqual(
+    badges.map((badge) => badge.key),
+    ['4k', 'bluray', 'dolbyvision', 'dolbyatmos', 'remux'],
+  );
+});
+
 test('media badge assets stay embedded for renderer use', () => {
   assert.deepEqual(Object.keys(MEDIA_BADGE_ASSETS).sort(), [
     '4k',

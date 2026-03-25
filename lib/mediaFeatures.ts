@@ -208,10 +208,12 @@ export const collectMediaFeatureFlags = (filenames: string[]) => {
 export const buildMediaFeatureBadgesFromFlags = (flags: MediaFeatureFlags) => {
   const badges: MediaFeatureBadgeMeta[] = [];
   if (flags.has4k) badges.push(MEDIA_FEATURE_META_BY_KEY['4k']);
-  if (flags.hasBluray) badges.push(MEDIA_FEATURE_META_BY_KEY.bluray);
+  const hasPhysicalDiscSource = flags.hasBluray || flags.hasRemux;
+  if (hasPhysicalDiscSource) badges.push(MEDIA_FEATURE_META_BY_KEY.bluray);
   if (!flags.hasDolbyVision && flags.hasHdr) badges.push(MEDIA_FEATURE_META_BY_KEY.hdr);
   if (flags.hasDolbyVision) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyvision);
   if (flags.hasDolbyAtmos) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyatmos);
+  // A remux implies a physical disc source even when the filename omits BluRay/BDRemux tokens.
   if (flags.hasRemux && !flags.hasBluray) badges.push(MEDIA_FEATURE_META_BY_KEY.remux);
   return badges;
 };
