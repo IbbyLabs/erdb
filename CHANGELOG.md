@@ -99,6 +99,22 @@
 
 <a id="v2-38-0"></a>
 
+<a id="v2-39-0"></a>
+
+## [v2.39.0] - 25/03/2026
+
+### Added
+* add SIMKL as a rating provider
+* add automatic cache pruning for expired objectStorage images
+* add 'none' ratingPresentation mode to hide all ratings
+
+### Fixed
+* replace SIMKL favicon with official SVG logo
+* remove extra comma in simklClientId default
+
+### Other Changes
+* resolve conflicts (keeping our codebase)
+
 ## [v2.38.0] - 25/03/2026
 
 ### Added
