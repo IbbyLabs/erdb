@@ -3367,8 +3367,8 @@ export default function Home() {
                       })}
                     </div>
                     {activeProviderMeta ? (
-                      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
-                        <div className="space-y-3">
+                      <div className="provider-editor-layout">
+                        <div className="min-w-0 space-y-3">
                           <div className="grid gap-3 md:grid-cols-2">
                             <div>
                               <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
@@ -3672,7 +3672,7 @@ export default function Home() {
                             </p>
                           </div>
                         </div>
-                        <div className="self-start rounded-xl border border-white/10 bg-black/60 p-3 xl:sticky xl:top-3">
+                        <div className="provider-editor-preview self-start rounded-xl border border-white/10 bg-black/60 p-3">
                           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                             Active Preview
                           </div>
