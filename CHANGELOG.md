@@ -113,6 +113,13 @@
 
 <a id="v2-39-6"></a>
 
+<a id="v2-39-7"></a>
+
+## [v2.39.7] - 25/03/2026
+
+### Fixed
+* tidy preview workspace layout and chip spacing
+
 ## [v2.39.6] - 25/03/2026
 
 ### Fixed
