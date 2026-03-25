@@ -71,6 +71,14 @@
 
 <a id="v2-35-6"></a>
 
+<a id="v2-36-0"></a>
+
+## [v2.36.0] - 25/03/2026
+
+### Other Changes
+* add poster edge offset controls
+* Add per type genre badge settings
+
 ## [v2.35.6] - 25/03/2026
 
 ### Fixed
