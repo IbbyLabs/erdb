@@ -93,6 +93,13 @@
 
 <a id="v2-37-5"></a>
 
+<a id="v2-37-6"></a>
+
+## [v2.37.6] - 25/03/2026
+
+### Documentation
+* rename shared host copy to public instance
+
 ## [v2.37.5] - 25/03/2026
 
 ### Fixed
