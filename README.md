@@ -179,6 +179,40 @@ Custom port (with scale):
 ```bash
 ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
 ```
+
+### Public Fast Preset
+
+If you run a shared or public ERDB host, start from a lighter profile before
+adding more providers or Torrentio badges. This keeps cold renders and Stremio
+catalog bursts predictable.
+
+Host env preset:
+
+```env
+ERDB_SHARP_CONCURRENCY=4
+ERDB_SHARP_CACHE_MEMORY_MB=512
+ERDB_SHARP_CACHE_ITEMS=2000
+ERDB_SHARP_CACHE_FILES=20000
+ERDB_TORRENTIO_CACHE_TTL_MS=43200000
+ERDB_TORRENTIO_CONCURRENCY=3
+```
+
+Recommended proxy or addon settings:
+
+| Setting | Recommended Value | Why |
+|---------|-------------------|-----|
+| `posterRatings` | `imdb,tmdb,mdblist` | Good coverage without fetching a long tail of providers on every poster. |
+| `backdropRatings` | `imdb,tmdb,mdblist` | Same tradeoff as posters. |
+| `logoRatings` | `imdb,tmdb` | Logos usually benefit less from a dense rating stack. |
+| `posterStreamBadges` | `off` | Torrentio calls are one of the largest latency spikes on shared hosts. |
+| `backdropStreamBadges` | `off` | Same reason as posters. |
+| `translateMeta` | `true` | Keeps proxy metadata improvements on. |
+| `translateMetaMode` | `fill-missing` | Conservative proxy behavior that usually helps more than it hurts. |
+| `debugMetaTranslation` | `false` | Debug provenance is useful for troubleshooting, but not for normal public traffic. |
+
+If you want the absolute fastest public profile, drop `mdblist` too and keep
+the ratings list to `imdb,tmdb`.
+
 ## HuggingFace Guide (NOT RECOMMENDED)
 
 (to avoid bans on HuggingFace)
@@ -474,6 +508,7 @@ The matching query based passthrough routes live under `/proxy/catalog/...`, `/p
 - `tmdbKey` is required.
 - `mdblistKey` is required for MDBList backed ratings and broad fallback coverage.
 - `fanartKey` is optional and is recommended when you use fanart sources. When it is missing, ERDB can fall back to the server key if one exists.
+- For shared/public ERDB instances, start with the Public Fast preset above before enabling long rating lists or Torrentio stream badges.
 - Optional proxy metadata translation can localize `meta.name` / `meta.description` and episode text.
 - `translateMetaMode=fill-missing` is the safe default: keep good addon text and only backfill blanks or placeholders.
 - `translateMetaMode=prefer-upstream` keeps any upstream text that is present, even placeholders like `N/A`.
@@ -630,17 +665,23 @@ Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ERDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL |
+| `ERDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of upstream rate limiting. |
+| `ERDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
 
 > **Note:** Torrentio requests use `HTTP_PROXY` / `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set.
 
 ### Sharp Rendering (advanced)
 
+When the Sharp env vars are unset, ERDB currently applies conservative
+in-app defaults instead of deferring to Sharp's own library defaults:
+concurrency `2`, cache memory `128 MB`, cache items `100`, and cache files `200`.
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ERDB_SHARP_CONCURRENCY` | Sharp default | Max Sharp threads |
-| `ERDB_SHARP_CACHE_MEMORY_MB` | Sharp default | Memory (MB) for Sharp internal cache |
-| `ERDB_SHARP_CACHE_ITEMS` | Sharp default | Max cached items |
-| `ERDB_SHARP_CACHE_FILES` | Sharp default | Max cached files/handles |
+| `ERDB_SHARP_CONCURRENCY` | `2` | Max Sharp threads |
+| `ERDB_SHARP_CACHE_MEMORY_MB` | `128` | Memory (MB) for Sharp internal cache |
+| `ERDB_SHARP_CACHE_ITEMS` | `100` | Max cached items |
+| `ERDB_SHARP_CACHE_FILES` | `200` | Max cached files/handles |
 
 ## Live Demo Cards
 
