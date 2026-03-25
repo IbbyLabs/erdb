@@ -107,6 +107,13 @@
 
 <a id="v2-39-3"></a>
 
+<a id="v2-39-4"></a>
+
+## [v2.39.4] - 25/03/2026
+
+### Fixed
+* align simkl compliance flow and docs
+
 ## [v2.39.3] - 25/03/2026
 
 ### Added
