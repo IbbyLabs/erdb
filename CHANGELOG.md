@@ -95,6 +95,13 @@
 
 <a id="v2-37-6"></a>
 
+<a id="v2-37-7"></a>
+
+## [v2.37.7] - 25/03/2026
+
+### Fixed
+* reconcile GitHub release latest tag with actual latest release
+
 ## [v2.37.6] - 25/03/2026
 
 ### Documentation
