@@ -91,6 +91,13 @@
 
 <a id="v2-37-4"></a>
 
+<a id="v2-37-5"></a>
+
+## [v2.37.5] - 25/03/2026
+
+### Fixed
+* infer bluray coverage from remux quality badges
+
 ## [v2.37.4] - 25/03/2026
 
 ### Fixed
