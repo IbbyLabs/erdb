@@ -57,6 +57,16 @@
 
 <a id="v2-34-0"></a>
 
+<a id="v2-35-0"></a>
+
+## [v2.35.0] - 25/03/2026
+
+### Added
+* add compact dual aggregate rating mode
+
+### Other Changes
+* separate latest image promotion from release builds
+
 ## [v2.34.0] - 25/03/2026
 
 ### Added
