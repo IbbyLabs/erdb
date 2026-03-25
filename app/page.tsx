@@ -3120,7 +3120,7 @@ export default function Home() {
                       })}
                     </div>
                     {activeProviderMeta ? (
-                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.34fr)]">
+                      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
                         <div className="space-y-3">
                           <div className="grid gap-3 md:grid-cols-2">
                             <div>
@@ -3425,13 +3425,13 @@ export default function Home() {
                             </p>
                           </div>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/60 p-3">
+                        <div className="self-start rounded-xl border border-white/10 bg-black/60 p-3 xl:sticky xl:top-3">
                           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                             Active Preview
                           </div>
-                          <div className="mt-3 flex items-center gap-3">
+                          <div className="mt-3 grid gap-3 sm:grid-cols-[auto,1fr] sm:items-start">
                             <div
-                              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl"
+                              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.28)]"
                               style={{
                                 backgroundColor:
                                   activeProviderAppearanceOverride.accentColor ||
@@ -3445,12 +3445,12 @@ export default function Home() {
                                 className="max-h-8 max-w-8 object-contain"
                               />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <div className="text-sm font-semibold text-white">
                                 {activeProviderMeta.label}
                               </div>
-                              <div className="text-[11px] text-zinc-500">
-                                Per-source overrides apply across poster, backdrop, and logo renders, including stacked badge width, opacity, and accent placement.
+                              <div className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                                Current icon and accent preview for poster, backdrop, and logo output. Stacked controls adjust width, surface opacity, and accent placement for this source.
                               </div>
                             </div>
                           </div>
