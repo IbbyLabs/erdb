@@ -63,6 +63,13 @@
 
 <a id="v2-35-2"></a>
 
+<a id="v2-35-3"></a>
+
+## [v2.35.3] - 25/03/2026
+
+### Fixed
+* keep sticky preview above samples
+
 ## [v2.35.2] - 25/03/2026
 
 ### Fixed
