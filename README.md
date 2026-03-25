@@ -278,7 +278,7 @@ Prefer `tmdb:movie:id` or `tmdb:tv:id` when you already know the media type. Bar
 
 Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, ERDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
-Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, sci fi, fantasy, crime, documentary, and anime render; ambiguous combinations stay off.
+Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, drama, sci fi, fantasy, crime, documentary, and anime render. When a title mixes drama with a stronger supported family, ERDB still prefers the more specific bucket.
 
 `fanartKey` is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to `ERDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
 

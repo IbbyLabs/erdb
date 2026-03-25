@@ -46,8 +46,15 @@ test('genre badge family resolution prefers anime and curated literal buckets', 
   assert.equal(
     resolveGenreBadgeFamily({
       genres: [{ name: 'Drama' }, { name: 'Mystery' }],
-    }),
-    null,
+    })?.id,
+    'drama',
+  );
+
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Drama' }, { name: 'Crime' }],
+    })?.id,
+    'crime',
   );
 
   assert.equal(

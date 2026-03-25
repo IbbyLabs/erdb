@@ -608,6 +608,7 @@ const EDITORIAL_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
   scifi: 'Sci Fi',
   fantasy: 'Fantasy',
   crime: 'Crime',
+  drama: 'Drama',
   documentary: 'Doc',
 };
 
@@ -4386,6 +4387,10 @@ const buildGenreBadgeIconMarkup = ({
 
   if (familyId === 'crime') {
     return `<path d="M12 3 18.3 5.7V11c0 4.2-2.5 7.2-6.3 9.1C8.2 18.2 5.7 15.2 5.7 11V5.7L12 3Z" fill="none" stroke="${color}" stroke-width="2"/><path d="M9 10.2h6M9 13.8h6" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`;
+  }
+
+  if (familyId === 'drama') {
+    return `<path d="M7.1 5.1h4.3c1.4 0 2.6 1.1 2.6 2.6V15c0 2.4-1.8 4.2-4.3 4.2S5.4 17.4 5.4 15V6.8c0-.9.7-1.7 1.7-1.7Z" fill="none" stroke="${color}" stroke-width="1.8"/><path d="M14.2 6.2h2.8c1 0 1.7.8 1.7 1.7v6.4c0 2.2-1.6 4-3.9 4H12" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="10.3" r="1" fill="${color}"/><circle cx="12" cy="10.3" r="1" fill="${color}"/><path d="M8.3 14c.9.9 1.8 1.3 2.7 1.3s1.8-.4 2.7-1.3" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round"/><circle cx="15.6" cy="10.8" r="0.9" fill="${color}"/><circle cx="18" cy="10.8" r="0.9" fill="${color}"/><path d="M15.1 14.8c.8-.8 1.7-1.2 2.5-1.2.4 0 .8.1 1.2.3" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/>`;
   }
 
   return `<rect x="4" y="7" width="12" height="9.5" rx="2" fill="none" stroke="${color}" stroke-width="2"/><rect x="8" y="4.5" width="4.4" height="2.7" rx="1.2" fill="${color}"/><circle cx="10" cy="11.8" r="2.1" fill="${color}"/><path d="M16 9.2 20.5 7.1v9.4L16 14.4Z" fill="${color}" opacity="0.96"/>`;

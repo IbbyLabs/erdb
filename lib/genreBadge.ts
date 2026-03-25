@@ -16,6 +16,7 @@ export type GenreBadgeFamilyId =
   | 'scifi'
   | 'fantasy'
   | 'crime'
+  | 'drama'
   | 'documentary';
 
 export type GenreBadgeFamilyMeta = {
@@ -219,6 +220,11 @@ export const GENRE_BADGE_FAMILY_META: Record<GenreBadgeFamilyId, GenreBadgeFamil
     label: 'CRIME',
     accentColor: '#60a5fa',
   },
+  drama: {
+    id: 'drama',
+    label: 'DRAMA',
+    accentColor: '#818cf8',
+  },
   documentary: {
     id: 'documentary',
     label: 'DOC',
@@ -232,6 +238,7 @@ const TMDB_GENRE = {
   animation: 16,
   comedy: 35,
   crime: 80,
+  drama: 18,
   documentary: 99,
   fantasy: 14,
   horror: 27,
@@ -356,6 +363,10 @@ export const resolveGenreBadgeFamily = (input: {
     )
   ) {
     return GENRE_BADGE_FAMILY_META.action;
+  }
+
+  if (hasGenreName(genreNames, 'drama') || hasGenreId(genreIds, TMDB_GENRE.drama)) {
+    return GENRE_BADGE_FAMILY_META.drama;
   }
 
   return null;
