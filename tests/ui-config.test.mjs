@@ -286,6 +286,30 @@ test('workspace normalization preserves compact dual aggregate presentation alia
   assert.equal(decodedConfig.backdropRatingPresentation, 'dual-minimal');
 });
 
+test('workspace normalization accepts none rating presentation to remove all ratings', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterRatingPresentation: 'none',
+      backdropRatingPresentation: 'none',
+      logoRatingPresentation: 'none',
+    },
+  });
+
+  assert.equal(config.settings.posterRatingPresentation, 'none');
+  assert.equal(config.settings.backdropRatingPresentation, 'none');
+  assert.equal(config.settings.logoRatingPresentation, 'none');
+
+  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.posterRatingPresentation, 'none');
+  assert.equal(decodedConfig.backdropRatingPresentation, 'none');
+  assert.equal(decodedConfig.logoRatingPresentation, 'none');
+});
+
 test('config string and proxy manifest use the same shared ERDB settings', () => {
   const config = buildSampleSettings();
   const baseUrl = 'https://erdb.example.com/';

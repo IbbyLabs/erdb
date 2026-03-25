@@ -9,7 +9,8 @@ export type RatingPresentation =
   | 'dual'
   | 'dual-minimal'
   | 'editorial'
-  | 'blockbuster';
+  | 'blockbuster'
+  | 'none';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
 export type AggregateAccentMode = 'source' | 'genre' | 'custom';
 
@@ -65,6 +66,11 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
     id: 'blockbuster',
     label: 'Blockbuster',
     description: 'Deliberately dense badge rich promo mode.',
+  },
+  {
+    id: 'none',
+    label: 'None',
+    description: 'No rating badges or provider overlays.',
   },
 ];
 
@@ -143,7 +149,8 @@ export const normalizeRatingPresentation = (
     normalized === 'dual' ||
     normalized === 'dual-minimal' ||
     normalized === 'editorial' ||
-    normalized === 'blockbuster'
+    normalized === 'blockbuster' ||
+    normalized === 'none'
   ) {
     return normalized;
   }
