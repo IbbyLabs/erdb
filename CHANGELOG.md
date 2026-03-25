@@ -81,6 +81,19 @@
 
 <a id="v2-36-4"></a>
 
+<a id="v2-37-0"></a>
+
+## [v2.37.0] - 25/03/2026
+
+### Added
+* add setup modes and guided presets
+  
+  Add a first run mode picker that lets people choose between a simplified preset driven workspace and the full advanced configurator.
+  
+  Introduce preset definitions plus a guided wizard that recommends starter, balanced, public fast, or full stack defaults while preserving keys and proxy manifest state.
+  
+  Reorganize advanced controls into accordion sections, keep simple mode focused on everyday artwork switches, add preset coverage tests, and remove user facing hyphenated copy from the new surfaces.
+
 ## [v2.36.4] - 25/03/2026
 
 ### Fixed
