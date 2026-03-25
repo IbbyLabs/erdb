@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import packageJson from './package.json';
 
 const securityHeaders = [
   { key: 'Referrer-Policy', value: 'no-referrer' },
@@ -15,8 +16,18 @@ const securityHeaders = [
   },
 ];
 
+const ERDB_BUILD_NAME =
+  String(process.env.ERDB_BUILD_NAME || process.env.npm_package_name || packageJson.name || 'erdb').trim() || 'erdb';
+const ERDB_BUILD_VERSION =
+  String(process.env.ERDB_BUILD_VERSION || process.env.npm_package_version || packageJson.version || '1.0').trim() ||
+  '1.0';
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  env: {
+    ERDB_BUILD_NAME,
+    ERDB_BUILD_VERSION,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -55,4 +66,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-

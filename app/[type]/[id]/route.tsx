@@ -618,8 +618,12 @@ const LOGO_MIN_WIDTH = 360;
 const LOGO_MAX_WIDTH = 2200;
 const BROWSER_LIKE_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
-const SIMKL_APP_NAME = String(process.env.ERDB_SIMKL_APP_NAME || process.env.npm_package_name || 'erdb').trim() || 'erdb';
-const SIMKL_APP_VERSION = String(process.env.ERDB_SIMKL_APP_VERSION || process.env.npm_package_version || '1.0').trim() || '1.0';
+const SIMKL_APP_NAME =
+  String(process.env.ERDB_SIMKL_APP_NAME || process.env.ERDB_BUILD_NAME || process.env.npm_package_name || 'erdb')
+    .trim() || 'erdb';
+const SIMKL_APP_VERSION =
+  String(process.env.ERDB_SIMKL_APP_VERSION || process.env.ERDB_BUILD_VERSION || process.env.npm_package_version || '1.0')
+    .trim() || '1.0';
 
 const buildSimklRequiredQuery = (clientId: string) => {
   const query = new URLSearchParams();
