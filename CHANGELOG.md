@@ -55,6 +55,16 @@
 
 <a id="v2-33-0"></a>
 
+<a id="v2-34-0"></a>
+
+## [v2.34.0] - 25/03/2026
+
+### Added
+* add hundred point rating normalization
+
+### Fixed
+* tighten media quality badge accuracy
+
 ## [v2.33.0] - 25/03/2026
 
 ### Added
