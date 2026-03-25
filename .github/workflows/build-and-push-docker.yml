@@ -34,9 +34,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
+          flavor: |
+            latest=false
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=tag
+            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
+            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && github.ref_type != 'tag' }}
           labels: |
             org.opencontainers.image.title=ERDB
             org.opencontainers.image.description=ERDB generates poster, backdrop, and logo images with dynamic ratings on the fly.
