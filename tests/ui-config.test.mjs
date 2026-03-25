@@ -213,6 +213,27 @@ test('workspace normalization accepts hundred point rating value aliases and pre
   assert.equal(decodedConfig.ratingValueMode, 'normalized100');
 });
 
+test('workspace normalization preserves compact dual aggregate presentation aliases', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterRatingPresentation: 'dual-minimal',
+      backdropRatingPresentation: 'compact-dual',
+    },
+  });
+
+  assert.equal(config.settings.posterRatingPresentation, 'dual-minimal');
+  assert.equal(config.settings.backdropRatingPresentation, 'dual-minimal');
+
+  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.posterRatingPresentation, 'dual-minimal');
+  assert.equal(decodedConfig.backdropRatingPresentation, 'dual-minimal');
+});
+
 test('config string and proxy manifest use the same shared ERDB settings', () => {
   const config = buildSampleSettings();
   const baseUrl = 'https://erdb.example.com/';

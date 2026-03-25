@@ -7,6 +7,7 @@ export type RatingPresentation =
   | 'minimal'
   | 'average'
   | 'dual'
+  | 'dual-minimal'
   | 'editorial'
   | 'blockbuster';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
@@ -49,6 +50,11 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
     id: 'dual',
     label: 'Critics + Audience',
     description: 'Render separate critic and audience average badges at the same time.',
+  },
+  {
+    id: 'dual-minimal',
+    label: 'Compact Critics + Audience',
+    description: 'Render separate critic and audience compact score chips at the same time.',
   },
   {
     id: 'editorial',
@@ -135,10 +141,20 @@ export const normalizeRatingPresentation = (
     normalized === 'minimal' ||
     normalized === 'average' ||
     normalized === 'dual' ||
+    normalized === 'dual-minimal' ||
     normalized === 'editorial' ||
     normalized === 'blockbuster'
   ) {
     return normalized;
+  }
+  if (
+    normalized === 'dualminimal' ||
+    normalized === 'minimal-dual' ||
+    normalized === 'compact-dual' ||
+    normalized === 'compactdual' ||
+    normalized === 'dualcompact'
+  ) {
+    return 'dual-minimal';
   }
   return fallback;
 };
@@ -192,13 +208,20 @@ export const usesAggregateRatingPresentation = (presentation: RatingPresentation
   presentation === 'minimal' ||
   presentation === 'average' ||
   presentation === 'dual' ||
+  presentation === 'dual-minimal' ||
   presentation === 'editorial';
 
 export const usesAggregateRatingSource = (presentation: RatingPresentation) =>
   presentation === 'minimal' || presentation === 'average' || presentation === 'editorial';
 
+export const usesDualAggregateRatingPresentation = (presentation: RatingPresentation) =>
+  presentation === 'dual' || presentation === 'dual-minimal';
+
 export const usesAggregateAccentBar = (presentation: RatingPresentation) =>
-  presentation === 'minimal' || presentation === 'average' || presentation === 'dual';
+  presentation === 'minimal' ||
+  presentation === 'average' ||
+  presentation === 'dual' ||
+  presentation === 'dual-minimal';
 
 export const preservesSelectedRatingLayout = (presentation: RatingPresentation) =>
   presentation !== 'blockbuster' && presentation !== 'editorial';

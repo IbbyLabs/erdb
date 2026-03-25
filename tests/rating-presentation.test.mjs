@@ -17,6 +17,7 @@ import {
   resolvePosterRatingsMaxPerSideForPresentation,
   selectAggregateRatingProviders,
   usesAggregateAccentBar,
+  usesDualAggregateRatingPresentation,
   usesAggregateRatingPresentation,
   usesAggregateRatingSource,
 } from '../lib/ratingPresentation.ts';
@@ -24,6 +25,8 @@ import {
 test('presentation modes normalize to supported values', () => {
   assert.equal(normalizeRatingPresentation('minimal'), 'minimal');
   assert.equal(normalizeRatingPresentation('DUAL'), 'dual');
+  assert.equal(normalizeRatingPresentation('dual-minimal'), 'dual-minimal');
+  assert.equal(normalizeRatingPresentation('compact-dual'), 'dual-minimal');
   assert.equal(normalizeRatingPresentation('EDITORIAL'), 'editorial');
   assert.equal(normalizeRatingPresentation('BLOCKBUSTER'), 'blockbuster');
   assert.equal(normalizeRatingPresentation('unknown'), 'standard');
@@ -38,8 +41,14 @@ test('aggregate rating sources normalize to supported values', () => {
 test('aggregate source helpers distinguish summary modes and preferred providers', () => {
   assert.equal(usesAggregateRatingSource('standard'), false);
   assert.equal(usesAggregateRatingPresentation('dual'), true);
+  assert.equal(usesAggregateRatingPresentation('dual-minimal'), true);
   assert.equal(usesAggregateRatingSource('dual'), false);
+  assert.equal(usesAggregateRatingSource('dual-minimal'), false);
   assert.equal(usesAggregateAccentBar('dual'), true);
+  assert.equal(usesAggregateAccentBar('dual-minimal'), true);
+  assert.equal(usesDualAggregateRatingPresentation('dual'), true);
+  assert.equal(usesDualAggregateRatingPresentation('dual-minimal'), true);
+  assert.equal(usesDualAggregateRatingPresentation('minimal'), false);
   assert.equal(usesAggregateRatingSource('minimal'), true);
   assert.equal(usesAggregateRatingSource('editorial'), true);
   assert.deepEqual(
@@ -72,10 +81,13 @@ test('aggregate accent helpers normalize mode and clamp bar offsets', () => {
 test('non-blockbuster presentations preserve selected placement controls', () => {
   assert.equal(preservesSelectedRatingLayout('standard'), true);
   assert.equal(preservesSelectedRatingLayout('dual'), true);
+  assert.equal(preservesSelectedRatingLayout('dual-minimal'), true);
   assert.equal(resolvePosterRatingLayoutForPresentation('minimal', 'top'), 'top');
   assert.equal(resolvePosterRatingLayoutForPresentation('dual', 'bottom'), 'bottom');
+  assert.equal(resolvePosterRatingLayoutForPresentation('dual-minimal', 'bottom'), 'bottom');
   assert.equal(resolveBackdropRatingLayoutForPresentation('average', 'center'), 'center');
   assert.equal(resolveBackdropRatingLayoutForPresentation('dual', 'right'), 'right');
+  assert.equal(resolveBackdropRatingLayoutForPresentation('dual-minimal', 'right'), 'right');
   assert.equal(resolvePosterRatingsMaxPerSideForPresentation('average', 5), 5);
   assert.equal(resolveLogoRatingsMaxForPresentation('minimal', 3), 3);
 });
@@ -86,6 +98,7 @@ test('editorial keeps aggregate behavior but only renders as a unique poster mod
   assert.equal(resolveEffectiveRatingPresentation('editorial', 'backdrop'), 'average');
   assert.equal(resolveEffectiveRatingPresentation('editorial', 'logo'), 'average');
   assert.equal(resolveEffectiveRatingPresentation('dual', 'poster'), 'dual');
+  assert.equal(resolveEffectiveRatingPresentation('dual-minimal', 'poster'), 'dual-minimal');
 });
 
 test('blockbuster uses fixed placement defaults', () => {

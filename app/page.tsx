@@ -98,6 +98,7 @@ import {
   usesAggregateAccentBar,
   usesAggregateRatingPresentation,
   usesAggregateRatingSource,
+  usesDualAggregateRatingPresentation,
   type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
@@ -401,11 +402,11 @@ backdropQualityBadgesStyle| glass, square, plain, media, silver (backdrop only) 
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 providerAppearance     | base64url or JSON provider overrides for icon, accent, and stacked badge chrome | none
-ratingPresentation      | standard, minimal, average, dual, editorial, blockbuster             | standard
+ratingPresentation      | standard, minimal, average, dual, dual-minimal, editorial, blockbuster | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 aggregateAccentMode     | source, genre, custom                                                | source
 aggregateAccentColor    | Hex color (used when aggregateAccentMode=custom)                     | #a78bfa
-aggregateAccentBarOffset| Number (-12 to 12, average badges only)                              | 0
+aggregateAccentBarOffset| Number (-12 to 12, aggregate badges only)                            | 0
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
 ratingStyle             | glass, square, plain, stacked                                        | glass
 genreBadgeScale         | Number (${MIN_BADGE_SCALE_PERCENT}-${MAX_BADGE_SCALE_PERCENT})       | 100
@@ -462,7 +463,7 @@ Use cfg.ratingValueMode to keep provider native scales or normalize everything t
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, or force a custom aggregate accent through cfg.aggregateAccentColor.
-Use cfg.aggregateAccentBarOffset to nudge the average badge accent bar up or down a few pixels in compact, labeled, and dual aggregate layouts.
+Use cfg.aggregateAccentBarOffset to nudge the aggregate badge accent bar up or down a few pixels in compact, compact dual, labeled, and dual aggregate layouts.
 Editorial presentation gives posters a fixed top left print style and falls back to the labeled average badge on backdrop and logo output.
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
@@ -2248,7 +2249,7 @@ export default function Home() {
   const activeAggregateAccent =
     aggregateAccentMode === 'custom'
       ? aggregateAccentColor
-      : activeRatingPresentation === 'dual'
+      : usesDualAggregateRatingPresentation(activeRatingPresentation)
         ? AGGREGATE_SOURCE_ACCENT_BY_ID.critics
         : AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
   const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
@@ -4323,7 +4324,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingPresentation</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, editorial, blockbuster</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, dual, dual-minimal, editorial, blockbuster</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">standard</td>
                       </tr>
                       <tr>
@@ -4460,7 +4461,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
-                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span>, <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>, and <span className="font-semibold text-zinc-200">Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual</span>. Query values remain unchanged.
+                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span>, <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>, <span className="font-semibold text-zinc-200">Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual</span>, and <span className="font-semibold text-zinc-200">Compact Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual-minimal</span>. Query values remain unchanged.
                   <br />
                   Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve; ambiguous combinations stay off.
                   <br />
@@ -4520,7 +4521,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>tmdb, fanart, cinemeta</div>
-                            <div>standard, minimal, average, dual, editorial, blockbuster</div>
+                            <div>standard, minimal, average, dual, dual-minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -4557,7 +4558,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>original, clean, alternative</div>
                             <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, dual, editorial, blockbuster</div>
+                            <div>standard, minimal, average, dual, dual-minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
@@ -4587,7 +4588,7 @@ export default function Home() {
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
                             <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, editorial, blockbuster</div>
+                            <div>standard, minimal, average, dual, dual-minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>{MIN_BADGE_SCALE_PERCENT}-{MAX_BADGE_SCALE_PERCENT} (% scale)</div>
                           </div>

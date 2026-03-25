@@ -53,6 +53,7 @@ import {
   selectAggregateRatingProviders,
   usesAggregateRatingPresentation,
   usesAggregateRatingSource,
+  usesDualAggregateRatingPresentation,
   type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
@@ -732,6 +733,8 @@ const buildAggregateRatingBadgeForSource = ({
 }): RatingBadge | null => {
   const availableProviders = renderablePreferences.filter((provider) => ratingBadgeByProvider.has(provider));
   if (availableProviders.length === 0) return null;
+  const useCompactAggregateBadge =
+    presentation === 'minimal' || presentation === 'dual-minimal';
 
   const hasProvidersForRequestedSource =
     requestedSource === 'overall' ||
@@ -763,14 +766,14 @@ const buildAggregateRatingBadgeForSource = ({
   return {
     key: AGGREGATE_BADGE_KEY_BY_SOURCE[effectiveSource],
     label:
-      presentation === 'minimal'
+      useCompactAggregateBadge
         ? getAggregateRatingSourceShortLabel(effectiveSource)
         : getAggregateRatingSourceLabel(effectiveSource),
     value: formatNormalizedRatingValue(averageValue, valueMode),
     iconUrl: '',
     accentColor: resolveAccentColor(effectiveSource),
     accentBarOffset,
-    variant: presentation === 'minimal' ? 'minimal' : 'summary',
+    variant: useCompactAggregateBadge ? 'minimal' : 'summary',
   };
 };
 
@@ -791,7 +794,7 @@ const buildAggregateRatingBadges = ({
   accentBarOffset?: number;
   valueMode?: RatingValueMode;
 }) => {
-  if (presentation === 'dual') {
+  if (usesDualAggregateRatingPresentation(presentation)) {
     return (['critics', 'audience'] as const)
       .map((source) =>
         buildAggregateRatingBadgeForSource({
