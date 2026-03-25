@@ -79,6 +79,13 @@
 
 <a id="v2-36-3"></a>
 
+<a id="v2-36-4"></a>
+
+## [v2.36.4] - 25/03/2026
+
+### Fixed
+* align documented env defaults with runtime behavior
+
 ## [v2.36.3] - 25/03/2026
 
 ### Documentation
