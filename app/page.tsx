@@ -3123,7 +3123,7 @@ export default function Home() {
         ) : null
       ) : (
         <>
-          <div className="mt-4 grid gap-3 2xl:grid-cols-2">
+          <div className="mt-4 grid gap-3">
             {CONFIGURATOR_PRESETS.map((preset) => {
               const isSelected = selectedPresetId === preset.id;
               const presetIcon =
@@ -5114,7 +5114,7 @@ export default function Home() {
                   </div>
                 </div>
                 {tmdbKey.trim() ? (
-                  <div className="mt-5 grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1 min-[1900px]:grid-cols-2">
+                  <div className="mt-5 grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1">
                     {genrePreviewCards.map(({ sample, url }) => {
                       const family = GENRE_BADGE_FAMILY_META[sample.familyId];
                       const accentStyle = {
@@ -5167,7 +5167,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="workspace-export" className="scroll-mt-24 xl:col-start-1">
+            <div id="workspace-export" className="scroll-mt-24 xl:col-start-1 xl:col-span-2">
               <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
