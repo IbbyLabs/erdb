@@ -53,6 +53,17 @@
 
 <a id="v2-32-0"></a>
 
+<a id="v2-33-0"></a>
+
+## [v2.33.0] - 25/03/2026
+
+### Added
+* add dual aggregate mode and accent controls
+* keep configurator preview in frame
+
+### Fixed
+* include badge render settings in image cache key
+
 ## [v2.32.0] - 25/03/2026
 
 ### Added
