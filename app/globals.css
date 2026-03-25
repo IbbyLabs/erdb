@@ -71,6 +71,11 @@ body {
 	min-height: 100%;
 }
 
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
 body {
 	color: var(--brand-ink);
 	font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif;

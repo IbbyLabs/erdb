@@ -2823,8 +2823,8 @@ export default function Home() {
 
   const setupModeSection = (
     <div className="rounded-2xl border border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/90">
             Setup Mode
           </div>
@@ -2843,7 +2843,7 @@ export default function Home() {
             setExperienceModeDraft(experienceMode);
             setShowExperienceModal(true);
           }}
-          className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-300 hover:bg-black/50"
+          className="shrink-0 self-start rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-300 hover:bg-black/50"
         >
           Reopen Intro
         </button>
@@ -2871,10 +2871,10 @@ export default function Home() {
                 : 'border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:bg-black/35'
             }`}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-base font-semibold">{option.label}</div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 text-base font-semibold">{option.label}</div>
               <span
-                className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                className={`shrink-0 self-start rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
                   experienceMode === option.id
                     ? 'bg-violet-500/20 text-violet-100'
                     : 'bg-white/5 text-zinc-500'
@@ -2892,8 +2892,8 @@ export default function Home() {
 
   const presetHubSection = (
     <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             Guided Setup
           </div>
@@ -2907,7 +2907,7 @@ export default function Home() {
           <button
             type="button"
             onClick={isWizardActive ? handleExitWizard : handleBeginWizard}
-            className="rounded-full border border-white/10 bg-zinc-950 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-200 hover:bg-zinc-900"
+            className="shrink-0 rounded-full border border-white/10 bg-zinc-950 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-200 hover:bg-zinc-900"
           >
             {isWizardActive ? 'Exit Guide' : 'Guide Me'}
           </button>
@@ -2918,8 +2918,8 @@ export default function Home() {
         wizardRecommendedPreset ? (
           <div className="mt-4 space-y-4">
             <div className="rounded-2xl border border-violet-500/30 bg-[linear-gradient(145deg,rgba(76,29,149,0.18),rgba(9,9,11,0.88))] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
                     Wizard Recommendation
                   </div>
@@ -2931,7 +2931,7 @@ export default function Home() {
                   </p>
                 </div>
                 <span
-                  className="rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                  className="shrink-0 self-start rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
                   style={{
                     borderColor: hexToRgbaCss(wizardRecommendedPreset.accentColor, 0.55),
                     backgroundColor: hexToRgbaCss(wizardRecommendedPreset.accentColor, 0.16),
@@ -3061,17 +3061,17 @@ export default function Home() {
                       : undefined
                   }
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
                       <div
-                        className="rounded-2xl border border-white/10 p-2.5"
+                        className="shrink-0 rounded-2xl border border-white/10 p-2.5"
                         style={{
                           backgroundColor: hexToRgbaCss(preset.accentColor, 0.16),
                         }}
                       >
                         <PresetIcon className="h-4 w-4" style={{ color: preset.accentColor }} />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-sm font-semibold text-white">{preset.label}</div>
                         <div className="mt-1 text-[11px] leading-5 text-zinc-500">
                           {preset.description}
@@ -3079,7 +3079,7 @@ export default function Home() {
                       </div>
                     </div>
                     <span
-                      className="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                      className="shrink-0 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
                       style={{
                         borderColor: hexToRgbaCss(preset.accentColor, 0.45),
                         backgroundColor: hexToRgbaCss(preset.accentColor, 0.16),
