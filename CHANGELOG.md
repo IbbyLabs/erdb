@@ -75,6 +75,13 @@
 
 <a id="v2-36-1"></a>
 
+<a id="v2-36-2"></a>
+
+## [v2.36.2] - 25/03/2026
+
+### Fixed
+* improve mobile configurator layout
+
 ## [v2.36.1] - 25/03/2026
 
 ### Added
