@@ -109,6 +109,13 @@
 
 <a id="v2-39-4"></a>
 
+<a id="v2-39-5"></a>
+
+## [v2.39.5] - 25/03/2026
+
+### Fixed
+* auto derive simkl app metadata from release version
+
 ## [v2.39.4] - 25/03/2026
 
 ### Fixed
