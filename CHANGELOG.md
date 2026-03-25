@@ -103,6 +103,13 @@
 
 <a id="v2-39-1"></a>
 
+<a id="v2-39-2"></a>
+
+## [v2.39.2] - 25/03/2026
+
+### Fixed
+* align ui config serialization and patch updates
+
 ## [v2.39.1] - 25/03/2026
 
 ### Fixed
