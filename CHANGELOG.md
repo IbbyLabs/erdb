@@ -135,6 +135,17 @@
 
 <a id="v2-42-1"></a>
 
+<a id="v2-42-2"></a>
+
+## [v2.42.2] - 26/03/2026
+
+### Fixed
+* restore type safe logo fallback selection
+  
+  Add explicit item typing for pickByLanguageWithFallback in the poster clean fallback path so file_path is available to TypeScript.
+  
+  This resolves the production build failure at app/[type]/[id]/route.tsx:9210 without changing runtime behavior.
+
 ## [v2.42.1] - 26/03/2026
 
 ### Fixed
