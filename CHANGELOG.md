@@ -129,6 +129,17 @@
 
 <a id="v2-41-1"></a>
 
+<a id="v2-41-2"></a>
+
+## [v2.41.2] - 26/03/2026
+
+### Other Changes
+* cover configure path base url
+  
+  Add a regression test for configure style Torrentio instance URLs.
+  
+  Verify stream URL construction keeps the configure path segment and encodes series IDs correctly.
+
 ## [v2.41.1] - 26/03/2026
 
 ### Fixed
