@@ -27,6 +27,13 @@ test('Simkl summary lookups use canonical movies/tv/anime endpoints', () => {
   );
 });
 
+test('Simkl-only requests still enable provider ratings fetch path', () => {
+  assert.match(
+    routeSource,
+    /needsTraktRating\s*\|\|\s*needsSimklRating/,
+  );
+});
+
 test('Simkl ID cache keeps resolved IDs long-lived and empty responses short-lived', () => {
   assert.match(
     routeSource,

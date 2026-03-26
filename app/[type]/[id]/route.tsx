@@ -670,18 +670,21 @@ const buildServerTimingHeader = (phases: PhaseDurations, totalMs: number) => {
 const createImageHttpResponse = (
   payload: RenderedImagePayload,
   serverTiming: string,
-  cacheStatus: 'hit' | 'miss' | 'shared'
+  cacheStatus: 'hit' | 'miss' | 'shared',
+  extraHeaders?: HeadersInit
 ) =>
-  new Response(payload.body.slice(0), {
-    status: 200,
-    headers: {
-      'Content-Type': payload.contentType,
-      'Cache-Control': payload.cacheControl,
-      Vary: 'Accept',
-      'Server-Timing': serverTiming,
-      'X-ERDB-Cache': cacheStatus,
-    },
-  });
+  (() => {
+    const headers = new Headers(extraHeaders);
+    headers.set('Content-Type', payload.contentType);
+    headers.set('Cache-Control', payload.cacheControl);
+    headers.set('Vary', 'Accept');
+    headers.set('Server-Timing', serverTiming);
+    headers.set('X-ERDB-Cache', cacheStatus);
+    return new Response(payload.body.slice(0), {
+      status: 200,
+      headers,
+    });
+  })();
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
 type RatingBadge = {
   key: BadgeKey;
@@ -7395,10 +7398,18 @@ export async function handleImageRequest(
   );
   const mdblistKey = request.nextUrl.searchParams.get('mdblistKey') || request.nextUrl.searchParams.get('mdblist_key');
   const tmdbKey = request.nextUrl.searchParams.get('tmdbKey') || request.nextUrl.searchParams.get('tmdb_key');
-  const simklClientId =
+  const simklClientIdFromQuery =
     request.nextUrl.searchParams.get('simklClientId') ||
     request.nextUrl.searchParams.get('simkl_client_id') ||
-    SIMKL_CLIENT_ID;
+    '';
+  const simklClientId = simklClientIdFromQuery || SIMKL_CLIENT_ID;
+  const simklClientSource = simklClientIdFromQuery ? 'query' : SIMKL_CLIENT_ID ? 'server' : 'none';
+  const debugRatings = /^(1|true|yes|on)$/i.test(
+    String(request.nextUrl.searchParams.get('debugRatings') || '').trim(),
+  );
+  let debugProviderRatingsEnabled = false;
+  let debugNeedsSimklRating = false;
+  let debugResolvedRatingProviders: RatingPreference[] = [];
 
   const parts = cleanId.split(':');
   const idPrefix = (parts[0] || '').trim().toLowerCase();
@@ -7993,7 +8004,8 @@ export async function handleImageRequest(
             needsImdbRating ||
             needsAniListRating ||
             needsMyAnimeListRating ||
-            needsTraktRating
+            needsTraktRating ||
+            needsSimklRating
           )
           ? (async () => {
             let imdbId: string | null = null;
@@ -8583,6 +8595,10 @@ export async function handleImageRequest(
             return combinedRatings;
           })()
           : null;
+      if (debugRatings) {
+        debugProviderRatingsEnabled = providerRatingsPromise !== null;
+        debugNeedsSimklRating = needsSimklRating;
+      }
       const streamBadgesPromise =
         shouldRenderStreamBadges && !useRawKitsuFallback && (mediaType === 'movie' || mediaType === 'tv')
           ? (async () => {
@@ -9383,6 +9399,9 @@ export async function handleImageRequest(
           variant: 'standard',
         });
       }
+      if (debugRatings) {
+        debugResolvedRatingProviders = [...ratingBadgeByProvider.keys()];
+      }
       const resolveAggregateAccentColor = (source: AggregateRatingSource) => {
         if (aggregateAccentMode === 'custom' && aggregateAccentColor) {
           return aggregateAccentColor;
@@ -9944,10 +9963,20 @@ export async function handleImageRequest(
 
     const totalMs = performance.now() - requestStartedAt;
     const cacheStatus = objectStorageHit ? 'hit' : hadSharedRender ? 'shared' : 'miss';
+    const debugHeaders = debugRatings
+      ? {
+          'X-ERDB-Ratings-Requested': effectiveRatingPreferences.join(','),
+          'X-ERDB-Ratings-Resolved': debugResolvedRatingProviders.join(','),
+          'X-ERDB-Simkl-Requested': debugNeedsSimklRating ? '1' : '0',
+          'X-ERDB-Simkl-Client-Source': simklClientSource,
+          'X-ERDB-Provider-Ratings-Enabled': debugProviderRatingsEnabled ? '1' : '0',
+        }
+      : undefined;
     return createImageHttpResponse(
       renderedImage,
       buildServerTimingHeader(phases, totalMs),
-      cacheStatus
+      cacheStatus,
+      debugHeaders,
     );
   } catch (e: any) {
     if (e instanceof HttpError) {
