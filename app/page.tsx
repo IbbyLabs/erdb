@@ -149,7 +149,6 @@ import {
   METADATA_TRANSLATION_MODE_OPTIONS,
   type MetadataTranslationMode,
 } from '@/lib/metadataTranslation';
-import { compareReleaseTagVersions } from '@/lib/githubRelease';
 import {
   DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   DEFAULT_GENRE_BADGE_MODE,
@@ -2444,18 +2443,12 @@ export default function Home() {
     ]
   );
   const latestReleaseMatchesDeployment = latestReleaseTag && latestReleaseTag === DEPLOYMENT_VERSION;
-  const latestReleaseBehindDeployment =
-    !isLatestReleaseLoading &&
-    Boolean(latestReleaseTag) &&
-    compareReleaseTagVersions(DEPLOYMENT_VERSION, latestReleaseTag) > 0;
   const versionStatusNote = isLatestReleaseLoading
     ? 'Checking the latest release on GitHub now.'
     : latestReleaseTag
       ? latestReleaseMatchesDeployment
         ? 'Live matches the latest release on GitHub.'
-        : latestReleaseBehindDeployment
-          ? `${DEPLOYMENT_VERSION} is still publishing on GitHub. Latest published release is ${latestReleaseTag}.`
-          : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
+        : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
       : 'Live shows the running container. The latest release is unavailable right now.';
 
   const handlePreviewImageError = useCallback(async (url: string) => {
@@ -5283,7 +5276,7 @@ export default function Home() {
                 releaseTag={latestReleaseTag}
                 releaseUrl={latestReleaseUrl}
                 loading={isLatestReleaseLoading}
-                pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
+                pendingTag=""
               />
             </div>
             <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
@@ -5320,7 +5313,7 @@ export default function Home() {
                   releaseTag={latestReleaseTag}
                   releaseUrl={latestReleaseUrl}
                   loading={isLatestReleaseLoading}
-                  pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
+                  pendingTag=""
                 />
               </div>
               <div className="erdb-mobile-nav-links">
@@ -5357,7 +5350,7 @@ export default function Home() {
                     releaseTag={latestReleaseTag}
                     releaseUrl={latestReleaseUrl}
                     loading={isLatestReleaseLoading}
-                    pendingTag={latestReleaseBehindDeployment ? DEPLOYMENT_VERSION : ''}
+                    pendingTag=""
                   />
                 </div>
               </div>
