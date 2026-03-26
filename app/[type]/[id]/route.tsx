@@ -109,6 +109,7 @@ import {
 import { normalizeErdbId } from '@/lib/addonProxy';
 import { resolveOverlayAutoScale } from '@/lib/overlayScale';
 import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
+import { buildTorrentioStreamUrl, resolveTorrentioBaseUrl } from '@/lib/torrentioUrl';
 import {
   MEDIA_FEATURE_BADGE_ORDER,
   buildCertificationBadgeMeta,
@@ -456,7 +457,7 @@ const TORRENTIO_CONCURRENCY = (() => {
   if (!Number.isFinite(rawValue) || rawValue <= 0) return 2;
   return Math.max(1, Math.min(4, Math.floor(rawValue)));
 })();
-const TORRENTIO_BASE_URL = process.env.ERDB_TORRENTIO_BASE_URL || 'https://torrentio.strem.fun';
+const TORRENTIO_BASE_URL = resolveTorrentioBaseUrl(process.env.ERDB_TORRENTIO_BASE_URL);
 const TORRENTIO_PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy || null;
 const torrentioDispatcher = TORRENTIO_PROXY_URL ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
 const PROVIDER_ICON_CACHE_TTL_MS = parseCacheTtlMs(
@@ -1693,7 +1694,7 @@ const buildFeatureBadgesFromFlags = (flags: MediaFeatureFlags): RatingBadge[] =>
   }));
 
 const buildTorrentioUrl = (type: 'movie' | 'series', id: string) =>
-  `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(id)}.json`;
+  buildTorrentioStreamUrl(TORRENTIO_BASE_URL, type, id);
 
 const fetchTorrentioBadges = async (input: {
   type: 'movie' | 'series';
