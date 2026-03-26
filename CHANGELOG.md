@@ -147,6 +147,26 @@
 
 <a id="v2-44-3"></a>
 
+<a id="v2-45-0"></a>
+
+## [v2.45.0] - 26/03/2026
+
+### Added
+* restore release publishing detection via server side GitHub API
+  
+  Instead of comparing the client side package.json version against the
+  latest GitHub release (which broke when package.json was bumped ahead),
+  detect pending releases by checking the GitHub releases API for draft
+  or prerelease entries with a higher version than the latest published
+  release.
+  
+  Add selectPendingReleaseTag to lib/githubRelease.ts, expose
+  pendingTagName through /api/latest release, and consume it in page.tsx
+  so the LatestReleasePill shows 'Publishing' only when GitHub actually
+  has an unpublished release ahead of the latest published one.
+  
+  Add a dedicated test for pending release detection.
+
 ## [v2.44.3] - 26/03/2026
 
 ### Fixed
