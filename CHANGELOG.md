@@ -141,6 +141,19 @@
 
 <a id="v2-44-0"></a>
 
+<a id="v2-44-1"></a>
+
+## [v2.44.1] - 26/03/2026
+
+### Fixed
+* exclude fanart key from AIOMetadata patterns when unused
+  
+  When no image type uses fanart or random artwork source, the fanart key
+  was passed through as plaintext instead of being omitted. This leaked
+  the instance fanart API key in exported AIOMetadata URL patterns even
+  when hide credentials was enabled. The server already falls back to its
+  own environment variable, so omitting the key is safe.
+
 ## [v2.44.0] - 26/03/2026
 
 ### Added
