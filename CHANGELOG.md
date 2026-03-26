@@ -133,6 +133,19 @@
 
 <a id="v2-42-0"></a>
 
+<a id="v2-42-1"></a>
+
+## [v2.42.1] - 26/03/2026
+
+### Fixed
+* prefer neutral tmdb fallback when requested language is missing
+  
+  Extract image language selection helpers into a shared module and reuse them in the image route.
+  
+  Update logo language fallback so neutral assets are selected before arbitrary localized assets when requested and fallback languages are unavailable.
+  
+  Add regression tests for requested language precedence fallback language precedence neutral fallback precedence and terminal first item fallback behavior.
+
 ## [v2.42.0] - 26/03/2026
 
 ### Added
