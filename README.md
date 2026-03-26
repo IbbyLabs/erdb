@@ -9,6 +9,18 @@ ERDB generates poster/backdrop/logo images with dynamic ratings and quality badg
 
 <!-- changelog-links:end -->
 
+## Roadmap
+
+This is what I am building next for ERDB.
+
+1. Better quality badges from more providers, not only one source.
+2. Smarter fallback so images still load when one provider is slow or down.
+3. UUID account saves with password login so settings can be restored on any device.
+4. Cache warming for startup and background updates so popular content is ready faster.
+5. Poster cache warming controls to reduce first load delay.
+6. More control for output sizes for poster backdrop and logo.
+7. Ongoing speed and reliability work for public and self hosted setups.
+
 ## Quick Start
 
 ## Install From GitHub
