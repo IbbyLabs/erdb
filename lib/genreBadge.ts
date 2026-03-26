@@ -347,7 +347,10 @@ export const resolveGenreBadgeFamily = (input: {
     return GENRE_BADGE_FAMILY_META.fantasy;
   }
 
-  if (hasGenreName(genreNames, 'crime') || hasGenreId(genreIds, TMDB_GENRE.crime)) {
+  if (
+    hasGenreName(genreNames, 'crime', 'thriller', 'mystery') ||
+    hasGenreId(genreIds, TMDB_GENRE.crime, TMDB_GENRE.thriller, TMDB_GENRE.mystery)
+  ) {
     return GENRE_BADGE_FAMILY_META.crime;
   }
 
@@ -445,7 +448,7 @@ export const GENRE_BADGE_PREVIEW_SAMPLES: ReadonlyArray<GenreBadgePreviewSample>
     mediaId: 'tt0903747',
     lang: 'en',
     familyId: 'crime',
-    decision: 'Crime is the cleanest bucket here. Thriller and drama stay out because their icon language is too fuzzy.',
+    decision: 'Crime is the cleanest bucket here. Thriller and mystery now fold into this same bucket so the badge stays consistent.',
     params: {
       logoRatings: 'tmdb',
       ratingStyle: 'plain',

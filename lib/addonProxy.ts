@@ -7,7 +7,15 @@ import {
 const ERDB_OPTIONAL_PARAMS = [
   'fanartKey',
   'ratings',
+  'order',
+  'ratingOrder',
   'lang',
+  'secLang',
+  'ratingBarPos',
+  'fontScale',
+  'textless',
+  'imageSize',
+  'posterType',
   'ratingValueMode',
   'genreBadge',
   'genreBadgeStyle',
@@ -23,6 +31,7 @@ const ERDB_OPTIONAL_PARAMS = [
   'aggregateAccentMode',
   'aggregateAccentColor',
   'aggregateAccentBarOffset',
+  'aggregateAccentBarVisible',
   'posterRatingsLayout',
   'posterRatingsMax',
   'posterRatingsMaxPerSide',
@@ -34,6 +43,7 @@ const ERDB_OPTIONAL_PARAMS = [
 ];
 const ERDB_TYPE_OPTIONAL_PARAMS = {
   poster: [
+    'posterImageSize',
     'posterGenreBadge',
     'posterGenreBadgeStyle',
     'posterGenreBadgePosition',
@@ -130,6 +140,7 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'backdropAggregateRatingSource',
   'logoAggregateRatingSource',
   'posterImageText',
+  'posterImageSize',
   'backdropImageText',
   'posterArtworkSource',
   'backdropArtworkSource',
@@ -151,10 +162,18 @@ export type ProxyConfig = {
   translateMetaMode?: MetadataTranslationMode;
   debugMetaTranslation?: boolean;
   ratings?: string;
+  order?: string;
+  ratingOrder?: string;
   posterRatings?: string;
   backdropRatings?: string;
   logoRatings?: string;
   lang?: string;
+  secLang?: string;
+  ratingBarPos?: string;
+  fontScale?: string;
+  textless?: string;
+  imageSize?: string;
+  posterType?: string;
   ratingValueMode?: string;
   genreBadge?: string;
   genreBadgeStyle?: string;
@@ -184,6 +203,7 @@ export type ProxyConfig = {
   aggregateAccentMode?: string;
   aggregateAccentColor?: string;
   aggregateAccentBarOffset?: string;
+  aggregateAccentBarVisible?: string;
   posterQualityBadges?: string;
   posterQualityBadgesStyle?: string;
   posterQualityBadgeScale?: string;
@@ -207,6 +227,7 @@ export type ProxyConfig = {
   backdropAggregateRatingSource?: string;
   logoAggregateRatingSource?: string;
   posterImageText?: string;
+  posterImageSize?: string;
   backdropImageText?: string;
   posterArtworkSource?: string;
   backdropArtworkSource?: string;
@@ -236,10 +257,18 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'simklClientId',
   'fanartKey',
   'ratings',
+  'order',
+  'ratingOrder',
   'posterRatings',
   'backdropRatings',
   'logoRatings',
   'lang',
+  'secLang',
+  'ratingBarPos',
+  'fontScale',
+  'textless',
+  'imageSize',
+  'posterType',
   'ratingValueMode',
   'genreBadge',
   'genreBadgeStyle',
@@ -269,6 +298,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'aggregateAccentMode',
   'aggregateAccentColor',
   'aggregateAccentBarOffset',
+  'aggregateAccentBarVisible',
   'posterQualityBadges',
   'posterQualityBadgesStyle',
   'posterQualityBadgeScale',
@@ -292,6 +322,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'backdropAggregateRatingSource',
   'logoAggregateRatingSource',
   'posterImageText',
+  'posterImageSize',
   'backdropImageText',
   'posterArtworkSource',
   'backdropArtworkSource',
@@ -422,6 +453,9 @@ const toOptionalStringAllowEmpty = (value: unknown): string | undefined => {
   }
   if (typeof value === 'number' && Number.isFinite(value)) {
     return String(value);
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
   }
   return undefined;
 };

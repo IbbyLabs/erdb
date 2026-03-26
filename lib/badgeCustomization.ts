@@ -27,6 +27,9 @@ export const MAX_STACKED_WIDTH_PERCENT = 130;
 export const DEFAULT_STACKED_SURFACE_OPACITY_PERCENT = 100;
 export const MIN_STACKED_SURFACE_OPACITY_PERCENT = 30;
 export const MAX_STACKED_SURFACE_OPACITY_PERCENT = 100;
+export const DEFAULT_STACKED_ELEMENT_OFFSET_PX = 0;
+export const MIN_STACKED_ELEMENT_OFFSET_PX = -24;
+export const MAX_STACKED_ELEMENT_OFFSET_PX = 24;
 
 export type StackedAccentMode = 'badge' | 'logo';
 export const DEFAULT_STACKED_ACCENT_MODE: StackedAccentMode = 'badge';
@@ -42,6 +45,12 @@ export type RatingProviderAppearanceOverride = {
   stackedWidthPercent?: number;
   stackedSurfaceOpacityPercent?: number;
   stackedAccentMode?: StackedAccentMode;
+  stackedLineOffsetX?: number;
+  stackedLineOffsetY?: number;
+  stackedIconOffsetX?: number;
+  stackedIconOffsetY?: number;
+  stackedValueOffsetX?: number;
+  stackedValueOffsetY?: number;
 };
 
 export type RatingProviderAppearanceOverrides = Partial<
@@ -214,6 +223,17 @@ export const normalizeStackedSurfaceOpacityPercent = (
     MAX_STACKED_SURFACE_OPACITY_PERCENT,
   );
 
+export const normalizeStackedElementOffsetPx = (
+  value: unknown,
+  fallback = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+) =>
+  normalizeBoundedPercent(
+    value,
+    fallback,
+    MIN_STACKED_ELEMENT_OFFSET_PX,
+    MAX_STACKED_ELEMENT_OFFSET_PX,
+  );
+
 export const normalizeStackedAccentMode = (
   value: unknown,
   fallback: StackedAccentMode = DEFAULT_STACKED_ACCENT_MODE,
@@ -331,6 +351,30 @@ export const normalizeRatingProviderAppearanceOverrides = (
       stackedAccentTarget?: unknown;
       stackedLogoAccentOnly?: unknown;
       logoOnlyAccent?: unknown;
+      stackedLineOffsetX?: unknown;
+      stackedLineX?: unknown;
+      stackedRailOffsetX?: unknown;
+      stackedRailXOffset?: unknown;
+      stackedLineOffsetY?: unknown;
+      stackedLineY?: unknown;
+      stackedRailOffsetY?: unknown;
+      stackedRailYOffset?: unknown;
+      stackedIconOffsetX?: unknown;
+      stackedIconX?: unknown;
+      stackedLogoOffsetX?: unknown;
+      stackedLogoXOffset?: unknown;
+      stackedIconOffsetY?: unknown;
+      stackedIconY?: unknown;
+      stackedLogoOffsetY?: unknown;
+      stackedLogoYOffset?: unknown;
+      stackedValueOffsetX?: unknown;
+      stackedValueX?: unknown;
+      stackedRatingOffsetX?: unknown;
+      stackedRatingXOffset?: unknown;
+      stackedValueOffsetY?: unknown;
+      stackedValueY?: unknown;
+      stackedRatingOffsetY?: unknown;
+      stackedRatingYOffset?: unknown;
     };
     const iconUrl =
       typeof candidate.iconUrl === 'string' && candidate.iconUrl.trim()
@@ -396,6 +440,48 @@ export const normalizeRatingProviderAppearanceOverrides = (
       }
       return DEFAULT_STACKED_ACCENT_MODE;
     })();
+    const stackedLineOffsetX = normalizeStackedElementOffsetPx(
+      candidate.stackedLineOffsetX ??
+        candidate.stackedLineX ??
+        candidate.stackedRailOffsetX ??
+        candidate.stackedRailXOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
+    const stackedLineOffsetY = normalizeStackedElementOffsetPx(
+      candidate.stackedLineOffsetY ??
+        candidate.stackedLineY ??
+        candidate.stackedRailOffsetY ??
+        candidate.stackedRailYOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
+    const stackedIconOffsetX = normalizeStackedElementOffsetPx(
+      candidate.stackedIconOffsetX ??
+        candidate.stackedIconX ??
+        candidate.stackedLogoOffsetX ??
+        candidate.stackedLogoXOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
+    const stackedIconOffsetY = normalizeStackedElementOffsetPx(
+      candidate.stackedIconOffsetY ??
+        candidate.stackedIconY ??
+        candidate.stackedLogoOffsetY ??
+        candidate.stackedLogoYOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
+    const stackedValueOffsetX = normalizeStackedElementOffsetPx(
+      candidate.stackedValueOffsetX ??
+        candidate.stackedValueX ??
+        candidate.stackedRatingOffsetX ??
+        candidate.stackedRatingXOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
+    const stackedValueOffsetY = normalizeStackedElementOffsetPx(
+      candidate.stackedValueOffsetY ??
+        candidate.stackedValueY ??
+        candidate.stackedRatingOffsetY ??
+        candidate.stackedRatingYOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
     const override = compactObject({
       iconUrl,
       accentColor,
@@ -425,6 +511,30 @@ export const normalizeRatingProviderAppearanceOverrides = (
           : undefined,
       stackedAccentMode:
         stackedAccentMode !== DEFAULT_STACKED_ACCENT_MODE ? stackedAccentMode : undefined,
+      stackedLineOffsetX:
+        stackedLineOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? stackedLineOffsetX
+          : undefined,
+      stackedLineOffsetY:
+        stackedLineOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? stackedLineOffsetY
+          : undefined,
+      stackedIconOffsetX:
+        stackedIconOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? stackedIconOffsetX
+          : undefined,
+      stackedIconOffsetY:
+        stackedIconOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? stackedIconOffsetY
+          : undefined,
+      stackedValueOffsetX:
+        stackedValueOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? stackedValueOffsetX
+          : undefined,
+      stackedValueOffsetY:
+        stackedValueOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? stackedValueOffsetY
+          : undefined,
     }) as RatingProviderAppearanceOverride;
 
     return Object.keys(override).length > 0 ? [[provider, override] as const] : [];

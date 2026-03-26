@@ -26,6 +26,7 @@ import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
   DEFAULT_STACKED_ACCENT_MODE,
+  DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   DEFAULT_STACKED_LINE_GAP_PERCENT,
   DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
   DEFAULT_STACKED_LINE_WIDTH_PERCENT,
@@ -33,6 +34,7 @@ import {
   DEFAULT_STACKED_WIDTH_PERCENT,
   MAX_BADGE_SCALE_PERCENT,
   MAX_PROVIDER_ICON_SCALE_PERCENT,
+  MAX_STACKED_ELEMENT_OFFSET_PX,
   MAX_STACKED_SURFACE_OPACITY_PERCENT,
   MAX_STACKED_LINE_GAP_PERCENT,
   MAX_STACKED_LINE_HEIGHT_PERCENT,
@@ -40,6 +42,7 @@ import {
   MAX_STACKED_WIDTH_PERCENT,
   MIN_BADGE_SCALE_PERCENT,
   MIN_PROVIDER_ICON_SCALE_PERCENT,
+  MIN_STACKED_ELEMENT_OFFSET_PX,
   MIN_STACKED_SURFACE_OPACITY_PERCENT,
   MIN_STACKED_LINE_GAP_PERCENT,
   MIN_STACKED_LINE_HEIGHT_PERCENT,
@@ -49,6 +52,7 @@ import {
   normalizeBadgeScalePercent,
   normalizeProviderIconScalePercent,
   normalizeStackedAccentMode,
+  normalizeStackedElementOffsetPx,
   normalizeStackedLineGapPercent,
   normalizeStackedLineHeightPercent,
   normalizeStackedLineWidthPercent,
@@ -116,6 +120,7 @@ import {
   type ArtworkSource,
   type BackdropImageTextPreference,
   type LogoBackground,
+  type PosterImageSize,
   type PosterImageTextPreference,
   type QualityBadgesSide,
   type PosterQualityBadgesPosition,
@@ -194,6 +199,15 @@ const SUPPORTED_LANGUAGES = [
   { code: 'zh', label: 'Chinese', flag: '🇨🇳' },
   { code: 'tr', label: 'Turkish', flag: '🇹🇷' },
 ];
+const POSTER_IMAGE_SIZE_OPTIONS: Array<{
+  id: PosterImageSize;
+  label: string;
+  description: string;
+}> = [
+  { id: 'normal', label: 'Normal', description: '580x859. Default poster ratio and balanced bandwidth.' },
+  { id: 'large', label: 'Large', description: '1280x1896. Higher detail for larger displays.' },
+  { id: '4k', label: '4K', description: '2000x2926. Maximum detail, slower transfers.' },
+];
 const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   id: PosterImageTextPreference;
   label: string;
@@ -202,6 +216,7 @@ const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   { id: 'original', label: 'Original', description: 'Use the default TMDB poster art.' },
   { id: 'clean', label: 'Clean', description: 'Prefer TMDB art with less embedded text when available.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random poster variation for this title.' },
 ];
 const POSTER_ARTWORK_SOURCE_OPTIONS: Array<{
   id: ArtworkSource;
@@ -211,6 +226,7 @@ const POSTER_ARTWORK_SOURCE_OPTIONS: Array<{
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean poster selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv artwork when a fanart key is available, then fall back to TMDB.' },
   { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta poster when an IMDb ID is available, then fall back to TMDB.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random poster source between TMDB, fanart, and Cinemeta when available.' },
 ];
 const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{
   id: Exclude<ArtworkSource, 'cinemeta'>;
@@ -219,6 +235,7 @@ const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean backdrop selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv backdrop art when a fanart key is available, then fall back to TMDB.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop source between TMDB and fanart when available.' },
 ];
 const LOGO_ARTWORK_SOURCE_OPTIONS: Array<{
   id: Exclude<ArtworkSource, 'cinemeta'>;
@@ -227,6 +244,7 @@ const LOGO_ARTWORK_SOURCE_OPTIONS: Array<{
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB logo selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv logo assets when a fanart key is available, then fall back to TMDB.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random logo source between TMDB and fanart when available.' },
 ];
 const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   id: BackdropImageTextPreference;
@@ -236,6 +254,7 @@ const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   { id: 'original', label: 'Original', description: 'Use the default TMDB backdrop art.' },
   { id: 'clean', label: 'Clean', description: 'Prefer TMDB backdrop art with less embedded text when available.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB backdrop when one exists.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop variation for this title.' },
 ];
 const PROXY_TYPES = ['poster', 'backdrop', 'logo'] as const;
 type ProxyType = (typeof PROXY_TYPES)[number];
@@ -507,12 +526,13 @@ posterQualityBadgesStyle| glass, square, plain, media, silver (poster only)     
 backdropQualityBadgesStyle| glass, square, plain, media, silver (backdrop only)                | glass
 posterQualityBadgesMax  | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 backdropQualityBadgesMax| Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
-providerAppearance     | base64url or JSON provider overrides for icon, accent, and stacked badge chrome | none
+providerAppearance     | base64url or JSON provider overrides for icon, accent, stacked chrome, and stacked element offsets | none
 ratingPresentation      | standard, minimal, average, dual, dual-minimal, editorial, blockbuster | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 aggregateAccentMode     | source, genre, custom                                                | source
 aggregateAccentColor    | Hex color (used when aggregateAccentMode=custom)                     | #a78bfa
 aggregateAccentBarOffset| Number (-12 to 12, aggregate badges only)                            | 0
+aggregateAccentBarVisible| true, false (aggregate compact/labeled accent line toggle)         | true
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
 ratingStyle             | glass, square, plain, stacked                                        | glass
 genreBadgeScale         | Number (${BADGE_SCALE_DOC_COPY}) (global fallback)                  | 100
@@ -524,9 +544,10 @@ backdropRatingBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                      
 logoRatingBadgeScale   | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
 posterQualityBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                                    | 100
 backdropQualityBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                                  | 100
-imageText               | original, clean, alternative                                         | original
-posterArtworkSource     | tmdb, fanart, cinemeta (poster artwork source)                       | tmdb
-backdropArtworkSource   | tmdb, fanart (backdrop artwork source)                               | tmdb
+imageText               | original, clean, alternative, random                                 | original
+posterImageSize         | normal (580x859), large (1280x1896), 4k (2000x2926)                  | normal
+posterArtworkSource     | tmdb, fanart, cinemeta, random (poster artwork source)               | tmdb
+backdropArtworkSource   | tmdb, fanart, random (backdrop artwork source)                       | tmdb
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMax        | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
@@ -537,7 +558,7 @@ sideRatingsPosition     | ${SIDE_RATING_POSITION_DOC_VALUES}                    
 sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
-logoArtworkSource       | tmdb, fanart                                                          | tmdb
+logoArtworkSource       | tmdb, fanart, random                                                 | tmdb
 erdbKey                | ERDB request key when the host enables route protection               | none
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
@@ -550,6 +571,7 @@ STYLE NOTE: Transparent provider icons stay transparent in every style. In glass
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
 FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
 POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. posterArtworkSource=cinemeta uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB.
+POSTER SIZE NOTE: posterImageSize controls the poster output target. normal=580x859, large=1280x1896, 4k=2000x2926.
 BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
 LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
 FUTURE NOTE: season aware fanart support is a strong next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
@@ -561,6 +583,7 @@ INTEGRATION REQUIREMENTS
 4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
 
 PER TYPE SETTINGS
+poster   : posterImageSize = cfg.posterImageSize (normal, large, 4k)
 poster   : ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 backdrop : ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 logo     : ratingStyle = cfg.logoRatingStyle, logoBackground = cfg.logoBackground
@@ -577,19 +600,20 @@ Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.b
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, or force a custom aggregate accent through cfg.aggregateAccentColor.
 Use cfg.aggregateAccentBarOffset to nudge the aggregate badge accent bar up or down a few pixels in compact, compact dual, labeled, and dual aggregate layouts.
+Use cfg.aggregateAccentBarVisible=false to hide the compact or labeled aggregate accent line entirely.
 Editorial presentation gives posters a fixed top left print style and falls back to the labeled average badge on backdrop and logo output.
 Use cfg.posterEdgeOffset to push poster side rating stacks, side quality columns, and corner genre badges inward from the poster edges.
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badge visibility/style/max can be set per type via cfg.posterQualityBadges / cfg.backdropQualityBadges / cfg.logoQualityBadges, cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle / cfg.logoQualityBadgesStyle, and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax / cfg.logoQualityBadgesMax.
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge mode/style/position/scale can be set per type via cfg.posterGenreBadge* / cfg.backdropGenreBadge* / cfg.logoGenreBadge* and fall back to the shared cfg.genreBadge* fields.
 Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale / cfg.logoQualityBadgeScale.
-Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedWidthPercent":88,"stackedSurfaceOpacityPercent":72,"stackedAccentMode":"logo","stackedLineVisible":false,"stackedLineWidthPercent":88}}.
+Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedWidthPercent":88,"stackedSurfaceOpacityPercent":72,"stackedAccentMode":"logo","stackedLineVisible":false,"stackedLineWidthPercent":88,"stackedIconOffsetY":-6,"stackedValueOffsetY":4}}.
 Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0 to 100 vertical anchor.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&posterGenreBadge=\${cfg.posterGenreBadge}&backdropGenreBadge=\${cfg.backdropGenreBadge}&logoGenreBadge=\${cfg.logoGenreBadge}&posterGenreBadgeStyle=\${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=\${cfg.backdropGenreBadgeStyle}&logoGenreBadgeStyle=\${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=\${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=\${cfg.backdropGenreBadgePosition}&logoGenreBadgePosition=\${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=\${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=\${cfg.backdropGenreBadgeScale}&logoGenreBadgeScale=\${cfg.logoGenreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&logoQualityBadges=\${cfg.logoQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&logoQualityBadgesStyle=\${cfg.logoQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&logoQualityBadgesMax=\${cfg.logoQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&logoQualityBadgeScale=\${cfg.logoQualityBadgeScale}&imageText=\${typeImageText}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&posterEdgeOffset=\${cfg.posterEdgeOffset}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&posterGenreBadge=\${cfg.posterGenreBadge}&backdropGenreBadge=\${cfg.backdropGenreBadge}&logoGenreBadge=\${cfg.logoGenreBadge}&posterGenreBadgeStyle=\${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=\${cfg.backdropGenreBadgeStyle}&logoGenreBadgeStyle=\${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=\${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=\${cfg.backdropGenreBadgePosition}&logoGenreBadgePosition=\${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=\${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=\${cfg.backdropGenreBadgeScale}&logoGenreBadgeScale=\${cfg.logoGenreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&logoQualityBadges=\${cfg.logoQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&logoQualityBadgesStyle=\${cfg.logoQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&logoQualityBadgesMax=\${cfg.logoQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&aggregateAccentBarVisible=\${cfg.aggregateAccentBarVisible}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&logoQualityBadgeScale=\${cfg.logoQualityBadgeScale}&imageText=\${typeImageText}&posterImageSize=\${cfg.posterImageSize}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&posterEdgeOffset=\${cfg.posterEdgeOffset}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -994,6 +1018,7 @@ export default function Home() {
   const [previewType, setPreviewType] = useState<ProxyType>('poster');
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
+  const [posterImageSize, setPosterImageSize] = useState<PosterImageSize>('normal');
   const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
   const [posterArtworkSource, setPosterArtworkSource] = useState<ArtworkSource>('tmdb');
@@ -1087,6 +1112,7 @@ export default function Home() {
     useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
   const [aggregateAccentBarOffset, setAggregateAccentBarOffset] =
     useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
+  const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
@@ -1572,6 +1598,7 @@ export default function Home() {
       setFanartKey(normalized.settings.fanartKey);
       setSimklClientId(normalized.settings.simklClientId);
       setLang(normalized.settings.lang);
+      setPosterImageSize(normalized.settings.posterImageSize);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
       setPosterArtworkSource(normalized.settings.posterArtworkSource);
@@ -1630,6 +1657,7 @@ export default function Home() {
       setAggregateAccentMode(normalized.settings.aggregateAccentMode);
       setAggregateAccentColor(normalized.settings.aggregateAccentColor);
       setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
+      setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
@@ -1654,6 +1682,7 @@ export default function Home() {
         fanartKey: fanartKey.trim(),
         simklClientId: simklClientId.trim(),
         lang,
+        posterImageSize,
         posterImageText,
         backdropImageText,
         posterArtworkSource,
@@ -1712,6 +1741,7 @@ export default function Home() {
         aggregateAccentMode,
         aggregateAccentColor,
         aggregateAccentBarOffset,
+        aggregateAccentBarVisible,
         posterRatingsMaxPerSide,
         logoRatingsMax,
         logoBackground,
@@ -1732,6 +1762,7 @@ export default function Home() {
       fanartKey,
       simklClientId,
       lang,
+      posterImageSize,
       posterImageText,
       backdropImageText,
       posterArtworkSource,
@@ -1790,6 +1821,7 @@ export default function Home() {
       aggregateAccentMode,
       aggregateAccentColor,
       aggregateAccentBarOffset,
+      aggregateAccentBarVisible,
       posterRatingsMaxPerSide,
       logoRatingsMax,
       logoBackground,
@@ -2047,6 +2079,9 @@ export default function Home() {
     ) {
       query.set('aggregateAccentBarOffset', String(aggregateAccentBarOffset));
     }
+    if (usesAggregateAccentBar(ratingPresentationForType) && !aggregateAccentBarVisible) {
+      query.set('aggregateAccentBarVisible', 'false');
+    }
     if (previewType === 'poster') {
       query.set('posterRatings', ratingsQuery);
     } else if (previewType === 'backdrop') {
@@ -2100,15 +2135,21 @@ export default function Home() {
     }
     query.set('tmdbKey', normalizedTmdbKey);
     const shouldSendFanartKey =
-      (previewType === 'poster' && posterArtworkSource === 'fanart') ||
-      (previewType === 'backdrop' && backdropArtworkSource === 'fanart') ||
-      (previewType === 'logo' && logoArtworkSource === 'fanart');
+      (previewType === 'poster' &&
+        (posterArtworkSource === 'fanart' || posterArtworkSource === 'random')) ||
+      (previewType === 'backdrop' &&
+        (backdropArtworkSource === 'fanart' || backdropArtworkSource === 'random')) ||
+      (previewType === 'logo' &&
+        (logoArtworkSource === 'fanart' || logoArtworkSource === 'random'));
     if (normalizedFanartKey && shouldSendFanartKey) {
       query.set('fanartKey', normalizedFanartKey);
     }
 
     if (previewType === 'poster' || previewType === 'backdrop') {
       query.set('imageText', imageTextForType);
+      if (previewType === 'poster' && posterImageSize !== 'normal') {
+        query.set('posterImageSize', posterImageSize);
+      }
       if (previewType === 'poster' && posterArtworkSource !== 'tmdb') {
         query.set('posterArtworkSource', posterArtworkSource);
       }
@@ -2188,6 +2229,7 @@ export default function Home() {
     previewType,
     mediaId,
     lang,
+    posterImageSize,
     posterImageText,
     backdropImageText,
     posterArtworkSource,
@@ -2217,11 +2259,14 @@ export default function Home() {
     posterQualityBadgesPosition,
     posterQualityBadgesStyle,
     backdropQualityBadgesStyle,
+    logoQualityBadgesStyle,
     posterRatingBadgeScale,
     backdropRatingBadgeScale,
     logoRatingBadgeScale,
     posterQualityBadgeScale,
     backdropQualityBadgeScale,
+    logoQualityBadgeScale,
+    logoQualityBadgePreferences,
     posterRatingStyle,
     backdropRatingStyle,
     logoRatingStyle,
@@ -2234,6 +2279,7 @@ export default function Home() {
     aggregateAccentMode,
     aggregateAccentColor,
     aggregateAccentBarOffset,
+    aggregateAccentBarVisible,
     logoRatingsMax,
     logoBackground,
     logoArtworkSource,
@@ -2434,7 +2480,7 @@ export default function Home() {
     .join('\n\n');
   const baseStructureTemplate = useMemo(
     () =>
-      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&posterEdgeOffset={posterEdgeOffset}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
+      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterImageSize={posterImageSize}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&posterEdgeOffset={posterEdgeOffset}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
     [baseUrl],
   );
   const displayedBaseStructureTemplate = useMemo(
@@ -2560,6 +2606,30 @@ export default function Home() {
           nextOverride.stackedAccentMode,
           DEFAULT_STACKED_ACCENT_MODE,
         );
+        const normalizedStackedLineOffsetX = normalizeStackedElementOffsetPx(
+          nextOverride.stackedLineOffsetX,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
+        const normalizedStackedLineOffsetY = normalizeStackedElementOffsetPx(
+          nextOverride.stackedLineOffsetY,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
+        const normalizedStackedIconOffsetX = normalizeStackedElementOffsetPx(
+          nextOverride.stackedIconOffsetX,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
+        const normalizedStackedIconOffsetY = normalizeStackedElementOffsetPx(
+          nextOverride.stackedIconOffsetY,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
+        const normalizedStackedValueOffsetX = normalizeStackedElementOffsetPx(
+          nextOverride.stackedValueOffsetX,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
+        const normalizedStackedValueOffsetY = normalizeStackedElementOffsetPx(
+          nextOverride.stackedValueOffsetY,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
         const compactOverride: RatingProviderAppearanceOverride = {};
         if (trimmedIconUrl) {
           compactOverride.iconUrl = trimmedIconUrl;
@@ -2590,6 +2660,24 @@ export default function Home() {
         }
         if (normalizedStackedAccentMode !== DEFAULT_STACKED_ACCENT_MODE) {
           compactOverride.stackedAccentMode = normalizedStackedAccentMode;
+        }
+        if (normalizedStackedLineOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.stackedLineOffsetX = normalizedStackedLineOffsetX;
+        }
+        if (normalizedStackedLineOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.stackedLineOffsetY = normalizedStackedLineOffsetY;
+        }
+        if (normalizedStackedIconOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.stackedIconOffsetX = normalizedStackedIconOffsetX;
+        }
+        if (normalizedStackedIconOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.stackedIconOffsetY = normalizedStackedIconOffsetY;
+        }
+        if (normalizedStackedValueOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.stackedValueOffsetX = normalizedStackedValueOffsetX;
+        }
+        if (normalizedStackedValueOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.stackedValueOffsetY = normalizedStackedValueOffsetY;
         }
 
         const next = { ...current };
@@ -2800,6 +2888,9 @@ export default function Home() {
   const activeArtworkSourceOptions =
     previewType === 'backdrop' ? BACKDROP_ARTWORK_SOURCE_OPTIONS : POSTER_ARTWORK_SOURCE_OPTIONS;
   const activeArtworkSource = previewType === 'backdrop' ? backdropArtworkSource : posterArtworkSource;
+  const activePosterImageSizeOptionMeta =
+    POSTER_IMAGE_SIZE_OPTIONS.find((option) => option.id === posterImageSize) ||
+    POSTER_IMAGE_SIZE_OPTIONS[0];
   const activeArtworkSourceOptionMeta =
     activeArtworkSourceOptions.find((option) => option.id === activeArtworkSource) || null;
   const activeLogoSourceOptionMeta =
@@ -3536,6 +3627,22 @@ export default function Home() {
           )}
           {showsAggregateAccentBarOffset && (
             <div className="pt-1">
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Accent Bar
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAggregateAccentBarVisible((current) => !current)}
+                  className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    aggregateAccentBarVisible
+                      ? 'border-violet-500/60 bg-violet-500/20 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {aggregateAccentBarVisible ? 'Visible' : 'Hidden'}
+                </button>
+              </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                   Accent Bar Offset
@@ -3552,7 +3659,7 @@ export default function Home() {
                 className="mt-2 h-2 w-full accent-violet-500"
               />
               <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                Negative values move the aggregate accent bar upward a few pixels. This applies to compact and labeled average badges, including the new critics plus audience split mode.
+                Negative values move the aggregate accent bar upward a few pixels. You can hide the line entirely with the toggle above in compact and labeled average badge layouts.
               </p>
             </div>
           )}
@@ -3695,6 +3802,32 @@ export default function Home() {
                   ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
                   : ''}
               </p>
+            ) : null}
+            {previewType === 'poster' ? (
+              <>
+                <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Poster Size
+                </div>
+                <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                  {POSTER_IMAGE_SIZE_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setPosterImageSize(option.id)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        posterImageSize === option.id
+                          ? 'bg-zinc-800 text-white'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  {activePosterImageSizeOptionMeta.description}
+                </p>
+              </>
             ) : null}
           </div>
         ) : null}
@@ -4248,7 +4381,7 @@ export default function Home() {
                       Stacked Badge
                     </div>
                     <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                      Applies when the current rating style is stacked. Fine tune the badge width, body opacity, accent placement, and the top line for this source.
+                      Applies when the current rating style is stacked. Fine tune width, body opacity, accent behavior, and per-element X/Y offsets for the top line, logo, and value.
                     </p>
                   </div>
                   <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-[11px] font-medium text-zinc-300">
@@ -4458,6 +4591,180 @@ export default function Home() {
                       className="h-2 w-full accent-violet-500"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line X Offset</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedLineOffsetX ||
+                          DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                      max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedLineOffsetX ||
+                        DEFAULT_STACKED_ELEMENT_OFFSET_PX
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedLineOffsetX: normalizeStackedElementOffsetPx(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Line Y Offset</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedLineOffsetY ||
+                          DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                      max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedLineOffsetY ||
+                        DEFAULT_STACKED_ELEMENT_OFFSET_PX
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedLineOffsetY: normalizeStackedElementOffsetPx(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo X Offset</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedIconOffsetX ||
+                          DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                      max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedIconOffsetX ||
+                        DEFAULT_STACKED_ELEMENT_OFFSET_PX
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedIconOffsetX: normalizeStackedElementOffsetPx(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Y Offset</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedIconOffsetY ||
+                          DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                      max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedIconOffsetY ||
+                        DEFAULT_STACKED_ELEMENT_OFFSET_PX
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedIconOffsetY: normalizeStackedElementOffsetPx(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating X Offset</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedValueOffsetX ||
+                          DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                      max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedValueOffsetX ||
+                        DEFAULT_STACKED_ELEMENT_OFFSET_PX
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedValueOffsetX: normalizeStackedElementOffsetPx(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Rating Y Offset</span>
+                      <span className="text-[11px] text-zinc-400">
+                        {activeProviderAppearanceOverride.stackedValueOffsetY ||
+                          DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                      max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                      step={1}
+                      value={
+                        activeProviderAppearanceOverride.stackedValueOffsetY ||
+                        DEFAULT_STACKED_ELEMENT_OFFSET_PX
+                      }
+                      onChange={(event) =>
+                        updateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                          ...current,
+                          stackedValueOffsetY: normalizeStackedElementOffsetPx(
+                            event.target.value,
+                          ),
+                        }))
+                      }
+                      className="h-2 w-full accent-violet-500"
+                    />
+                  </div>
                 </div>
                 {!usesStackedRatingStyle ? (
                   <p className="text-[11px] leading-relaxed text-zinc-500">
@@ -4499,10 +4806,12 @@ export default function Home() {
                       activeProviderMeta.accentColor,
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={activeProviderAppearanceOverride.iconUrl || activeProviderMeta.iconUrl}
                     alt={`${activeProviderMeta.label} icon`}
+                    width={32}
+                    height={32}
+                    unoptimized
                     className="max-h-8 max-w-8 object-contain"
                   />
                 </div>
@@ -4624,6 +4933,30 @@ export default function Home() {
               </div>
             </div>
           )}
+          {previewType === 'poster' ? (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Poster Size
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {POSTER_IMAGE_SIZE_OPTIONS.map((option) => (
+                  <button
+                    key={`simple-poster-size-${option.id}`}
+                    type="button"
+                    onClick={() => setPosterImageSize(option.id)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                      posterImageSize === option.id
+                        ? 'border-violet-500/60 bg-zinc-800 text-white'
+                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    }`}
+                    title={option.description}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
@@ -5647,12 +5980,12 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">providerAppearance</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, iconScalePercent, stacked width, stacked body opacity, stacked accent mode, and stacked line controls</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">base64url or JSON provider overrides for iconUrl, accentColor, iconScalePercent, stacked width, stacked body opacity, stacked accent mode, stacked line controls, and stacked X/Y offsets for line, logo, and rating</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">ratingPresentation</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, dual, dual-minimal, editorial, blockbuster</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">standard, minimal, average, dual, dual minimal, editorial, blockbuster</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">standard</td>
                       </tr>
                       <tr>
@@ -5702,17 +6035,22 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">imageText</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">original, clean, alternative</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">original, clean, alternative, random</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">original (poster), clean (backdrop)</td>
                       </tr>
                       <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterImageSize</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">normal (580x859), large (1280x1896), 4k (2000x2926)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">normal</td>
+                      </tr>
+                      <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterArtworkSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, cinemeta (poster artwork source)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, cinemeta, random (poster artwork source)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropArtworkSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart (backdrop artwork source)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, random (backdrop artwork source)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
@@ -5767,7 +6105,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoArtworkSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, random</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
@@ -5799,9 +6137,9 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
-                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span>, <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>, <span className="font-semibold text-zinc-200">Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual</span>, and <span className="font-semibold text-zinc-200">Compact Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual-minimal</span>. Query values remain unchanged.
+                  In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span>, <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>, <span className="font-semibold text-zinc-200">Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual</span>, and <span className="font-semibold text-zinc-200">Compact Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual minimal</span>. Query values remain unchanged.
                   <br />
-                  Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">drama</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve. When drama appears beside a stronger supported family, the more specific bucket still wins.
+                  Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">drama</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve. <span className="font-semibold text-zinc-200">Thriller</span> and <span className="font-semibold text-zinc-200">mystery</span> now map into the crime family for consistent icon output.
                   <br />
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, <span className="font-semibold text-zinc-200">plain</span>, and <span className="font-semibold text-zinc-200">stacked</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                   <br />
@@ -5811,9 +6149,9 @@ export default function Home() {
                   <br />
                   <span className="font-mono text-zinc-200">fanartKey</span> is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span> when the server has one.
                   <br />
-                  Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. <span className="font-mono text-zinc-200">posterArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB.
+                  Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, <span className="font-mono text-zinc-200">alternative</span>, and <span className="font-mono text-zinc-200">random</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. Random uses a seeded pick. <span className="font-mono text-zinc-200">posterArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB. <span className="font-mono text-zinc-200">posterArtworkSource=random</span> picks a seeded random source across TMDB, fanart, and Cinemeta when available.
                   <br />
-                  Backdrop <span className="font-mono text-zinc-200">backdropArtworkSource=fanart</span> uses fanart.tv backdrop art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, and <span className="font-mono text-zinc-200">alternative</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. <span className="font-mono text-zinc-200">logoArtworkSource=fanart</span> uses fanart.tv HD or clear logo assets for logo output.
+                  Backdrop <span className="font-mono text-zinc-200">backdropArtworkSource=fanart</span> uses fanart.tv backdrop art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, <span className="font-mono text-zinc-200">alternative</span>, and <span className="font-mono text-zinc-200">random</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. Random uses a seeded pick. <span className="font-mono text-zinc-200">backdropArtworkSource=random</span> picks a seeded random source between TMDB and fanart. <span className="font-mono text-zinc-200">logoArtworkSource=fanart</span> uses fanart.tv HD or clear logo assets for logo output, and <span className="font-mono text-zinc-200">logoArtworkSource=random</span> does a seeded pick between TMDB and fanart logos.
                   <br />
                   Future work: season aware fanart support is a good next step for TV because fanart.tv exposes <span className="font-mono text-zinc-200">seasonposter</span> and <span className="font-mono text-zinc-200">seasonthumb</span> assets.
                 </div>
@@ -5840,6 +6178,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>imageText</div>
+                            <div>posterImageSize</div>
                             <div>posterArtworkSource</div>
                             <div>posterRatingPresentation</div>
                             <div>posterAggregateRatingSource</div>
@@ -5862,9 +6201,10 @@ export default function Home() {
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
-                            <div>original, clean, alternative</div>
-                            <div>tmdb, fanart, cinemeta</div>
-                            <div>standard, minimal, average, dual, dual-minimal, editorial, blockbuster</div>
+                            <div>original, clean, alternative, random</div>
+                            <div>normal (580x859), large (1280x1896), 4k (2000x2926)</div>
+                            <div>tmdb, fanart, cinemeta, random</div>
+                            <div>standard, minimal, average, dual, dual minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
@@ -5908,9 +6248,9 @@ export default function Home() {
                         </td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
-                            <div>original, clean, alternative</div>
-                            <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, dual, dual-minimal, editorial, blockbuster</div>
+                            <div>original, clean, alternative, random</div>
+                            <div>tmdb, fanart, random</div>
+                            <div>standard, minimal, average, dual, dual minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
@@ -5947,8 +6287,8 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
-                            <div>tmdb, fanart</div>
-                            <div>standard, minimal, average, dual, dual-minimal, editorial, blockbuster</div>
+                            <div>tmdb, fanart, random</div>
+                            <div>standard, minimal, average, dual, dual minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
@@ -5962,7 +6302,7 @@ export default function Home() {
                   </table>
                 </div>
                 <div className="px-5 pb-5 pt-3 text-[11px] text-zinc-500">
-                  Direct image URLs support shared fallbacks like ratings, lang, ratingValueMode, genreBadge, genreBadgeStyle, genreBadgePosition, genreBadgeScale, ratingPresentation, aggregateRatingSource, aggregateAccentMode, aggregateAccentColor, aggregateAccentBarOffset, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit per type fields instead, including poster/backdrop/logo genre badge overrides, and omit unchanged defaults.
+                  Direct image URLs support shared fallbacks like ratings, lang, ratingValueMode, genreBadge, genreBadgeStyle, genreBadgePosition, genreBadgeScale, ratingPresentation, aggregateRatingSource, aggregateAccentMode, aggregateAccentColor, aggregateAccentBarOffset, aggregateAccentBarVisible, ratingStyle, streamBadges, qualityBadgesStyle, and providerAppearance. Generated erdbConfig payloads usually emit per type fields instead, including poster/backdrop/logo genre badge overrides, and omit unchanged defaults.
                 </div>
               </div>
 
@@ -6058,7 +6398,7 @@ export default function Home() {
                     </div>
                     <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2 md:col-span-2">
                       <span className="text-violet-500 font-bold">providerAppearance:</span>
-                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Accepts base64url or raw JSON overrides for iconUrl, accentColor, iconScalePercent, stackedWidthPercent, stackedSurfaceOpacityPercent, stackedAccentMode, and stacked line controls such as stackedLineVisible or stackedLineWidthPercent.</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">Accepts base64url or raw JSON overrides for iconUrl, accentColor, iconScalePercent, stackedWidthPercent, stackedSurfaceOpacityPercent, stackedAccentMode, stacked line controls, and per element offsets such as stackedLineOffsetY, stackedIconOffsetY, or stackedValueOffsetY.</span>
                     </div>
                     <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2 md:col-span-2">
                       <span className="text-violet-500 font-bold">posterQualityBadges / backdropQualityBadges:</span>

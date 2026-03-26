@@ -132,9 +132,7 @@ const createCachedValueFetcher = <T,>(
     let result: T | null = null;
     try {
       result = await resolver(key);
-    } catch {
-      // fallback
-    }
+    } catch {}
 
     entry.expiresAt = Date.now() + (result ? successTtlMs : failedTtlMs);
     return result;
@@ -425,8 +423,6 @@ const getPublicRequestUrl = (request: NextRequest) => {
   const url = new URL(request.nextUrl.toString());
   url.protocol = `${proto}:`;
   url.host = host;
-  // When behind a reverse proxy, strip the internal port (e.g. :3000)
-  // so public-facing URLs only use the reverse proxy's default port.
   if (trustForwarded && url.port) {
     url.port = '';
   }

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
-import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   ALL_RATING_PREFERENCES,
   RATING_PROVIDER_OPTIONS,
@@ -130,6 +130,7 @@ import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
   DEFAULT_STACKED_ACCENT_MODE,
+  DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   DEFAULT_STACKED_LINE_GAP_PERCENT,
   DEFAULT_STACKED_LINE_HEIGHT_PERCENT,
   DEFAULT_STACKED_LINE_WIDTH_PERCENT,
@@ -164,8 +165,9 @@ import {
 
 export const runtime = 'nodejs';
 
-type PosterTextPreference = 'original' | 'clean' | 'alternative';
-type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta';
+type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
+type PosterImageSize = 'normal' | 'large' | '4k';
+type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'random';
 type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -186,7 +188,15 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anidb',
 ]);
 const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
+const FANART_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['fanart', 'random']);
+const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
+const DEFAULT_POSTER_IMAGE_SIZE: PosterImageSize = 'normal';
+const POSTER_IMAGE_DIMENSIONS: Record<PosterImageSize, { width: number; height: number }> = {
+  normal: { width: 580, height: 859 },
+  large: { width: 1280, height: 1896 },
+  '4k': { width: 2000, height: 2926 },
+};
 const parseApiKeyList = (...values: Array<string | undefined>) => {
   const result: string[] = [];
   const seen = new Set<string>();
@@ -210,6 +220,101 @@ const normalizeArtworkSource = (
   return ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
     ? (normalized as ArtworkSource)
     : fallback;
+};
+const normalizePosterImageSize = (
+  value?: string | null,
+  fallback: PosterImageSize = DEFAULT_POSTER_IMAGE_SIZE,
+): PosterImageSize => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (normalized === 'default') return fallback;
+  if (normalized === 'standard') return 'normal';
+  if (normalized === 'verylarge') return '4k';
+  if (normalized === 'uhd' || normalized === 'ultra' || normalized === '4k-slow' || normalized === '4kslow') {
+    return '4k';
+  }
+  return POSTER_IMAGE_SIZE_SET.has(normalized as PosterImageSize)
+    ? (normalized as PosterImageSize)
+    : fallback;
+};
+type RpdbRatingBarPosition =
+  | 'bottom'
+  | 'top'
+  | 'right-bottom'
+  | 'right-center'
+  | 'right-top'
+  | 'left-bottom'
+  | 'left-center'
+  | 'left-top';
+type RpdbRatingBarPositionAliases = {
+  posterRatingsLayout?: PosterRatingLayout;
+  backdropRatingsLayout?: BackdropRatingLayout;
+  sideRatingsPosition?: SideRatingPosition;
+};
+const normalizeRpdbRatingBarPosition = (
+  value?: string | null,
+): RpdbRatingBarPosition | null => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === 'default') return 'bottom';
+  if (normalized === 'center') return 'right-center';
+  if (normalized === 'bottom') return 'bottom';
+  if (
+    normalized === 'top' ||
+    normalized === 'right-bottom' ||
+    normalized === 'right-center' ||
+    normalized === 'right-top' ||
+    normalized === 'left-bottom' ||
+    normalized === 'left-center' ||
+    normalized === 'left-top'
+  ) {
+    return normalized as RpdbRatingBarPosition;
+  }
+  return null;
+};
+const resolveRpdbRatingBarPositionAliases = (
+  value?: string | null,
+): RpdbRatingBarPositionAliases => {
+  const position = normalizeRpdbRatingBarPosition(value);
+  if (!position) return {};
+  if (position === 'bottom') {
+    return {
+      posterRatingsLayout: 'bottom',
+    };
+  }
+  if (position === 'top') {
+    return {
+      posterRatingsLayout: 'top',
+    };
+  }
+  const [layoutSide, verticalAnchor] = position.split('-') as [
+    'left' | 'right',
+    'bottom' | 'center' | 'top',
+  ];
+  const sideRatingsPosition =
+    verticalAnchor === 'center'
+      ? 'middle'
+      : (verticalAnchor as Extract<SideRatingPosition, 'top' | 'bottom'>);
+  return {
+    posterRatingsLayout: layoutSide,
+    backdropRatingsLayout: layoutSide === 'right' ? 'right-vertical' : undefined,
+    sideRatingsPosition,
+  };
+};
+const normalizeRpdbFontScalePercent = (value?: string | null) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized || normalized === 'default') return null;
+  const parsed = Number(normalized.replace('%', ''));
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  const percentValue = normalized.includes('%') || parsed > 3 ? parsed : parsed * 100;
+  return Math.round(percentValue);
+};
+const normalizeBooleanSearchFlag = (value?: string | null) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return null;
+  if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false;
+  return null;
 };
 const toAnimeMappingProvider = (value?: string | null): AnimeMappingProvider | null => {
   const normalized = (value || '').trim().toLowerCase();
@@ -323,9 +428,9 @@ const SIMKL_CACHE_TTL_MS = parseCacheTtlMs(
 );
 const SIMKL_ID_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_SIMKL_ID_CACHE_TTL_MS,
-  30 * 24 * 60 * 60 * 1000,
+  180 * 24 * 60 * 60 * 1000,
   10 * 60 * 1000,
-  30 * 24 * 60 * 60 * 1000
+  365 * 24 * 60 * 60 * 1000
 );
 const SIMKL_ID_EMPTY_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_SIMKL_ID_EMPTY_CACHE_TTL_MS,
@@ -380,6 +485,7 @@ type CachedJsonResponse = {
   ok: boolean;
   status: number;
   data: any;
+  location?: string | null;
 };
 type JsonFetchImpl = (input: string, init?: RequestInit) => Promise<Response>;
 type CachedJsonNetworkObserver = {
@@ -584,6 +690,7 @@ type RatingBadge = {
   iconUrl: string;
   accentColor: string;
   accentBarOffset?: number;
+  accentBarVisible?: boolean;
   iconScalePercent?: number;
   stackedLineVisible?: boolean;
   stackedLineWidthPercent?: number;
@@ -592,6 +699,12 @@ type RatingBadge = {
   stackedWidthPercent?: number;
   stackedSurfaceOpacityPercent?: number;
   stackedAccentMode?: StackedAccentMode;
+  stackedLineOffsetX?: number;
+  stackedLineOffsetY?: number;
+  stackedIconOffsetX?: number;
+  stackedIconOffsetY?: number;
+  stackedValueOffsetX?: number;
+  stackedValueOffsetY?: number;
   variant?: 'standard' | 'minimal' | 'summary';
 };
 type GenreBadgeSpec = {
@@ -624,6 +737,7 @@ const SIMKL_APP_NAME =
 const SIMKL_APP_VERSION =
   String(process.env.ERDB_SIMKL_APP_VERSION || process.env.ERDB_BUILD_VERSION || process.env.npm_package_version || '1.0')
     .trim() || '1.0';
+const SIMKL_USER_AGENT = `${SIMKL_APP_NAME}/${SIMKL_APP_VERSION}`.replace(/\s+/g, '-');
 
 const buildSimklRequiredQuery = (clientId: string) => {
   const query = new URLSearchParams();
@@ -785,6 +899,7 @@ const buildAggregateRatingBadgeForSource = ({
   ratingBadgeByProvider,
   resolveAccentColor,
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  accentBarVisible = true,
   allowFallbackToOverall = true,
   valueMode = DEFAULT_RATING_VALUE_MODE,
 }: {
@@ -794,6 +909,7 @@ const buildAggregateRatingBadgeForSource = ({
   ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
   resolveAccentColor: (source: AggregateRatingSource) => string;
   accentBarOffset?: number;
+  accentBarVisible?: boolean;
   allowFallbackToOverall?: boolean;
   valueMode?: RatingValueMode;
 }): RatingBadge | null => {
@@ -839,6 +955,7 @@ const buildAggregateRatingBadgeForSource = ({
     iconUrl: '',
     accentColor: resolveAccentColor(effectiveSource),
     accentBarOffset,
+    accentBarVisible,
     variant: useCompactAggregateBadge ? 'minimal' : 'summary',
   };
 };
@@ -850,6 +967,7 @@ const buildAggregateRatingBadges = ({
   ratingBadgeByProvider,
   resolveAccentColor,
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  accentBarVisible = true,
   valueMode = DEFAULT_RATING_VALUE_MODE,
 }: {
   requestedSource: AggregateRatingSource;
@@ -858,6 +976,7 @@ const buildAggregateRatingBadges = ({
   ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
   resolveAccentColor: (source: AggregateRatingSource) => string;
   accentBarOffset?: number;
+  accentBarVisible?: boolean;
   valueMode?: RatingValueMode;
 }) => {
   if (usesDualAggregateRatingPresentation(presentation)) {
@@ -870,6 +989,7 @@ const buildAggregateRatingBadges = ({
           ratingBadgeByProvider,
           resolveAccentColor,
           accentBarOffset,
+          accentBarVisible,
           allowFallbackToOverall: false,
           valueMode,
         }),
@@ -884,6 +1004,7 @@ const buildAggregateRatingBadges = ({
     ratingBadgeByProvider,
     resolveAccentColor,
     accentBarOffset,
+    accentBarVisible,
     valueMode,
   });
 
@@ -2502,6 +2623,7 @@ const fetchSimklId = async ({
   if (!normalizedClientId) return null;
 
   const query = buildSimklRequiredQuery(normalizedClientId);
+  query.set('to', 'Simkl');
   if (normalizedImdbId) {
     query.set('imdb', normalizedImdbId);
   } else if (normalizedTmdbId) {
@@ -2524,7 +2646,7 @@ const fetchSimklId = async ({
     (normalizedMalId ? `mal:${normalizedMalId}` : '') ||
     (normalizedKitsuId ? `kitsu:${normalizedKitsuId}` : '');
   const clientHash = sha1Hex(normalizedClientId);
-  const idCacheKey = `simkl:id:${cacheIdSource}:client:${clientHash}`;
+  const idCacheKey = `simkl:id:v2:${cacheIdSource}:client:${clientHash}`;
   const emptyIdCacheKey = `${idCacheKey}:empty`;
 
   const cachedEmpty = getMetadata<{ empty: true }>(emptyIdCacheKey);
@@ -2541,10 +2663,51 @@ const fetchSimklId = async ({
         headers: {
           'simkl-api-key': normalizedClientId,
           'Accept': 'application/json',
-          'User-Agent': BROWSER_LIKE_USER_AGENT,
+          'User-Agent': SIMKL_USER_AGENT,
         },
+        redirect: 'manual',
       }
     );
+
+    const parseRedirectLocationSimklId = (locationValue?: string | null) => {
+      const normalizedLocation = String(locationValue || '').trim();
+      if (!normalizedLocation) return null;
+      const resolvedUrl = normalizedLocation.startsWith('//')
+        ? `https:${normalizedLocation}`
+        : normalizedLocation.startsWith('/')
+          ? `https://simkl.com${normalizedLocation}`
+          : normalizedLocation;
+      try {
+        const path = new URL(resolvedUrl).pathname;
+        const match = path.match(/\/(?:movie|movies|tv|show|shows|anime)\/(\d+)(?:\/|$)/i);
+        return match?.[1] || null;
+      } catch {
+        const match = normalizedLocation.match(/\/(?:movie|movies|tv|show|shows|anime)\/(\d+)(?:\/|$)/i);
+        return match?.[1] || null;
+      }
+    };
+
+    const simklIdFromPayload =
+      response.data?.id ||
+      response.data?.simkl_id ||
+      response.data?.ids?.simkl ||
+      parseRedirectLocationSimklId(response.location);
+    if (simklIdFromPayload) {
+      const normalizedSimklId = String(simklIdFromPayload).trim();
+      if (normalizedSimklId) {
+        setMetadata(
+          idCacheKey,
+          {
+            ok: true,
+            status: 200,
+            data: { id: normalizedSimklId },
+            location: response.location ?? null,
+          },
+          cacheTtlMs,
+        );
+        return normalizedSimklId;
+      }
+    }
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -2552,12 +2715,8 @@ const fetchSimklId = async ({
       }
       return null;
     }
-    const simklId = response.data?.id || response.data?.simkl_id;
-    if (!simklId) {
-      setMetadata(emptyIdCacheKey, { empty: true }, SIMKL_ID_EMPTY_CACHE_TTL_MS);
-      return null;
-    }
-    return String(simklId);
+
+    return null;
   } catch {
     return null;
   }
@@ -2621,14 +2780,19 @@ const fetchSimklRating = async ({
         headers: {
           'simkl-api-key': normalizedClientId,
           'Accept': 'application/json',
-          'User-Agent': BROWSER_LIKE_USER_AGENT,
+          'User-Agent': SIMKL_USER_AGENT,
         },
       }
     );
 
     if (!response.ok) return null;
 
-    const rating = normalizeRatingValue(response.data?.rating);
+    const rating = normalizeRatingValue(
+      response.data?.rating ??
+        response.data?.simkl?.rating ??
+        response.data?.ratings?.simkl?.rating ??
+        response.data?.ratings?.overall?.rating,
+    );
     return rating && !isNegativeRatingValue(rating) ? rating : null;
   } catch {
     return null;
@@ -2694,6 +2858,7 @@ const fetchJsonCached = async (
       ok: response.ok,
       status: response.status,
       data,
+      location: response.headers.get('location'),
     };
 
     const tmdbHost = (() => {
@@ -2775,6 +2940,20 @@ const pickByLanguageWithFallback = (
   return items[0];
 };
 
+const pickDeterministicIndexBySeed = (seed: string, length: number) => {
+  if (!Number.isFinite(length) || length <= 0) return 0;
+  const normalizedSeed = String(seed || '').trim();
+  if (!normalizedSeed) return 0;
+  const hashValue = Number.parseInt(sha1Hex(normalizedSeed).slice(0, 12), 16);
+  if (!Number.isFinite(hashValue) || hashValue < 0) return 0;
+  return hashValue % length;
+};
+
+const pickDeterministicItemBySeed = <T,>(items: T[] = [], seed: string) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  return items[pickDeterministicIndexBySeed(seed, items.length)] || null;
+};
+
 const isTextlessPosterSelection = (posters: any[] = [], selectedPoster?: any | null) => {
   if (!Array.isArray(posters) || posters.length === 0 || !selectedPoster?.file_path) return false;
 
@@ -2789,7 +2968,8 @@ const pickPosterByPreference = (
   preference: PosterTextPreference,
   preferredLang: string,
   fallbackLang: string,
-  originalPosterPath?: string | null
+  originalPosterPath?: string | null,
+  randomSeed?: string
 ) => {
   if (!Array.isArray(posters) || posters.length === 0) return null;
 
@@ -2818,6 +2998,18 @@ const pickPosterByPreference = (
     return fallbackOriginal;
   }
 
+  if (preference === 'random') {
+    const uniquePosters = [...new Map(
+      posters
+        .filter((poster: any) => typeof poster?.file_path === 'string' && poster.file_path.trim())
+        .map((poster: any) => [poster.file_path, poster] as const)
+    ).values()];
+    return pickDeterministicItemBySeed(
+      uniquePosters,
+      `poster:${randomSeed || canonicalOriginalPath || preferredLang || fallbackLang || 'seed'}`,
+    ) || fallbackOriginal;
+  }
+
   return (
     pickByLanguageWithFallback(alternativePosters, preferredLang, fallbackLang) ||
     alternativePosters[0] ||
@@ -2830,7 +3022,8 @@ const pickBackdropByPreference = (
   preference: PosterTextPreference,
   preferredLang: string,
   fallbackLang: string,
-  originalBackdropPath?: string | null
+  originalBackdropPath?: string | null,
+  randomSeed?: string
 ) => {
   if (!Array.isArray(backdrops) || backdrops.length === 0) return null;
 
@@ -2858,6 +3051,18 @@ const pickBackdropByPreference = (
 
   if (preference === 'original') {
     return fallbackOriginal;
+  }
+
+  if (preference === 'random') {
+    const uniqueBackdrops = [...new Map(
+      backdrops
+        .filter((backdrop: any) => typeof backdrop?.file_path === 'string' && backdrop.file_path.trim())
+        .map((backdrop: any) => [backdrop.file_path, backdrop] as const)
+    ).values()];
+    return pickDeterministicItemBySeed(
+      uniqueBackdrops,
+      `backdrop:${randomSeed || canonicalOriginalPath || preferredLang || fallbackLang || 'seed'}`,
+    ) || fallbackOriginal;
   }
 
   return (
@@ -3083,7 +3288,11 @@ const writeProviderIconToStorage = async (iconUrl: string, buffer: Buffer) => {
 };
 
 const pickTmdbImageSize = (imageType: 'poster' | 'backdrop' | 'logo', outputWidth: number) => {
-  if (imageType === 'poster') return 'w500';
+  if (imageType === 'poster') {
+    if (outputWidth <= 500) return 'w500';
+    if (outputWidth <= 780) return 'w780';
+    return 'original';
+  }
   if (imageType === 'backdrop') return 'w1280';
   if (imageType === 'logo') {
     return outputWidth <= 500 ? 'w500' : 'original';
@@ -3290,9 +3499,16 @@ const fanartAssetsToUrls = (items: FanartImageAsset[] = []) =>
 
 const pickFanartUrlByPreference = (
   urls: string[] = [],
-  preference: PosterTextPreference
+  preference: PosterTextPreference,
+  randomSeed?: string
 ) => {
   if (!Array.isArray(urls) || urls.length === 0) return null;
+  if (preference === 'random') {
+    return pickDeterministicItemBySeed(
+      [...new Set(urls.filter((url) => typeof url === 'string' && url.trim()))],
+      `fanart:${randomSeed || 'seed'}`,
+    );
+  }
   if (preference === 'alternative') {
     return urls[1] || urls[0] || null;
   }
@@ -4489,6 +4705,11 @@ ${buildMediaPlate(width, {
       : isPlainStandard
         ? `${buildPlainQualityShadowDefs('quality-badge-plain-shadow')}<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
         : '';
+    const assetExtraAttributes = isSilverStandard
+      ? 'filter="url(#quality-badge-silver-logo)"'
+      : isPlainStandard
+        ? 'filter="url(#quality-badge-logo-shadow)"'
+        : '';
     return {
       width,
       height: h,
@@ -4503,7 +4724,7 @@ ${buildCenteredBadgeAssetImage({
   horizontalPadding,
   heightRatio: asset.heightRatio,
   yOffset: Math.round(h * (asset.yOffsetRatio || 0)),
-  extraAttributes: isPlainStandard ? 'filter="url(#quality-badge-logo-shadow)"' : '',
+  extraAttributes: assetExtraAttributes,
 })}
 </svg>`,
     };
@@ -4774,6 +4995,7 @@ const buildBadgeSvg = ({
   value,
   badgeVariant = 'standard',
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  accentBarVisible = true,
   ratingStyle,
   iconScalePercent = DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
   stackedLineVisible = true,
@@ -4782,6 +5004,12 @@ const buildBadgeSvg = ({
   stackedLineGapPercent = DEFAULT_STACKED_LINE_GAP_PERCENT,
   stackedSurfaceOpacityPercent = DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
   stackedAccentMode = DEFAULT_STACKED_ACCENT_MODE,
+  stackedLineOffsetX = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  stackedLineOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  stackedIconOffsetX = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  stackedIconOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  stackedValueOffsetX = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  stackedValueOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   preferReadablePlainSurface = false,
   preferNeutralGlassPlate = false,
   compactText = false,
@@ -4800,6 +5028,7 @@ const buildBadgeSvg = ({
   value: string;
   badgeVariant?: 'standard' | 'minimal' | 'summary';
   accentBarOffset?: number;
+  accentBarVisible?: boolean;
   ratingStyle: RatingStyle;
   iconScalePercent?: number;
   stackedLineVisible?: boolean;
@@ -4808,6 +5037,12 @@ const buildBadgeSvg = ({
   stackedLineGapPercent?: number;
   stackedSurfaceOpacityPercent?: number;
   stackedAccentMode?: StackedAccentMode;
+  stackedLineOffsetX?: number;
+  stackedLineOffsetY?: number;
+  stackedIconOffsetX?: number;
+  stackedIconOffsetY?: number;
+  stackedValueOffsetX?: number;
+  stackedValueOffsetY?: number;
   preferReadablePlainSurface?: boolean;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
@@ -4858,7 +5093,7 @@ const buildBadgeSvg = ({
         const valueY = Math.round(centerY + 1);
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
-<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(2, Math.round(accentRailHeight / 2))}" fill="${accentColor}" fill-opacity="0.78" filter="url(#plain-variant-surface-shadow)" />
+${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(2, Math.round(accentRailHeight / 2))}" fill="${accentColor}" fill-opacity="0.78" filter="url(#plain-variant-surface-shadow)" />` : ''}
 <text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
       }
@@ -4882,7 +5117,7 @@ ${plainDefs}
       );
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
-<rect x="${sideInset}" y="${accentRailY}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />
+${accentBarVisible ? `<rect x="${sideInset}" y="${accentRailY}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />` : ''}
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="start" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
 <text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
@@ -4933,7 +5168,7 @@ ${plainDefs}
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
 ${variantChrome}
-<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(1, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />
+${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(1, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />` : ''}
 <text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
@@ -4982,6 +5217,12 @@ ${variantChrome}
       accentLineWidthPercent: stackedLineWidthPercent,
       accentLineHeightPercent: stackedLineHeightPercent,
       accentLineGapPercent: stackedLineGapPercent,
+      lineOffsetX: stackedLineOffsetX,
+      lineOffsetY: stackedLineOffsetY,
+      iconOffsetX: stackedIconOffsetX,
+      iconOffsetY: stackedIconOffsetY,
+      valueOffsetX: stackedValueOffsetX,
+      valueOffsetY: stackedValueOffsetY,
     });
     const valueTextWidth = estimateBadgeTextWidth(value, stackedLayout.valueFontSize, compactText);
     const valueAvailableWidth = stackedLayout.valueAvailableWidth;
@@ -5033,7 +5274,7 @@ ${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${st
 <rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
 ${iconImage}
 ${monogramText}
-<text x="${Math.round(width / 2)}" y="${stackedLayout.valueTopY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="hanging" fill="white"${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${stackedLayout.valueX}" y="${stackedLayout.valueTopY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="hanging" fill="white"${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
@@ -5874,6 +6115,7 @@ const renderWithSharp = async (
         value: badge.value,
         badgeVariant: badge.variant || 'standard',
         accentBarOffset: badge.accentBarOffset,
+        accentBarVisible: badge.accentBarVisible,
         ratingStyle: input.ratingStyle,
         iconScalePercent: badge.iconScalePercent,
         stackedLineVisible: badge.stackedLineVisible,
@@ -5882,6 +6124,12 @@ const renderWithSharp = async (
         stackedLineGapPercent: badge.stackedLineGapPercent,
         stackedSurfaceOpacityPercent: badge.stackedSurfaceOpacityPercent,
         stackedAccentMode: badge.stackedAccentMode,
+        stackedLineOffsetX: badge.stackedLineOffsetX,
+        stackedLineOffsetY: badge.stackedLineOffsetY,
+        stackedIconOffsetX: badge.stackedIconOffsetX,
+        stackedIconOffsetY: badge.stackedIconOffsetY,
+        stackedValueOffsetX: badge.stackedValueOffsetX,
+        stackedValueOffsetY: badge.stackedValueOffsetY,
         preferReadablePlainSurface: input.imageType === 'poster' || input.imageType === 'backdrop',
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
@@ -6912,7 +7160,10 @@ export async function handleImageRequest(
       : imageType === 'backdrop'
         ? backdropGenreBadgeScale
         : logoGenreBadgeScale;
-  const globalRatings = request.nextUrl.searchParams.get('ratings');
+  const globalRatings =
+    request.nextUrl.searchParams.get('ratings') ??
+    request.nextUrl.searchParams.get('order') ??
+    request.nextUrl.searchParams.get('ratingOrder');
   const posterRatings = request.nextUrl.searchParams.get('posterRatings') ?? globalRatings;
   const backdropRatings = request.nextUrl.searchParams.get('backdropRatings') ?? globalRatings;
   const logoRatings = request.nextUrl.searchParams.get('logoRatings') ?? globalRatings;
@@ -6964,9 +7215,38 @@ export async function handleImageRequest(
     request.nextUrl.searchParams.get('aggregateAccentBarOffset'),
     DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   );
+  const aggregateAccentBarVisibleParam =
+    request.nextUrl.searchParams.get('aggregateAccentBarVisible') ??
+    request.nextUrl.searchParams.get('aggregateAccentVisible') ??
+    request.nextUrl.searchParams.get('compactAccentLineVisible');
+  const aggregateAccentBarVisible = !(
+    typeof aggregateAccentBarVisibleParam === 'string' &&
+    ['0', 'false', 'off', 'no'].includes(aggregateAccentBarVisibleParam.trim().toLowerCase())
+  );
   const imageTextParam =
     request.nextUrl.searchParams.get('imageText') || request.nextUrl.searchParams.get('posterText');
-  const imageText = imageTextParam || (type === 'backdrop' ? 'clean' : 'original');
+  const rpdbPosterTypeParam = request.nextUrl.searchParams.get('posterType');
+  const hasTextlessPosterType =
+    typeof rpdbPosterTypeParam === 'string' &&
+    (rpdbPosterTypeParam.trim().toLowerCase().startsWith('textless-') ||
+      rpdbPosterTypeParam.trim().toLowerCase() === 'textless-order');
+  const explicitTextlessFlag = normalizeBooleanSearchFlag(
+    request.nextUrl.searchParams.get('textless'),
+  );
+  const textlessEnabled =
+    explicitTextlessFlag === null ? hasTextlessPosterType : explicitTextlessFlag;
+  const imageText =
+    imageTextParam || (type === 'backdrop' ? 'clean' : textlessEnabled ? 'clean' : 'original');
+  const posterImageSize = normalizePosterImageSize(
+    request.nextUrl.searchParams.get('posterImageSize') ??
+      request.nextUrl.searchParams.get('posterSize') ??
+      (type === 'poster' ? request.nextUrl.searchParams.get('imageSize') : null),
+    DEFAULT_POSTER_IMAGE_SIZE,
+  );
+  const artworkSelectionSeedParam =
+    request.nextUrl.searchParams.get('artworkSeed') ||
+    request.nextUrl.searchParams.get('randomSeed') ||
+    '';
   const legacyFanartCleanMode = imageText === 'fanartclean';
   const posterArtworkSource = legacyFanartCleanMode
     ? 'fanart'
@@ -6986,16 +7266,23 @@ export async function handleImageRequest(
   );
   const fanartKey = request.nextUrl.searchParams.get('fanartKey') || FANART_API_KEY;
   const fanartClientKey = request.nextUrl.searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
-  const posterRatingsLayout = normalizePosterRatingLayout(request.nextUrl.searchParams.get('posterRatingsLayout'));
+  const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(
+    request.nextUrl.searchParams.get('ratingBarPos'),
+  );
+  const posterRatingsLayout = normalizePosterRatingLayout(
+    request.nextUrl.searchParams.get('posterRatingsLayout') ?? rpdbRatingBarAliases.posterRatingsLayout,
+  );
   const posterRatingsMaxPerSide = normalizePosterRatingsMaxPerSide(request.nextUrl.searchParams.get('posterRatingsMaxPerSide'));
   const posterEdgeOffset = normalizePosterEdgeOffset(
     request.nextUrl.searchParams.get('posterEdgeOffset'),
     DEFAULT_POSTER_EDGE_OFFSET
   );
   const logoRatingsMax = normalizeOptionalBadgeCount(request.nextUrl.searchParams.get('logoRatingsMax'));
-  const backdropRatingsLayout = normalizeBackdropRatingLayout(request.nextUrl.searchParams.get('backdropRatingsLayout'));
+  const backdropRatingsLayout = normalizeBackdropRatingLayout(
+    request.nextUrl.searchParams.get('backdropRatingsLayout') ?? rpdbRatingBarAliases.backdropRatingsLayout,
+  );
   const sideRatingsPosition = normalizeSideRatingPosition(
-    request.nextUrl.searchParams.get('sideRatingsPosition'),
+    request.nextUrl.searchParams.get('sideRatingsPosition') ?? rpdbRatingBarAliases.sideRatingsPosition,
     DEFAULT_SIDE_RATING_POSITION
   );
   const sideRatingsOffset = normalizeSideRatingOffset(
@@ -7080,16 +7367,19 @@ export async function handleImageRequest(
   const providerAppearanceOverrides = parseRatingProviderAppearanceOverrides(
     request.nextUrl.searchParams.get('providerAppearance'),
   );
+  const rpdbFontScalePercent = normalizeRpdbFontScalePercent(
+    request.nextUrl.searchParams.get('fontScale'),
+  );
   const posterRatingBadgeScale = normalizeBadgeScalePercent(
-    request.nextUrl.searchParams.get('posterRatingBadgeScale'),
+    request.nextUrl.searchParams.get('posterRatingBadgeScale') ?? rpdbFontScalePercent,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
   const backdropRatingBadgeScale = normalizeBadgeScalePercent(
-    request.nextUrl.searchParams.get('backdropRatingBadgeScale'),
+    request.nextUrl.searchParams.get('backdropRatingBadgeScale') ?? rpdbFontScalePercent,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
   const logoRatingBadgeScale = normalizeBadgeScalePercent(
-    request.nextUrl.searchParams.get('logoRatingBadgeScale'),
+    request.nextUrl.searchParams.get('logoRatingBadgeScale') ?? rpdbFontScalePercent,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
   const posterQualityBadgeScale = normalizeBadgeScalePercent(
@@ -7163,6 +7453,7 @@ export async function handleImageRequest(
   const posterTextPreference: PosterTextPreference =
     imageText === 'clean' ||
     imageText === 'alternative' ||
+    imageText === 'random' ||
     imageText === 'original'
       ? (imageText as PosterTextPreference)
       : legacyFanartCleanMode
@@ -7205,6 +7496,18 @@ export async function handleImageRequest(
     imageType !== 'logo' &&
     (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto') &&
     !hasNativeAnimeInput;
+  const posterUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(posterArtworkSource);
+  const backdropUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(backdropArtworkSource);
+  const logoUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(logoArtworkSource);
+  const hasRandomArtworkSelection =
+    posterTextPreference === 'random' ||
+    posterArtworkSource === 'random' ||
+    backdropArtworkSource === 'random' ||
+    logoArtworkSource === 'random';
+  const artworkSelectionSeed = hasRandomArtworkSelection
+    ? (artworkSelectionSeedParam.trim() ||
+      `${cleanId}:${imageType}:${new Date().toISOString().slice(0, 10)}`)
+    : '';
   const shouldRenderLogoBackground = imageType === 'logo' && logoBackground === 'dark';
   const streamBadgesSeedTtlMs = shouldApplyStreamBadges
     ? getDeterministicTtlMs(TORRENTIO_CACHE_TTL_MS, cleanId)
@@ -7220,18 +7523,19 @@ export async function handleImageRequest(
     shouldApplyRatings ||
     shouldApplyStreamBadges ||
     shouldRenderLogoBackground ||
+    hasRandomArtworkSelection ||
     genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ||
-    (imageType === 'poster' && posterTextPreference === 'clean') ||
-    (imageType === 'poster' && posterArtworkSource === 'fanart') ||
-    (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
-    (imageType === 'logo' && logoArtworkSource === 'fanart');
+    (imageType === 'poster' && posterTextPreference !== 'original') ||
+    (imageType === 'poster' && posterUsesFanartArtwork) ||
+    (imageType === 'backdrop' && backdropUsesFanartArtwork) ||
+    (imageType === 'logo' && logoUsesFanartArtwork);
   const renderCacheBuster = (request.nextUrl.searchParams.get('cb') || '').trim();
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
   const usesFanartArtwork =
-    (imageType === 'poster' && posterArtworkSource === 'fanart') ||
-    (imageType === 'backdrop' && backdropArtworkSource === 'fanart') ||
-    (imageType === 'logo' && logoArtworkSource === 'fanart');
+    (imageType === 'poster' && posterUsesFanartArtwork) ||
+    (imageType === 'backdrop' && backdropUsesFanartArtwork) ||
+    (imageType === 'logo' && logoUsesFanartArtwork);
   const fanartKeyHash = usesFanartArtwork ? sha1Hex(fanartKey || '').slice(0, 12) : '-';
   const fanartClientKeyHash = usesFanartArtwork
     ? sha1Hex(fanartClientKey || '').slice(0, 12)
@@ -7245,6 +7549,7 @@ export async function handleImageRequest(
     cleanId,
     requestedImageLang,
     posterTextPreference,
+    posterImageSize,
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,
@@ -7268,6 +7573,8 @@ export async function handleImageRequest(
     aggregateAccentMode,
     aggregateAccentColor,
     aggregateAccentBarOffset,
+    aggregateAccentBarVisible,
+    artworkSelectionSeed,
     ratingStyle,
     ratingValueMode,
     posterRatingBadgeScale,
@@ -8314,8 +8621,9 @@ export async function handleImageRequest(
           : null;
 
       if (type === 'poster') {
-        outputWidth = 500;
-        outputHeight = 750;
+        const posterDimensions = POSTER_IMAGE_DIMENSIONS[posterImageSize];
+        outputWidth = posterDimensions.width;
+        outputHeight = posterDimensions.height;
       } else if (type === 'logo') {
         outputHeight = LOGO_BASE_HEIGHT;
         outputWidth = Math.max(
@@ -8391,6 +8699,8 @@ export async function handleImageRequest(
           logos: any[];
           seasonIncludeImageLanguage?: string;
         }) => {
+          const buildArtworkSeed = (scope: string) =>
+            `${scope}:${artworkSelectionSeed || `${cleanId}:${imageType}`}`;
           let posterCollection = input.posters || [];
           let backdropCollection = input.backdrops || [];
           const logoCollection = input.logos || [];
@@ -8399,7 +8709,17 @@ export async function handleImageRequest(
             requestedImageLang,
             FALLBACK_IMAGE_LANGUAGE
           );
-          const logoPath = selectedLogo?.file_path || null;
+          const randomLogoCandidate = pickDeterministicItemBySeed(
+            [...new Map(
+              logoCollection
+                .filter((logo: any) => typeof logo?.file_path === 'string' && logo.file_path.trim())
+                .map((logo: any) => [logo.file_path, logo] as const)
+            ).values()],
+            buildArtworkSeed('tmdb-logo'),
+          );
+          const defaultLogoPath = selectedLogo?.file_path || null;
+          const randomLogoPath = randomLogoCandidate?.file_path || defaultLogoPath;
+          const logoPath = logoArtworkSource === 'random' ? randomLogoPath : defaultLogoPath;
 
           const localizedPosterPath =
             pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
@@ -8503,7 +8823,7 @@ export async function handleImageRequest(
           }
 
           if (type === 'poster') {
-            if (posterArtworkSource === 'cinemeta') {
+            const resolveImdbId = async () => {
               let imdbId: string | null = isImdbId(mediaId) ? mediaId : null;
               if (!imdbId) {
                 imdbId = media?.imdb_id || mappedImdbId || null;
@@ -8514,6 +8834,84 @@ export async function handleImageRequest(
                   }
                 }
               }
+              return imdbId;
+            };
+            const selectedPoster = pickPosterByPreference(
+              posterCollection,
+              posterTextPreference,
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE,
+              originalPosterPath,
+              buildArtworkSeed('tmdb-poster'),
+            );
+            const posterIsTextless = isTextlessPosterSelection(posterCollection, selectedPoster);
+
+            if (posterArtworkSource === 'random') {
+              const randomPosterCandidates: Array<{
+                key: string;
+                imgPath?: string;
+                imgUrlOverride?: string;
+                logoPath?: string | null;
+                posterIsTextless?: boolean;
+              }> = [];
+
+              if (selectedPoster?.file_path) {
+                randomPosterCandidates.push({
+                  key: 'tmdb',
+                  imgPath: selectedPoster.file_path,
+                  logoPath,
+                  posterIsTextless,
+                });
+              }
+
+              if (mediaType === 'movie' || mediaType === 'tv') {
+                const fanartArtwork = await getFanartArtwork();
+                const fanartPosterUrl = pickFanartUrlByPreference(
+                  fanartArtwork?.posterUrls || [],
+                  'random',
+                  buildArtworkSeed('fanart-poster'),
+                );
+                if (fanartPosterUrl) {
+                  randomPosterCandidates.push({
+                    key: 'fanart',
+                    imgUrlOverride: fanartPosterUrl,
+                    logoPath:
+                      pickDeterministicItemBySeed(
+                        fanartArtwork?.logoUrls || [],
+                        buildArtworkSeed('fanart-logo'),
+                      ) || logoPath,
+                    posterIsTextless: false,
+                  });
+                }
+              }
+
+              const imdbId = await resolveImdbId();
+              if (imdbId) {
+                randomPosterCandidates.push({
+                  key: 'cinemeta',
+                  imgUrlOverride: buildCinemetaPosterUrl(imdbId),
+                  logoPath,
+                  posterIsTextless: false,
+                });
+              }
+
+              const randomPosterChoice = pickDeterministicItemBySeed(
+                randomPosterCandidates,
+                buildArtworkSeed('poster-source'),
+              );
+              if (randomPosterChoice) {
+                return {
+                  imgPath: randomPosterChoice.imgPath || '',
+                  imgUrlOverride: randomPosterChoice.imgUrlOverride || null,
+                  logoAspectRatio: null,
+                  logoPath: randomPosterChoice.logoPath || logoPath,
+                  posterIsTextless: randomPosterChoice.posterIsTextless === true,
+                };
+              }
+            }
+
+            if (posterArtworkSource === 'cinemeta') {
+              const imdbId = await resolveImdbId();
               if (imdbId) {
                 return {
                   imgPath: '',
@@ -8528,26 +8926,23 @@ export async function handleImageRequest(
               const fanartArtwork = await getFanartArtwork();
               const fanartPosterUrl = pickFanartUrlByPreference(
                 fanartArtwork?.posterUrls || [],
-                posterTextPreference
+                posterTextPreference,
+                buildArtworkSeed('fanart-poster'),
               );
               if (fanartPosterUrl) {
                 return {
                   imgPath: '',
                   imgUrlOverride: fanartPosterUrl,
                   logoAspectRatio: null,
-                  logoPath: fanartArtwork?.logoUrls?.[0] || logoPath,
+                  logoPath:
+                    pickDeterministicItemBySeed(
+                      fanartArtwork?.logoUrls || [],
+                      buildArtworkSeed('fanart-logo'),
+                    ) || logoPath,
                   posterIsTextless: false,
                 };
               }
             }
-            const selectedPoster = pickPosterByPreference(
-              posterCollection,
-              posterTextPreference,
-              requestedImageLang,
-              FALLBACK_IMAGE_LANGUAGE,
-              originalPosterPath
-            );
-            const posterIsTextless = isTextlessPosterSelection(posterCollection, selectedPoster);
             return {
               imgPath: selectedPoster?.file_path || '',
               imgUrlOverride: null,
@@ -8558,11 +8953,65 @@ export async function handleImageRequest(
           }
 
           if (type === 'backdrop') {
+            const selectedBackdrop = pickBackdropByPreference(
+              backdropCollection,
+              imageText as PosterTextPreference,
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE,
+              originalBackdropPath,
+              buildArtworkSeed('tmdb-backdrop'),
+            );
+
+            if (backdropArtworkSource === 'random') {
+              const randomBackdropCandidates: Array<{
+                key: string;
+                imgPath?: string;
+                imgUrlOverride?: string;
+              }> = [];
+
+              if (selectedBackdrop?.file_path) {
+                randomBackdropCandidates.push({
+                  key: 'tmdb',
+                  imgPath: selectedBackdrop.file_path,
+                });
+              }
+
+              if (mediaType === 'movie' || mediaType === 'tv') {
+                const fanartArtwork = await getFanartArtwork();
+                const fanartBackdropUrl = pickFanartUrlByPreference(
+                  fanartArtwork?.backdropUrls || [],
+                  'random',
+                  buildArtworkSeed('fanart-backdrop'),
+                );
+                if (fanartBackdropUrl) {
+                  randomBackdropCandidates.push({
+                    key: 'fanart',
+                    imgUrlOverride: fanartBackdropUrl,
+                  });
+                }
+              }
+
+              const randomBackdropChoice = pickDeterministicItemBySeed(
+                randomBackdropCandidates,
+                buildArtworkSeed('backdrop-source'),
+              );
+              if (randomBackdropChoice) {
+                return {
+                  imgPath: randomBackdropChoice.imgPath || '',
+                  imgUrlOverride: randomBackdropChoice.imgUrlOverride || null,
+                  logoAspectRatio: null,
+                  logoPath,
+                  posterIsTextless: false,
+                };
+              }
+            }
+
             if (backdropArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
               const fanartArtwork = await getFanartArtwork();
               const fanartBackdropUrl = pickFanartUrlByPreference(
                 fanartArtwork?.backdropUrls || [],
-                posterTextPreference
+                posterTextPreference,
+                buildArtworkSeed('fanart-backdrop'),
               );
               if (fanartBackdropUrl) {
                 return {
@@ -8574,13 +9023,6 @@ export async function handleImageRequest(
                 };
               }
             }
-            const selectedBackdrop = pickBackdropByPreference(
-              backdropCollection,
-              imageText as PosterTextPreference,
-              requestedImageLang,
-              FALLBACK_IMAGE_LANGUAGE,
-              originalBackdropPath
-            );
             return {
               imgPath: selectedBackdrop?.file_path || '',
               imgUrlOverride: null,
@@ -8590,10 +9032,20 @@ export async function handleImageRequest(
             };
           }
 
-          if (logoArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
+          const tmdbLogoAspectRatio =
+            typeof randomLogoCandidate?.aspect_ratio === 'number' && randomLogoCandidate.aspect_ratio > 0
+              ? randomLogoCandidate.aspect_ratio
+              : typeof selectedLogo?.aspect_ratio === 'number' && selectedLogo.aspect_ratio > 0
+                ? selectedLogo.aspect_ratio
+                : null;
+
+          if ((logoArtworkSource === 'fanart' || logoArtworkSource === 'random') && (mediaType === 'movie' || mediaType === 'tv')) {
             const fanartArtwork = await getFanartArtwork();
-            const fanartLogoUrl = fanartArtwork?.logoUrls?.[0] || null;
-            if (fanartLogoUrl) {
+            const fanartLogoUrl = pickDeterministicItemBySeed(
+              fanartArtwork?.logoUrls || [],
+              buildArtworkSeed('fanart-logo'),
+            );
+            if (logoArtworkSource === 'fanart' && fanartLogoUrl) {
               const logoAspectRatio = await getRemoteImageAspectRatio(fanartLogoUrl);
               return {
                 imgPath: '',
@@ -8603,12 +9055,62 @@ export async function handleImageRequest(
                 posterIsTextless: false,
               };
             }
+
+            if (logoArtworkSource === 'random') {
+              const randomLogoCandidates: Array<
+                | {
+                    key: string;
+                    imgPath: string;
+                    imgUrlOverride: null;
+                    logoAspectRatio: number | null;
+                    logoPath: string;
+                  }
+                | {
+                    key: string;
+                    imgPath: '';
+                    imgUrlOverride: string;
+                    logoAspectRatio: number | null;
+                    logoPath: string;
+                  }
+              > = [];
+
+              if (randomLogoPath) {
+                randomLogoCandidates.push({
+                  key: 'tmdb',
+                  imgPath: randomLogoPath,
+                  imgUrlOverride: null,
+                  logoAspectRatio: tmdbLogoAspectRatio,
+                  logoPath: randomLogoPath,
+                });
+              }
+
+              if (fanartLogoUrl) {
+                randomLogoCandidates.push({
+                  key: 'fanart',
+                  imgPath: '',
+                  imgUrlOverride: fanartLogoUrl,
+                  logoAspectRatio: await getRemoteImageAspectRatio(fanartLogoUrl),
+                  logoPath: fanartLogoUrl,
+                });
+              }
+
+              const randomLogoChoice = pickDeterministicItemBySeed(
+                randomLogoCandidates,
+                buildArtworkSeed('logo-source'),
+              );
+              if (randomLogoChoice) {
+                return {
+                  imgPath: randomLogoChoice.imgPath,
+                  imgUrlOverride: randomLogoChoice.imgUrlOverride,
+                  logoAspectRatio: randomLogoChoice.logoAspectRatio,
+                  logoPath: randomLogoChoice.logoPath,
+                  posterIsTextless: false,
+                };
+              }
+            }
           }
 
-          const logoAspectRatio =
-            typeof selectedLogo?.aspect_ratio === 'number' && selectedLogo.aspect_ratio > 0
-              ? selectedLogo.aspect_ratio
-              : null;
+          const logoAspectRatio = tmdbLogoAspectRatio;
           return {
             imgPath: logoPath || '',
             imgUrlOverride: null,
@@ -8860,6 +9362,12 @@ export async function handleImageRequest(
           stackedWidthPercent: providerAppearance?.stackedWidthPercent,
           stackedSurfaceOpacityPercent: providerAppearance?.stackedSurfaceOpacityPercent,
           stackedAccentMode: providerAppearance?.stackedAccentMode,
+          stackedLineOffsetX: providerAppearance?.stackedLineOffsetX,
+          stackedLineOffsetY: providerAppearance?.stackedLineOffsetY,
+          stackedIconOffsetX: providerAppearance?.stackedIconOffsetX,
+          stackedIconOffsetY: providerAppearance?.stackedIconOffsetY,
+          stackedValueOffsetX: providerAppearance?.stackedValueOffsetX,
+          stackedValueOffsetY: providerAppearance?.stackedValueOffsetY,
           variant: 'standard',
         });
       }
@@ -8880,6 +9388,7 @@ export async function handleImageRequest(
             ratingBadgeByProvider,
             resolveAccentColor: resolveAggregateAccentColor,
             accentBarOffset: aggregateAccentBarOffset,
+            accentBarVisible: aggregateAccentBarVisible,
             valueMode: ratingValueMode,
           })
         : [];

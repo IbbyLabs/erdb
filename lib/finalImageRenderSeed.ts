@@ -11,6 +11,7 @@ type FinalImageRenderSeedInput = {
   cleanId: string;
   requestedImageLang: string;
   posterTextPreference: string;
+  posterImageSize: string;
   posterArtworkSource: string;
   backdropArtworkSource: string;
   logoArtworkSource: string;
@@ -34,6 +35,8 @@ type FinalImageRenderSeedInput = {
   aggregateAccentMode: string;
   aggregateAccentColor: string | null;
   aggregateAccentBarOffset: number;
+  aggregateAccentBarVisible: boolean;
+  artworkSelectionSeed: string;
   ratingStyle: string;
   ratingValueMode: string;
   posterRatingBadgeScale: number;
@@ -79,6 +82,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.cleanId,
     input.requestedImageLang,
     input.posterTextPreference,
+    isPoster ? input.posterImageSize : '-',
     isPoster ? input.posterArtworkSource : '-',
     isBackdrop ? input.backdropArtworkSource : '-',
     isLogo ? input.logoArtworkSource : '-',
@@ -105,6 +109,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateAccentMode,
     input.aggregateAccentColor || '-',
     String(input.aggregateAccentBarOffset),
+    input.aggregateAccentBarVisible ? 'on' : 'off',
+    input.artworkSelectionSeed || '-',
     input.ratingStyle,
     input.ratingValueMode,
     String(ratingBadgeScale),
@@ -120,6 +126,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.fanartClientKeyHash || '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v4',
+    'v5',
   ].join('|');
 };

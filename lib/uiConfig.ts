@@ -86,9 +86,10 @@ import {
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
-export type PosterImageTextPreference = 'original' | 'clean' | 'alternative';
-export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative';
-export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta';
+export type PosterImageSize = 'normal' | 'large' | '4k';
+export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
+export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
+export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'random';
 export type LogoBackground = 'transparent' | 'dark';
 type ErdbImageType = 'poster' | 'backdrop' | 'logo';
 export type AiometadataUrlPatterns = {
@@ -105,6 +106,7 @@ export type SharedErdbSettings = {
   fanartKey: string;
   simklClientId: string;
   lang: string;
+  posterImageSize: PosterImageSize;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
   posterArtworkSource: ArtworkSource;
@@ -161,6 +163,7 @@ export type SharedErdbSettings = {
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
   aggregateAccentBarOffset: number;
+  aggregateAccentBarVisible: boolean;
   posterRatingsMaxPerSide: number | null;
   posterEdgeOffset: number;
   sideRatingsPosition: SideRatingPosition;
@@ -184,17 +187,20 @@ export type SavedProxySettings = {
 };
 
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
+const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 const POSTER_IMAGE_TEXT_PREFERENCE_SET = new Set<PosterImageTextPreference>([
   'original',
   'clean',
   'alternative',
+  'random',
 ]);
 const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>([
   'original',
   'clean',
   'alternative',
+  'random',
 ]);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -219,6 +225,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   fanartKey: '',
   simklClientId: '',
   lang: 'en',
+  posterImageSize: 'normal',
   posterImageText: 'clean',
   backdropImageText: 'clean',
   posterArtworkSource: 'tmdb',
@@ -275,6 +282,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   aggregateAccentMode: DEFAULT_AGGREGATE_ACCENT_MODE,
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
+  aggregateAccentBarVisible: true,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   posterEdgeOffset: DEFAULT_POSTER_EDGE_OFFSET,
   sideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
@@ -351,6 +359,94 @@ const normalizePosterImageTextPreference = (
     : fallback;
 };
 
+const normalizePosterImageSize = (
+  value: unknown,
+  fallback: PosterImageSize,
+): PosterImageSize => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return fallback;
+  if (normalized === 'default') return fallback;
+  if (normalized === 'standard') return 'normal';
+  if (normalized === 'verylarge') return '4k';
+  if (normalized === 'uhd' || normalized === 'ultra' || normalized === '4k-slow' || normalized === '4kslow') {
+    return '4k';
+  }
+  return POSTER_IMAGE_SIZE_SET.has(normalized as PosterImageSize)
+    ? (normalized as PosterImageSize)
+    : fallback;
+};
+
+type RpdbRatingBarPosition =
+  | 'bottom'
+  | 'top'
+  | 'right-bottom'
+  | 'right-center'
+  | 'right-top'
+  | 'left-bottom'
+  | 'left-center'
+  | 'left-top';
+const normalizeRpdbRatingBarPosition = (value: unknown): RpdbRatingBarPosition | null => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return null;
+  if (normalized === 'default') return 'bottom';
+  if (normalized === 'center') return 'right-center';
+  if (normalized === 'bottom') return 'bottom';
+  if (
+    normalized === 'top' ||
+    normalized === 'right-bottom' ||
+    normalized === 'right-center' ||
+    normalized === 'right-top' ||
+    normalized === 'left-bottom' ||
+    normalized === 'left-center' ||
+    normalized === 'left-top'
+  ) {
+    return normalized as RpdbRatingBarPosition;
+  }
+  return null;
+};
+const resolveRpdbRatingBarPositionAliases = (
+  value: unknown,
+): {
+  posterRatingsLayout?: PosterRatingLayout;
+  backdropRatingsLayout?: BackdropRatingLayout;
+  sideRatingsPosition?: SideRatingPosition;
+} => {
+  const position = normalizeRpdbRatingBarPosition(value);
+  if (!position) return {};
+  if (position === 'bottom') {
+    return {
+      posterRatingsLayout: 'bottom',
+    };
+  }
+  if (position === 'top') {
+    return {
+      posterRatingsLayout: 'top',
+    };
+  }
+  const [layoutSide, verticalAnchor] = position.split('-') as [
+    'left' | 'right',
+    'bottom' | 'center' | 'top',
+  ];
+  const sideRatingsPosition =
+    verticalAnchor === 'center'
+      ? 'middle'
+      : (verticalAnchor as Extract<SideRatingPosition, 'top' | 'bottom'>);
+  return {
+    posterRatingsLayout: layoutSide,
+    backdropRatingsLayout: layoutSide === 'right' ? 'right-vertical' : undefined,
+    sideRatingsPosition,
+  };
+};
+
+const normalizeRpdbFontScalePercent = (value: unknown): number | null => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized || normalized === 'default') return null;
+  const parsed = Number(normalized.replace('%', ''));
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  const percentValue = normalized.includes('%') || parsed > 3 ? parsed : parsed * 100;
+  return Math.round(percentValue);
+};
+
 const normalizeBackdropImageTextPreference = (
   value: unknown,
   fallback: BackdropImageTextPreference,
@@ -405,6 +501,14 @@ const normalizeRatingPreferencesList = (
   value: unknown,
   fallback: RatingPreference[],
 ): RatingPreference[] => {
+  if (typeof value === 'string') {
+    const parsed = value
+      .split(',')
+      .map((item) => normalizeRatingPreference(item))
+      .filter((item): item is RatingPreference => item !== null);
+    return [...new Set(parsed)];
+  }
+
   if (!Array.isArray(value)) {
     return [...fallback];
   }
@@ -471,6 +575,9 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
         candidate.backdropArtworkSource ?? candidate.backdropCleanSource,
         defaults.backdropArtworkSource
       );
+  const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(candidate.ratingBarPos);
+  const sharedRatingsInput = candidate.ratings ?? candidate.order;
+  const rpdbFontScalePercent = normalizeRpdbFontScalePercent(candidate.fontScale);
   const globalGenreBadgeMode = normalizeGenreBadgeMode(
     candidate.genreBadgeMode ?? candidate.genreBadge,
     DEFAULT_GENRE_BADGE_MODE,
@@ -498,6 +605,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     simklClientId:
       typeof candidate.simklClientId === 'string' ? candidate.simklClientId.trim() : defaults.simklClientId,
     lang: typeof candidate.lang === 'string' && candidate.lang.trim() ? candidate.lang.trim() : defaults.lang,
+    posterImageSize: normalizePosterImageSize(
+      candidate.posterImageSize ?? candidate.posterSize ?? candidate.imageSize,
+      defaults.posterImageSize,
+    ),
     posterImageText,
     backdropImageText,
     posterArtworkSource,
@@ -556,15 +667,15 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       globalGenreBadgeScale,
     ),
     posterRatingPreferences: normalizeRatingPreferencesList(
-      candidate.posterRatingPreferences,
+      candidate.posterRatingPreferences ?? candidate.posterRatings ?? sharedRatingsInput,
       defaults.posterRatingPreferences,
     ),
     backdropRatingPreferences: normalizeRatingPreferencesList(
-      candidate.backdropRatingPreferences,
+      candidate.backdropRatingPreferences ?? candidate.backdropRatings ?? sharedRatingsInput,
       defaults.backdropRatingPreferences,
     ),
     logoRatingPreferences: normalizeRatingPreferencesList(
-      candidate.logoRatingPreferences,
+      candidate.logoRatingPreferences ?? candidate.logoRatings ?? sharedRatingsInput,
       defaults.logoRatingPreferences,
     ),
     posterStreamBadges: normalizeStreamBadgesSetting(
@@ -607,9 +718,17 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     posterQualityBadgesMax: normalizeOptionalBadgeCount(candidate.posterQualityBadgesMax),
     backdropQualityBadgesMax: normalizeOptionalBadgeCount(candidate.backdropQualityBadgesMax),
     logoQualityBadgesMax: normalizeOptionalBadgeCount(candidate.logoQualityBadgesMax),
-    posterRatingsLayout: normalizePosterRatingLayout(candidate.posterRatingsLayout as string | null | undefined),
+    posterRatingsLayout: normalizePosterRatingLayout(
+      (candidate.posterRatingsLayout ?? rpdbRatingBarAliases.posterRatingsLayout) as
+        | string
+        | null
+        | undefined,
+    ),
     backdropRatingsLayout: normalizeBackdropRatingLayout(
-      candidate.backdropRatingsLayout as string | null | undefined,
+      (candidate.backdropRatingsLayout ?? rpdbRatingBarAliases.backdropRatingsLayout) as
+        | string
+        | null
+        | undefined,
     ),
     posterRatingsMax: normalizeOptionalBadgeCount(candidate.posterRatingsMax),
     backdropRatingsMax: normalizeOptionalBadgeCount(candidate.backdropRatingsMax),
@@ -649,6 +768,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.aggregateAccentBarOffset,
       defaults.aggregateAccentBarOffset,
     ),
+    aggregateAccentBarVisible: normalizeBoolean(
+      candidate.aggregateAccentBarVisible ?? candidate.aggregateAccentVisible ?? candidate.compactAccentLineVisible,
+      defaults.aggregateAccentBarVisible,
+    ),
     logoRatingStyle:
       candidate.logoRatingStyle === 'glass' ||
       candidate.logoRatingStyle === 'plain' ||
@@ -657,15 +780,15 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
         ? (candidate.logoRatingStyle as RatingStyle)
         : 'plain',
     posterRatingBadgeScale: normalizeBadgeScalePercent(
-      candidate.posterRatingBadgeScale,
+      candidate.posterRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.posterRatingBadgeScale,
     ),
     backdropRatingBadgeScale: normalizeBadgeScalePercent(
-      candidate.backdropRatingBadgeScale,
+      candidate.backdropRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.backdropRatingBadgeScale,
     ),
     logoRatingBadgeScale: normalizeBadgeScalePercent(
-      candidate.logoRatingBadgeScale,
+      candidate.logoRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.logoRatingBadgeScale,
     ),
     posterQualityBadgeScale: normalizeBadgeScalePercent(
@@ -682,7 +805,9 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     ),
     posterRatingsMaxPerSide: normalizePosterRatingsMaxPerSide(candidate.posterRatingsMaxPerSide),
     posterEdgeOffset: normalizePosterEdgeOffset(candidate.posterEdgeOffset),
-    sideRatingsPosition: normalizeSideRatingPosition(candidate.sideRatingsPosition),
+    sideRatingsPosition: normalizeSideRatingPosition(
+      candidate.sideRatingsPosition ?? rpdbRatingBarAliases.sideRatingsPosition,
+    ),
     sideRatingsOffset: normalizeSideRatingOffset(candidate.sideRatingsOffset),
     logoRatingsMax: normalizeOptionalBadgeCount(candidate.logoRatingsMax),
     logoBackground: normalizeLogoBackground(candidate.logoBackground, defaults.logoBackground),
@@ -742,8 +867,8 @@ export const serializeSavedUiConfig = (config: SavedUiConfig) =>
 
 const ERDB_IMAGE_TYPES: ErdbImageType[] = ['poster', 'backdrop', 'logo'];
 
-const appendSharedOrPerTypePayload = <Value extends string | number>(options: {
-  payload: Record<string, string | number>;
+const appendSharedOrPerTypePayload = <Value extends string | number | boolean>(options: {
+  payload: Record<string, string | number | boolean>;
   globalKey: string;
   perTypeKeys: Record<ErdbImageType, string>;
   values: Record<ErdbImageType, Value>;
@@ -777,7 +902,7 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     return null;
   }
 
-  const payload: Record<string, string | number> = {
+  const payload: Record<string, string | number | boolean> = {
     tmdbKey,
     mdblistKey,
   };
@@ -807,6 +932,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
 
   if (settings.lang) {
     payload.lang = settings.lang;
+  }
+  if (settings.posterImageSize !== 'normal') {
+    payload.posterImageSize = settings.posterImageSize;
   }
   if (settings.ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
     payload.ratingValueMode = settings.ratingValueMode;
@@ -1001,6 +1129,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   if (settings.aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET) {
     payload.aggregateAccentBarOffset = settings.aggregateAccentBarOffset;
   }
+  if (settings.aggregateAccentBarVisible !== true) {
+    payload.aggregateAccentBarVisible = false;
+  }
 
   if (
     isVerticalPosterRatingLayout(settings.posterRatingsLayout) &&
@@ -1125,8 +1256,11 @@ export const buildAiometadataUrlPatterns = (
   const hideCredentials = options?.hideCredentials ?? true;
   const needsFanartKey =
     settings.posterArtworkSource === 'fanart' ||
+    settings.posterArtworkSource === 'random' ||
     settings.backdropArtworkSource === 'fanart' ||
-    settings.logoArtworkSource === 'fanart';
+    settings.backdropArtworkSource === 'random' ||
+    settings.logoArtworkSource === 'fanart' ||
+    settings.logoArtworkSource === 'random';
 
   const exportSettings: SharedErdbSettings = {
     ...settings,
