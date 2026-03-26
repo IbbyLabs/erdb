@@ -326,6 +326,8 @@ Main endpoint:
 
 In the configurator UI, `minimal` is labeled as `Compact Average`, `average` is labeled as `Labeled Average`, and `dual` is labeled as `Critics + Audience`. The underlying query values stay `minimal`, `average`, and `dual`.
 
+RPDB compatibility aliases are accepted where they map cleanly in ERDB: `order`/`ratingOrder` (rating provider order), `ratingBarPos` (mapped to poster/backdrop layout + side position), `fontScale` (mapped to rating badge scale), `imageSize=verylarge` (mapped to `posterImageSize=4k`), and `textless`/`posterType=textless-*` (mapped to clean poster text mode).
+
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without the MAL client id, ERDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, ERDB still falls back to MDBList when `mdblistKey` is present.
 
 Prefer `tmdb:movie:id` or `tmdb:tv:id` when you already know the media type. Bare `tmdb:id` still works, but explicit TMDB IDs avoid movie vs TV collisions.
