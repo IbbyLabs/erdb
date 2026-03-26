@@ -29,3 +29,10 @@ test('buildTorrentioStreamUrl supports custom instance path', () => {
     'https://torrentio.kuu.example/realdebrid=1/stream/series/tt0944947%3A1%3A1.json',
   );
 });
+
+test('buildTorrentioStreamUrl supports configure path instances', () => {
+  const base = resolveTorrentioBaseUrl('https://torrentio.stremio.ru/configure');
+  const url = buildTorrentioStreamUrl(base, 'series', 'tt0944947:1:1');
+
+  assert.equal(url, 'https://torrentio.stremio.ru/configure/stream/series/tt0944947%3A1%3A1.json');
+});
