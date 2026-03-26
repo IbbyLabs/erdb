@@ -137,6 +137,19 @@
 
 <a id="v2-42-2"></a>
 
+<a id="v2-43-0"></a>
+
+## [v2.43.0] - 26/03/2026
+
+### Added
+* add anime grouping control and split dual aggregate accents
+  
+  Add per type anime grouping control for genre badges with default split behavior so anime and animation remain separate unless users opt in.
+  
+  Add custom critics and audience accent colors for dual and compact dual aggregate rating presentations and wire them through route parsing, UI state, config serialization, proxy payload, and render seed keys.
+  
+  Extend tests for genre badge default split regression, config round trip, and proxy rewrite passthrough to verify end to end behavior.
+
 ## [v2.42.2] - 26/03/2026
 
 ### Fixed
