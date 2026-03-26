@@ -117,6 +117,39 @@
 
 <a id="v2-39-8"></a>
 
+<a id="v2-40-0"></a>
+
+## [v2.40.0] - 26/03/2026
+
+### Added
+* add random artwork sources and advanced badge customization
+  
+  Implement random source selection for poster, backdrop, and logo rendering with deterministic seeding across TMDB and fanart sources.
+  
+  Expand customization controls for stacked badges and aggregate presentation settings, including accent line visibility and per element offsets.
+  
+  Add RPDB alias compatibility and configuration normalization updates used by renderer and proxy workflows.
+
+### Fixed
+* clean cache and tooling fallback paths
+  
+  Simplify non critical catch paths in local object storage and metadata tooling flows without changing behavior.
+  
+  Keep runtime pruning and retry paths stable while removing noisy inline annotations.
+
+### Documentation
+* document redirect based compliance and required params
+  
+  Update setup guidance for Simkl integration with required client metadata and endpoint expectations.
+
+### Other Changes
+* add simkl compliance and customization regressions
+  
+  Add coverage for Simkl redirect and summary endpoint compliance requirements, headers, and query metadata.
+  
+  Expand tests for proxy alias handling, genre mapping, stacked badge layout offsets, and UI config normalization.
+* update project internals
+
 ## [v2.39.8] - 25/03/2026
 
 ### Fixed
