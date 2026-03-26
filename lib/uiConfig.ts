@@ -1353,7 +1353,7 @@ export const buildAiometadataUrlPatterns = (
           placeholder: AIO_FANART_KEY_PLACEHOLDER,
           hideCredentials,
         })
-      : settings.fanartKey.trim(),
+      : '',
     simklClientId: settings.simklClientId.trim()
       ? chooseAiometadataCredentialValue({
           value: settings.simklClientId,
