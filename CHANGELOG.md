@@ -149,6 +149,15 @@
 
 <a id="v2-45-0"></a>
 
+<a id="v2-45-1"></a>
+
+## [v2.45.1] - 26/03/2026
+
+### Other Changes
+* Revert "fix(parsing): handle double encoded comma separated query params"
+  
+  This reverts commit 60e2d9388c633976eb4786e5936cbea34b34a303.
+
 ## [v2.45.0] - 26/03/2026
 
 ### Added
