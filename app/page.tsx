@@ -229,22 +229,24 @@ const POSTER_ARTWORK_SOURCE_OPTIONS: Array<{
   { id: 'random', label: 'Random', description: 'Pick a seeded random poster source between TMDB, fanart, and Cinemeta when available.' },
 ];
 const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{
-  id: Exclude<ArtworkSource, 'cinemeta'>;
+  id: ArtworkSource;
   label: string;
   description: string;
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean backdrop selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv backdrop art when a fanart key is available, then fall back to TMDB.' },
-  { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop source between TMDB and fanart when available.' },
+  { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta backdrop when an IMDb ID is available, then fall back to TMDB.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop source between TMDB, fanart, and Cinemeta when available.' },
 ];
 const LOGO_ARTWORK_SOURCE_OPTIONS: Array<{
-  id: Exclude<ArtworkSource, 'cinemeta'>;
+  id: ArtworkSource;
   label: string;
   description: string;
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB logo selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv logo assets when a fanart key is available, then fall back to TMDB.' },
-  { id: 'random', label: 'Random', description: 'Pick a seeded random logo source between TMDB and fanart when available.' },
+  { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta logo when an IMDb ID is available, then fall back to TMDB.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random logo source between TMDB, fanart, and Cinemeta when available.' },
 ];
 const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   id: BackdropImageTextPreference;
@@ -547,7 +549,7 @@ backdropQualityBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                     
 imageText               | original, clean, alternative, random                                 | original
 posterImageSize         | normal (580x859), large (1280x1896), 4k (2000x2926)                  | normal
 posterArtworkSource     | tmdb, fanart, cinemeta, random (poster artwork source)               | tmdb
-backdropArtworkSource   | tmdb, fanart, random (backdrop artwork source)                       | tmdb
+backdropArtworkSource   | tmdb, fanart, cinemeta, random (backdrop artwork source)             | tmdb
 posterRatingsLayout     | ${POSTER_LAYOUT_DOC_VALUES}                                           | ${POSTER_LAYOUT_DOC_DEFAULT}
 posterRatingsMax        | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})                              | auto
@@ -558,7 +560,7 @@ sideRatingsPosition     | ${SIDE_RATING_POSITION_DOC_VALUES}                    
 sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
-logoArtworkSource       | tmdb, fanart, random                                                 | tmdb
+logoArtworkSource       | tmdb, fanart, cinemeta, random                                       | tmdb
 erdbKey                | ERDB request key when the host enables route protection               | none
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | none
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | none
@@ -572,8 +574,8 @@ QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray,
 FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
 POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. posterArtworkSource=cinemeta uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB.
 POSTER SIZE NOTE: posterImageSize controls the poster output target. normal=580x859, large=1280x1896, 4k=2000x2926.
-BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
-LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
+BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. backdropArtworkSource=cinemeta uses the official MetaHub Cinemeta backdrop when ERDB can resolve an IMDb ID, then falls back to TMDB.
+LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available. logoArtworkSource=cinemeta uses the official MetaHub Cinemeta logo when ERDB can resolve an IMDb ID, then falls back to TMDB.
 FUTURE NOTE: season aware fanart support is a strong next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
 
 INTEGRATION REQUIREMENTS
@@ -6050,7 +6052,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropArtworkSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, random (backdrop artwork source)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, cinemeta, random (backdrop artwork source)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
@@ -6105,7 +6107,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">logoArtworkSource</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, random</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb, fanart, cinemeta, random</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">tmdb</td>
                       </tr>
                       <tr>
@@ -6151,7 +6153,7 @@ export default function Home() {
                   <br />
                   Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, <span className="font-mono text-zinc-200">alternative</span>, and <span className="font-mono text-zinc-200">random</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. Random uses a seeded pick. <span className="font-mono text-zinc-200">posterArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB. <span className="font-mono text-zinc-200">posterArtworkSource=random</span> picks a seeded random source across TMDB, fanart, and Cinemeta when available.
                   <br />
-                  Backdrop <span className="font-mono text-zinc-200">backdropArtworkSource=fanart</span> uses fanart.tv backdrop art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, <span className="font-mono text-zinc-200">alternative</span>, and <span className="font-mono text-zinc-200">random</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. Random uses a seeded pick. <span className="font-mono text-zinc-200">backdropArtworkSource=random</span> picks a seeded random source between TMDB and fanart. <span className="font-mono text-zinc-200">logoArtworkSource=fanart</span> uses fanart.tv HD or clear logo assets for logo output, and <span className="font-mono text-zinc-200">logoArtworkSource=random</span> does a seeded pick between TMDB and fanart logos.
+                  Backdrop <span className="font-mono text-zinc-200">backdropArtworkSource=fanart</span> uses fanart.tv backdrop art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, <span className="font-mono text-zinc-200">alternative</span>, and <span className="font-mono text-zinc-200">random</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. Random uses a seeded pick. <span className="font-mono text-zinc-200">backdropArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta backdrop when ERDB can resolve an IMDb ID, then falls back to TMDB. <span className="font-mono text-zinc-200">backdropArtworkSource=random</span> picks a seeded random source across TMDB, fanart, and Cinemeta. <span className="font-mono text-zinc-200">logoArtworkSource=fanart</span> uses fanart.tv HD or clear logo assets for logo output. <span className="font-mono text-zinc-200">logoArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta logo when ERDB can resolve an IMDb ID, then falls back to TMDB. <span className="font-mono text-zinc-200">logoArtworkSource=random</span> does a seeded pick across TMDB, fanart, and Cinemeta logos.
                   <br />
                   Future work: season aware fanart support is a good next step for TV because fanart.tv exposes <span className="font-mono text-zinc-200">seasonposter</span> and <span className="font-mono text-zinc-200">seasonthumb</span> assets.
                 </div>
@@ -6249,7 +6251,7 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">
                           <div className="space-y-1">
                             <div>original, clean, alternative, random</div>
-                            <div>tmdb, fanart, random</div>
+                            <div>tmdb, fanart, cinemeta, random</div>
                             <div>standard, minimal, average, dual, dual minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>off, text, icon, both</div>
@@ -6287,7 +6289,7 @@ export default function Home() {
                           <div className="space-y-1">
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{LOGO_BACKGROUND_DOC_VALUES}</div>
-                            <div>tmdb, fanart, random</div>
+                            <div>tmdb, fanart, cinemeta, random</div>
                             <div>standard, minimal, average, dual, dual minimal, editorial, blockbuster</div>
                             <div>overall, critics, audience</div>
                             <div>off, text, icon, both</div>

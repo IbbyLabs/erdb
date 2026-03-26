@@ -3315,6 +3315,10 @@ const buildTmdbImageUrl = (
 
 const buildCinemetaPosterUrl = (imdbId: string) =>
   `https://images.metahub.space/poster/medium/${encodeURIComponent(imdbId)}/img`;
+const buildCinemetaBackdropUrl = (imdbId: string) =>
+  `https://images.metahub.space/background/medium/${encodeURIComponent(imdbId)}/img`;
+const buildCinemetaLogoUrl = (imdbId: string) =>
+  `https://images.metahub.space/logo/medium/${encodeURIComponent(imdbId)}/img`;
 
 const fetchSourceImageUncached = async (
   imgUrl: string,
@@ -8850,20 +8854,21 @@ export async function handleImageRequest(
               originalPosterPath;
           }
 
-          if (type === 'poster') {
-            const resolveImdbId = async () => {
-              let imdbId: string | null = isImdbId(mediaId) ? mediaId : null;
-              if (!imdbId) {
-                imdbId = media?.imdb_id || mappedImdbId || null;
-                if (!imdbId && detailsBundlePromise) {
-                  const bundle = await detailsBundlePromise;
-                  if (bundle?.bundledExternalIds?.imdb_id) {
-                    imdbId = bundle.bundledExternalIds.imdb_id;
-                  }
+          const resolveImdbId = async () => {
+            let imdbId: string | null = isImdbId(mediaId) ? mediaId : null;
+            if (!imdbId) {
+              imdbId = media?.imdb_id || mappedImdbId || null;
+              if (!imdbId && detailsBundlePromise) {
+                const bundle = await detailsBundlePromise;
+                if (bundle?.bundledExternalIds?.imdb_id) {
+                  imdbId = bundle.bundledExternalIds.imdb_id;
                 }
               }
-              return imdbId;
-            };
+            }
+            return imdbId;
+          };
+
+          if (type === 'poster') {
             const selectedPoster = pickPosterByPreference(
               posterCollection,
               posterTextPreference,
@@ -8971,9 +8976,13 @@ export async function handleImageRequest(
                 };
               }
             }
+            const imdbId = selectedPoster?.file_path ? null : await resolveImdbId();
             return {
               imgPath: selectedPoster?.file_path || '',
-              imgUrlOverride: null,
+              imgUrlOverride:
+                !selectedPoster?.file_path && imdbId
+                  ? buildCinemetaPosterUrl(imdbId)
+                  : null,
               logoAspectRatio: null,
               logoPath,
               posterIsTextless,
@@ -9018,6 +9027,13 @@ export async function handleImageRequest(
                   });
                 }
               }
+              const imdbId = await resolveImdbId();
+              if (imdbId) {
+                randomBackdropCandidates.push({
+                  key: 'cinemeta',
+                  imgUrlOverride: buildCinemetaBackdropUrl(imdbId),
+                });
+              }
 
               const randomBackdropChoice = pickDeterministicItemBySeed(
                 randomBackdropCandidates,
@@ -9034,6 +9050,18 @@ export async function handleImageRequest(
               }
             }
 
+            if (backdropArtworkSource === 'cinemeta') {
+              const imdbId = await resolveImdbId();
+              if (imdbId) {
+                return {
+                  imgPath: '',
+                  imgUrlOverride: buildCinemetaBackdropUrl(imdbId),
+                  logoAspectRatio: null,
+                  logoPath,
+                  posterIsTextless: false,
+                };
+              }
+            }
             if (backdropArtworkSource === 'fanart' && (mediaType === 'movie' || mediaType === 'tv')) {
               const fanartArtwork = await getFanartArtwork();
               const fanartBackdropUrl = pickFanartUrlByPreference(
@@ -9051,9 +9079,13 @@ export async function handleImageRequest(
                 };
               }
             }
+            const imdbId = await resolveImdbId();
             return {
               imgPath: selectedBackdrop?.file_path || '',
-              imgUrlOverride: null,
+              imgUrlOverride:
+                !selectedBackdrop?.file_path && imdbId
+                  ? buildCinemetaBackdropUrl(imdbId)
+                  : null,
               logoAspectRatio: null,
               logoPath,
               posterIsTextless: false,
@@ -9085,22 +9117,13 @@ export async function handleImageRequest(
             }
 
             if (logoArtworkSource === 'random') {
-              const randomLogoCandidates: Array<
-                | {
-                    key: string;
-                    imgPath: string;
-                    imgUrlOverride: null;
-                    logoAspectRatio: number | null;
-                    logoPath: string;
-                  }
-                | {
-                    key: string;
-                    imgPath: '';
-                    imgUrlOverride: string;
-                    logoAspectRatio: number | null;
-                    logoPath: string;
-                  }
-              > = [];
+              const randomLogoCandidates: Array<{
+                key: string;
+                imgPath: string;
+                imgUrlOverride: string | null;
+                logoAspectRatio: number | null;
+                logoPath: string;
+              }> = [];
 
               if (randomLogoPath) {
                 randomLogoCandidates.push({
@@ -9121,6 +9144,17 @@ export async function handleImageRequest(
                   logoPath: fanartLogoUrl,
                 });
               }
+              const imdbId = await resolveImdbId();
+              if (imdbId) {
+                const cinemetaLogoUrl = buildCinemetaLogoUrl(imdbId);
+                randomLogoCandidates.push({
+                  key: 'cinemeta',
+                  imgPath: '',
+                  imgUrlOverride: cinemetaLogoUrl,
+                  logoAspectRatio: await getRemoteImageAspectRatio(cinemetaLogoUrl),
+                  logoPath: cinemetaLogoUrl,
+                });
+              }
 
               const randomLogoChoice = pickDeterministicItemBySeed(
                 randomLogoCandidates,
@@ -9137,13 +9171,31 @@ export async function handleImageRequest(
               }
             }
           }
+          if (logoArtworkSource === 'cinemeta') {
+            const imdbId = await resolveImdbId();
+            if (imdbId) {
+              const cinemetaLogoUrl = buildCinemetaLogoUrl(imdbId);
+              return {
+                imgPath: '',
+                imgUrlOverride: cinemetaLogoUrl,
+                logoAspectRatio: await getRemoteImageAspectRatio(cinemetaLogoUrl),
+                logoPath: cinemetaLogoUrl,
+                posterIsTextless: false,
+              };
+            }
+          }
 
           const logoAspectRatio = tmdbLogoAspectRatio;
+          const imdbId = await resolveImdbId();
+          const cinemetaLogoUrl = imdbId ? buildCinemetaLogoUrl(imdbId) : null;
           return {
             imgPath: logoPath || '',
-            imgUrlOverride: null,
-            logoAspectRatio,
-            logoPath,
+            imgUrlOverride: !logoPath && cinemetaLogoUrl ? cinemetaLogoUrl : null,
+            logoAspectRatio:
+              !logoPath && cinemetaLogoUrl
+                ? (await getRemoteImageAspectRatio(cinemetaLogoUrl)) || logoAspectRatio
+                : logoAspectRatio,
+            logoPath: logoPath || cinemetaLogoUrl,
             posterIsTextless: false,
           };
         };

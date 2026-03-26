@@ -324,6 +324,73 @@ test('proxy image rewrites preserve cinemeta as a poster artwork source', () => 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'cinemeta');
 });
 
+test('proxy image rewrites preserve cinemeta as a backdrop artwork source', () => {
+  const uiConfig = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      backdropImageText: 'clean',
+      backdropArtworkSource: 'cinemeta',
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+
+  const decodedProxyConfig = decodeProxyConfig(encodedConfig);
+  assert.ok(decodedProxyConfig);
+
+  const rewrittenBackdropUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
+      imageType: 'backdrop',
+      erdbId: 'tt0944947',
+      tmdbKey: decodedProxyConfig.tmdbKey,
+      mdblistKey: decodedProxyConfig.mdblistKey,
+      config: decodedProxyConfig,
+    }),
+  );
+
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropArtworkSource'), 'cinemeta');
+});
+
+test('proxy image rewrites preserve cinemeta as a logo artwork source', () => {
+  const uiConfig = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      logoArtworkSource: 'cinemeta',
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+
+  const decodedProxyConfig = decodeProxyConfig(encodedConfig);
+  assert.ok(decodedProxyConfig);
+
+  const rewrittenLogoUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
+      imageType: 'logo',
+      erdbId: 'tt0944947',
+      tmdbKey: decodedProxyConfig.tmdbKey,
+      mdblistKey: decodedProxyConfig.mdblistKey,
+      config: decodedProxyConfig,
+    }),
+  );
+
+  assert.equal(rewrittenLogoUrl.searchParams.get('logoArtworkSource'), 'cinemeta');
+});
+
 test('proxy image rewrites upgrade legacy clean source params to artwork source params', () => {
   const rewrittenPosterUrl = new URL(
     buildErdbImageUrl({
