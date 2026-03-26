@@ -2,15 +2,143 @@
 
 import { pathToFileURL } from 'node:url';
 
-import {
-  selectLatestPublishedReleaseEntry,
-  selectPreviousPublishedReleaseTag,
-} from '../../lib/githubRelease.ts';
-
 const DISCORD_EMBED_COLOR = 0x7c3aed;
 const MAX_RELEASE_LOOKUP_ATTEMPTS = Number(process.env.RELEASE_LOOKUP_ATTEMPTS || 5);
 const RELEASE_LOOKUP_DELAY_SECONDS = Number(process.env.RELEASE_LOOKUP_DELAY_SECONDS || 2);
 const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/erdb/main/public/favicon-96x96.png';
+
+function normalizeReleaseTag(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function parseReleaseVersionParts(tagName) {
+  const normalized = normalizeReleaseTag(tagName);
+  if (!normalized) {
+    return null;
+  }
+
+  const coreVersion = normalized.replace(/^v/i, '').split(/[+-]/, 1)[0];
+  if (!coreVersion) {
+    return null;
+  }
+
+  const parts = coreVersion.split('.');
+  if (!parts.length || parts.some((part) => !/^\d+$/.test(part))) {
+    return null;
+  }
+
+  return parts.map((part) => Number(part));
+}
+
+function compareReleaseTagVersions(leftTagName, rightTagName) {
+  const leftParts = parseReleaseVersionParts(leftTagName);
+  const rightParts = parseReleaseVersionParts(rightTagName);
+
+  if (leftParts && rightParts) {
+    const maxLength = Math.max(leftParts.length, rightParts.length);
+    for (let index = 0; index < maxLength; index += 1) {
+      const leftPart = leftParts[index] ?? 0;
+      const rightPart = rightParts[index] ?? 0;
+      if (leftPart !== rightPart) {
+        return leftPart - rightPart;
+      }
+    }
+  } else if (leftParts || rightParts) {
+    return leftParts ? 1 : -1;
+  }
+
+  return String(leftTagName || '').localeCompare(String(rightTagName || ''), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+}
+
+function parsePublishedTimestamp(value) {
+  if (!value || typeof value !== 'string') {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
+}
+
+function parseReleaseId(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return Number(value.trim());
+  }
+
+  return Number.NEGATIVE_INFINITY;
+}
+
+function isPublishedReleaseEntry(entry) {
+  return entry?.draft !== true && entry?.prerelease !== true && Boolean(normalizeReleaseTag(entry?.tag_name));
+}
+
+function selectLatestPublishedReleaseEntry(payload) {
+  const releases = Array.isArray(payload) ? payload.filter(isPublishedReleaseEntry) : [];
+
+  if (!releases.length) {
+    return null;
+  }
+
+  releases.sort((left, right) => {
+    const versionDifference = compareReleaseTagVersions(
+      normalizeReleaseTag(left?.tag_name) || '',
+      normalizeReleaseTag(right?.tag_name) || '',
+    );
+    if (versionDifference !== 0) {
+      return versionDifference;
+    }
+
+    const publishedDifference =
+      parsePublishedTimestamp(normalizeReleaseTag(left?.published_at)) -
+      parsePublishedTimestamp(normalizeReleaseTag(right?.published_at));
+    if (publishedDifference !== 0) {
+      return publishedDifference;
+    }
+
+    return parseReleaseId(left?.id) - parseReleaseId(right?.id);
+  });
+
+  return releases.at(-1) ?? null;
+}
+
+function selectPreviousPublishedReleaseTag(payload, currentTagName) {
+  const currentTag = normalizeReleaseTag(currentTagName);
+  if (!currentTag) {
+    return '';
+  }
+
+  const publishedTags = Array.from(
+    new Set(
+      (Array.isArray(payload) ? payload : [])
+        .filter(isPublishedReleaseEntry)
+        .map((entry) => normalizeReleaseTag(entry?.tag_name))
+        .filter(Boolean),
+    ),
+  );
+
+  if (!publishedTags.length) {
+    return '';
+  }
+
+  publishedTags.sort(compareReleaseTagVersions);
+
+  const currentIndex = publishedTags.findIndex((tagName) => tagName === currentTag);
+  if (currentIndex <= 0) {
+    return '';
+  }
+
+  return publishedTags[currentIndex - 1] || '';
+}
 
 function requireEnv(name) {
   const value = String(process.env[name] || '').trim();
@@ -146,17 +274,8 @@ function buildSectionFields(body) {
 
   for (const section of sections.slice(0, 3)) {
     const bullets = [];
-    let remaining = 4;
     for (const item of section.items) {
-      if (remaining <= 0) {
-        break;
-      }
       bullets.push(`• ${item}`);
-      remaining -= 1;
-    }
-
-    if (section.items.length > bullets.length) {
-      bullets.push(`• ${section.items.length - bullets.length} more`);
     }
 
     const value = trimField(bullets.join('\n'));
