@@ -131,21 +131,12 @@ export const normalizeRatingPreference = (value: string): RatingPreference | nul
   return ALIASES[normalized] || null;
 };
 
-const safeDecodeCommaSeparated = (value: string) => {
-  if (!value.includes('%')) return value;
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-};
-
 export const parseRatingPreferencesAllowEmpty = (raw?: string | null) => {
   if (raw === null || raw === undefined) {
     return [...ALL_RATING_PREFERENCES];
   }
 
-  const parsed = safeDecodeCommaSeparated(raw)
+  const parsed = raw
     .split(',')
     .map((item) => normalizeRatingPreference(item))
     .filter((item): item is RatingPreference => item !== null);
@@ -158,7 +149,7 @@ export const parseRatingPreferences = (raw?: string | null) => {
     return [...ALL_RATING_PREFERENCES];
   }
 
-  const parsed = safeDecodeCommaSeparated(raw)
+  const parsed = raw
     .split(',')
     .map((item) => normalizeRatingPreference(item))
     .filter((item): item is RatingPreference => item !== null);

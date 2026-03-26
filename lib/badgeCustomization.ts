@@ -321,21 +321,12 @@ export const normalizeQualityBadgePreference = (value: unknown): MediaFeatureBad
   return QUALITY_BADGE_ALIAS_MAP[normalized] || null;
 };
 
-const safeDecodeCommaSeparated = (value: string) => {
-  if (!value.includes('%')) return value;
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-};
-
 export const parseQualityBadgePreferencesAllowEmpty = (raw?: string | null) => {
   if (raw === null || raw === undefined) {
     return [...DEFAULT_QUALITY_BADGE_PREFERENCES];
   }
 
-  const parsed = safeDecodeCommaSeparated(raw)
+  const parsed = raw
     .split(',')
     .map((item) => normalizeQualityBadgePreference(item))
     .filter((item): item is MediaFeatureBadgeKey => item !== null);
