@@ -143,6 +143,25 @@
 
 <a id="v2-44-1"></a>
 
+<a id="v2-44-2"></a>
+
+## [v2.44.2] - 26/03/2026
+
+### Fixed
+* handle double encoded comma separated query params
+  
+  Add safeDecodeCommaSeparated helper to ratingPreferences.ts and
+  badgeCustomization.ts. When a comma separated search param value
+  still contains percent encoded characters after the server automatic
+  decode pass, apply one additional decodeURIComponent call.
+  
+  This fixes blank poster renders from AIOMetadata which double encodes
+  commas as %252C in posterRatings and posterQualityBadges parameters.
+  Properly encoded URLs are unaffected.
+* always prefer anime badge if genre includes anime
+  
+  Anime is now prioritized over animation if the genre list includes anime, regardless of isAnimeContent. This prevents animation from being incorrectly labeled as anime and vice versa.
+
 ## [v2.44.1] - 26/03/2026
 
 ### Fixed
