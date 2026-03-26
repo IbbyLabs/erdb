@@ -82,3 +82,10 @@ test('rating preference normalization accepts anilist.co aliases', () => {
   assert.equal(normalizeRatingPreference('AniList.co'), 'anilist');
   assert.equal(normalizeRatingPreference('ani.list_co'), 'anilist');
 });
+
+test('rating preference normalization accepts RPDB critic and audience aliases', () => {
+  assert.equal(normalizeRatingPreference('tomatoes-critics'), 'tomatoes');
+  assert.equal(normalizeRatingPreference('tomatoes-audience'), 'tomatoesaudience');
+  assert.equal(normalizeRatingPreference('metacritic-critics'), 'metacritic');
+  assert.equal(normalizeRatingPreference('metacritic-audience'), 'metacriticuser');
+});

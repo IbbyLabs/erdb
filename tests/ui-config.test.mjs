@@ -39,6 +39,7 @@ const buildSampleSettings = () =>
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
       lang: 'fr',
+      posterImageSize: 'large',
       posterImageText: 'clean',
       backdropImageText: 'clean',
       posterArtworkSource: 'fanart',
@@ -89,6 +90,7 @@ const buildSampleSettings = () =>
       aggregateAccentMode: 'custom',
       aggregateAccentColor: '#22d3ee',
       aggregateAccentBarOffset: -3,
+      aggregateAccentBarVisible: true,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -117,6 +119,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       fanartKey: 'fanart-key-789',
       simklClientId: '',
       lang: 'fr',
+      posterImageSize: 'large',
       posterImageText: 'clean',
       backdropImageText: 'clean',
       posterArtworkSource: 'fanart',
@@ -184,6 +187,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       aggregateAccentMode: 'custom',
       aggregateAccentColor: '#22d3ee',
       aggregateAccentBarOffset: -3,
+      aggregateAccentBarVisible: true,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -323,6 +327,23 @@ test('workspace normalization accepts none rating presentation to remove all rat
   assert.equal(decodedConfig.logoRatingPresentation, 'none');
 });
 
+test('config payload includes aggregate accent bar visibility when disabled', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      aggregateAccentBarVisible: false,
+    },
+  });
+
+  assert.equal(config.settings.aggregateAccentBarVisible, false);
+
+  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.aggregateAccentBarVisible, false);
+});
+
 test('config string and proxy manifest use the same shared ERDB settings', () => {
   const config = buildSampleSettings();
   const baseUrl = 'https://erdb.example.com/';
@@ -375,6 +396,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     aggregateAccentMode: 'custom',
     aggregateAccentColor: '#22d3ee',
     aggregateAccentBarOffset: -3,
+    posterImageSize: 'large',
     posterImageText: 'clean',
     backdropImageText: 'clean',
     posterArtworkSource: 'fanart',
@@ -446,6 +468,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     aggregateAccentMode: 'custom',
     aggregateAccentColor: '#22d3ee',
     aggregateAccentBarOffset: '-3',
+    posterImageSize: 'large',
     posterImageText: 'clean',
     backdropImageText: 'clean',
     posterArtworkSource: 'fanart',
@@ -519,6 +542,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterImageSize=large/);
 });
 
 test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {
@@ -619,6 +643,47 @@ test('workspace normalization maps legacy fanart poster mode into artwork source
   assert.equal(config.settings.backdropArtworkSource, 'fanart');
 });
 
+test('workspace normalization accepts random artwork and image text preferences', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterImageText: 'random',
+      backdropImageText: 'random',
+      posterArtworkSource: 'random',
+      backdropArtworkSource: 'random',
+      logoArtworkSource: 'random',
+    },
+  });
+
+  assert.equal(config.settings.posterImageText, 'random');
+  assert.equal(config.settings.backdropImageText, 'random');
+  assert.equal(config.settings.posterArtworkSource, 'random');
+  assert.equal(config.settings.backdropArtworkSource, 'random');
+  assert.equal(config.settings.logoArtworkSource, 'random');
+});
+
+test('workspace normalization accepts poster image size aliases and payload omits default', () => {
+  const aliasNormalized = normalizeSavedUiConfig({
+    settings: {
+      posterImageSize: '4k-slow',
+    },
+  });
+  assert.equal(aliasNormalized.settings.posterImageSize, '4k');
+
+  const defaultNormalized = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterImageSize: 'standard',
+    },
+  });
+  assert.equal(defaultNormalized.settings.posterImageSize, 'normal');
+
+  const defaultConfigString = buildConfigString('https://erdb.example.com', defaultNormalized.settings);
+  assert.notEqual(defaultConfigString, '');
+  const defaultPayload = JSON.parse(decodeBase64Url(defaultConfigString));
+  assert.equal(defaultPayload.posterImageSize, undefined);
+});
+
 test('workspace normalization accepts cinemeta as a poster artwork source', () => {
   const config = normalizeSavedUiConfig({
     settings: {
@@ -631,6 +696,48 @@ test('workspace normalization accepts cinemeta as a poster artwork source', () =
   assert.equal(config.settings.posterArtworkSource, 'cinemeta');
   assert.equal(config.settings.backdropArtworkSource, 'cinemeta');
   assert.equal(config.settings.logoArtworkSource, 'cinemeta');
+});
+
+test('workspace normalization maps RPDB order, bar position, and font scale aliases', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      order: 'imdb,tomatoes-critics,metacritic-audience',
+      ratingBarPos: 'right-center',
+      fontScale: '1.2',
+      imageSize: 'verylarge',
+    },
+  });
+
+  assert.deepEqual(config.settings.posterRatingPreferences, ['imdb', 'tomatoes', 'metacriticuser']);
+  assert.deepEqual(config.settings.backdropRatingPreferences, ['imdb', 'tomatoes', 'metacriticuser']);
+  assert.deepEqual(config.settings.logoRatingPreferences, ['imdb', 'tomatoes', 'metacriticuser']);
+  assert.equal(config.settings.posterRatingsLayout, 'right');
+  assert.equal(config.settings.backdropRatingsLayout, 'right-vertical');
+  assert.equal(config.settings.sideRatingsPosition, 'middle');
+  assert.equal(config.settings.posterImageSize, '4k');
+  assert.equal(config.settings.posterRatingBadgeScale, 120);
+  assert.equal(config.settings.backdropRatingBadgeScale, 120);
+  assert.equal(config.settings.logoRatingBadgeScale, 120);
+});
+
+test('workspace normalization keeps explicit ERDB settings over RPDB aliases', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      ratingBarPos: 'left-top',
+      posterRatingsLayout: 'top',
+      sideRatingsPosition: 'custom',
+      sideRatingsOffset: 63,
+      fontScale: '1.4',
+      posterRatingBadgeScale: 106,
+    },
+  });
+
+  assert.equal(config.settings.posterRatingsLayout, 'top');
+  assert.equal(config.settings.sideRatingsPosition, 'custom');
+  assert.equal(config.settings.sideRatingsOffset, 63);
+  assert.equal(config.settings.posterRatingBadgeScale, 106);
+  assert.equal(config.settings.backdropRatingBadgeScale, 140);
+  assert.equal(config.settings.logoRatingBadgeScale, 140);
 });
 
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {

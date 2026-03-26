@@ -135,6 +135,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
+      posterImageSize: '4k',
       posterImageText: 'clean',
       posterArtworkSource: 'fanart',
       backdropImageText: 'clean',
@@ -189,6 +190,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   assert.equal(rewrittenPosterUrl.searchParams.get('posterGenreBadgePosition'), 'bottomRight');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterGenreBadgeScale'), '116');
   assert.equal(rewrittenPosterUrl.searchParams.get('imageText'), 'clean');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterImageSize'), '4k');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'fanart');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsLayout'), 'left-right');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingsMax'), '3');
@@ -342,4 +344,33 @@ test('proxy image rewrites upgrade legacy clean source params to artwork source 
 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'fanart');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterCleanSource'), null);
+});
+
+test('proxy image rewrites pass RPDB compatibility query aliases through to ERDB', () => {
+  const rewrittenPosterUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL(
+        'https://proxy.example.net/proxy/example/meta/movie/example.json?order=imdb,tomatoes-critics,metacritic-audience&ratingBarPos=right-top&fontScale=1.2&imageSize=verylarge&textless=true&posterType=textless-order'
+      ),
+      imageType: 'poster',
+      erdbId: 'tt0133093',
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    }),
+  );
+
+  assert.equal(
+    rewrittenPosterUrl.searchParams.get('order'),
+    'imdb,tomatoes-critics,metacritic-audience',
+  );
+  assert.equal(rewrittenPosterUrl.searchParams.get('ratingBarPos'), 'right-top');
+  assert.equal(rewrittenPosterUrl.searchParams.get('fontScale'), '1.2');
+  assert.equal(rewrittenPosterUrl.searchParams.get('imageSize'), 'verylarge');
+  assert.equal(rewrittenPosterUrl.searchParams.get('textless'), 'true');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterType'), 'textless-order');
 });

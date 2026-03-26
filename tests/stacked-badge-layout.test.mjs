@@ -63,3 +63,58 @@ test('stacked badge layout supports hiding the accent rail and tightening the to
       STACKED_BADGE_MIN_VALUE_GAP,
   );
 });
+
+test('stacked badge layout applies element offsets while clamping within the badge bounds', () => {
+  const height = getStackedBadgeHeight({
+    iconSize: 24,
+    fontSize: 18,
+    paddingY: 6,
+  });
+  const baseline = computeStackedBadgeLayout({
+    width: 118,
+    height,
+    paddingX: 8,
+    fontSize: 18,
+    renderIconSize: 16,
+  });
+  const shifted = computeStackedBadgeLayout({
+    width: 118,
+    height,
+    paddingX: 8,
+    fontSize: 18,
+    renderIconSize: 16,
+    lineOffsetX: 8,
+    lineOffsetY: 6,
+    iconOffsetX: -7,
+    iconOffsetY: 9,
+    valueOffsetX: 6,
+    valueOffsetY: 8,
+  });
+
+  assert.ok(shifted.accentRailX > baseline.accentRailX);
+  assert.ok(shifted.accentRailY > baseline.accentRailY);
+  assert.ok(shifted.iconPlateX < baseline.iconPlateX);
+  assert.ok(shifted.iconPlateY > baseline.iconPlateY);
+  assert.ok(shifted.valueX > baseline.valueX);
+  assert.ok(shifted.valueTopY > baseline.valueTopY);
+
+  const clamped = computeStackedBadgeLayout({
+    width: 118,
+    height,
+    paddingX: 8,
+    fontSize: 18,
+    renderIconSize: 16,
+    lineOffsetX: 1000,
+    lineOffsetY: -1000,
+    iconOffsetX: 1000,
+    iconOffsetY: 1000,
+    valueOffsetX: -1000,
+    valueOffsetY: 1000,
+  });
+  assert.ok(clamped.accentRailX + clamped.accentRailWidth <= 118 - clamped.outerPadding);
+  assert.ok(clamped.accentRailY >= 4);
+  assert.ok(clamped.iconPlateX >= clamped.outerPadding);
+  assert.ok(clamped.iconPlateY + clamped.iconPlateSize <= height - clamped.bottomPadding);
+  assert.ok(clamped.valueX >= clamped.outerPadding);
+  assert.ok(clamped.valueTopY + clamped.valueFontSize <= height - clamped.bottomPadding);
+});
