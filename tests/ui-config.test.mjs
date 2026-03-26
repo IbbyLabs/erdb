@@ -520,16 +520,10 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.match(value, /tmdbKey=\{tmdb_key\}/);
     assert.match(value, /mdblistKey=\{mdblist_key\}/);
     assert.match(value, /fanartKey=\{fanart_key\}/);
-    assert.match(value, /posterRatings=imdb%2Ctmdb/);
-    assert.match(value, /backdropRatings=mdblist/);
     assert.match(value, /lang=fr/);
-    assert.match(value, /qualityBadgesSide=right/);
     assert.match(value, /aggregateAccentMode=custom/);
     assert.match(value, /aggregateAccentColor=%2322d3ee/);
     assert.match(value, /aggregateAccentBarOffset=-3/);
-    assert.match(value, /posterRatingsLayout=top-bottom/);
-    assert.match(value, /posterEdgeOffset=24/);
-    assert.match(value, /backdropRatingsLayout=right-vertical/);
     assert.match(
       value,
       new RegExp(`providerAppearance=${encodeRatingProviderAppearanceOverrides(SAMPLE_PROVIDER_APPEARANCE)}`),
@@ -539,6 +533,25 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.equal(value.includes('%7Bfanart_key%7D'), false);
     assert.equal(value.includes('%7Berdb_key%7D'), false);
   }
+
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatings=imdb%2Ctmdb/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingsLayout=top-bottom/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterEdgeOffset=24/);
+  assert.match(patterns?.posterUrlPattern ?? '', /qualityBadgesSide=right/);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatings='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('logoRatings='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatingsLayout='), false);
+
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatings=mdblist/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingsLayout=right-vertical/);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterRatings='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('logoRatings='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('qualityBadgesSide='), false);
+
+  assert.match(patterns?.logoUrlPattern ?? '', /logoRatings=/);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('posterRatings='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropRatings='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('qualityBadgesSide='), false);
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);

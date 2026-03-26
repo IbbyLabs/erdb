@@ -1302,26 +1302,42 @@ export const buildAiometadataUrlPatterns = (
     return null;
   }
 
-  const queryString = restoreAiometadataPlaceholders(
-    new URLSearchParams(
-      Object.entries(payload).map(([key, value]) => [key, String(value)]),
-    ).toString(),
-  );
-  const buildQueryString = (extraParams?: Record<string, string>) =>
+  const payloadEntries = Object.entries(payload).map(([key, value]) => [key, String(value)] as [string, string]);
+  const buildScopedEntries = (scope: 'poster' | 'backdrop' | 'logo' | 'thumbnail') => {
+    if (scope === 'thumbnail') {
+      return payloadEntries;
+    }
+
+    return payloadEntries.filter(([key]) => {
+      if (scope === 'poster') {
+        return !key.startsWith('backdrop') && !key.startsWith('logo');
+      }
+
+      if (scope === 'backdrop') {
+        return !key.startsWith('poster') && !key.startsWith('logo') && key !== 'qualityBadgesSide';
+      }
+
+      return !key.startsWith('poster') && !key.startsWith('backdrop') && key !== 'qualityBadgesSide';
+    });
+  };
+  const buildQueryString = (
+    scope: 'poster' | 'backdrop' | 'logo' | 'thumbnail',
+    extraParams?: Record<string, string>,
+  ) =>
     restoreAiometadataPlaceholders(
       new URLSearchParams([
         ...(extraParams
           ? Object.entries(extraParams).map(([key, value]) => [key, value] as [string, string])
           : []),
-        ...Array.from(new URLSearchParams(queryString).entries()),
+        ...buildScopedEntries(scope),
       ]).toString(),
     );
 
   return {
-    posterUrlPattern: `${origin}/poster/{imdb_id}.jpg?${buildQueryString()}`,
-    backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString({ idSource: 'tmdb' })}`,
-    logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString({ idSource: 'tmdb' })}`,
-    episodeThumbnailUrlPattern: `${origin}/thumbnail/{imdb_id}/S{season}E{episode}.jpg?${buildQueryString()}`,
+    posterUrlPattern: `${origin}/poster/{imdb_id}.jpg?${buildQueryString('poster')}`,
+    backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('backdrop', { idSource: 'tmdb' })}`,
+    logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString('logo', { idSource: 'tmdb' })}`,
+    episodeThumbnailUrlPattern: `${origin}/thumbnail/{imdb_id}/S{season}E{episode}.jpg?${buildQueryString('thumbnail')}`,
   };
 };
 
