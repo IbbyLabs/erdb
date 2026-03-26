@@ -123,6 +123,18 @@
 
 <a id="v2-40-2"></a>
 
+<a id="v2-40-3"></a>
+
+## [v2.40.3] - 26/03/2026
+
+### Fixed
+* add Node 20 workflow compatibility
+  
+  This update inlines release selection helpers inside the notifier script so it runs without TypeScript runtime loading, and it keeps full section bullets without synthetic '+N more' lines.
+
+### Other Changes
+* Fix SIMKL only ratings path and add debug headers
+
 ## [v2.40.2] - 26/03/2026
 
 ### Fixed
