@@ -121,6 +121,27 @@
 
 <a id="v2-40-1"></a>
 
+<a id="v2-40-2"></a>
+
+## [v2.40.2] - 26/03/2026
+
+### Fixed
+* scope exported ERDB URL params per media type
+  
+  Stop reusing one shared query string for all AIOMetadata art patterns.
+  
+  The export now builds scoped parameter sets so each pattern only carries fields relevant to its media type:
+  
+  • poster URLs exclude backdrop/logo prefixed params
+  
+  • backdrop URLs exclude poster/logo prefixed params and poster only quality side
+  
+  • logo URLs exclude poster/backdrop prefixed params and poster only quality side
+  
+  • episode thumbnail export keeps the full payload for compatibility
+  
+  Also updates AIOMetadata export tests to assert type specific inclusion/exclusion so we don’t regress and accidentally reintroduce cross type noise in generated URLs.
+
 ## [v2.40.1] - 26/03/2026
 
 ### Fixed
