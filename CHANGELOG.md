@@ -145,6 +145,25 @@
 
 <a id="v2-44-2"></a>
 
+<a id="v2-44-3"></a>
+
+## [v2.44.3] - 26/03/2026
+
+### Fixed
+* remove unreliable pending release detection from version pills
+  
+  The latestReleaseBehindDeployment logic compared the build time
+  package.json version against the latest GitHub release tag. When
+  package.json was bumped ahead of the published release, both the
+  Live and Latest pills showed the same version, making the UI report
+  an incorrect deployment version.
+  
+  Remove the pendingTag / publishing detection entirely. Each pill now
+  shows its own data source truthfully: Live reflects the build version
+  from package.json, Latest reflects the actual latest GitHub release.
+  
+  Also removes the unused compareReleaseTagVersions import.
+
 ## [v2.44.2] - 26/03/2026
 
 ### Fixed
