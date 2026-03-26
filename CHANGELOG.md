@@ -125,6 +125,23 @@
 
 <a id="v2-40-3"></a>
 
+<a id="v2-41-0"></a>
+
+## [v2.41.0] - 26/03/2026
+
+### Added
+* add per type cinemeta providers and tmdb to imdb fallbacks
+  
+  Add Cinemeta backdrop and logo provider support in the image renderer to match poster level source controls.
+  
+  Extend random source selection so poster, backdrop, and logo can all choose across TMDB, fanart, and Cinemeta when available.
+  
+  Add TMDB missing media fallback to IMDb based MetaHub URLs for poster, backdrop, and logo when an IMDb ID is resolvable.
+  
+  Update configurator source options and docs tables for full per type provider customization.
+  
+  Add addon proxy coverage for cinemeta backdrop and logo rewrite propagation.
+
 ## [v2.40.3] - 26/03/2026
 
 ### Fixed
