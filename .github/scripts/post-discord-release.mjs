@@ -312,6 +312,41 @@ function resolvePackageUrl(repository) {
   return `https://github.com/${repository}/pkgs/container/${repoName}`;
 }
 
+function getVersionAnchor(version) {
+  return String(version || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractChangelogSection(changelog, tagName) {
+  const normalizedTag = normalizeReleaseTag(tagName);
+  if (!normalizedTag) {
+    return '';
+  }
+
+  const headingRe = new RegExp(`^## \\[${escapeRegExp(normalizedTag)}\\] - .*$`, 'm');
+  const headingMatch = String(changelog || '').match(headingRe);
+  if (!headingMatch || headingMatch.index == null) {
+    return '';
+  }
+
+  const headingStart = headingMatch.index;
+  const bodyStart = headingStart + headingMatch[0].length;
+  const remaining = String(changelog || '').slice(bodyStart);
+  const nextSectionMatch = remaining.match(/\n<a id="[^"]+"><\/a>\n\n## \[|\n## \[/);
+  const section = (nextSectionMatch && nextSectionMatch.index != null
+    ? remaining.slice(0, nextSectionMatch.index)
+    : remaining).trim();
+
+  return section;
+}
+
 function buildLinksField({ releaseUrl, compareUrl, repositoryUrl, packageUrl }) {
   const lines = [];
   if (releaseUrl) {
@@ -334,6 +369,7 @@ export function buildDiscordReleasePayload({
   repository,
   release,
   previousReleaseTag = '',
+  isTagFallback = false,
 }) {
   const repositoryUrl = `https://github.com/${repository}`;
   const compareUrl = resolveCompareUrl(repository, release.tag_name, previousReleaseTag);
@@ -382,14 +418,16 @@ export function buildDiscordReleasePayload({
         },
         title: release.name || release.tag_name || 'ERDB Release',
         url: release.html_url || repositoryUrl,
-        description: `New ERDB release published for \`${release.tag_name}\`.`,
+        description: isTagFallback
+          ? `New ERDB tag published for \`${release.tag_name}\`.`
+          : `New ERDB release published for \`${release.tag_name}\`.`,
         color: DISCORD_EMBED_COLOR,
         thumbnail: {
           url: AVATAR_URL,
         },
         fields,
         footer: {
-          text: `${repository} • release`,
+          text: `${repository} • ${isTagFallback ? 'tag' : 'release'}`,
           icon_url: AVATAR_URL,
         },
         ...(publishedAt ? { timestamp: publishedAt } : {}),
@@ -409,10 +447,81 @@ async function fetchJson(url, token) {
   });
 
   if (!response.ok) {
-    throw new Error(`GitHub request failed with ${response.status} for ${url}`);
+    const error = new Error(`GitHub request failed with ${response.status} for ${url}`);
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();
+}
+
+async function resolveTagTimestamp({ apiUrl, token, tagName }) {
+  try {
+    const ref = await fetchJson(`${apiUrl}/git/ref/tags/${encodeURIComponent(tagName)}`, token);
+    const objectType = String(ref?.object?.type || '').trim();
+    const objectSha = String(ref?.object?.sha || '').trim();
+
+    if (!objectType || !objectSha) {
+      return '';
+    }
+
+    if (objectType === 'tag') {
+      const tagObject = await fetchJson(`${apiUrl}/git/tags/${objectSha}`, token);
+      return String(tagObject?.tagger?.date || '').trim();
+    }
+
+    if (objectType === 'commit') {
+      const commitObject = await fetchJson(`${apiUrl}/commits/${objectSha}`, token);
+      return String(commitObject?.commit?.committer?.date || commitObject?.commit?.author?.date || '').trim();
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+}
+
+async function fetchChangelogForTag({ apiUrl, token, tagName }) {
+  try {
+    const payload = await fetchJson(
+      `${apiUrl}/contents/CHANGELOG.md?ref=${encodeURIComponent(tagName)}`,
+      token,
+    );
+    const encoded = String(payload?.content || '').replace(/\n/g, '');
+    if (!encoded) {
+      return '';
+    }
+    return Buffer.from(encoded, 'base64').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+async function buildTagFallbackRelease({ apiUrl, token, repository, tagName }) {
+  const normalizedTag = normalizeReleaseTag(tagName);
+  if (!normalizedTag) {
+    return null;
+  }
+
+  const publishedAt = await resolveTagTimestamp({ apiUrl, token, tagName: normalizedTag });
+  const changelog = await fetchChangelogForTag({ apiUrl, token, tagName: normalizedTag });
+  const changelogSection = extractChangelogSection(changelog, normalizedTag);
+  const changelogUrl = `https://github.com/${repository}/blob/${normalizedTag}/CHANGELOG.md#${getVersionAnchor(normalizedTag)}`;
+  const fallbackBody = changelogSection
+    ? `> Changelog: ${changelogUrl}\n\n${changelogSection}`
+    : `> Changelog: ${changelogUrl}`;
+
+  return {
+    tag_name: normalizedTag,
+    name: normalizedTag,
+    body: fallbackBody,
+    html_url: `https://github.com/${repository}/releases/tag/${normalizedTag}`,
+    published_at: publishedAt,
+    created_at: publishedAt,
+    draft: false,
+    prerelease: false,
+    id: 0,
+  };
 }
 
 async function lookupRelease({ apiUrl, releaseTag, token }) {
@@ -425,12 +534,12 @@ async function lookupRelease({ apiUrl, releaseTag, token }) {
     try {
       const payload = await fetchJson(endpoint, token);
       if (releaseTag) {
-        return payload;
+        return { release: payload, isTagFallback: false };
       }
 
       const release = Array.isArray(payload) ? selectLatestPublishedReleaseEntry(payload) : null;
       if (release) {
-        return release;
+        return { release, isTagFallback: false };
       }
 
       throw new Error('Unable to resolve the highest published release tag from GitHub');
@@ -446,17 +555,55 @@ async function lookupRelease({ apiUrl, releaseTag, token }) {
     }
   }
 
+  if (releaseTag) {
+    const statusCode = Number(lastError?.status || 0);
+    if (statusCode === 404) {
+      return { release: null, isTagFallback: true };
+    }
+  }
+
   throw lastError || new Error(`Unable to fetch release details from ${endpoint}`);
 }
 
 async function resolvePreviousPublishedReleaseTag({ apiUrl, token, currentTag }) {
   try {
-    const releases = await fetchJson(`${apiUrl}/releases?per_page=20`, token);
+    const releases = await fetchJson(`${apiUrl}/releases?per_page=100`, token);
     if (!Array.isArray(releases)) {
       return '';
     }
 
     return selectPreviousPublishedReleaseTag(releases, currentTag);
+  } catch {
+    return '';
+  }
+}
+
+async function resolvePreviousTagFromRepositoryTags({ apiUrl, token, currentTag }) {
+  try {
+    const tags = await fetchJson(`${apiUrl}/tags?per_page=100`, token);
+    if (!Array.isArray(tags)) {
+      return '';
+    }
+
+    const normalizedCurrentTag = normalizeReleaseTag(currentTag);
+    const tagNames = Array.from(
+      new Set(
+        tags
+          .map((entry) => normalizeReleaseTag(entry?.name))
+          .filter((name) => Boolean(name) && /^v/i.test(String(name))),
+      ),
+    );
+
+    if (!normalizedCurrentTag || !tagNames.length) {
+      return '';
+    }
+
+    tagNames.sort(compareReleaseTagVersions);
+    const currentIndex = tagNames.findIndex((tagName) => tagName === normalizedCurrentTag);
+    if (currentIndex <= 0) {
+      return '';
+    }
+    return tagNames[currentIndex - 1] || '';
   } catch {
     return '';
   }
@@ -484,22 +631,37 @@ export async function main() {
   const releaseTag = String(process.env.RELEASE_TAG || '').trim();
   const apiUrl = `https://api.github.com/repos/${repository}`;
 
-  const release = await lookupRelease({ apiUrl, releaseTag, token });
+  const lookup = await lookupRelease({ apiUrl, releaseTag, token });
+  let release = lookup?.release || null;
+  let isTagFallback = lookup?.isTagFallback === true;
+
+  if (!release && releaseTag) {
+    release = await buildTagFallbackRelease({
+      apiUrl,
+      token,
+      repository,
+      tagName: releaseTag,
+    });
+  }
+
+  if (!release) {
+    throw new Error('Unable to resolve release or tag details from GitHub');
+  }
+
   const currentTag = String(release.tag_name || '').trim();
   if (!currentTag) {
     throw new Error('Unable to resolve a release tag from GitHub');
   }
 
-  const previousReleaseTag = await resolvePreviousPublishedReleaseTag({
-    apiUrl,
-    token,
-    currentTag,
-  });
+  const previousReleaseTag = isTagFallback
+    ? await resolvePreviousTagFromRepositoryTags({ apiUrl, token, currentTag })
+    : await resolvePreviousPublishedReleaseTag({ apiUrl, token, currentTag });
 
   const payload = buildDiscordReleasePayload({
     repository,
     release,
     previousReleaseTag,
+    isTagFallback,
   });
 
   await postToDiscord(webhookUrl, payload);
