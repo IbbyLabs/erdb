@@ -28,7 +28,14 @@ test('genre badge style and position normalization accept friendly variants', ()
   assert.equal(normalizeGenreBadgePosition('unknown'), DEFAULT_GENRE_BADGE_POSITION);
 });
 
-test('genre badge family resolution prefers anime and curated literal buckets', () => {
+test('genre badge family resolution keeps anime and animation separate', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Animation' }, { name: 'Action' }],
+    })?.id,
+    'animation',
+  );
+
   assert.equal(
     resolveGenreBadgeFamily({
       genres: [{ name: 'Action' }, { name: 'Science Fiction' }],

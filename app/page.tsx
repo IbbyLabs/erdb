@@ -3770,7 +3770,7 @@ export default function Home() {
         </div>
         <p className="text-[11px] leading-relaxed text-zinc-500">
           {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
-          Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
+          Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
         </p>
         {(previewType === 'poster' || previewType === 'backdrop') ? (
           <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
@@ -5429,7 +5429,7 @@ export default function Home() {
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre Badge Samples</div>
                     <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                      Curated movie, show, and anime renders that keep the badge decision fixed while you compare mode, style, and placement.
+                      Curated movie, show, animation, and anime renders that keep the badge decision fixed while you compare mode, style, and placement.
                     </p>
                   </div>
                   <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-zinc-900">
@@ -6141,7 +6141,7 @@ export default function Home() {
                 <div className="border-t border-white/10 bg-zinc-900/35 px-5 py-4 text-xs leading-6 text-zinc-400">
                   In the configurator UI, <span className="font-semibold text-zinc-200">Compact Average</span> maps to <span className="font-mono text-zinc-200">minimal</span>, <span className="font-semibold text-zinc-200">Labeled Average</span> maps to <span className="font-mono text-zinc-200">average</span>, <span className="font-semibold text-zinc-200">Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual</span>, and <span className="font-semibold text-zinc-200">Compact Critics + Audience</span> maps to <span className="font-mono text-zinc-200">dual minimal</span>. Query values remain unchanged.
                   <br />
-                  Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">drama</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve. <span className="font-semibold text-zinc-200">Thriller</span> and <span className="font-semibold text-zinc-200">mystery</span> now map into the crime family for consistent icon output.
+                  Genre badges use a small curated family set. Strong buckets such as <span className="font-semibold text-zinc-200">horror</span>, <span className="font-semibold text-zinc-200">comedy</span>, <span className="font-semibold text-zinc-200">drama</span>, <span className="font-semibold text-zinc-200">sci fi</span>, <span className="font-semibold text-zinc-200">fantasy</span>, <span className="font-semibold text-zinc-200">crime</span>, <span className="font-semibold text-zinc-200">documentary</span>, <span className="font-semibold text-zinc-200">animation</span>, and <span className="font-semibold text-zinc-200">anime</span> resolve. <span className="font-semibold text-zinc-200">Thriller</span> and <span className="font-semibold text-zinc-200">mystery</span> now map into the crime family for consistent icon output.
                   <br />
                   Transparent provider icons stay transparent across <span className="font-semibold text-zinc-200">glass</span>, <span className="font-semibold text-zinc-200">square</span>, <span className="font-semibold text-zinc-200">plain</span>, and <span className="font-semibold text-zinc-200">stacked</span>. In <span className="font-semibold text-zinc-200">glass</span>, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring so the accent color does not bleed through the icon cutouts.
                   <br />

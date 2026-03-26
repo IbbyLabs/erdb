@@ -9,6 +9,7 @@ export type GenreBadgePosition =
   | 'bottomRight';
 export type GenreBadgeFamilyId =
   | 'anime'
+  | 'animation'
   | 'horror'
   | 'comedy'
   | 'romance'
@@ -185,6 +186,11 @@ export const GENRE_BADGE_FAMILY_META: Record<GenreBadgeFamilyId, GenreBadgeFamil
     label: 'ANIME',
     accentColor: '#f59e0b',
   },
+  animation: {
+    id: 'animation',
+    label: 'ANIMATION',
+    accentColor: '#38bdf8',
+  },
   horror: {
     id: 'horror',
     label: 'HORROR',
@@ -320,6 +326,10 @@ export const resolveGenreBadgeFamily = (input: {
     return GENRE_BADGE_FAMILY_META.anime;
   }
 
+  if (hasGenreName(genreNames, 'animation', 'animated') || hasGenreId(genreIds, TMDB_GENRE.animation)) {
+    return GENRE_BADGE_FAMILY_META.animation;
+  }
+
   if (hasGenreName(genreNames, 'horror') || hasGenreId(genreIds, TMDB_GENRE.horror)) {
     return GENRE_BADGE_FAMILY_META.horror;
   }
@@ -422,6 +432,22 @@ export const GENRE_BADGE_PREVIEW_SAMPLES: ReadonlyArray<GenreBadgePreviewSample>
       ratingStyle: 'square',
       imageText: 'clean',
       backdropRatingsLayout: 'right',
+    },
+  },
+  {
+    key: 'spider-verse-poster',
+    title: 'Spider Man Into the Spider Verse',
+    typeLabel: 'Movie Poster',
+    previewType: 'poster',
+    mediaId: 'tt4633694',
+    lang: 'en',
+    familyId: 'animation',
+    decision: 'Animated films now resolve to the animation family so the badge stays separate from anime native inputs.',
+    params: {
+      posterRatings: 'tmdb',
+      ratingStyle: 'glass',
+      imageText: 'original',
+      posterRatingsLayout: 'top bottom',
     },
   },
   {

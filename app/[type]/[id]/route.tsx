@@ -785,6 +785,7 @@ const AGGREGATE_BADGE_ACCENT_BY_SOURCE = AGGREGATE_RATING_SOURCE_ACCENTS;
 
 const EDITORIAL_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
   anime: 'Anime',
+  animation: 'Animation',
   horror: 'Horror',
   comedy: 'Comedy',
   romance: 'Romance',
@@ -4853,6 +4854,10 @@ const buildGenreBadgeIconMarkup = ({
     return `<path d="M12 2 14.8 9.2 22 12 14.8 14.8 12 22 9.2 14.8 2 12 9.2 9.2Z" fill="${color}" opacity="0.96"/>`;
   }
 
+  if (familyId === 'animation') {
+    return `<rect x="4.1" y="5.3" width="15.8" height="13.4" rx="2.4" fill="none" stroke="${color}" stroke-width="1.9"/><path d="M9.4 8.4 15.9 12 9.4 15.6Z" fill="${color}" opacity="0.96"/><circle cx="6.2" cy="8.2" r="0.8" fill="${color}"/><circle cx="17.8" cy="8.2" r="0.8" fill="${color}"/><circle cx="6.2" cy="15.8" r="0.8" fill="${color}"/><circle cx="17.8" cy="15.8" r="0.8" fill="${color}"/>`;
+  }
+
   if (familyId === 'horror') {
     return `<path d="M12 3c4.6 0 8 3.3 8 7.9 0 2.3-.9 4.2-2.4 5.7V20h-3v-2h-1v2h-3v-2H9v2H6v-3.4A7.8 7.8 0 0 1 4 10.9C4 6.3 7.4 3 12 3Z" fill="${color}" opacity="0.96"/><circle cx="9" cy="11" r="1.5" fill="#05070b"/><circle cx="15" cy="11" r="1.5" fill="#05070b"/><rect x="10.4" y="14.6" width="3.2" height="2.2" rx="1.1" fill="#05070b"/>`;
   }
@@ -7841,9 +7846,9 @@ export async function handleImageRequest(
 
       const mediaLooksAnimated = media ? isTmdbAnimationTitle(media) : false;
       if (!hasNativeAnimeInput) {
-        allowAnimeOnlyRatings = hasConfirmedAnimeMapping || mediaLooksAnimated;
+        allowAnimeOnlyRatings = hasConfirmedAnimeMapping;
       }
-      const isAnimeContent = hasNativeAnimeInput || hasConfirmedAnimeMapping || mediaLooksAnimated;
+      const isAnimeContent = hasNativeAnimeInput || hasConfirmedAnimeMapping;
       const resolvePrimaryGenreFamily = (
         genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>,
         genreIds: Array<number | string | null | undefined> = [],
