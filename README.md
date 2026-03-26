@@ -21,6 +21,14 @@ This is what I am building next for ERDB.
 6. More control for output sizes for poster backdrop and logo.
 7. Ongoing speed and reliability work for public and self hosted setups.
 
+### Delivery plan
+
+1. I will ship in phases with clear scope.
+2. I will use safe release switches for risky changes.
+3. I will check movie and series flows before each release.
+4. I will track speed and error numbers after each phase.
+5. I will keep rollback simple by turning new paths off fast.
+
 ## Quick Start
 
 ## Install From GitHub
