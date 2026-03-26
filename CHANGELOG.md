@@ -127,6 +127,19 @@
 
 <a id="v2-41-0"></a>
 
+<a id="v2-41-1"></a>
+
+## [v2.41.1] - 26/03/2026
+
+### Fixed
+* normalize custom base url before stream lookups
+  
+  Normalize ERDB_TORRENTIO_BASE_URL so full manifest URLs and trailing slashes do not break stream badge requests.
+  
+  Extract Torrentio URL helpers into lib/torrentioUrl.ts and reuse them from the route handler.
+  
+  Add regression tests for default fallback, manifest path trimming, and custom instance stream URL construction.
+
 ## [v2.41.0] - 26/03/2026
 
 ### Added
