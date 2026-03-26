@@ -131,6 +131,19 @@
 
 <a id="v2-41-2"></a>
 
+<a id="v2-42-0"></a>
+
+## [v2.42.0] - 26/03/2026
+
+### Added
+* split animation from anime classification
+  
+  Add a dedicated animation genre badge family with its own label, accent, and preview sample.
+  
+  Keep anime classification reserved for native anime IDs or confirmed anime mapping so generic TMDB animation titles no longer render as anime.
+  
+  Update genre badge documentation copy and extend regression coverage for animation vs anime resolution.
+
 ## [v2.41.2] - 26/03/2026
 
 ### Other Changes
