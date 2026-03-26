@@ -300,9 +300,7 @@ const waitForHttp = async (url, attempts = 80) => {
       if (response.ok || response.status === 404) {
         return;
       }
-    } catch {
-      // wait and retry
-    }
+    } catch {}
     await delay(500);
   }
 

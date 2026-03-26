@@ -299,9 +299,7 @@ const waitForHttp = async (url, attempts = 90) => {
       if (response.ok || response.status === 404) {
         return;
       }
-    } catch {
-      // wait and retry
-    }
+    } catch {}
     await delay(500);
   }
   throw new Error(`Timed out waiting for ${url}`);

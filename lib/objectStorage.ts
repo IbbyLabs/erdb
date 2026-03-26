@@ -27,17 +27,13 @@ const deleteCachedObject = (filePath: string, metadataPath: string) => {
     if (existsSync(filePath)) {
       unlinkSync(filePath);
     }
-  } catch {
-    // Ignore cleanup failures for stale cache files.
-  }
+  } catch {}
 
   try {
     if (existsSync(metadataPath)) {
       unlinkSync(metadataPath);
     }
-  } catch {
-    // Ignore cleanup failures for stale cache metadata.
-  }
+  } catch {}
 };
 
 const isCachedObjectExpired = (filePath: string, metadataPath: string) => {
@@ -68,9 +64,7 @@ export const pruneExpiredObjectStorageImages = () => {
         deleteCachedObject(filePath, metadataPath);
       }
     }
-  } catch {
-    // Ignore background pruning failures.
-  }
+  } catch {}
 };
 
 const ensureObjectStoragePrunerStarted = () => {
@@ -83,7 +77,7 @@ const ensureObjectStoragePrunerStarted = () => {
   globalState.__erdbImageCachePruneTimer = setInterval(pruneExpiredObjectStorageImages, IMAGE_CACHE_PRUNE_INTERVAL_MS);
 };
 
-export const isObjectStorageConfigured = () => true; // Always "configured" as local files
+export const isObjectStorageConfigured = () => true;
 
 ensureObjectStoragePrunerStarted();
 
@@ -182,9 +176,7 @@ const pruneOldestImageCache = async (maxFiles: number) => {
         unlinkSync(f.path);
         const metaPath = `${f.path}.json`;
         if (existsSync(metaPath)) unlinkSync(metaPath);
-      } catch {
-        // ignore deletion errors
-      }
+      } catch {}
     }
   } catch (error) {
     console.error('Error during image cache pruning:', error);

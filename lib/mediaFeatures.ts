@@ -213,7 +213,6 @@ export const buildMediaFeatureBadgesFromFlags = (flags: MediaFeatureFlags) => {
   if (!flags.hasDolbyVision && flags.hasHdr) badges.push(MEDIA_FEATURE_META_BY_KEY.hdr);
   if (flags.hasDolbyVision) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyvision);
   if (flags.hasDolbyAtmos) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyatmos);
-  // A remux implies a physical disc source even when the filename omits BluRay/BDRemux tokens.
   if (flags.hasRemux && !flags.hasBluray) badges.push(MEDIA_FEATURE_META_BY_KEY.remux);
   return badges;
 };
