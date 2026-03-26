@@ -9,6 +9,7 @@ import {
 export const DEFAULT_BADGE_SCALE_PERCENT = 100;
 export const MIN_BADGE_SCALE_PERCENT = 70;
 export const MAX_BADGE_SCALE_PERCENT = 150;
+export const MAX_GENRE_BADGE_SCALE_PERCENT = 200;
 export const DEFAULT_PROVIDER_ICON_SCALE_PERCENT = 100;
 export const MIN_PROVIDER_ICON_SCALE_PERCENT = 70;
 export const MAX_PROVIDER_ICON_SCALE_PERCENT = 145;
@@ -59,6 +60,14 @@ export type RatingProviderAppearanceOverrides = Partial<
 
 export const QUALITY_BADGE_OPTIONS: Array<{ id: MediaFeatureBadgeKey; label: string }> = [
   { id: 'certification', label: 'Age Rating' },
+  { id: 'netflix', label: 'Netflix' },
+  { id: 'hbo', label: 'HBO' },
+  { id: 'primevideo', label: 'Prime Video' },
+  { id: 'disneyplus', label: 'Disney Plus' },
+  { id: 'appletvplus', label: 'Apple TV Plus' },
+  { id: 'hulu', label: 'Hulu' },
+  { id: 'paramountplus', label: 'Paramount Plus' },
+  { id: 'peacock', label: 'Peacock' },
   { id: '4k', label: '4K' },
   { id: 'bluray', label: 'Bluray' },
   { id: 'hdr', label: 'HDR' },
@@ -67,13 +76,36 @@ export const QUALITY_BADGE_OPTIONS: Array<{ id: MediaFeatureBadgeKey; label: str
   { id: 'remux', label: 'Remux' },
 ];
 
-export const DEFAULT_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [...MEDIA_FEATURE_BADGE_ORDER];
+export const DEFAULT_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [
+  'certification',
+  '4k',
+  'bluray',
+  'hdr',
+  'dolbyvision',
+  'dolbyatmos',
+  'remux',
+];
 
 const QUALITY_BADGE_ALIAS_MAP: Record<string, MediaFeatureBadgeKey> = {
   certification: 'certification',
   age: 'certification',
   agerating: 'certification',
   cert: 'certification',
+  netflix: 'netflix',
+  hbo: 'hbo',
+  hbomax: 'hbo',
+  max: 'hbo',
+  primevideo: 'primevideo',
+  amazonprime: 'primevideo',
+  prime: 'primevideo',
+  disneyplus: 'disneyplus',
+  disneyp: 'disneyplus',
+  appletvplus: 'appletvplus',
+  appletv: 'appletvplus',
+  hulu: 'hulu',
+  paramountplus: 'paramountplus',
+  paramount: 'paramountplus',
+  peacock: 'peacock',
   '4k': '4k',
   uhd: '4k',
   ultrahd: '4k',
@@ -132,6 +164,23 @@ export const normalizeBadgeScalePercent = (
   return Math.max(
     MIN_BADGE_SCALE_PERCENT,
     Math.min(MAX_BADGE_SCALE_PERCENT, Math.round(numericValue)),
+  );
+};
+
+export const normalizeGenreBadgeScalePercent = (
+  value: unknown,
+  fallback = DEFAULT_BADGE_SCALE_PERCENT,
+) => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(
+    MIN_BADGE_SCALE_PERCENT,
+    Math.min(MAX_GENRE_BADGE_SCALE_PERCENT, Math.round(numericValue)),
   );
 };
 

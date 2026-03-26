@@ -139,6 +139,20 @@
 
 <a id="v2-43-0"></a>
 
+<a id="v2-44-0"></a>
+
+## [v2.44.0] - 26/03/2026
+
+### Added
+* genre centering fix, network badges, genre scale to 200%, compact average custom icon, sticky preview toggle\n\nGenre text centering and cutoff fix with improved width estimation and\nsafety padding. Added text badge fallback renderer for non asset quality\nbadges. Compact aggregate badges now inherit representative provider\nicon. Added network badge support for Netflix, HBO, Prime Video, Disney\nPlus, Apple TV Plus, Hulu, Paramount Plus, and Peacock with TV network\ndetection. Genre badge scale range extended to 70 to 200 with dedicated\nnormalizer wired through UI, config, and render pipeline. Added sticky\npreview opt in toggle persisted in local UI settings with constrained\npanel height and overflow.
+
+### Fixed
+* fall back to tag changelog when release lookup misses
+  
+  Handle manual Discord notifications for tags that do not have a published GitHub release object yet.
+  
+  If releases/tags lookup returns 404, resolve tag metadata plus CHANGELOG.md content at the tag and build a fallback payload so changelog notifications still work for failed release publishing cases.
+
 ## [v2.43.0] - 26/03/2026
 
 ### Added

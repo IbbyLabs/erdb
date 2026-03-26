@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildNetworkBadgesFromTvNetworks,
   buildMediaFeatureBadgesFromFlags,
   buildCertificationBadgeMeta,
   collectMediaFeatureFlags,
@@ -183,4 +184,19 @@ test('tv certification resolution falls back to available regions', () => {
   );
 
   assert.equal(certification, 'TV MA');
+});
+
+test('tv networks resolve to distinct network badges in media badge order', () => {
+  const badges = buildNetworkBadgesFromTvNetworks([
+    { name: 'HBO Max' },
+    { name: 'Netflix' },
+    { name: 'Prime Video' },
+    { name: 'Unknown Network' },
+    { name: 'HBO' },
+  ]);
+
+  assert.deepEqual(
+    badges.map((badge) => badge.key),
+    ['netflix', 'hbo', 'primevideo'],
+  );
 });

@@ -114,6 +114,7 @@ import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
 import { buildTorrentioStreamUrl, resolveTorrentioBaseUrl } from '@/lib/torrentioUrl';
 import {
   MEDIA_FEATURE_BADGE_ORDER,
+  buildNetworkBadgesFromTvNetworks,
   buildCertificationBadgeMeta,
   buildMediaFeatureBadgesFromFlags,
   collectMediaFeatureFlags,
@@ -142,6 +143,7 @@ import {
   DEFAULT_STACKED_WIDTH_PERCENT,
   MIN_STACKED_SURFACE_OPACITY_PERCENT,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeScalePercent,
   normalizeHexColor,
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
@@ -942,7 +944,7 @@ const buildAggregateRatingBadgeForSource = ({
     allowFallbackToOverall && requestedSource !== 'overall' && !hasProvidersForRequestedSource
       ? 'overall'
       : requestedSource;
-  const selectedProviders = selectAggregateRatingProviders(requestedSource, availableProviders);
+  const selectedProviders = selectAggregateRatingProviders(resolvedSource, availableProviders);
 
   const numericValues = selectedProviders
     .map((provider) => ({ provider, badge: ratingBadgeByProvider.get(provider) }))
@@ -958,6 +960,13 @@ const buildAggregateRatingBadgeForSource = ({
     numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
   const effectiveSource = resolvedSource as AggregateRatingSource;
 
+  const representativeProvider = selectedProviders.find((provider) =>
+    Boolean(ratingBadgeByProvider.get(provider)?.iconUrl),
+  );
+  const representativeIconUrl = representativeProvider
+    ? ratingBadgeByProvider.get(representativeProvider)?.iconUrl || ''
+    : '';
+
   return {
     key: AGGREGATE_BADGE_KEY_BY_SOURCE[effectiveSource],
     label:
@@ -965,7 +974,7 @@ const buildAggregateRatingBadgeForSource = ({
         ? getAggregateRatingSourceShortLabel(effectiveSource)
         : getAggregateRatingSourceLabel(effectiveSource),
     value: formatNormalizedRatingValue(averageValue, valueMode),
-    iconUrl: '',
+    iconUrl: useCompactAggregateBadge ? representativeIconUrl : '',
     accentColor: resolveAccentColor(effectiveSource),
     accentBarOffset,
     accentBarVisible,
@@ -4031,7 +4040,11 @@ const estimateSummaryLabelWidth = (label: string, fontSize: number) => {
   return Math.round(
     [...normalized].reduce((acc, ch) => {
       if (ch === ' ') return acc + fontSize * 0.32;
-      return acc + fontSize * 0.56;
+      if (/[WM]/.test(ch)) return acc + fontSize * 0.9;
+      if (/[A-Z]/.test(ch)) return acc + fontSize * 0.64;
+      if (/[0-9]/.test(ch)) return acc + fontSize * 0.6;
+      if (/[\-_:/'".,!?&+]/.test(ch)) return acc + fontSize * 0.36;
+      return acc + fontSize * 0.58;
     }, 0)
   );
 };
@@ -4801,7 +4814,49 @@ ${style === 'plain' ? plainStroke : rect}
     return buildAssetBackedBadgeSvg('remux', 'standard');
   }
 
-  return null;
+  const accentColor = mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? 'rgba(255,255,255,0.68)';
+  const textSize = Math.round(h * 0.33);
+  const sidePadding = Math.max(10, Math.round(h * 0.24));
+  const textWidth = widthOverride ?? Math.max(
+    Math.round(h * 1.45),
+    estimateSummaryLabelWidth(label, textSize) + sidePadding * 2,
+  );
+  const textY = Math.round(h * 0.66);
+  if (style === 'media') {
+    return {
+      width: textWidth,
+      height: h,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
+${buildMediaPlate(textWidth, {
+  stroke: hexColorToRgba(accentColor, 0.68, 'rgba(255,255,255,0.68)'),
+  fill: 'rgba(12,18,32,0.24)',
+  strokeScale: 0.78,
+  radiusScale: 0.27,
+  highlightOpacity: 0.055,
+})}
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${hexColorToRgba(accentColor, 0.97, '#f5f5f4')}" letter-spacing="0.012em">${escapeXml(label)}</text>
+</svg>`,
+    };
+  }
+
+  const rect = buildRect(textWidth, accentColor);
+  const plainStroke =
+    style === 'plain' ? buildPlainQualitySurface(textWidth, 'quality-badge-text-fallback-surface') : '';
+  const filter = style === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : '';
+  const defs =
+    style === 'plain'
+      ? `${buildPlainQualityShadowDefs('quality-badge-text-fallback-surface')}<defs><filter id="quality-badge-text-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
+      : '';
+  const textFill = style === 'plain' ? hexColorToRgba(accentColor, 0.95, '#f5f5f4') : '#f5f5f4';
+  return {
+    width: textWidth,
+    height: h,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
+${defs}
+${style === 'plain' ? plainStroke : rect}
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${textFill}"${filter}>${escapeXml(label)}</text>
+</svg>`,
+  };
 };
 
 const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
@@ -4809,7 +4864,7 @@ const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
   if (!normalized) return Math.max(fontSize * 2, Math.round(fontSize * 2.2));
   const baseWidth = estimateSummaryLabelWidth(normalized, fontSize);
   const letterSpacingWidth = Math.round(Math.max(0, normalized.length - 1) * fontSize * 0.08);
-  const safetyWidth = Math.max(6, Math.round(fontSize * 0.45));
+  const safetyWidth = Math.max(10, Math.round(fontSize * 0.62));
   return Math.max(Math.round(fontSize * 2.2), baseWidth + letterSpacingWidth + safetyWidth);
 };
 
@@ -7057,7 +7112,7 @@ export async function handleImageRequest(
     request.nextUrl.searchParams.get('genreBadgePosition'),
     DEFAULT_GENRE_BADGE_POSITION,
   );
-  const globalGenreBadgeScale = normalizeBadgeScalePercent(
+  const globalGenreBadgeScale = normalizeGenreBadgeScalePercent(
     request.nextUrl.searchParams.get('genreBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
   );
@@ -7110,17 +7165,17 @@ export async function handleImageRequest(
       request.nextUrl.searchParams.get('genreBadgePosition'),
     globalGenreBadgePosition,
   );
-  const posterGenreBadgeScale = normalizeBadgeScalePercent(
+  const posterGenreBadgeScale = normalizeGenreBadgeScalePercent(
     request.nextUrl.searchParams.get('posterGenreBadgeScale') ??
       request.nextUrl.searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
   );
-  const backdropGenreBadgeScale = normalizeBadgeScalePercent(
+  const backdropGenreBadgeScale = normalizeGenreBadgeScalePercent(
     request.nextUrl.searchParams.get('backdropGenreBadgeScale') ??
       request.nextUrl.searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
   );
-  const logoGenreBadgeScale = normalizeBadgeScalePercent(
+  const logoGenreBadgeScale = normalizeGenreBadgeScalePercent(
     request.nextUrl.searchParams.get('logoGenreBadgeScale') ??
       request.nextUrl.searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
@@ -9339,6 +9394,17 @@ export async function handleImageRequest(
         streamBadges = streamBadges.filter((badge) => badge.key !== 'bluray' && badge.key !== 'remux');
       }
       if (imageType !== 'logo') {
+        const networkBadges =
+          mediaType === 'tv'
+            ? buildNetworkBadgesFromTvNetworks(media?.networks).map((badge) => ({
+                key: badge.key,
+                label: badge.label,
+                value: '',
+                iconUrl: '',
+                accentColor: badge.accentColor,
+              }))
+            : [];
+        streamBadges = [...networkBadges, ...streamBadges];
         const enabledQualityBadgeSet = new Set(qualityBadgePreferences);
         streamBadges = MEDIA_FEATURE_BADGE_ORDER.flatMap((badgeKey) => {
           if (!enabledQualityBadgeSet.has(badgeKey)) {

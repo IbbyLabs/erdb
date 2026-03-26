@@ -69,6 +69,7 @@ import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   encodeRatingProviderAppearanceOverrides,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeScalePercent,
   normalizeHexColor,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
@@ -604,7 +605,7 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     candidate.genreBadgePosition,
     DEFAULT_GENRE_BADGE_POSITION,
   );
-  const globalGenreBadgeScale = normalizeBadgeScalePercent(
+  const globalGenreBadgeScale = normalizeGenreBadgeScalePercent(
     candidate.genreBadgeScale,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
@@ -672,15 +673,15 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       candidate.logoGenreBadgePosition,
       globalGenreBadgePosition,
     ),
-    posterGenreBadgeScale: normalizeBadgeScalePercent(
+    posterGenreBadgeScale: normalizeGenreBadgeScalePercent(
       candidate.posterGenreBadgeScale,
       globalGenreBadgeScale,
     ),
-    backdropGenreBadgeScale: normalizeBadgeScalePercent(
+    backdropGenreBadgeScale: normalizeGenreBadgeScalePercent(
       candidate.backdropGenreBadgeScale,
       globalGenreBadgeScale,
     ),
-    logoGenreBadgeScale: normalizeBadgeScalePercent(
+    logoGenreBadgeScale: normalizeGenreBadgeScalePercent(
       candidate.logoGenreBadgeScale,
       globalGenreBadgeScale,
     ),

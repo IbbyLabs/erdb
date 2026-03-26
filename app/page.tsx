@@ -33,6 +33,7 @@ import {
   DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
   DEFAULT_STACKED_WIDTH_PERCENT,
   MAX_BADGE_SCALE_PERCENT,
+  MAX_GENRE_BADGE_SCALE_PERCENT,
   MAX_PROVIDER_ICON_SCALE_PERCENT,
   MAX_STACKED_ELEMENT_OFFSET_PX,
   MAX_STACKED_SURFACE_OPACITY_PERCENT,
@@ -50,6 +51,7 @@ import {
   MIN_STACKED_WIDTH_PERCENT,
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeScalePercent,
   normalizeProviderIconScalePercent,
   normalizeStackedAccentMode,
   normalizeStackedElementOffsetPx,
@@ -354,6 +356,7 @@ type LocalUiSettingsStorage = {
   autoSave?: boolean;
   experienceMode?: ConfiguratorExperienceMode;
   presetId?: ConfiguratorPresetId | null;
+  stickyPreview?: boolean;
 };
 type AdvancedConfiguratorSectionId =
   | 'essentials'
@@ -387,6 +390,7 @@ const SIDE_RATING_POSITION_DOC_VALUES = 'top, middle, bottom, custom';
 const SIDE_RATING_OFFSET_DOC_COPY = '0 to 100';
 const POSTER_EDGE_OFFSET_DOC_COPY = `0 to ${MAX_POSTER_EDGE_OFFSET}`;
 const BADGE_SCALE_DOC_COPY = `${MIN_BADGE_SCALE_PERCENT} to ${MAX_BADGE_SCALE_PERCENT}`;
+const GENRE_BADGE_SCALE_DOC_COPY = `${MIN_BADGE_SCALE_PERCENT} to ${MAX_GENRE_BADGE_SCALE_PERCENT}`;
 const LOGO_BACKGROUND_DOC_VALUES = 'transparent, dark';
 const RATING_VALUE_MODE_DOC_VALUES = 'native, normalized, normalized100';
 const GENRE_BADGE_STYLE_DOC_VALUES = 'glass, square, plain';
@@ -566,10 +570,10 @@ aggregateAccentBarOffset| Number (-12 to 12, aggregate badges only)             
 aggregateAccentBarVisible| true, false (aggregate compact/labeled accent line toggle)         | true
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
 ratingStyle             | glass, square, plain, stacked                                        | glass
-genreBadgeScale         | Number (${BADGE_SCALE_DOC_COPY}) (global fallback)                  | 100
-posterGenreBadgeScale   | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
-backdropGenreBadgeScale | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
-logoGenreBadgeScale     | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
+genreBadgeScale         | Number (${GENRE_BADGE_SCALE_DOC_COPY}) (global fallback)            | 100
+posterGenreBadgeScale   | Number (${GENRE_BADGE_SCALE_DOC_COPY})                              | 100
+backdropGenreBadgeScale | Number (${GENRE_BADGE_SCALE_DOC_COPY})                              | 100
+logoGenreBadgeScale     | Number (${GENRE_BADGE_SCALE_DOC_COPY})                              | 100
 posterRatingBadgeScale | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
 backdropRatingBadgeScale| Number (${BADGE_SCALE_DOC_COPY})                                    | 100
 logoRatingBadgeScale   | Number (${BADGE_SCALE_DOC_COPY})                                    | 100
@@ -1195,6 +1199,7 @@ export default function Home() {
     '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'error' | 'invalid'
   >('');
   const [configAutoSave, setConfigAutoSave] = useState(false);
+  const [stickyPreviewEnabled, setStickyPreviewEnabled] = useState(false);
   const [experienceMode, setExperienceMode] = useState<ConfiguratorExperienceMode>(
     DEFAULT_CONFIGURATOR_EXPERIENCE_MODE,
   );
@@ -1914,6 +1919,7 @@ export default function Home() {
       if (settingsRaw) {
         const settings = JSON.parse(settingsRaw) as LocalUiSettingsStorage;
         setConfigAutoSave(Boolean(settings.autoSave));
+        setStickyPreviewEnabled(Boolean(settings.stickyPreview));
         if (isConfiguratorExperienceMode(settings.experienceMode)) {
           setExperienceMode(settings.experienceMode);
           setExperienceModeDraft(settings.experienceMode);
@@ -2009,6 +2015,7 @@ export default function Home() {
     try {
       const payload: LocalUiSettingsStorage = {
         autoSave: configAutoSave,
+        stickyPreview: stickyPreviewEnabled,
         experienceMode,
         presetId: selectedPresetId,
       };
@@ -2016,7 +2023,7 @@ export default function Home() {
     } catch {
       setSavedConfigStatus('error');
     }
-  }, [configAutoSave, experienceMode, selectedPresetId, uiSettingsLoaded]);
+  }, [configAutoSave, stickyPreviewEnabled, experienceMode, selectedPresetId, uiSettingsLoaded]);
 
   const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(AI_DEVELOPER_PROMPT);
@@ -4268,11 +4275,11 @@ export default function Home() {
               <input
                 type="range"
                 min={MIN_BADGE_SCALE_PERCENT}
-                max={MAX_BADGE_SCALE_PERCENT}
+                max={MAX_GENRE_BADGE_SCALE_PERCENT}
                 step={1}
                 value={activeGenreBadgeScale}
                 onChange={(event) =>
-                  setActiveGenreBadgeScale(normalizeBadgeScalePercent(event.target.value))
+                  setActiveGenreBadgeScale(normalizeGenreBadgeScalePercent(event.target.value))
                 }
                 className="h-2 w-full accent-violet-500"
               />
@@ -5504,8 +5511,20 @@ export default function Home() {
             </div>
 
             <div id="workspace-preview" className="space-y-5 scroll-mt-24 xl:col-start-2 xl:self-stretch">
-              <div className="xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-20">
-                <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
+              <div
+                className={
+                  stickyPreviewEnabled
+                    ? 'xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-10'
+                    : ''
+                }
+              >
+                <div
+                  className={`erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6 ${
+                    stickyPreviewEnabled
+                      ? 'xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] xl:overflow-auto'
+                      : ''
+                  }`}
+                >
                   <div className="erdb-panel-head">
                     <div>
                       <p className="erdb-panel-eyebrow font-mono">Output</p>
@@ -5514,6 +5533,20 @@ export default function Home() {
                         Stateless dynamic layout generated via query parameters.
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <span className="text-[11px] text-zinc-500">Sticky preview</span>
+                    <button
+                      type="button"
+                      onClick={() => setStickyPreviewEnabled((current) => !current)}
+                      className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                        stickyPreviewEnabled
+                          ? 'border-violet-500/60 bg-zinc-800 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {stickyPreviewEnabled ? 'On' : 'Off'}
+                    </button>
                   </div>
                   <div className="flex flex-wrap gap-2 min-[861px]:hidden">
                     <a
@@ -6155,7 +6188,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-violet-400 text-xs">genreBadgeScale</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">{BADGE_SCALE_DOC_COPY} (% scale, global fallback)</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{GENRE_BADGE_SCALE_DOC_COPY} (% scale, global fallback)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">100</td>
                       </tr>
                       <tr>
@@ -6359,7 +6392,7 @@ export default function Home() {
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
                             <div>{GENRE_BADGE_POSITION_DOC_VALUES}</div>
-                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{GENRE_BADGE_SCALE_DOC_COPY} (% scale)</div>
                             <div>{POSTER_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{POSTER_EDGE_OFFSET_DOC_COPY} (edge aligned poster badges)</div>
@@ -6369,8 +6402,8 @@ export default function Home() {
                             <div>auto, left, right (top or bottom layouts only)</div>
                             <div>{POSTER_RATINGS_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
-                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
-                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{GENRE_BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{GENRE_BADGE_SCALE_DOC_COPY} (% scale)</div>
                           </div>
                         </td>
                       </tr>
@@ -6405,14 +6438,14 @@ export default function Home() {
                             <div>off, text, icon, both</div>
                             <div>{GENRE_BADGE_STYLE_DOC_VALUES}</div>
                             <div>{GENRE_BADGE_POSITION_DOC_VALUES}</div>
-                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{GENRE_BADGE_SCALE_DOC_COPY} (% scale)</div>
                             <div>{BACKDROP_LAYOUT_DOC_VALUES}</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
                             <div>{SIDE_RATING_POSITION_DOC_VALUES} (right vertical only)</div>
                             <div>{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</div>
                             <div>{QUALITY_BADGE_DOC_VALUES} (empty string hides all)</div>
                             <div>{OPTIONAL_BADGE_MAX_DOC_COPY} (auto if omitted)</div>
-                            <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
+                            <div>{GENRE_BADGE_SCALE_DOC_COPY} (% scale)</div>
                             <div>{BADGE_SCALE_DOC_COPY} (% scale)</div>
                           </div>
                         </td>

@@ -1,5 +1,13 @@
 export type MediaFeatureBadgeKey =
   | 'certification'
+  | 'netflix'
+  | 'hbo'
+  | 'primevideo'
+  | 'disneyplus'
+  | 'appletvplus'
+  | 'hulu'
+  | 'paramountplus'
+  | 'peacock'
   | '4k'
   | 'bluray'
   | 'hdr'
@@ -45,6 +53,46 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
     label: '',
     accentColor: '#f5f5f4',
   },
+  netflix: {
+    key: 'netflix',
+    label: 'Netflix',
+    accentColor: '#e50914',
+  },
+  hbo: {
+    key: 'hbo',
+    label: 'HBO',
+    accentColor: '#ffffff',
+  },
+  primevideo: {
+    key: 'primevideo',
+    label: 'Prime Video',
+    accentColor: '#22d3ee',
+  },
+  disneyplus: {
+    key: 'disneyplus',
+    label: 'Disney Plus',
+    accentColor: '#60a5fa',
+  },
+  appletvplus: {
+    key: 'appletvplus',
+    label: 'Apple TV Plus',
+    accentColor: '#e5e7eb',
+  },
+  hulu: {
+    key: 'hulu',
+    label: 'Hulu',
+    accentColor: '#22c55e',
+  },
+  paramountplus: {
+    key: 'paramountplus',
+    label: 'Paramount Plus',
+    accentColor: '#3b82f6',
+  },
+  peacock: {
+    key: 'peacock',
+    label: 'Peacock',
+    accentColor: '#f59e0b',
+  },
   '4k': {
     key: '4k',
     label: '4K',
@@ -78,6 +126,14 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
 };
 export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'certification',
+  'netflix',
+  'hbo',
+  'primevideo',
+  'disneyplus',
+  'appletvplus',
+  'hulu',
+  'paramountplus',
+  'peacock',
   '4k',
   'bluray',
   'hdr',
@@ -215,6 +271,49 @@ export const buildMediaFeatureBadgesFromFlags = (flags: MediaFeatureFlags) => {
   if (flags.hasDolbyAtmos) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyatmos);
   if (flags.hasRemux && !flags.hasBluray) badges.push(MEDIA_FEATURE_META_BY_KEY.remux);
   return badges;
+};
+
+const normalizeNetworkName = (value: unknown) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+
+const resolveTvNetworkBadgeKey = (networkName: string): MediaFeatureBadgeKey | null => {
+  if (!networkName) return null;
+  if (networkName.includes('netflix')) return 'netflix';
+  if (networkName.includes('hbomax') || networkName === 'max' || networkName.includes('hbo')) {
+    return 'hbo';
+  }
+  if (
+    networkName.includes('primevideo') ||
+    networkName.includes('amazonprimevideo') ||
+    networkName.includes('primeamazon')
+  ) {
+    return 'primevideo';
+  }
+  if (networkName.includes('disneyplus') || networkName.includes('disney')) return 'disneyplus';
+  if (networkName.includes('appletvplus') || networkName.includes('appletv')) return 'appletvplus';
+  if (networkName.includes('hulu')) return 'hulu';
+  if (networkName.includes('paramountplus') || networkName === 'paramount') return 'paramountplus';
+  if (networkName.includes('peacock')) return 'peacock';
+  return null;
+};
+
+export const buildNetworkBadgesFromTvNetworks = (networks: unknown): MediaFeatureBadgeMeta[] => {
+  if (!Array.isArray(networks) || networks.length === 0) return [];
+  const matchedKeys = new Set<MediaFeatureBadgeKey>();
+  for (const network of networks) {
+    const normalizedName = normalizeNetworkName(
+      network && typeof network === 'object' && 'name' in network ? (network as { name?: unknown }).name : '',
+    );
+    const key = resolveTvNetworkBadgeKey(normalizedName);
+    if (key) {
+      matchedKeys.add(key);
+    }
+  }
+  return MEDIA_FEATURE_BADGE_ORDER.flatMap((key) =>
+    matchedKeys.has(key) ? [MEDIA_FEATURE_META_BY_KEY[key]] : [],
+  );
 };
 
 const getMovieCertificationCandidates = (result: any) => {
