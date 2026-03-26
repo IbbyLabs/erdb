@@ -83,6 +83,7 @@ test('fetchLatestGitHubRelease returns the latest release payload', async () => 
     tagName: 'v2.24.1',
     url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.24.1',
     publishedAt: '2026-03-23T19:13:31Z',
+    pendingTagName: null,
   });
 });
 
@@ -134,6 +135,45 @@ test('fetchLatestGitHubRelease ignores drafts and prereleases while choosing the
     tagName: 'v2.24.10',
     url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.24.10',
     publishedAt: '2026-03-23T22:00:00Z',
+    pendingTagName: null,
+  });
+});
+
+test('fetchLatestGitHubRelease returns pendingTagName when a draft release is ahead of the latest published version', async () => {
+  const release = await fetchLatestGitHubRelease({
+    repository: parseGitHubRepositoryUrl('https://github.com/IbbyLabs/erdb'),
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify([
+          {
+            tag_name: 'v2.44.4',
+            html_url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.44.4',
+            published_at: null,
+            draft: true,
+            prerelease: false,
+          },
+          {
+            tag_name: 'v2.44.3',
+            html_url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.44.3',
+            published_at: '2026-03-26T17:30:00Z',
+            draft: false,
+            prerelease: false,
+          },
+        ]),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      ),
+  });
+
+  assert.deepEqual(release, {
+    tagName: 'v2.44.3',
+    url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.44.3',
+    publishedAt: '2026-03-26T17:30:00Z',
+    pendingTagName: 'v2.44.4',
   });
 });
 

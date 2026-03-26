@@ -20,6 +20,7 @@ export async function GET() {
       tagName: release?.tagName || null,
       url: release?.url || null,
       publishedAt: release?.publishedAt || null,
+      pendingTagName: release?.pendingTagName || null,
     },
     {
       headers: {

@@ -1192,6 +1192,7 @@ export default function Home() {
   const [visibleRecentCommitCount, setVisibleRecentCommitCount] = useState(COMMIT_PAGE_SIZE);
   const [latestReleaseTag, setLatestReleaseTag] = useState('');
   const [latestReleaseUrl, setLatestReleaseUrl] = useState('');
+  const [pendingReleaseTag, setPendingReleaseTag] = useState('');
   const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(true);
   const [nowMs, setNowMs] = useState(Date.now());
   const [savedConfigStatus, setSavedConfigStatus] = useState<
@@ -1616,6 +1617,7 @@ export default function Home() {
         const payload = await response.json();
         const nextTag = typeof payload?.tagName === 'string' ? payload.tagName.trim() : '';
         const nextUrl = typeof payload?.url === 'string' ? payload.url.trim() : '';
+        const nextPendingTag = typeof payload?.pendingTagName === 'string' ? payload.pendingTagName.trim() : '';
 
         if (!active) {
           return;
@@ -1623,6 +1625,7 @@ export default function Home() {
 
         setLatestReleaseTag(nextTag);
         setLatestReleaseUrl(nextUrl);
+        setPendingReleaseTag(nextPendingTag);
       } catch (error: any) {
         if (!active || error?.name === 'AbortError') {
           return;
@@ -1630,6 +1633,7 @@ export default function Home() {
 
         setLatestReleaseTag('');
         setLatestReleaseUrl('');
+        setPendingReleaseTag('');
       } finally {
         if (active) {
           setIsLatestReleaseLoading(false);
@@ -2448,7 +2452,9 @@ export default function Home() {
     : latestReleaseTag
       ? latestReleaseMatchesDeployment
         ? 'Live matches the latest release on GitHub.'
-        : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
+        : pendingReleaseTag
+          ? `${pendingReleaseTag} is still publishing on GitHub. Latest published release is ${latestReleaseTag}.`
+          : `Live is ${DEPLOYMENT_VERSION}. Latest release on GitHub is ${latestReleaseTag}.`
       : 'Live shows the running container. The latest release is unavailable right now.';
 
   const handlePreviewImageError = useCallback(async (url: string) => {
@@ -5276,7 +5282,7 @@ export default function Home() {
                 releaseTag={latestReleaseTag}
                 releaseUrl={latestReleaseUrl}
                 loading={isLatestReleaseLoading}
-                pendingTag=""
+                pendingTag={pendingReleaseTag}
               />
             </div>
             <div className="erdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
@@ -5313,7 +5319,7 @@ export default function Home() {
                   releaseTag={latestReleaseTag}
                   releaseUrl={latestReleaseUrl}
                   loading={isLatestReleaseLoading}
-                  pendingTag=""
+                  pendingTag={pendingReleaseTag}
                 />
               </div>
               <div className="erdb-mobile-nav-links">
@@ -5350,7 +5356,7 @@ export default function Home() {
                     releaseTag={latestReleaseTag}
                     releaseUrl={latestReleaseUrl}
                     loading={isLatestReleaseLoading}
-                    pendingTag=""
+                    pendingTag={pendingReleaseTag}
                   />
                 </div>
               </div>

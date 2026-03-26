@@ -13,6 +13,7 @@ export type LatestGitHubRelease = {
   tagName: string;
   url: string;
   publishedAt: string | null;
+  pendingTagName: string | null;
 };
 
 export type GitHubReleaseApiResponse = {
@@ -228,6 +229,39 @@ export function selectPreviousPublishedReleaseTag(
   return publishedTags[currentIndex - 1] || '';
 }
 
+export function selectPendingReleaseTag(
+  payload: GitHubReleaseApiResponse[],
+  latestPublishedTagName: string | null
+): string | null {
+  if (!latestPublishedTagName) {
+    return null;
+  }
+
+  const unpublished = payload.filter(
+    (entry) =>
+      !isPublishedReleaseEntry(entry) &&
+      Boolean(normalizeReleaseTag(entry.tag_name))
+  );
+
+  if (!unpublished.length) {
+    return null;
+  }
+
+  const ahead = unpublished
+    .map((entry) => normalizeReleaseTag(entry.tag_name))
+    .filter((tag): tag is string => Boolean(tag))
+    .filter(
+      (tag) => compareReleaseTagVersions(tag, latestPublishedTagName) > 0
+    );
+
+  if (!ahead.length) {
+    return null;
+  }
+
+  ahead.sort(compareReleaseTagVersions);
+  return ahead.at(-1) ?? null;
+}
+
 function selectLatestPublishedRelease(
   payload: GitHubReleaseApiResponse[],
   repository: GitHubRepository
@@ -246,6 +280,7 @@ function selectLatestPublishedRelease(
         ? release.html_url.trim()
         : `${repository.htmlUrl}/releases/tag/${tagName}`,
     publishedAt: normalizePublishedAt(release.published_at),
+    pendingTagName: selectPendingReleaseTag(payload, tagName),
   };
 }
 
