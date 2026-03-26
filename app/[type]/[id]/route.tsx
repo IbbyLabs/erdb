@@ -9202,7 +9202,7 @@ export async function handleImageRequest(
           );
           if (logoFallbackImagesResponse.ok) {
             const logoFallbackImages = logoFallbackImagesResponse.data || {};
-            const logoFallback = pickByLanguageWithFallback(
+            const logoFallback = pickByLanguageWithFallback<{ iso_639_1?: string | null; file_path?: string | null }>(
               logoFallbackImages.logos || [],
               requestedImageLang,
               FALLBACK_IMAGE_LANGUAGE
