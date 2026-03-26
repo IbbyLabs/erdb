@@ -107,6 +107,7 @@ import {
   type GenreBadgeStyle,
 } from '@/lib/genreBadge';
 import { normalizeErdbId } from '@/lib/addonProxy';
+import { resolveOverlayAutoScale } from '@/lib/overlayScale';
 import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
 import {
   MEDIA_FEATURE_BADGE_ORDER,
@@ -3922,8 +3923,9 @@ const DEFAULT_BADGE_MIN_METRICS: BadgeLayoutMetrics = {
 const scaleBadgeMetrics = (
   metrics: BadgeLayoutMetrics,
   scalePercent: number = DEFAULT_BADGE_SCALE_PERCENT,
+  autoScaleRatio = 1,
 ): BadgeLayoutMetrics => {
-  const ratio = Math.max(0.7, scalePercent / 100);
+  const ratio = Math.max(0.7, scalePercent / 100) * Math.max(0.75, autoScaleRatio);
   return {
     iconSize: Math.max(18, Math.round(metrics.iconSize * ratio)),
     fontSize: Math.max(14, Math.round(metrics.fontSize * ratio)),
@@ -7160,6 +7162,7 @@ export async function handleImageRequest(
       : imageType === 'backdrop'
         ? backdropGenreBadgeScale
         : logoGenreBadgeScale;
+  let effectiveGenreBadgeScale = genreBadgeScale;
   const globalRatings =
     request.nextUrl.searchParams.get('ratings') ??
     request.nextUrl.searchParams.get('order') ??
@@ -7847,7 +7850,7 @@ export async function handleImageRequest(
           mode: genreBadgeMode,
           style: genreBadgeStyle,
           position: genreBadgePosition,
-          scalePercent: genreBadgeScale,
+          scalePercent: effectiveGenreBadgeScale,
         };
       };
       let primaryGenreFamily = resolvePrimaryGenreFamily(
@@ -8633,6 +8636,15 @@ export async function handleImageRequest(
             Math.round(LOGO_BASE_HEIGHT * (rawFallbackLogoAspectRatio || LOGO_FALLBACK_ASPECT_RATIO))
           )
         );
+      }
+      const overlayAutoScale = resolveOverlayAutoScale({
+        imageType,
+        outputWidth,
+        outputHeight,
+      });
+      effectiveGenreBadgeScale = Math.max(1, Math.round(genreBadgeScale * overlayAutoScale));
+      if (genreBadge) {
+        genreBadge = { ...genreBadge, scalePercent: effectiveGenreBadgeScale };
       }
 
       if (!useRawKitsuFallback && detailsBundlePromise) {
@@ -9560,6 +9572,10 @@ export async function handleImageRequest(
         badgePaddingX = 32;
         badgeGap = 18;
       }
+      badgeTopOffset = Math.max(12, Math.round(badgeTopOffset * overlayAutoScale));
+      badgeBottomOffset = Math.max(12, Math.round(badgeBottomOffset * overlayAutoScale));
+      posterRowHorizontalInset = Math.max(12, Math.round(posterRowHorizontalInset * overlayAutoScale));
+      posterMinMetrics = scaleBadgeMetrics(posterMinMetrics, DEFAULT_BADGE_SCALE_PERCENT, overlayAutoScale);
       const ratingBadgeScalePercent =
         imageType === 'poster'
           ? posterRatingBadgeScale
@@ -9570,6 +9586,14 @@ export async function handleImageRequest(
         imageType === 'backdrop'
           ? backdropQualityBadgeScale
           : posterQualityBadgeScale;
+      const effectiveRatingBadgeScalePercent = Math.max(
+        1,
+        Math.round(ratingBadgeScalePercent * overlayAutoScale),
+      );
+      const effectiveQualityBadgeScalePercent = Math.max(
+        1,
+        Math.round(qualityBadgeScalePercent * overlayAutoScale),
+      );
       const scaledBadgeMetrics = scaleBadgeMetrics(
         {
           iconSize: badgeIconSize,
@@ -9578,7 +9602,7 @@ export async function handleImageRequest(
           paddingY: badgePaddingY,
           gap: badgeGap,
         },
-        ratingBadgeScalePercent,
+        effectiveRatingBadgeScalePercent,
       );
       badgeIconSize = scaledBadgeMetrics.iconSize;
       badgeFontSize = scaledBadgeMetrics.fontSize;
@@ -9888,7 +9912,7 @@ export async function handleImageRequest(
           qualityBadgesSide,
           posterQualityBadgesPosition,
           qualityBadgesStyle,
-          qualityBadgeScalePercent,
+          qualityBadgeScalePercent: effectiveQualityBadgeScalePercent,
           posterRatingsLayout: effectivePosterRatingsLayout,
           posterRatingsMaxPerSide: effectivePosterRatingsMaxPerSide,
           posterEdgeOffset,
