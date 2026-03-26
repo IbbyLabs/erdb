@@ -164,6 +164,11 @@ import {
   KITSU_API_BASE_URL,
   TMDB_API_BASE_URL,
 } from '@/lib/serviceBaseUrls';
+import {
+  buildIncludeImageLanguage,
+  normalizeImageLanguage,
+  pickByLanguageWithFallback,
+} from '@/lib/imageLanguage';
 
 export const runtime = 'nodejs';
 
@@ -2907,43 +2912,6 @@ const fetchJsonCached = async (
 
     return payload;
   });
-};
-
-const normalizeImageLanguage = (value?: string | null) => {
-  if (!value) return null;
-  const normalized = value.toLowerCase();
-  if (normalized === 'us' || normalized === 'en-us') return 'en';
-  if (normalized.includes('-')) return normalized.split('-')[0];
-  return normalized;
-};
-
-const buildIncludeImageLanguage = (preferredLang: string, fallbackLang: string) => {
-  const languages = [normalizeImageLanguage(preferredLang), normalizeImageLanguage(fallbackLang), 'null']
-    .filter(Boolean) as string[];
-  return [...new Set(languages)].join(',');
-};
-
-const pickByLanguageWithFallback = (
-  items: any[] = [],
-  preferredLang: string,
-  fallbackLang: string
-) => {
-  if (!Array.isArray(items) || items.length === 0) return null;
-
-  const preferred = normalizeImageLanguage(preferredLang);
-  const fallback = normalizeImageLanguage(fallbackLang);
-
-  if (preferred) {
-    const preferredItem = items.find((item: any) => normalizeImageLanguage(item?.iso_639_1) === preferred);
-    if (preferredItem) return preferredItem;
-  }
-
-  if (fallback) {
-    const fallbackItem = items.find((item: any) => normalizeImageLanguage(item?.iso_639_1) === fallback);
-    if (fallbackItem) return fallbackItem;
-  }
-
-  return items[0];
 };
 
 const pickDeterministicIndexBySeed = (seed: string, length: number) => {
