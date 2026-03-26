@@ -34,6 +34,8 @@ type FinalImageRenderSeedInput = {
   aggregateRatingSource: string;
   aggregateAccentMode: string;
   aggregateAccentColor: string | null;
+  aggregateCriticsAccentColor: string | null;
+  aggregateAudienceAccentColor: string | null;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
   artworkSelectionSeed: string;
@@ -48,6 +50,7 @@ type FinalImageRenderSeedInput = {
   genreBadgeStyle: string;
   genreBadgePosition: string;
   genreBadgeScale: number;
+  genreBadgeAnimeGrouping: string;
   logoBackground: string;
   effectiveRatingPreferences: string[];
   providerAppearanceOverrides: RatingProviderAppearanceOverrides;
@@ -108,6 +111,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateRatingSource,
     input.aggregateAccentMode,
     input.aggregateAccentColor || '-',
+    input.aggregateCriticsAccentColor || '-',
+    input.aggregateAudienceAccentColor || '-',
     String(input.aggregateAccentBarOffset),
     input.aggregateAccentBarVisible ? 'on' : 'off',
     input.artworkSelectionSeed || '-',
@@ -118,6 +123,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeStyle : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgePosition : '-',
     String(input.genreBadgeScale),
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeAnimeGrouping : '-',
     isLogo ? input.logoBackground : '-',
     input.effectiveRatingPreferences.join(',') || 'none',
     providerAppearanceKey,
@@ -126,6 +132,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.fanartClientKeyHash || '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v5',
+    'v6',
   ].join('|');
 };

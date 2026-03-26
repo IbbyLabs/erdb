@@ -21,6 +21,8 @@ const ERDB_OPTIONAL_PARAMS = [
   'genreBadgeStyle',
   'genreBadgePosition',
   'genreBadgeScale',
+  'genreBadgeAnimeGrouping',
+  'genreBadgeAnimeGrouping',
   'streamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
@@ -30,6 +32,8 @@ const ERDB_OPTIONAL_PARAMS = [
   'aggregateRatingSource',
   'aggregateAccentMode',
   'aggregateAccentColor',
+  'aggregateCriticsAccentColor',
+  'aggregateAudienceAccentColor',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
   'posterRatingsLayout',
@@ -48,6 +52,7 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'posterGenreBadgeStyle',
     'posterGenreBadgePosition',
     'posterGenreBadgeScale',
+    'posterGenreBadgeAnimeGrouping',
     'posterStreamBadges',
     'posterQualityBadges',
     'posterQualityBadgesStyle',
@@ -64,6 +69,7 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'backdropGenreBadgeStyle',
     'backdropGenreBadgePosition',
     'backdropGenreBadgeScale',
+    'backdropGenreBadgeAnimeGrouping',
     'backdropStreamBadges',
     'backdropQualityBadges',
     'backdropQualityBadgesStyle',
@@ -80,6 +86,7 @@ const ERDB_TYPE_OPTIONAL_PARAMS = {
     'logoGenreBadgeStyle',
     'logoGenreBadgePosition',
     'logoGenreBadgeScale',
+    'logoGenreBadgeAnimeGrouping',
     'logoRatings',
     'logoRatingsMax',
     'logoBackground',
@@ -179,6 +186,7 @@ export type ProxyConfig = {
   genreBadgeStyle?: string;
   genreBadgePosition?: string;
   genreBadgeScale?: string;
+  genreBadgeAnimeGrouping?: string;
   posterGenreBadge?: string;
   backdropGenreBadge?: string;
   logoGenreBadge?: string;
@@ -191,6 +199,9 @@ export type ProxyConfig = {
   posterGenreBadgeScale?: string;
   backdropGenreBadgeScale?: string;
   logoGenreBadgeScale?: string;
+  posterGenreBadgeAnimeGrouping?: string;
+  backdropGenreBadgeAnimeGrouping?: string;
+  logoGenreBadgeAnimeGrouping?: string;
   streamBadges?: string;
   posterStreamBadges?: string;
   backdropStreamBadges?: string;
@@ -202,6 +213,8 @@ export type ProxyConfig = {
   aggregateRatingSource?: string;
   aggregateAccentMode?: string;
   aggregateAccentColor?: string;
+  aggregateCriticsAccentColor?: string;
+  aggregateAudienceAccentColor?: string;
   aggregateAccentBarOffset?: string;
   aggregateAccentBarVisible?: string;
   posterQualityBadges?: string;
@@ -286,6 +299,9 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'posterGenreBadgeScale',
   'backdropGenreBadgeScale',
   'logoGenreBadgeScale',
+  'posterGenreBadgeAnimeGrouping',
+  'backdropGenreBadgeAnimeGrouping',
+  'logoGenreBadgeAnimeGrouping',
   'streamBadges',
   'posterStreamBadges',
   'backdropStreamBadges',
@@ -297,6 +313,8 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'aggregateRatingSource',
   'aggregateAccentMode',
   'aggregateAccentColor',
+  'aggregateCriticsAccentColor',
+  'aggregateAudienceAccentColor',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
   'posterQualityBadges',

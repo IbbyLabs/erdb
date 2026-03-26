@@ -149,6 +149,7 @@ import {
 } from '@/lib/metadataTranslation';
 import { compareReleaseTagVersions } from '@/lib/githubRelease';
 import {
+  DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   DEFAULT_GENRE_BADGE_MODE,
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
@@ -157,6 +158,7 @@ import {
   GENRE_BADGE_POSITION_OPTIONS,
   GENRE_BADGE_PREVIEW_SAMPLES,
   GENRE_BADGE_STYLE_OPTIONS,
+  type GenreBadgeAnimeGrouping,
   type GenreBadgeMode,
   type GenreBadgePosition,
   type GenreBadgeStyle,
@@ -288,28 +290,47 @@ const QUALITY_BADGE_POSITION_OPTIONS: Array<{ id: PosterQualityBadgesPosition; l
   { id: 'right', label: 'Right' },
 ];
 const SAMPLE_GENRE_BADGE_MODE_DEFAULT: GenreBadgeMode = 'both';
+const GENRE_BADGE_ANIME_GROUPING_OPTIONS: Array<{
+  id: GenreBadgeAnimeGrouping;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'split',
+    label: 'Split',
+    description: 'Keep anime and animation as separate badge families.',
+  },
+  {
+    id: 'animation',
+    label: 'Group as Animation',
+    description: 'Render anime content under the animation badge family.',
+  },
+];
 const GENRE_BADGE_QUERY_KEYS = {
   poster: {
     mode: 'posterGenreBadge',
     style: 'posterGenreBadgeStyle',
     position: 'posterGenreBadgePosition',
     scale: 'posterGenreBadgeScale',
+    animeGrouping: 'posterGenreBadgeAnimeGrouping',
   },
   backdrop: {
     mode: 'backdropGenreBadge',
     style: 'backdropGenreBadgeStyle',
     position: 'backdropGenreBadgePosition',
     scale: 'backdropGenreBadgeScale',
+    animeGrouping: 'backdropGenreBadgeAnimeGrouping',
   },
   logo: {
     mode: 'logoGenreBadge',
     style: 'logoGenreBadgeStyle',
     position: 'logoGenreBadgePosition',
     scale: 'logoGenreBadgeScale',
+    animeGrouping: 'logoGenreBadgeAnimeGrouping',
   },
 } as const satisfies Record<
   ProxyType,
-  { mode: string; style: string; position: string; scale: string }
+  { mode: string; style: string; position: string; scale: string; animeGrouping: string }
 >;
 type RecentCommitType = 'feat' | 'fix' | 'chore' | 'refactor' | 'perf' | 'test' | 'build' | 'ci' | 'style' | 'revert';
 type RecentCommit = {
@@ -410,6 +431,7 @@ const appendGenreBadgeQueryParams = ({
   style,
   position,
   scale,
+  animeGrouping,
 }: {
   query: URLSearchParams;
   type: ProxyType;
@@ -417,6 +439,7 @@ const appendGenreBadgeQueryParams = ({
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
+  animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const keys = GENRE_BADGE_QUERY_KEYS[type];
   if (mode !== DEFAULT_GENRE_BADGE_MODE) {
@@ -431,6 +454,9 @@ const appendGenreBadgeQueryParams = ({
   if (scale !== DEFAULT_BADGE_SCALE_PERCENT) {
     query.set(keys.scale, String(scale));
   }
+  if (animeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
+    query.set(keys.animeGrouping, animeGrouping);
+  }
 };
 
 const buildGenreSamplePreviewUrl = ({
@@ -442,6 +468,7 @@ const buildGenreSamplePreviewUrl = ({
   style,
   position,
   scale,
+  animeGrouping,
 }: {
   baseUrl: string;
   erdbKey: string;
@@ -451,6 +478,7 @@ const buildGenreSamplePreviewUrl = ({
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
+  animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const normalizedErdbKey = erdbKey.trim();
@@ -473,6 +501,7 @@ const buildGenreSamplePreviewUrl = ({
     style,
     position,
     scale,
+    animeGrouping,
   });
   for (const [key, value] of Object.entries(sample.params)) {
     query.set(key, value);
@@ -1050,6 +1079,12 @@ export default function Home() {
     useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [logoGenreBadgeScale, setLogoGenreBadgeScale] =
     useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [posterGenreBadgeAnimeGrouping, setPosterGenreBadgeAnimeGrouping] =
+    useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
+  const [backdropGenreBadgeAnimeGrouping, setBackdropGenreBadgeAnimeGrouping] =
+    useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
+  const [logoGenreBadgeAnimeGrouping, setLogoGenreBadgeAnimeGrouping] =
+    useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
   const [backdropRatingRows, setBackdropRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -1112,6 +1147,10 @@ export default function Home() {
     useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
   const [aggregateAccentColor, setAggregateAccentColor] =
     useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
+  const [aggregateCriticsAccentColor, setAggregateCriticsAccentColor] =
+    useState<string>(AGGREGATE_SOURCE_ACCENT_BY_ID.critics);
+  const [aggregateAudienceAccentColor, setAggregateAudienceAccentColor] =
+    useState<string>(AGGREGATE_SOURCE_ACCENT_BY_ID.audience);
   const [aggregateAccentBarOffset, setAggregateAccentBarOffset] =
     useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
   const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
@@ -1304,6 +1343,18 @@ export default function Home() {
       : previewType === 'backdrop'
         ? setBackdropGenreBadgeScale
         : setLogoGenreBadgeScale;
+  const activeGenreBadgeAnimeGrouping =
+    previewType === 'poster'
+      ? posterGenreBadgeAnimeGrouping
+      : previewType === 'backdrop'
+        ? backdropGenreBadgeAnimeGrouping
+        : logoGenreBadgeAnimeGrouping;
+  const setActiveGenreBadgeAnimeGrouping =
+    previewType === 'poster'
+      ? setPosterGenreBadgeAnimeGrouping
+      : previewType === 'backdrop'
+        ? setBackdropGenreBadgeAnimeGrouping
+        : setLogoGenreBadgeAnimeGrouping;
   const isNavSticky = useCallback(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1618,6 +1669,9 @@ export default function Home() {
       setPosterGenreBadgeScale(normalized.settings.posterGenreBadgeScale);
       setBackdropGenreBadgeScale(normalized.settings.backdropGenreBadgeScale);
       setLogoGenreBadgeScale(normalized.settings.logoGenreBadgeScale);
+      setPosterGenreBadgeAnimeGrouping(normalized.settings.posterGenreBadgeAnimeGrouping);
+      setBackdropGenreBadgeAnimeGrouping(normalized.settings.backdropGenreBadgeAnimeGrouping);
+      setLogoGenreBadgeAnimeGrouping(normalized.settings.logoGenreBadgeAnimeGrouping);
       setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
       setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
       setLogoRatingRows(enabledOrderedToRows(normalized.settings.logoRatingPreferences));
@@ -1658,6 +1712,8 @@ export default function Home() {
       setLogoAggregateRatingSource(normalized.settings.logoAggregateRatingSource);
       setAggregateAccentMode(normalized.settings.aggregateAccentMode);
       setAggregateAccentColor(normalized.settings.aggregateAccentColor);
+      setAggregateCriticsAccentColor(normalized.settings.aggregateCriticsAccentColor);
+      setAggregateAudienceAccentColor(normalized.settings.aggregateAudienceAccentColor);
       setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
@@ -1702,6 +1758,9 @@ export default function Home() {
         posterGenreBadgeScale,
         backdropGenreBadgeScale,
         logoGenreBadgeScale,
+        posterGenreBadgeAnimeGrouping,
+        backdropGenreBadgeAnimeGrouping,
+        logoGenreBadgeAnimeGrouping,
         posterRatingPreferences,
         backdropRatingPreferences,
         logoRatingPreferences,
@@ -1742,6 +1801,8 @@ export default function Home() {
         logoAggregateRatingSource,
         aggregateAccentMode,
         aggregateAccentColor,
+        aggregateCriticsAccentColor,
+        aggregateAudienceAccentColor,
         aggregateAccentBarOffset,
         aggregateAccentBarVisible,
         posterRatingsMaxPerSide,
@@ -1782,6 +1843,9 @@ export default function Home() {
       posterGenreBadgeScale,
       backdropGenreBadgeScale,
       logoGenreBadgeScale,
+      posterGenreBadgeAnimeGrouping,
+      backdropGenreBadgeAnimeGrouping,
+      logoGenreBadgeAnimeGrouping,
       posterRatingPreferences,
       backdropRatingPreferences,
       logoRatingPreferences,
@@ -1822,6 +1886,8 @@ export default function Home() {
       logoAggregateRatingSource,
       aggregateAccentMode,
       aggregateAccentColor,
+      aggregateCriticsAccentColor,
+      aggregateAudienceAccentColor,
       aggregateAccentBarOffset,
       aggregateAccentBarVisible,
       posterRatingsMaxPerSide,
@@ -2041,6 +2107,7 @@ export default function Home() {
       style: activeGenreBadgeStyle,
       position: activeGenreBadgePosition,
       scale: activeGenreBadgeScale,
+      animeGrouping: activeGenreBadgeAnimeGrouping,
     });
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
       query.set(
@@ -2074,6 +2141,20 @@ export default function Home() {
         aggregateAccentColor !== DEFAULT_AGGREGATE_ACCENT_COLOR)
     ) {
       query.set('aggregateAccentColor', aggregateAccentColor);
+    }
+    if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (aggregateAccentMode === 'custom' ||
+        aggregateCriticsAccentColor !== AGGREGATE_SOURCE_ACCENT_BY_ID.critics)
+    ) {
+      query.set('aggregateCriticsAccentColor', aggregateCriticsAccentColor);
+    }
+    if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (aggregateAccentMode === 'custom' ||
+        aggregateAudienceAccentColor !== AGGREGATE_SOURCE_ACCENT_BY_ID.audience)
+    ) {
+      query.set('aggregateAudienceAccentColor', aggregateAudienceAccentColor);
     }
     if (
       usesAggregateAccentBar(ratingPresentationForType) &&
@@ -2241,6 +2322,7 @@ export default function Home() {
     activeGenreBadgeStyle,
     activeGenreBadgePosition,
     activeGenreBadgeScale,
+    activeGenreBadgeAnimeGrouping,
     posterRatingPreferences,
     backdropRatingPreferences,
     logoRatingPreferences,
@@ -2280,6 +2362,8 @@ export default function Home() {
     logoAggregateRatingSource,
     aggregateAccentMode,
     aggregateAccentColor,
+    aggregateCriticsAccentColor,
+    aggregateAudienceAccentColor,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
     logoRatingsMax,
@@ -2325,6 +2409,12 @@ export default function Home() {
               : sample.previewType === 'backdrop'
                 ? backdropGenreBadgeScale
                 : logoGenreBadgeScale,
+          animeGrouping:
+            sample.previewType === 'poster'
+              ? posterGenreBadgeAnimeGrouping
+              : sample.previewType === 'backdrop'
+                ? backdropGenreBadgeAnimeGrouping
+                : logoGenreBadgeAnimeGrouping,
         }),
       })),
     [
@@ -2341,6 +2431,9 @@ export default function Home() {
       posterGenreBadgeScale,
       backdropGenreBadgeScale,
       logoGenreBadgeScale,
+      posterGenreBadgeAnimeGrouping,
+      backdropGenreBadgeAnimeGrouping,
+      logoGenreBadgeAnimeGrouping,
     ]
   );
   const latestReleaseMatchesDeployment = latestReleaseTag && latestReleaseTag === DEPLOYMENT_VERSION;
@@ -2878,7 +2971,9 @@ export default function Home() {
   const usesAggregatePresentation = usesAggregateRatingPresentation(activeRatingPresentation);
   const activeAggregateAccent =
     aggregateAccentMode === 'custom'
-      ? aggregateAccentColor
+      ? usesDualAggregateRatingPresentation(activeRatingPresentation)
+        ? aggregateCriticsAccentColor
+        : aggregateAccentColor
       : usesDualAggregateRatingPresentation(activeRatingPresentation)
         ? AGGREGATE_SOURCE_ACCENT_BY_ID.critics
         : AGGREGATE_SOURCE_ACCENT_BY_ID[activeAggregateRatingSource];
@@ -3625,6 +3720,42 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+              {usesDualAggregateRatingPresentation(activeRatingPresentation) && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                      Critics Accent
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aggregateCriticsAccentColor}
+                        onChange={(event) => setAggregateCriticsAccentColor(event.target.value)}
+                        className="h-10 w-14 rounded-md border border-white/10 bg-black"
+                      />
+                      <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+                        {aggregateCriticsAccentColor}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                      Audience Accent
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aggregateAudienceAccentColor}
+                        onChange={(event) => setAggregateAudienceAccentColor(event.target.value)}
+                        className="h-10 w-14 rounded-md border border-white/10 bg-black"
+                      />
+                      <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+                        {aggregateAudienceAccentColor}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
           {showsAggregateAccentBarOffset && (
@@ -3759,6 +3890,23 @@ export default function Home() {
                   onClick={() => setActiveGenreBadgePosition(option.id)}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                     activeGenreBadgePosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Anime Grouping</span>
+            <div className="erdb-toggle-group flex flex-wrap gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              {GENRE_BADGE_ANIME_GROUPING_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveGenreBadgeAnimeGrouping(option.id)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    activeGenreBadgeAnimeGrouping === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
                   }`}
                   title={option.description}
                 >

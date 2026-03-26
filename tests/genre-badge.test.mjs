@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   DEFAULT_GENRE_BADGE_MODE,
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
   GENRE_BADGE_FAMILY_META,
   GENRE_BADGE_PREVIEW_SAMPLES,
+  normalizeGenreBadgeAnimeGrouping,
   normalizeGenreBadgeMode,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
@@ -26,6 +28,12 @@ test('genre badge style and position normalization accept friendly variants', ()
   assert.equal(normalizeGenreBadgePosition('top center'), 'topCenter');
   assert.equal(normalizeGenreBadgePosition('bottom-right'), 'bottomRight');
   assert.equal(normalizeGenreBadgePosition('unknown'), DEFAULT_GENRE_BADGE_POSITION);
+  assert.equal(normalizeGenreBadgeAnimeGrouping('animation'), 'animation');
+  assert.equal(normalizeGenreBadgeAnimeGrouping('grouped'), 'animation');
+  assert.equal(
+    normalizeGenreBadgeAnimeGrouping('unknown'),
+    DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  );
 });
 
 test('genre badge family resolution keeps anime and animation separate', () => {
@@ -71,6 +79,51 @@ test('genre badge family resolution keeps anime and animation separate', () => {
     })?.id,
     'anime',
   );
+
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Animation' }, { name: 'Action' }],
+      isAnimeContent: true,
+      animeGrouping: 'animation',
+    })?.id,
+    'animation',
+  );
+});
+
+test('default anime grouping remains split when users do not opt in', () => {
+  const animeCases = [
+    {
+      genres: [{ name: 'Animation' }, { name: 'Action' }],
+      genreIds: [16, 28],
+      isAnimeContent: true,
+    },
+    {
+      genres: [{ name: 'Animation' }, { name: 'Fantasy' }],
+      genreIds: [16, 14],
+      isAnimeContent: true,
+    },
+  ];
+
+  for (const input of animeCases) {
+    assert.equal(resolveGenreBadgeFamily(input)?.id, 'anime');
+  }
+
+  const animationCases = [
+    {
+      genres: [{ name: 'Animation' }, { name: 'Adventure' }],
+      genreIds: [16, 12],
+      isAnimeContent: false,
+    },
+    {
+      genres: [{ name: 'Animated' }, { name: 'Comedy' }],
+      genreIds: [35],
+      isAnimeContent: false,
+    },
+  ];
+
+  for (const input of animationCases) {
+    assert.equal(resolveGenreBadgeFamily(input)?.id, 'animation');
+  }
 });
 
 test('genre preview samples cover movie, show, anime and all output types', () => {

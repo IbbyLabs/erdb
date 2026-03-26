@@ -94,9 +94,11 @@ import {
   type RatingValueMode,
 } from '@/lib/ratingDisplay';
 import {
+  DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   DEFAULT_GENRE_BADGE_MODE,
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
+  normalizeGenreBadgeAnimeGrouping,
   normalizeGenreBadgeMode,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
@@ -7059,6 +7061,10 @@ export async function handleImageRequest(
     request.nextUrl.searchParams.get('genreBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
   );
+  const globalGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
+    request.nextUrl.searchParams.get('genreBadgeAnimeGrouping'),
+    DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  );
   const posterGenreBadgeMode = normalizeGenreBadgeMode(
     request.nextUrl.searchParams.get('posterGenreBadge') ??
       request.nextUrl.searchParams.get('genreBadge'),
@@ -7119,6 +7125,21 @@ export async function handleImageRequest(
       request.nextUrl.searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
   );
+  const posterGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
+    request.nextUrl.searchParams.get('posterGenreBadgeAnimeGrouping') ??
+      request.nextUrl.searchParams.get('genreBadgeAnimeGrouping'),
+    globalGenreBadgeAnimeGrouping,
+  );
+  const backdropGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
+    request.nextUrl.searchParams.get('backdropGenreBadgeAnimeGrouping') ??
+      request.nextUrl.searchParams.get('genreBadgeAnimeGrouping'),
+    globalGenreBadgeAnimeGrouping,
+  );
+  const logoGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
+    request.nextUrl.searchParams.get('logoGenreBadgeAnimeGrouping') ??
+      request.nextUrl.searchParams.get('genreBadgeAnimeGrouping'),
+    globalGenreBadgeAnimeGrouping,
+  );
   const genreBadgeMode =
     imageType === 'poster'
       ? posterGenreBadgeMode
@@ -7143,6 +7164,12 @@ export async function handleImageRequest(
       : imageType === 'backdrop'
         ? backdropGenreBadgeScale
         : logoGenreBadgeScale;
+  const genreBadgeAnimeGrouping =
+    imageType === 'poster'
+      ? posterGenreBadgeAnimeGrouping
+      : imageType === 'backdrop'
+        ? backdropGenreBadgeAnimeGrouping
+        : logoGenreBadgeAnimeGrouping;
   let effectiveGenreBadgeScale = genreBadgeScale;
   const globalRatings =
     request.nextUrl.searchParams.get('ratings') ??
@@ -7195,6 +7222,10 @@ export async function handleImageRequest(
   );
   const aggregateAccentColor =
     normalizeHexColor(request.nextUrl.searchParams.get('aggregateAccentColor')) || null;
+  const aggregateCriticsAccentColor =
+    normalizeHexColor(request.nextUrl.searchParams.get('aggregateCriticsAccentColor')) || null;
+  const aggregateAudienceAccentColor =
+    normalizeHexColor(request.nextUrl.searchParams.get('aggregateAudienceAccentColor')) || null;
   const aggregateAccentBarOffset = normalizeAggregateAccentBarOffset(
     request.nextUrl.searchParams.get('aggregateAccentBarOffset'),
     DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
@@ -7564,6 +7595,8 @@ export async function handleImageRequest(
     aggregateRatingSource,
     aggregateAccentMode,
     aggregateAccentColor,
+    aggregateCriticsAccentColor,
+    aggregateAudienceAccentColor,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
     artworkSelectionSeed,
@@ -7578,6 +7611,7 @@ export async function handleImageRequest(
     genreBadgeStyle,
     genreBadgePosition,
     genreBadgeScale,
+    genreBadgeAnimeGrouping,
     logoBackground,
     effectiveRatingPreferences,
     providerAppearanceOverrides,
@@ -7825,6 +7859,7 @@ export async function handleImageRequest(
           genres,
           genreIds,
           isAnimeContent,
+          animeGrouping: genreBadgeAnimeGrouping,
         });
       const buildResolvedGenreBadge = (
         family: ReturnType<typeof resolvePrimaryGenreFamily>,
@@ -9429,8 +9464,16 @@ export async function handleImageRequest(
         debugResolvedRatingProviders = [...ratingBadgeByProvider.keys()];
       }
       const resolveAggregateAccentColor = (source: AggregateRatingSource) => {
-        if (aggregateAccentMode === 'custom' && aggregateAccentColor) {
-          return aggregateAccentColor;
+        if (aggregateAccentMode === 'custom') {
+          if (source === 'critics' && aggregateCriticsAccentColor) {
+            return aggregateCriticsAccentColor;
+          }
+          if (source === 'audience' && aggregateAudienceAccentColor) {
+            return aggregateAudienceAccentColor;
+          }
+          if (aggregateAccentColor) {
+            return aggregateAccentColor;
+          }
         }
         if (aggregateAccentMode === 'genre' && primaryGenreFamily?.accentColor) {
           return primaryGenreFamily.accentColor;

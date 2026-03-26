@@ -20,6 +20,7 @@ import {
   type RatingStyle,
 } from './ratingStyle.ts';
 import {
+  AGGREGATE_RATING_SOURCE_ACCENTS,
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   DEFAULT_AGGREGATE_ACCENT_COLOR,
   DEFAULT_AGGREGATE_ACCENT_MODE,
@@ -50,12 +51,15 @@ import {
   type MetadataTranslationMode,
 } from './metadataTranslation.ts';
 import {
+  DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   DEFAULT_GENRE_BADGE_MODE,
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
+  normalizeGenreBadgeAnimeGrouping,
   normalizeGenreBadgeMode,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
+  type GenreBadgeAnimeGrouping,
   type GenreBadgeMode,
   type GenreBadgePosition,
   type GenreBadgeStyle,
@@ -125,6 +129,9 @@ export type SharedErdbSettings = {
   posterGenreBadgeScale: number;
   backdropGenreBadgeScale: number;
   logoGenreBadgeScale: number;
+  posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
   logoRatingPreferences: RatingPreference[];
@@ -162,6 +169,8 @@ export type SharedErdbSettings = {
   logoAggregateRatingSource: AggregateRatingSource;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
+  aggregateCriticsAccentColor: string;
+  aggregateAudienceAccentColor: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
   posterRatingsMaxPerSide: number | null;
@@ -244,6 +253,9 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   posterGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   logoGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  posterGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  backdropGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  logoGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -281,6 +293,8 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   logoAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   aggregateAccentMode: DEFAULT_AGGREGATE_ACCENT_MODE,
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
+  aggregateCriticsAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.critics,
+  aggregateAudienceAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.audience,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   aggregateAccentBarVisible: true,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
@@ -594,6 +608,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     candidate.genreBadgeScale,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
+  const globalGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
+    candidate.genreBadgeAnimeGrouping,
+    DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  );
 
   return {
     erdbKey: typeof candidate.erdbKey === 'string' ? candidate.erdbKey.trim() : defaults.erdbKey,
@@ -665,6 +683,18 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     logoGenreBadgeScale: normalizeBadgeScalePercent(
       candidate.logoGenreBadgeScale,
       globalGenreBadgeScale,
+    ),
+    posterGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
+      candidate.posterGenreBadgeAnimeGrouping,
+      globalGenreBadgeAnimeGrouping,
+    ),
+    backdropGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
+      candidate.backdropGenreBadgeAnimeGrouping,
+      globalGenreBadgeAnimeGrouping,
+    ),
+    logoGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
+      candidate.logoGenreBadgeAnimeGrouping,
+      globalGenreBadgeAnimeGrouping,
     ),
     posterRatingPreferences: normalizeRatingPreferencesList(
       candidate.posterRatingPreferences ?? candidate.posterRatings ?? sharedRatingsInput,
@@ -764,6 +794,14 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     ),
     aggregateAccentColor:
       normalizeHexColor(candidate.aggregateAccentColor) || defaults.aggregateAccentColor,
+    aggregateCriticsAccentColor:
+      normalizeHexColor(candidate.aggregateCriticsAccentColor) ||
+      normalizeHexColor(candidate.compactCriticsAccentColor) ||
+      defaults.aggregateCriticsAccentColor,
+    aggregateAudienceAccentColor:
+      normalizeHexColor(candidate.aggregateAudienceAccentColor) ||
+      normalizeHexColor(candidate.compactAudienceAccentColor) ||
+      defaults.aggregateAudienceAccentColor,
     aggregateAccentBarOffset: normalizeAggregateAccentBarOffset(
       candidate.aggregateAccentBarOffset,
       defaults.aggregateAccentBarOffset,
@@ -999,6 +1037,21 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     },
     defaultValue: DEFAULT_BADGE_SCALE_PERCENT,
   });
+  appendSharedOrPerTypePayload({
+    payload,
+    globalKey: 'genreBadgeAnimeGrouping',
+    perTypeKeys: {
+      poster: 'posterGenreBadgeAnimeGrouping',
+      backdrop: 'backdropGenreBadgeAnimeGrouping',
+      logo: 'logoGenreBadgeAnimeGrouping',
+    },
+    values: {
+      poster: settings.posterGenreBadgeAnimeGrouping,
+      backdrop: settings.backdropGenreBadgeAnimeGrouping,
+      logo: settings.logoGenreBadgeAnimeGrouping,
+    },
+    defaultValue: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  });
   if (settings.posterStreamBadges !== 'auto') {
     payload.posterStreamBadges = settings.posterStreamBadges;
   }
@@ -1125,6 +1178,18 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     settings.aggregateAccentColor !== DEFAULT_AGGREGATE_ACCENT_COLOR
   ) {
     payload.aggregateAccentColor = settings.aggregateAccentColor;
+  }
+  if (
+    settings.aggregateAccentMode === 'custom' ||
+    settings.aggregateCriticsAccentColor !== AGGREGATE_RATING_SOURCE_ACCENTS.critics
+  ) {
+    payload.aggregateCriticsAccentColor = settings.aggregateCriticsAccentColor;
+  }
+  if (
+    settings.aggregateAccentMode === 'custom' ||
+    settings.aggregateAudienceAccentColor !== AGGREGATE_RATING_SOURCE_ACCENTS.audience
+  ) {
+    payload.aggregateAudienceAccentColor = settings.aggregateAudienceAccentColor;
   }
   if (settings.aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET) {
     payload.aggregateAccentBarOffset = settings.aggregateAccentBarOffset;

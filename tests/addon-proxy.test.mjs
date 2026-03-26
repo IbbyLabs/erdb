@@ -33,6 +33,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
       logoAggregateRatingSource: 'audience',
       aggregateAccentMode: 'custom',
       aggregateAccentColor: '#22d3ee',
+      aggregateCriticsAccentColor: '#f97316',
+      aggregateAudienceAccentColor: '#22c55e',
       aggregateAccentBarOffset: -3,
       logoRatingsMax: 3,
       logoBackground: 'dark',
@@ -87,6 +89,8 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   assert.equal(rewrittenLogoUrl.searchParams.get('logoAggregateRatingSource'), 'audience');
   assert.equal(rewrittenLogoUrl.searchParams.get('aggregateAccentMode'), 'custom');
   assert.equal(rewrittenLogoUrl.searchParams.get('aggregateAccentColor'), '#22d3ee');
+  assert.equal(rewrittenLogoUrl.searchParams.get('aggregateCriticsAccentColor'), '#f97316');
+  assert.equal(rewrittenLogoUrl.searchParams.get('aggregateAudienceAccentColor'), '#22c55e');
   assert.equal(rewrittenLogoUrl.searchParams.get('aggregateAccentBarOffset'), '-3');
   assert.equal(rewrittenLogoUrl.searchParams.get('logoRatingBadgeScale'), '94');
   assert.equal(

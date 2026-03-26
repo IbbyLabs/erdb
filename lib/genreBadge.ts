@@ -7,6 +7,7 @@ export type GenreBadgePosition =
   | 'bottomLeft'
   | 'bottomCenter'
   | 'bottomRight';
+export type GenreBadgeAnimeGrouping = 'split' | 'animation';
 export type GenreBadgeFamilyId =
   | 'anime'
   | 'animation'
@@ -41,6 +42,7 @@ export type GenreBadgePreviewSample = {
 export const DEFAULT_GENRE_BADGE_MODE: GenreBadgeMode = 'off';
 export const DEFAULT_GENRE_BADGE_STYLE: GenreBadgeStyle = 'glass';
 export const DEFAULT_GENRE_BADGE_POSITION: GenreBadgePosition = 'topLeft';
+export const DEFAULT_GENRE_BADGE_ANIME_GROUPING: GenreBadgeAnimeGrouping = 'split';
 
 export const GENRE_BADGE_MODE_OPTIONS: Array<{
   id: GenreBadgeMode;
@@ -134,6 +136,10 @@ const GENRE_BADGE_MODE_SET = new Set<GenreBadgeMode>(
 const GENRE_BADGE_STYLE_SET = new Set<GenreBadgeStyle>(
   GENRE_BADGE_STYLE_OPTIONS.map((option) => option.id),
 );
+const GENRE_BADGE_ANIME_GROUPING_SET = new Set<GenreBadgeAnimeGrouping>([
+  'split',
+  'animation',
+]);
 
 export const normalizeGenreBadgeMode = (
   value: unknown,
@@ -178,6 +184,19 @@ export const normalizeGenreBadgePosition = (
     default:
       return fallback;
   }
+};
+
+export const normalizeGenreBadgeAnimeGrouping = (
+  value: unknown,
+  fallback: GenreBadgeAnimeGrouping = DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+): GenreBadgeAnimeGrouping => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (normalized === 'grouped' || normalized === 'group' || normalized === 'animationonly') {
+    return 'animation';
+  }
+  return GENRE_BADGE_ANIME_GROUPING_SET.has(normalized as GenreBadgeAnimeGrouping)
+    ? (normalized as GenreBadgeAnimeGrouping)
+    : fallback;
 };
 
 export const GENRE_BADGE_FAMILY_META: Record<GenreBadgeFamilyId, GenreBadgeFamilyMeta> = {
@@ -317,12 +336,17 @@ export const resolveGenreBadgeFamily = (input: {
   genres?: Array<{ id?: number | null; name?: string | null } | string | null | undefined> | null;
   genreIds?: Array<number | string | null | undefined> | null;
   isAnimeContent?: boolean;
+  animeGrouping?: GenreBadgeAnimeGrouping;
 }): GenreBadgeFamilyMeta | null => {
   const genres = Array.isArray(input.genres) ? input.genres : [];
   const genreNames = collectGenreNames(genres);
   const genreIds = collectGenreIds(genres, Array.isArray(input.genreIds) ? input.genreIds : []);
+  const animeGrouping = normalizeGenreBadgeAnimeGrouping(input.animeGrouping);
 
   if (input.isAnimeContent) {
+    if (animeGrouping === 'animation') {
+      return GENRE_BADGE_FAMILY_META.animation;
+    }
     return GENRE_BADGE_FAMILY_META.anime;
   }
 

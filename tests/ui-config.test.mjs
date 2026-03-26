@@ -50,10 +50,12 @@ const buildSampleSettings = () =>
       posterGenreBadgeStyle: 'square',
       posterGenreBadgePosition: 'bottomRight',
       posterGenreBadgeScale: 118,
+      posterGenreBadgeAnimeGrouping: 'split',
       logoGenreBadgeMode: 'text',
       logoGenreBadgeStyle: 'plain',
       logoGenreBadgePosition: 'bottomCenter',
       logoGenreBadgeScale: 112,
+      logoGenreBadgeAnimeGrouping: 'split',
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
       logoRatingPreferences: [],
@@ -89,6 +91,8 @@ const buildSampleSettings = () =>
       logoAggregateRatingSource: 'overall',
       aggregateAccentMode: 'custom',
       aggregateAccentColor: '#22d3ee',
+      aggregateCriticsAccentColor: '#f97316',
+      aggregateAudienceAccentColor: '#22c55e',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
       posterRatingsMaxPerSide: 7,
@@ -138,6 +142,9 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterGenreBadgeScale: 118,
       backdropGenreBadgeScale: 100,
       logoGenreBadgeScale: 112,
+      posterGenreBadgeAnimeGrouping: 'split',
+      backdropGenreBadgeAnimeGrouping: 'split',
+      logoGenreBadgeAnimeGrouping: 'split',
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
       logoRatingPreferences: [],
@@ -186,6 +193,8 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       logoAggregateRatingSource: 'overall',
       aggregateAccentMode: 'custom',
       aggregateAccentColor: '#22d3ee',
+      aggregateCriticsAccentColor: '#f97316',
+      aggregateAudienceAccentColor: '#22c55e',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
       posterRatingsMaxPerSide: 7,
@@ -395,6 +404,8 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropAggregateRatingSource: 'critics',
     aggregateAccentMode: 'custom',
     aggregateAccentColor: '#22d3ee',
+    aggregateCriticsAccentColor: '#f97316',
+    aggregateAudienceAccentColor: '#22c55e',
     aggregateAccentBarOffset: -3,
     posterImageSize: 'large',
     posterImageText: 'clean',
@@ -467,6 +478,8 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     backdropAggregateRatingSource: 'critics',
     aggregateAccentMode: 'custom',
     aggregateAccentColor: '#22d3ee',
+    aggregateCriticsAccentColor: '#f97316',
+    aggregateAudienceAccentColor: '#22c55e',
     aggregateAccentBarOffset: '-3',
     posterImageSize: 'large',
     posterImageText: 'clean',
@@ -523,6 +536,8 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.match(value, /lang=fr/);
     assert.match(value, /aggregateAccentMode=custom/);
     assert.match(value, /aggregateAccentColor=%2322d3ee/);
+    assert.match(value, /aggregateCriticsAccentColor=%23f97316/);
+    assert.match(value, /aggregateAudienceAccentColor=%2322c55e/);
     assert.match(value, /aggregateAccentBarOffset=-3/);
     assert.match(
       value,
