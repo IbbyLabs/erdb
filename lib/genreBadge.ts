@@ -343,13 +343,16 @@ export const resolveGenreBadgeFamily = (input: {
   const genreIds = collectGenreIds(genres, Array.isArray(input.genreIds) ? input.genreIds : []);
   const animeGrouping = normalizeGenreBadgeAnimeGrouping(input.animeGrouping);
 
+
+  if (hasGenreName(genreNames, 'anime')) {
+    return GENRE_BADGE_FAMILY_META.anime;
+  }
   if (input.isAnimeContent) {
     if (animeGrouping === 'animation') {
       return GENRE_BADGE_FAMILY_META.animation;
     }
     return GENRE_BADGE_FAMILY_META.anime;
   }
-
   if (hasGenreName(genreNames, 'animation', 'animated') || hasGenreId(genreIds, TMDB_GENRE.animation)) {
     return GENRE_BADGE_FAMILY_META.animation;
   }
