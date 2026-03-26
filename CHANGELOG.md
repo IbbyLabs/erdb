@@ -119,6 +119,17 @@
 
 <a id="v2-40-0"></a>
 
+<a id="v2-40-1"></a>
+
+## [v2.40.1] - 26/03/2026
+
+### Fixed
+* scale overlays with output dimensions
+
+### Documentation
+* add lightweight delivery plan to roadmap
+* add user roadmap section to README
+
 ## [v2.40.0] - 26/03/2026
 
 ### Added
