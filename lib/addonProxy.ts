@@ -106,15 +106,15 @@ const ERDB_OPTIONAL_PARAM_KEYS = [
 
 const ERDB_TYPE_STYLE_PARAMS = {
   poster: {
-    ratingStyle: ['posterRatingStyle', 'ratingStyle'],
+    ratingStyle: ['posterRatingStyle', 'posterRatingsStyle', 'ratingStyle', 'ratingsStyle'],
     imageText: ['posterImageText', 'imageText'],
   },
   backdrop: {
-    ratingStyle: ['backdropRatingStyle', 'ratingStyle'],
+    ratingStyle: ['backdropRatingStyle', 'backdropRatingsStyle', 'ratingStyle', 'ratingsStyle'],
     imageText: ['backdropImageText', 'imageText'],
   },
   logo: {
-    ratingStyle: ['logoRatingStyle', 'ratingStyle'],
+    ratingStyle: ['logoRatingStyle', 'logoRatingsStyle', 'ratingStyle', 'ratingsStyle'],
     imageText: [],
   },
 } as const;
@@ -135,12 +135,16 @@ export const ERDB_RESERVED_PARAMS = new Set<string>([
   'backdropEnabled',
   'logoEnabled',
   'ratingStyle',
+  'ratingsStyle',
   'ratingPresentation',
   'aggregateRatingSource',
   'imageText',
   'posterRatingStyle',
+  'posterRatingsStyle',
   'backdropRatingStyle',
+  'backdropRatingsStyle',
   'logoRatingStyle',
+  'logoRatingsStyle',
   'posterRatingPresentation',
   'backdropRatingPresentation',
   'logoRatingPresentation',
@@ -233,8 +237,11 @@ export type ProxyConfig = {
   backdropRatingBadgeScale?: string;
   logoRatingBadgeScale?: string;
   posterRatingStyle?: string;
+  posterRatingsStyle?: string;
   backdropRatingStyle?: string;
+  backdropRatingsStyle?: string;
   logoRatingStyle?: string;
+  logoRatingsStyle?: string;
   posterRatingPresentation?: string;
   backdropRatingPresentation?: string;
   logoRatingPresentation?: string;

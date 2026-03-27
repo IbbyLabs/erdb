@@ -293,6 +293,27 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingBadgeScale'), '109');
 });
 
+test('proxy image rewrites accept plural rating style aliases for backdrops', () => {
+  const rewrittenBackdropUrl = new URL(
+    buildErdbImageUrl({
+      reqUrl: new URL(
+        'https://proxy.example.net/proxy/example/meta/series/example.json?backdropRatingsStyle=square'
+      ),
+      imageType: 'backdrop',
+      erdbId: 'tt0133093',
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    }),
+  );
+
+  assert.equal(rewrittenBackdropUrl.searchParams.get('ratingStyle'), 'square');
+});
+
 test('proxy image rewrites preserve cinemeta as a poster artwork source', () => {
   const uiConfig = normalizeSavedUiConfig({
     settings: {

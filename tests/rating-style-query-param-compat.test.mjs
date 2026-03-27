@@ -10,10 +10,10 @@ const routeSource = readFileSync(
 test('rating style query param precedence keeps canonical and legacy aliases', () => {
   assert.match(
     routeSource,
-    /const typeRatingStyleParam =\s*imageType === 'poster'\s*\?\s*request\.nextUrl\.searchParams\.get\('posterRatingStyle'\)\s*:\s*imageType === 'backdrop'\s*\?\s*request\.nextUrl\.searchParams\.get\('backdropRatingStyle'\)\s*:\s*imageType === 'logo'\s*\?\s*request\.nextUrl\.searchParams\.get\('logoRatingStyle'\)\s*:\s*null;/,
+    /const typeRatingStyleParam =\s*imageType === 'poster'\s*\?\s*request\.nextUrl\.searchParams\.get\('posterRatingStyle'\)\s*\?\?\s*request\.nextUrl\.searchParams\.get\('posterRatingsStyle'\)\s*:\s*imageType === 'backdrop'\s*\?\s*request\.nextUrl\.searchParams\.get\('backdropRatingStyle'\)\s*\?\?\s*request\.nextUrl\.searchParams\.get\('backdropRatingsStyle'\)\s*:\s*imageType === 'logo'\s*\?\s*request\.nextUrl\.searchParams\.get\('logoRatingStyle'\)\s*\?\?\s*request\.nextUrl\.searchParams\.get\('logoRatingsStyle'\)\s*:\s*null;/,
   );
   assert.match(
     routeSource,
-    /searchParams\.get\('ratingStyle'\)\s*\|\|\s*typeRatingStyleParam\s*\|\|\s*request\.nextUrl\.searchParams\.get\('style'\)/,
+    /searchParams\.get\('ratingStyle'\)\s*\|\|\s*searchParams\.get\('ratingsStyle'\)\s*\|\|\s*typeRatingStyleParam\s*\|\|\s*request\.nextUrl\.searchParams\.get\('style'\)/,
   );
 });

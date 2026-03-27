@@ -7460,14 +7460,18 @@ export async function handleImageRequest(
         : [];
   const typeRatingStyleParam =
     imageType === 'poster'
-      ? request.nextUrl.searchParams.get('posterRatingStyle')
+      ? request.nextUrl.searchParams.get('posterRatingStyle') ??
+        request.nextUrl.searchParams.get('posterRatingsStyle')
       : imageType === 'backdrop'
-        ? request.nextUrl.searchParams.get('backdropRatingStyle')
+        ? request.nextUrl.searchParams.get('backdropRatingStyle') ??
+          request.nextUrl.searchParams.get('backdropRatingsStyle')
         : imageType === 'logo'
-          ? request.nextUrl.searchParams.get('logoRatingStyle')
+          ? request.nextUrl.searchParams.get('logoRatingStyle') ??
+            request.nextUrl.searchParams.get('logoRatingsStyle')
           : null;
   const ratingStyleParam =
     request.nextUrl.searchParams.get('ratingStyle') ||
+    request.nextUrl.searchParams.get('ratingsStyle') ||
     typeRatingStyleParam ||
     request.nextUrl.searchParams.get('style');
   const ratingStyle = ratingStyleParam
