@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { decodeProxyConfig, normalizeErdbId } from '../lib/addonProxy.ts';
+import {
+  decodeProxyConfig,
+  hasExplicitTmdbMediaTypeInErdbId,
+  isAmbiguousTmdbErdbId,
+  normalizeErdbId,
+} from '../lib/addonProxy.ts';
 import { encodeRatingProviderAppearanceOverrides } from '../lib/badgeCustomization.ts';
 import {
   buildAiometadataUrlPatterns,
@@ -778,4 +783,15 @@ test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites'
   assert.equal(normalizeErdbId('imdb:tt0944947:2', 'series'), 'imdb:tt0944947:2');
   assert.equal(normalizeErdbId('tmdb:tv:1399:2', 'series'), 'tmdb:tv:1399:2');
   assert.equal(normalizeErdbId('tmdb:series:1399:2', 'series'), 'tmdb:tv:1399:2');
+});
+
+test('TMDB ID scope helpers detect explicit and ambiguous forms', () => {
+  assert.equal(hasExplicitTmdbMediaTypeInErdbId('tmdb:movie:603'), true);
+  assert.equal(hasExplicitTmdbMediaTypeInErdbId('tmdb:tv:1399:2'), true);
+  assert.equal(hasExplicitTmdbMediaTypeInErdbId('tmdb:603'), false);
+
+  assert.equal(isAmbiguousTmdbErdbId('tmdb:603'), true);
+  assert.equal(isAmbiguousTmdbErdbId('tmdb:movie:603'), false);
+  assert.equal(isAmbiguousTmdbErdbId('tmdb:tv:1399'), false);
+  assert.equal(isAmbiguousTmdbErdbId('tt0133093'), false);
 });

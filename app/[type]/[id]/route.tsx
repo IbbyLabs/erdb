@@ -108,7 +108,7 @@ import {
   type GenreBadgePosition,
   type GenreBadgeStyle,
 } from '@/lib/genreBadge';
-import { normalizeErdbId } from '@/lib/addonProxy';
+import { isAmbiguousTmdbErdbId, normalizeErdbId } from '@/lib/addonProxy';
 import { resolveOverlayAutoScale } from '@/lib/overlayScale';
 import { assertSafeUpstreamUrl } from '@/lib/networkSecurity';
 import { buildTorrentioStreamUrl, resolveTorrentioBaseUrl } from '@/lib/torrentioUrl';
@@ -7107,6 +7107,9 @@ export async function handleImageRequest(
       ? `${requestedIdSourceCandidate}:${cleanIdWithoutExtension}`
       : cleanIdWithoutExtension;
   const cleanId = normalizeErdbId(requestedCleanId) ?? requestedCleanId;
+  if ((imageType === 'backdrop' || imageType === 'logo') && isAmbiguousTmdbErdbId(cleanId)) {
+    return respond('TMDB media type is required for backdrop and logo IDs. Use tmdb:movie:{tmdb_id} or tmdb:tv:{tmdb_id}.', 400);
+  }
   const requestedFallbackUrl = request.nextUrl.searchParams.get('fallbackUrl');
 
   const lang = request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;

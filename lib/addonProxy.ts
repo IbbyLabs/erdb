@@ -454,6 +454,30 @@ export const normalizeErdbId = (
   return null;
 };
 
+export const hasExplicitTmdbMediaTypeInErdbId = (
+  rawId: string | undefined | null,
+  mediaType?: string | null,
+) => {
+  const normalized = normalizeErdbId(rawId, mediaType);
+  if (!normalized) return false;
+  const parts = normalized.split(':');
+  const prefix = (parts[0] || '').trim().toLowerCase();
+  const type = (parts[1] || '').trim().toLowerCase();
+  return prefix === 'tmdb' && (type === 'movie' || type === 'tv') && parts.length >= 3;
+};
+
+export const isAmbiguousTmdbErdbId = (
+  rawId: string | undefined | null,
+  mediaType?: string | null,
+) => {
+  const normalized = normalizeErdbId(rawId, mediaType);
+  if (!normalized) return false;
+  const parts = normalized.split(':');
+  const prefix = (parts[0] || '').trim().toLowerCase();
+  if (prefix !== 'tmdb') return false;
+  return !hasExplicitTmdbMediaTypeInErdbId(normalized);
+};
+
 const toOptionalString = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
     const trimmed = value.trim();

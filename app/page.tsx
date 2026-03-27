@@ -530,7 +530,7 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | none
-id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL, TVDB, AniDB | none
+id (path)               | IMDb (tt...), TMDB (tmdb:movie:id / tmdb:tv:id, poster also accepts tmdb:id), Kitsu (kitsu:id), AniList, MAL, TVDB, AniDB | none
 ratings                 | ${RATING_PROVIDER_DOC_VALUES} (global fallback)                      | all
 posterRatings           | ${RATING_PROVIDER_DOC_VALUES} (poster only)                          | all
 backdropRatings         | ${RATING_PROVIDER_DOC_VALUES} (backdrop only)                        | all
@@ -599,7 +599,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | service fallback when available
 simklClientId           | Your SIMKL client_id for direct SIMKL ratings                        | none
 
-TMDB NOTE: Always prefer tmdb:movie:id or tmdb:tv:id. Using bare tmdb:id can collide between movie and tv.
+TMDB NOTE: Backdrop and logo require tmdb:movie:id or tmdb:tv:id. Bare tmdb:id remains poster only for compatibility.
 ACCESS NOTE: erdbKey is optional and only needed when the ERDB host protects render and proxy routes with ERDB_REQUEST_API_KEY or ERDB_REQUEST_API_KEYS.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
