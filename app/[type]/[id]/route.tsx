@@ -7426,8 +7426,18 @@ export async function handleImageRequest(
       : imageType === 'backdrop'
         ? backdropQualityBadgePreferences
         : [];
+  const typeRatingStyleParam =
+    imageType === 'poster'
+      ? request.nextUrl.searchParams.get('posterRatingStyle')
+      : imageType === 'backdrop'
+        ? request.nextUrl.searchParams.get('backdropRatingStyle')
+        : imageType === 'logo'
+          ? request.nextUrl.searchParams.get('logoRatingStyle')
+          : null;
   const ratingStyleParam =
-    request.nextUrl.searchParams.get('ratingStyle') || request.nextUrl.searchParams.get('style');
+    request.nextUrl.searchParams.get('ratingStyle') ||
+    typeRatingStyleParam ||
+    request.nextUrl.searchParams.get('style');
   const ratingStyle = ratingStyleParam
     ? normalizeRatingStyle(ratingStyleParam)
     : type === 'logo'

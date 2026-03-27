@@ -1176,7 +1176,7 @@ posterQualityBadgesPosition | auto, left, right (poster top/bottom only)        
 qualityBadgesStyle      | glass, square, plain, media (global fallback)                        | glass
 posterQualityBadgesStyle| glass, square, plain, media (poster only)                            | glass
 backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
-ratingStyle             | glass, square, plain                                                 | glass
+ratingStyle (posterRatingStyle, backdropRatingStyle, logoRatingStyle aliases, style legacy) | glass, square, plain | glass
 imageText               | original, clean, alternative                                         | original
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1-20)                                                        | auto

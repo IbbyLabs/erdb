@@ -568,7 +568,7 @@ aggregateAccentColor    | Hex color (used when aggregateAccentMode=custom)      
 aggregateAccentBarOffset| Number (-12 to 12, aggregate badges only)                            | 0
 aggregateAccentBarVisible| true, false (aggregate compact/labeled accent line toggle)         | true
 ratingValueMode         | ${RATING_VALUE_MODE_DOC_VALUES}                                      | native
-ratingStyle             | glass, square, plain, stacked                                        | glass
+ratingStyle (posterRatingStyle, backdropRatingStyle, logoRatingStyle aliases, style legacy) | glass, square, plain, stacked | glass
 genreBadgeScale         | Number (${GENRE_BADGE_SCALE_DOC_COPY}) (global fallback)            | 100
 posterGenreBadgeScale   | Number (${GENRE_BADGE_SCALE_DOC_COPY})                              | 100
 backdropGenreBadgeScale | Number (${GENRE_BADGE_SCALE_DOC_COPY})                              | 100
