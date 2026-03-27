@@ -27,8 +27,10 @@ type FinalImageRenderSeedInput = {
   qualityBadgesStyle: string;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: string[];
-  sideRatingsPosition: string;
-  sideRatingsOffset: number;
+  posterSideRatingsPosition: string;
+  posterSideRatingsOffset: number;
+  backdropSideRatingsPosition: string;
+  backdropSideRatingsOffset: number;
   ratingPresentation: string;
   blockbusterDensity: string;
   aggregateRatingSource: string;
@@ -104,8 +106,10 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isLogo ? '-' : input.qualityBadgePreferences.join(',') || 'none',
     isLogo ? '-' : String(qualityBadgeScale),
     isBackdrop ? input.backdropRatingsLayout : '-',
-    isPoster || isBackdrop ? input.sideRatingsPosition : '-',
-    isPoster || isBackdrop ? String(input.sideRatingsOffset) : '-',
+    isPoster ? input.posterSideRatingsPosition : '-',
+    isPoster ? String(input.posterSideRatingsOffset) : '-',
+    isBackdrop ? input.backdropSideRatingsPosition : '-',
+    isBackdrop ? String(input.backdropSideRatingsOffset) : '-',
     input.ratingPresentation,
     isPoster ? input.blockbusterDensity : '-',
     input.aggregateRatingSource,

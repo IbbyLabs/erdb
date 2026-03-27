@@ -43,6 +43,10 @@ const ERDB_OPTIONAL_PARAMS = [
   'posterEdgeOffset',
   'backdropRatingsLayout',
   'backdropRatingsMax',
+  'posterSideRatingsPosition',
+  'posterSideRatingsOffset',
+  'backdropSideRatingsPosition',
+  'backdropSideRatingsOffset',
   'sideRatingsPosition',
   'sideRatingsOffset',
 ];
@@ -263,6 +267,10 @@ export type ProxyConfig = {
   posterEdgeOffset?: string;
   backdropRatingsLayout?: string;
   backdropRatingsMax?: string;
+  posterSideRatingsPosition?: string;
+  posterSideRatingsOffset?: string;
+  backdropSideRatingsPosition?: string;
+  backdropSideRatingsOffset?: string;
   sideRatingsPosition?: string;
   sideRatingsOffset?: string;
   logoRatingsMax?: string;
@@ -368,6 +376,10 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'posterEdgeOffset',
   'backdropRatingsLayout',
   'backdropRatingsMax',
+  'posterSideRatingsPosition',
+  'posterSideRatingsOffset',
+  'backdropSideRatingsPosition',
+  'backdropSideRatingsOffset',
   'sideRatingsPosition',
   'sideRatingsOffset',
   'logoRatingsMax',

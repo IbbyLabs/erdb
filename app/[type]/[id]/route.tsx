@@ -7383,14 +7383,32 @@ export async function handleImageRequest(
   const backdropRatingsLayout = normalizeBackdropRatingLayout(
     request.nextUrl.searchParams.get('backdropRatingsLayout') ?? rpdbRatingBarAliases.backdropRatingsLayout,
   );
-  const sideRatingsPosition = normalizeSideRatingPosition(
-    request.nextUrl.searchParams.get('sideRatingsPosition') ?? rpdbRatingBarAliases.sideRatingsPosition,
+  // Extract per-type side placement fields with fallback to legacy shared fields
+  const posterSideRatingsPosition = normalizeSideRatingPosition(
+    request.nextUrl.searchParams.get('posterSideRatingsPosition') ??
+    request.nextUrl.searchParams.get('sideRatingsPosition') ??
+    rpdbRatingBarAliases.sideRatingsPosition,
     DEFAULT_SIDE_RATING_POSITION
   );
-  const sideRatingsOffset = normalizeSideRatingOffset(
+  const posterSideRatingsOffset = normalizeSideRatingOffset(
+    request.nextUrl.searchParams.get('posterSideRatingsOffset') ??
     request.nextUrl.searchParams.get('sideRatingsOffset'),
     DEFAULT_SIDE_RATING_OFFSET
   );
+  const backdropSideRatingsPosition = normalizeSideRatingPosition(
+    request.nextUrl.searchParams.get('backdropSideRatingsPosition') ??
+    request.nextUrl.searchParams.get('sideRatingsPosition') ??
+    rpdbRatingBarAliases.sideRatingsPosition,
+    DEFAULT_SIDE_RATING_POSITION
+  );
+  const backdropSideRatingsOffset = normalizeSideRatingOffset(
+    request.nextUrl.searchParams.get('backdropSideRatingsOffset') ??
+    request.nextUrl.searchParams.get('sideRatingsOffset'),
+    DEFAULT_SIDE_RATING_OFFSET
+  );
+  // Type-scoped selection
+  const sideRatingsPosition = imageType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
+  const sideRatingsOffset = imageType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
   const globalStreamBadgesSetting = normalizeStreamBadgesSetting(request.nextUrl.searchParams.get('streamBadges'));
   const posterStreamBadgesSetting = normalizeStreamBadgesSetting(
     request.nextUrl.searchParams.get('posterStreamBadges') || request.nextUrl.searchParams.get('streamBadges')
@@ -7689,8 +7707,10 @@ export async function handleImageRequest(
     qualityBadgesStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
-    sideRatingsPosition,
-    sideRatingsOffset,
+    posterSideRatingsPosition,
+    posterSideRatingsOffset,
+    backdropSideRatingsPosition,
+    backdropSideRatingsOffset,
     ratingPresentation,
     blockbusterDensity,
     aggregateRatingSource,

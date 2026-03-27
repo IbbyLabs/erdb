@@ -157,8 +157,8 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
       posterQualityBadgeScale: 118,
       posterRatingBadgeScale: 111,
       posterEdgeOffset: 22,
-      sideRatingsPosition: 'custom',
-      sideRatingsOffset: 68,
+      posterSideRatingsPosition: 'custom',
+      posterSideRatingsOffset: 68,
       ratingProviderAppearanceOverrides: providerAppearance,
     },
     proxy: {
@@ -203,8 +203,10 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   assert.equal(rewrittenPosterUrl.searchParams.get('posterQualityBadgeScale'), '118');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatingBadgeScale'), '111');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterEdgeOffset'), '22');
-  assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsPosition'), 'custom');
-  assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsOffset'), '68');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterSideRatingsPosition'), 'custom');
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterSideRatingsOffset'), '68');
+  assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsPosition'), null);
+  assert.equal(rewrittenPosterUrl.searchParams.get('sideRatingsOffset'), null);
   assert.equal(
     rewrittenPosterUrl.searchParams.get('providerAppearance'),
     encodeRatingProviderAppearanceOverrides(providerAppearance),
@@ -248,7 +250,10 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
       backdropGenreBadgePosition: 'bottomLeft',
       backdropGenreBadgeScale: 122,
       backdropRatingPreferences: ['imdb'],
+      backdropRatingsLayout: 'right-vertical',
       backdropRatingsMax: 2,
+      backdropSideRatingsPosition: 'custom',
+      backdropSideRatingsOffset: 41,
       backdropQualityBadgePreferences: ['4k', 'dolbyatmos'],
       backdropQualityBadgesStyle: 'media',
       backdropQualityBadgeScale: 106,
@@ -286,7 +291,12 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropGenreBadgePosition'), 'bottomLeft');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropGenreBadgeScale'), '122');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropArtworkSource'), 'fanart');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingsLayout'), 'right-vertical');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropRatingsMax'), '2');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropSideRatingsPosition'), 'custom');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('backdropSideRatingsOffset'), '41');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('sideRatingsPosition'), null);
+  assert.equal(rewrittenBackdropUrl.searchParams.get('sideRatingsOffset'), null);
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadges'), '4k,dolbyatmos');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadgesStyle'), 'media');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropQualityBadgeScale'), '106');

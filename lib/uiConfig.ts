@@ -179,6 +179,10 @@ export type SharedErdbSettings = {
   aggregateAccentBarVisible: boolean;
   posterRatingsMaxPerSide: number | null;
   posterEdgeOffset: number;
+  posterSideRatingsPosition: SideRatingPosition;
+  posterSideRatingsOffset: number;
+  backdropSideRatingsPosition: SideRatingPosition;
+  backdropSideRatingsOffset: number;
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   logoRatingsMax: number | null;
@@ -305,6 +309,10 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   aggregateAccentBarVisible: true,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   posterEdgeOffset: DEFAULT_POSTER_EDGE_OFFSET,
+  posterSideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
+  posterSideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
+  backdropSideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
+  backdropSideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   sideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
   sideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   logoRatingsMax: null,
@@ -628,6 +636,10 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     candidate.genreBadgeAnimeGrouping,
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   );
+  const legacySideRatingsPosition = normalizeSideRatingPosition(
+    candidate.sideRatingsPosition ?? rpdbRatingBarAliases.sideRatingsPosition,
+  );
+  const legacySideRatingsOffset = normalizeSideRatingOffset(candidate.sideRatingsOffset);
 
   return {
     erdbKey: typeof candidate.erdbKey === 'string' ? candidate.erdbKey.trim() : defaults.erdbKey,
@@ -860,10 +872,20 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     ),
     posterRatingsMaxPerSide: normalizePosterRatingsMaxPerSide(candidate.posterRatingsMaxPerSide),
     posterEdgeOffset: normalizePosterEdgeOffset(candidate.posterEdgeOffset),
-    sideRatingsPosition: normalizeSideRatingPosition(
-      candidate.sideRatingsPosition ?? rpdbRatingBarAliases.sideRatingsPosition,
+    posterSideRatingsPosition: normalizeSideRatingPosition(
+      candidate.posterSideRatingsPosition ?? legacySideRatingsPosition,
     ),
-    sideRatingsOffset: normalizeSideRatingOffset(candidate.sideRatingsOffset),
+    posterSideRatingsOffset: normalizeSideRatingOffset(
+      candidate.posterSideRatingsOffset ?? legacySideRatingsOffset,
+    ),
+    backdropSideRatingsPosition: normalizeSideRatingPosition(
+      candidate.backdropSideRatingsPosition ?? legacySideRatingsPosition,
+    ),
+    backdropSideRatingsOffset: normalizeSideRatingOffset(
+      candidate.backdropSideRatingsOffset ?? legacySideRatingsOffset,
+    ),
+    sideRatingsPosition: legacySideRatingsPosition,
+    sideRatingsOffset: legacySideRatingsOffset,
     logoRatingsMax: normalizeOptionalBadgeCount(candidate.logoRatingsMax),
     logoBackground: normalizeLogoBackground(candidate.logoBackground, defaults.logoBackground),
     ratingProviderAppearanceOverrides: normalizeRatingProviderAppearanceOverrides(
@@ -1227,10 +1249,16 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   if (settings.posterEdgeOffset !== DEFAULT_POSTER_EDGE_OFFSET) {
     payload.posterEdgeOffset = settings.posterEdgeOffset;
   }
-  if (settings.sideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION) {
-    payload.sideRatingsPosition = settings.sideRatingsPosition;
-    if (settings.sideRatingsPosition === 'custom') {
-      payload.sideRatingsOffset = settings.sideRatingsOffset;
+  if (settings.posterSideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION) {
+    payload.posterSideRatingsPosition = settings.posterSideRatingsPosition;
+    if (settings.posterSideRatingsPosition === 'custom') {
+      payload.posterSideRatingsOffset = settings.posterSideRatingsOffset;
+    }
+  }
+  if (settings.backdropSideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION) {
+    payload.backdropSideRatingsPosition = settings.backdropSideRatingsPosition;
+    if (settings.backdropSideRatingsPosition === 'custom') {
+      payload.backdropSideRatingsOffset = settings.backdropSideRatingsOffset;
     }
   }
   if (settings.logoRatingsMax !== null) {

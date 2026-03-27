@@ -606,8 +606,10 @@ posterRatingsMaxPerSide | Number (${POSTER_RATINGS_MAX_DOC_COPY})               
 posterEdgeOffset       | Number (${POSTER_EDGE_OFFSET_DOC_COPY}, poster edge badges only)      | 0
 backdropRatingsLayout   | ${BACKDROP_LAYOUT_DOC_VALUES}                                         | center
 backdropRatingsMax      | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
-sideRatingsPosition     | ${SIDE_RATING_POSITION_DOC_VALUES}                                    | top
-sideRatingsOffset       | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
+posterSideRatingsPosition | ${SIDE_RATING_POSITION_DOC_VALUES}                                  | top
+posterSideRatingsOffset | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                  | 50
+backdropSideRatingsPosition | ${SIDE_RATING_POSITION_DOC_VALUES}                                | top
+backdropSideRatingsOffset | Number (${SIDE_RATING_OFFSET_DOC_COPY}, custom only)                | 50
 logoRatingsMax          | Number (${OPTIONAL_BADGE_MAX_DOC_COPY})                              | auto
 logoBackground          | ${LOGO_BACKGROUND_DOC_VALUES}                                         | transparent
 logoArtworkSource       | tmdb, fanart, cinemeta, random                                       | tmdb
@@ -660,12 +662,12 @@ Quality badge visibility/style/max can be set per type via cfg.posterQualityBadg
 Rating badge max and badge scale can be set per type via cfg.posterRatingsMax / cfg.backdropRatingsMax / cfg.logoRatingsMax plus cfg.posterRatingBadgeScale / cfg.backdropRatingBadgeScale / cfg.logoRatingBadgeScale. Genre badge mode/style/position/scale can be set per type via cfg.posterGenreBadge* / cfg.backdropGenreBadge* / cfg.logoGenreBadge* and fall back to the shared cfg.genreBadge* fields.
 Quality badge scale can be set per type via cfg.posterQualityBadgeScale / cfg.backdropQualityBadgeScale / cfg.logoQualityBadgeScale.
 Provider icon overrides can be shared through cfg.providerAppearance. Send base64url or raw JSON shaped like {"trakt":{"iconUrl":"https://...","accentColor":"#7c3aed","iconScalePercent":116,"stackedWidthPercent":88,"stackedSurfaceOpacityPercent":72,"stackedAccentMode":"logo","stackedLineVisible":false,"stackedLineWidthPercent":88,"stackedIconOffsetY":-6,"stackedValueOffsetY":4}}.
-Use cfg.sideRatingsPosition for poster side layouts and backdrop right vertical stacks. If cfg.sideRatingsPosition=custom, send cfg.sideRatingsOffset as a 0 to 100 vertical anchor.
+Use cfg.posterSideRatingsPosition for poster side layouts and cfg.backdropSideRatingsPosition for backdrop right vertical stacks. If either field is custom, send the matching cfg.posterSideRatingsOffset or cfg.backdropSideRatingsOffset as a 0 to 100 vertical anchor. Legacy cfg.sideRatingsPosition and cfg.sideRatingsOffset remain accepted as fallbacks.
 
 URL BUILD
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&posterGenreBadge=\${cfg.posterGenreBadge}&backdropGenreBadge=\${cfg.backdropGenreBadge}&logoGenreBadge=\${cfg.logoGenreBadge}&posterGenreBadgeStyle=\${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=\${cfg.backdropGenreBadgeStyle}&logoGenreBadgeStyle=\${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=\${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=\${cfg.backdropGenreBadgePosition}&logoGenreBadgePosition=\${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=\${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=\${cfg.backdropGenreBadgeScale}&logoGenreBadgeScale=\${cfg.logoGenreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&logoQualityBadges=\${cfg.logoQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&logoQualityBadgesStyle=\${cfg.logoQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&logoQualityBadgesMax=\${cfg.logoQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&aggregateAccentBarVisible=\${cfg.aggregateAccentBarVisible}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&logoQualityBadgeScale=\${cfg.logoQualityBadgeScale}&imageText=\${typeImageText}&posterImageSize=\${cfg.posterImageSize}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&posterEdgeOffset=\${cfg.posterEdgeOffset}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&sideRatingsPosition=\${cfg.sideRatingsPosition}&sideRatingsOffset=\${cfg.sideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?erdbKey=\${cfg.erdbKey}&tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&fanartKey=\${cfg.fanartKey}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&ratingValueMode=\${cfg.ratingValueMode}&genreBadge=\${cfg.genreBadge}&genreBadgeStyle=\${cfg.genreBadgeStyle}&genreBadgePosition=\${cfg.genreBadgePosition}&genreBadgeScale=\${cfg.genreBadgeScale}&posterGenreBadge=\${cfg.posterGenreBadge}&backdropGenreBadge=\${cfg.backdropGenreBadge}&logoGenreBadge=\${cfg.logoGenreBadge}&posterGenreBadgeStyle=\${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=\${cfg.backdropGenreBadgeStyle}&logoGenreBadgeStyle=\${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=\${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=\${cfg.backdropGenreBadgePosition}&logoGenreBadgePosition=\${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=\${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=\${cfg.backdropGenreBadgeScale}&logoGenreBadgeScale=\${cfg.logoGenreBadgeScale}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&posterQualityBadges=\${cfg.posterQualityBadges}&backdropQualityBadges=\${cfg.backdropQualityBadges}&logoQualityBadges=\${cfg.logoQualityBadges}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&logoQualityBadgesStyle=\${cfg.logoQualityBadgesStyle}&posterQualityBadgesMax=\${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=\${cfg.backdropQualityBadgesMax}&logoQualityBadgesMax=\${cfg.logoQualityBadgesMax}&providerAppearance=\${cfg.providerAppearance}&ratingPresentation=\${cfg.ratingPresentation}&aggregateRatingSource=\${cfg.aggregateRatingSource}&aggregateAccentMode=\${cfg.aggregateAccentMode}&aggregateAccentColor=\${cfg.aggregateAccentColor}&aggregateAccentBarOffset=\${cfg.aggregateAccentBarOffset}&aggregateAccentBarVisible=\${cfg.aggregateAccentBarVisible}&ratingStyle=\${typeRatingStyle}&posterRatingBadgeScale=\${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=\${cfg.backdropRatingBadgeScale}&logoRatingBadgeScale=\${cfg.logoRatingBadgeScale}&posterQualityBadgeScale=\${cfg.posterQualityBadgeScale}&backdropQualityBadgeScale=\${cfg.backdropQualityBadgeScale}&logoQualityBadgeScale=\${cfg.logoQualityBadgeScale}&imageText=\${typeImageText}&posterImageSize=\${cfg.posterImageSize}&posterArtworkSource=\${cfg.posterArtworkSource}&backdropArtworkSource=\${cfg.backdropArtworkSource}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMax=\${cfg.posterRatingsMax}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&posterEdgeOffset=\${cfg.posterEdgeOffset}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&backdropRatingsMax=\${cfg.backdropRatingsMax}&posterSideRatingsPosition=\${cfg.posterSideRatingsPosition}&posterSideRatingsOffset=\${cfg.posterSideRatingsOffset}&backdropSideRatingsPosition=\${cfg.backdropSideRatingsPosition}&backdropSideRatingsOffset=\${cfg.backdropSideRatingsOffset}&logoRatingsMax=\${cfg.logoRatingsMax}&logoBackground=\${cfg.logoBackground}&logoArtworkSource=\${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -1133,9 +1135,13 @@ export default function Home() {
   const [backdropRatingsMax, setBackdropRatingsMax] = useState<number | null>(null);
   const [posterEdgeOffset, setPosterEdgeOffset] =
     useState<number>(DEFAULT_POSTER_EDGE_OFFSET);
-  const [sideRatingsPosition, setSideRatingsPosition] =
+  const [posterSideRatingsPosition, setPosterSideRatingsPosition] =
     useState<SideRatingPosition>('top');
-  const [sideRatingsOffset, setSideRatingsOffset] =
+  const [posterSideRatingsOffset, setPosterSideRatingsOffset] =
+    useState<number>(DEFAULT_SIDE_RATING_OFFSET);
+  const [backdropSideRatingsPosition, setBackdropSideRatingsPosition] =
+    useState<SideRatingPosition>('top');
+  const [backdropSideRatingsOffset, setBackdropSideRatingsOffset] =
     useState<number>(DEFAULT_SIDE_RATING_OFFSET);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
@@ -1722,8 +1728,10 @@ export default function Home() {
       setPosterRatingsMax(normalized.settings.posterRatingsMax);
       setBackdropRatingsMax(normalized.settings.backdropRatingsMax);
       setPosterEdgeOffset(normalized.settings.posterEdgeOffset);
-      setSideRatingsPosition(normalized.settings.sideRatingsPosition);
-      setSideRatingsOffset(normalized.settings.sideRatingsOffset);
+      setPosterSideRatingsPosition(normalized.settings.posterSideRatingsPosition);
+      setPosterSideRatingsOffset(normalized.settings.posterSideRatingsOffset);
+      setBackdropSideRatingsPosition(normalized.settings.backdropSideRatingsPosition);
+      setBackdropSideRatingsOffset(normalized.settings.backdropSideRatingsOffset);
       setPosterRatingStyle(normalized.settings.posterRatingStyle);
       setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
@@ -1812,8 +1820,12 @@ export default function Home() {
         posterRatingsMax,
         backdropRatingsMax,
         posterEdgeOffset,
-        sideRatingsPosition,
-        sideRatingsOffset,
+        posterSideRatingsPosition,
+        posterSideRatingsOffset,
+        backdropSideRatingsPosition,
+        backdropSideRatingsOffset,
+        sideRatingsPosition: posterSideRatingsPosition,
+        sideRatingsOffset: posterSideRatingsOffset,
         posterRatingStyle,
         backdropRatingStyle,
         logoRatingStyle,
@@ -1898,8 +1910,10 @@ export default function Home() {
       posterRatingsMax,
       backdropRatingsMax,
       posterEdgeOffset,
-      sideRatingsPosition,
-      sideRatingsOffset,
+      posterSideRatingsPosition,
+      posterSideRatingsOffset,
+      backdropSideRatingsPosition,
+      backdropSideRatingsOffset,
       posterRatingStyle,
       backdropRatingStyle,
       logoRatingStyle,
@@ -2336,10 +2350,16 @@ export default function Home() {
       (previewType === 'backdrop' &&
         (backdropRatingsLayout === 'right-vertical' ||
           backdropRatingPresentation === 'blockbuster'));
-    if (usesVerticalSideRatings && sideRatingsPosition !== 'top') {
-      query.set('sideRatingsPosition', sideRatingsPosition);
-      if (sideRatingsPosition === 'custom') {
-        query.set('sideRatingsOffset', String(sideRatingsOffset));
+    if (usesVerticalSideRatings) {
+      const activeSidePosition = previewType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
+      const activeSideOffset = previewType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
+      if (activeSidePosition !== 'top') {
+        const positionParam = previewType === 'poster' ? 'posterSideRatingsPosition' : 'backdropSideRatingsPosition';
+        const offsetParam = previewType === 'poster' ? 'posterSideRatingsOffset' : 'backdropSideRatingsOffset';
+        query.set(positionParam, activeSidePosition);
+        if (activeSidePosition === 'custom') {
+          query.set(offsetParam, String(activeSideOffset));
+        }
       }
     }
 
@@ -2367,8 +2387,10 @@ export default function Home() {
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     posterEdgeOffset,
-    sideRatingsPosition,
-    sideRatingsOffset,
+    posterSideRatingsPosition,
+    posterSideRatingsOffset,
+    backdropSideRatingsPosition,
+    backdropSideRatingsOffset,
     activeQualityBadgesMax,
     posterQualityBadgePreferences,
     backdropQualityBadgePreferences,
@@ -2613,7 +2635,7 @@ export default function Home() {
     .join('\n\n');
   const baseStructureTemplate = useMemo(
     () =>
-      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterImageSize={posterImageSize}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&posterEdgeOffset={posterEdgeOffset}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&tmdbIdScope={tmdbIdScope}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
+      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterImageSize={posterImageSize}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&posterEdgeOffset={posterEdgeOffset}&backdropRatingsLayout={bLayout}&posterSideRatingsPosition={posterSidePos}&posterSideRatingsOffset={posterSideOffset}&backdropSideRatingsPosition={backdropSidePos}&backdropSideRatingsOffset={backdropSideOffset}&tmdbIdScope={tmdbIdScope}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
     [baseUrl],
   );
   const displayedBaseStructureTemplate = useMemo(
@@ -3036,6 +3058,14 @@ export default function Home() {
       : previewType === 'backdrop'
         ? backdropRatingsLayout === 'right-vertical' || activeRatingPresentation === 'blockbuster'
         : false;
+  const activeSideRatingsPosition =
+    previewType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
+  const activeSideRatingsOffset =
+    previewType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
+  const setActiveSideRatingsPosition =
+    previewType === 'backdrop' ? setBackdropSideRatingsPosition : setPosterSideRatingsPosition;
+  const setActiveSideRatingsOffset =
+    previewType === 'backdrop' ? setBackdropSideRatingsOffset : setPosterSideRatingsOffset;
   const styleLabel =
     previewType === 'poster'
       ? 'Poster Ratings Style'
@@ -4176,9 +4206,9 @@ export default function Home() {
               {SIDE_RATING_POSITION_OPTIONS.map((option) => (
                 <button
                   key={option.id}
-                  onClick={() => setSideRatingsPosition(option.id)}
+                  onClick={() => setActiveSideRatingsPosition(option.id)}
                   className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                    sideRatingsPosition === option.id
+                    activeSideRatingsPosition === option.id
                       ? 'border-violet-500/60 bg-zinc-800 text-white'
                       : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
                   }`}
@@ -4187,7 +4217,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            {sideRatingsPosition === 'custom' && (
+            {activeSideRatingsPosition === 'custom' && (
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                   Vertical Offset
@@ -4197,8 +4227,8 @@ export default function Home() {
                   min={0}
                   max={100}
                   step={1}
-                  value={sideRatingsOffset}
-                  onChange={(event) => setSideRatingsOffset(Number(event.target.value))}
+                  value={activeSideRatingsOffset}
+                  onChange={(event) => setActiveSideRatingsOffset(Number(event.target.value))}
                   className="h-2 w-40 accent-violet-500"
                 />
                 <input
@@ -4206,10 +4236,10 @@ export default function Home() {
                   min={0}
                   max={100}
                   step={1}
-                  value={sideRatingsOffset}
+                  value={activeSideRatingsOffset}
                   onChange={(event) => {
                     const parsed = Number(event.target.value);
-                    setSideRatingsOffset(
+                    setActiveSideRatingsOffset(
                       Number.isFinite(parsed)
                         ? Math.max(0, Math.min(100, Math.round(parsed)))
                         : DEFAULT_SIDE_RATING_OFFSET
@@ -4221,7 +4251,9 @@ export default function Home() {
               </div>
             )}
             <p className="text-[11px] leading-relaxed text-zinc-500">
-              Applies to poster side stacks and the backdrop right vertical layout, including blockbuster mode.
+              {previewType === 'backdrop'
+                ? 'Applies only to the backdrop right vertical stack, including blockbuster mode.'
+                : 'Applies only to poster side stacks, including blockbuster mode.'}
             </p>
           </div>
         )}
@@ -6376,12 +6408,22 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-500 text-xs">0</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">sideRatingsPosition</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterSideRatingsPosition</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{SIDE_RATING_POSITION_DOC_VALUES}</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">top</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">sideRatingsOffset</td>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">posterSideRatingsOffset</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">50</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropSideRatingsPosition</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">{SIDE_RATING_POSITION_DOC_VALUES}</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">top</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">backdropSideRatingsOffset</td>
                         <td className="px-5 py-2 text-zinc-400 text-xs">{SIDE_RATING_OFFSET_DOC_COPY} (custom only)</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">50</td>
                       </tr>
@@ -6488,8 +6530,8 @@ export default function Home() {
                             <div>posterRatingsLayout</div>
                             <div>posterRatingsMax</div>
                             <div>posterEdgeOffset</div>
-                            <div>sideRatingsPosition</div>
-                            <div>sideRatingsOffset</div>
+                            <div>posterSideRatingsPosition</div>
+                            <div>posterSideRatingsOffset</div>
                             <div>posterQualityBadges</div>
                             <div>posterQualityBadgesPosition</div>
                             <div>posterRatingsMaxPerSide</div>
@@ -6537,8 +6579,8 @@ export default function Home() {
                             <div>backdropGenreBadgeScale</div>
                             <div>backdropRatingsLayout</div>
                             <div>backdropRatingsMax</div>
-                            <div>sideRatingsPosition</div>
-                            <div>sideRatingsOffset</div>
+                            <div>backdropSideRatingsPosition</div>
+                            <div>backdropSideRatingsOffset</div>
                             <div>backdropQualityBadges</div>
                             <div>backdropQualityBadgesMax</div>
                             <div>backdropRatingBadgeScale</div>
@@ -6747,7 +6789,7 @@ export default function Home() {
                   <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/poster/tt0133093.jpg?ratings=imdb,tmdb&ratingStyle=plain`}</div>
 
                   <div className="text-zinc-600 font-bold mt-4">Backdrop (TMDB)</div>
-                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:movie:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}&sideRatingsPosition=middle`}</div>
+                  <div className="text-violet-200/70 truncate bg-white/5 p-3 rounded-lg border border-white/5">{`${baseUrl || 'http://localhost:3000'}/backdrop/tmdb:movie:603.jpg?ratings=mdblist&backdropRatingsLayout=${encodeURIComponent('right vertical')}&backdropSideRatingsPosition=middle`}</div>
 
                 </pre>
               </div>

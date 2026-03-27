@@ -79,6 +79,10 @@ const buildSampleSettings = () =>
       posterRatingsMax: 5,
       backdropRatingsMax: 4,
       posterEdgeOffset: 24,
+      posterSideRatingsPosition: 'custom',
+      posterSideRatingsOffset: 62,
+      backdropSideRatingsPosition: 'custom',
+      backdropSideRatingsOffset: 62,
       sideRatingsPosition: 'custom',
       sideRatingsOffset: 62,
       posterRatingStyle: 'square',
@@ -181,6 +185,10 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterRatingsMax: 5,
       backdropRatingsMax: 4,
       posterEdgeOffset: 24,
+      posterSideRatingsPosition: 'custom',
+      posterSideRatingsOffset: 62,
+      backdropSideRatingsPosition: 'custom',
+      backdropSideRatingsOffset: 62,
       sideRatingsPosition: 'custom',
       sideRatingsOffset: 62,
       posterRatingStyle: 'square',
@@ -221,6 +229,12 @@ test('workspace serialization round-trips shared settings and proxy state', () =
   assert.notEqual(configString, '');
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.tmdbIdScope, 'strict');
+  assert.equal(decodedConfig.posterSideRatingsPosition, 'custom');
+  assert.equal(decodedConfig.posterSideRatingsOffset, 62);
+  assert.equal(decodedConfig.backdropSideRatingsPosition, 'custom');
+  assert.equal(decodedConfig.backdropSideRatingsOffset, 62);
+  assert.equal('sideRatingsPosition' in decodedConfig, false);
+  assert.equal('sideRatingsOffset' in decodedConfig, false);
 });
 
 test('workspace normalization ignores legacy proxy enabled flags', () => {
@@ -430,8 +444,10 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     posterEdgeOffset: 24,
     backdropRatingsLayout: 'right-vertical',
     backdropRatingsMax: 4,
-    sideRatingsPosition: 'custom',
-    sideRatingsOffset: 62,
+    posterSideRatingsPosition: 'custom',
+    posterSideRatingsOffset: 62,
+    backdropSideRatingsPosition: 'custom',
+    backdropSideRatingsOffset: 62,
     logoRatingsMax: 4,
     logoBackground: 'dark',
     logoArtworkSource: 'fanart',
@@ -505,8 +521,10 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     posterEdgeOffset: '24',
     backdropRatingsLayout: 'right-vertical',
     backdropRatingsMax: '4',
-    sideRatingsPosition: 'custom',
-    sideRatingsOffset: '62',
+    posterSideRatingsPosition: 'custom',
+    posterSideRatingsOffset: '62',
+    backdropSideRatingsPosition: 'custom',
+    backdropSideRatingsOffset: '62',
     logoRatingsMax: '4',
     logoBackground: 'dark',
     logoArtworkSource: 'fanart',
@@ -571,6 +589,8 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.posterUrlPattern ?? '', /posterRatings=imdb%2Ctmdb/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterRatingsLayout=top-bottom/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterEdgeOffset=24/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterSideRatingsPosition=custom/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterSideRatingsOffset=62/);
   assert.match(patterns?.posterUrlPattern ?? '', /qualityBadgesSide=right/);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('logoRatings='), false);
@@ -578,6 +598,8 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatings=mdblist/);
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingsLayout=right-vertical/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropSideRatingsPosition=custom/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropSideRatingsOffset=62/);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('logoRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('qualityBadgesSide='), false);
@@ -793,6 +815,8 @@ test('workspace normalization maps RPDB order, bar position, and font scale alia
   assert.deepEqual(config.settings.logoRatingPreferences, ['imdb', 'tomatoes', 'metacriticuser']);
   assert.equal(config.settings.posterRatingsLayout, 'right');
   assert.equal(config.settings.backdropRatingsLayout, 'right-vertical');
+  assert.equal(config.settings.posterSideRatingsPosition, 'middle');
+  assert.equal(config.settings.backdropSideRatingsPosition, 'middle');
   assert.equal(config.settings.sideRatingsPosition, 'middle');
   assert.equal(config.settings.posterImageSize, '4k');
   assert.equal(config.settings.posterRatingBadgeScale, 120);
@@ -800,21 +824,57 @@ test('workspace normalization maps RPDB order, bar position, and font scale alia
   assert.equal(config.settings.logoRatingBadgeScale, 120);
 });
 
+test('workspace normalization keeps poster and backdrop side placement independent', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterSideRatingsPosition: 'custom',
+      posterSideRatingsOffset: 63,
+      backdropSideRatingsPosition: 'bottom',
+      backdropSideRatingsOffset: 17,
+    },
+  });
+
+  assert.equal(config.settings.posterSideRatingsPosition, 'custom');
+  assert.equal(config.settings.posterSideRatingsOffset, 63);
+  assert.equal(config.settings.backdropSideRatingsPosition, 'bottom');
+  assert.equal(config.settings.backdropSideRatingsOffset, 17);
+});
+
+test('workspace normalization backfills per-type side placement from legacy shared fields', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      sideRatingsPosition: 'custom',
+      sideRatingsOffset: 63,
+    },
+  });
+
+  assert.equal(config.settings.posterSideRatingsPosition, 'custom');
+  assert.equal(config.settings.posterSideRatingsOffset, 63);
+  assert.equal(config.settings.backdropSideRatingsPosition, 'custom');
+  assert.equal(config.settings.backdropSideRatingsOffset, 63);
+  assert.equal(config.settings.sideRatingsPosition, 'custom');
+  assert.equal(config.settings.sideRatingsOffset, 63);
+});
+
 test('workspace normalization keeps explicit ERDB settings over RPDB aliases', () => {
   const config = normalizeSavedUiConfig({
     settings: {
       ratingBarPos: 'left-top',
       posterRatingsLayout: 'top',
-      sideRatingsPosition: 'custom',
-      sideRatingsOffset: 63,
+      posterSideRatingsPosition: 'custom',
+      posterSideRatingsOffset: 63,
+      backdropSideRatingsPosition: 'bottom',
+      backdropSideRatingsOffset: 27,
       fontScale: '1.4',
       posterRatingBadgeScale: 106,
     },
   });
 
   assert.equal(config.settings.posterRatingsLayout, 'top');
-  assert.equal(config.settings.sideRatingsPosition, 'custom');
-  assert.equal(config.settings.sideRatingsOffset, 63);
+  assert.equal(config.settings.posterSideRatingsPosition, 'custom');
+  assert.equal(config.settings.posterSideRatingsOffset, 63);
+  assert.equal(config.settings.backdropSideRatingsPosition, 'bottom');
+  assert.equal(config.settings.backdropSideRatingsOffset, 27);
   assert.equal(config.settings.posterRatingBadgeScale, 106);
   assert.equal(config.settings.backdropRatingBadgeScale, 140);
   assert.equal(config.settings.logoRatingBadgeScale, 140);

@@ -25,8 +25,10 @@ const createInput = (overrides = {}) => ({
   qualityBadgesStyle: 'plain',
   qualityBadgesMax: 2,
   qualityBadgePreferences: ['certification', 'hdr'],
-  sideRatingsPosition: 'center',
-  sideRatingsOffset: 50,
+  posterSideRatingsPosition: 'center',
+  posterSideRatingsOffset: 50,
+  backdropSideRatingsPosition: 'center',
+  backdropSideRatingsOffset: 50,
   ratingPresentation: 'average',
   blockbusterDensity: 'balanced',
   aggregateRatingSource: 'combined',
@@ -142,6 +144,32 @@ test('final image render seed changes when poster edge offset changes', () => {
   );
 
   assert.notEqual(baseKey, offsetKey);
+});
+
+test('final image render seed isolates poster side placement from backdrop side placement', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'poster' }));
+  const posterSideChangedKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', posterSideRatingsPosition: 'custom', posterSideRatingsOffset: 64 }),
+  );
+  const backdropSideChangedKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', backdropSideRatingsPosition: 'custom', backdropSideRatingsOffset: 64 }),
+  );
+
+  assert.notEqual(baseKey, posterSideChangedKey);
+  assert.equal(baseKey, backdropSideChangedKey);
+});
+
+test('final image render seed isolates backdrop side placement from poster side placement', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const backdropSideChangedKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropSideRatingsPosition: 'custom', backdropSideRatingsOffset: 41 }),
+  );
+  const posterSideChangedKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', posterSideRatingsPosition: 'custom', posterSideRatingsOffset: 41 }),
+  );
+
+  assert.notEqual(baseKey, backdropSideChangedKey);
+  assert.equal(baseKey, posterSideChangedKey);
 });
 
 test('final image render seed changes when quality badge settings change', () => {
