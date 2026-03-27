@@ -5619,9 +5619,10 @@ const renderWithSharp = async (
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
       );
+      const qualityGap = Math.round(input.badgeGap * 1.25);
       const qualityTotalHeight =
         usableQualityBadges.length * qualityHeight +
-        Math.max(0, usableQualityBadges.length - 1) * input.badgeGap;
+        Math.max(0, usableQualityBadges.length - 1) * qualityGap;
       const centeredStartY = Math.max(
         input.badgeTopOffset,
         Math.round((input.outputHeight - qualityTotalHeight) / 2)
@@ -6459,6 +6460,7 @@ const renderWithSharp = async (
     ) => {
       if (columnBadges.length === 0) return;
       const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
+      const qualityGap = Math.round(input.badgeGap * 1.25);
       const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const uniformBadgeWidth = useIntrinsicWidths
         ? null
@@ -6486,7 +6488,7 @@ const renderWithSharp = async (
             : rowEdgeInset;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
         trackGenreCollisionRect(rowX, rowY, badgeWidth, badgeHeightForRow);
-        rowY += badgeHeightForRow + input.badgeGap;
+        rowY += badgeHeightForRow + qualityGap;
       }
     };
     const composeQualityBadgeRow = (
@@ -6570,6 +6572,7 @@ const renderWithSharp = async (
       uniformBadgeWidth: number
     ) => {
       if (columnBadges.length === 0) return;
+      const qualityGap = Math.round(input.badgeGap * 1.25);
       let rowY = Math.max(input.badgeTopOffset, startY);
       const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const clampedX = Math.round(x);
@@ -6590,7 +6593,7 @@ const renderWithSharp = async (
         );
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: adjustedX });
         trackGenreCollisionRect(adjustedX, rowY, badgeWidth, spec.height);
-        rowY += spec.height + input.badgeGap;
+        rowY += spec.height + qualityGap;
       }
     };
     const composeGenreBadge = () => {
@@ -6850,9 +6853,10 @@ const renderWithSharp = async (
         const topY = Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset);
         composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight);
       } else {
+        const qualityGap = Math.round(input.badgeGap * 1.25);
         const qualityTotalHeight =
           input.qualityBadges.length * qualityBadgeHeight +
-          Math.max(0, input.qualityBadges.length - 1) * input.badgeGap;
+          Math.max(0, input.qualityBadges.length - 1) * qualityGap;
         const centeredStartY = Math.max(
           input.badgeTopOffset,
           Math.round((input.outputHeight - qualityTotalHeight) / 2)
