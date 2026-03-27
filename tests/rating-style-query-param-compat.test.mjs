@@ -14,6 +14,6 @@ test('rating style query param precedence keeps canonical and legacy aliases', (
   );
   assert.match(
     routeSource,
-    /searchParams\.get\('ratingStyle'\)\s*\|\|\s*searchParams\.get\('ratingsStyle'\)\s*\|\|\s*typeRatingStyleParam\s*\|\|\s*request\.nextUrl\.searchParams\.get\('style'\)/,
+    /request\.nextUrl\.searchParams\.get\('ratingStyle'\)\s*\|\|\s*request\.nextUrl\.searchParams\.get\('ratingsStyle'\)\s*\|\|\s*typeRatingStyleParam\s*\|\|\s*request\.nextUrl\.searchParams\.get\('style'\)/,
   );
 });

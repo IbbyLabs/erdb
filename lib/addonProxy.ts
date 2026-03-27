@@ -232,6 +232,7 @@ export type ProxyConfig = {
   posterQualityBadgesMax?: string;
   backdropQualityBadgesMax?: string;
   ratingStyle?: string;
+  ratingsStyle?: string;
   imageText?: string;
   posterRatingBadgeScale?: string;
   backdropRatingBadgeScale?: string;
@@ -336,13 +337,17 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'posterQualityBadgesMax',
   'backdropQualityBadgesMax',
   'ratingStyle',
+  'ratingsStyle',
   'imageText',
   'posterRatingBadgeScale',
   'backdropRatingBadgeScale',
   'logoRatingBadgeScale',
   'posterRatingStyle',
+  'posterRatingsStyle',
   'backdropRatingStyle',
+  'backdropRatingsStyle',
   'logoRatingStyle',
+  'logoRatingsStyle',
   'posterRatingPresentation',
   'backdropRatingPresentation',
   'logoRatingPresentation',
