@@ -6742,7 +6742,14 @@ const renderWithSharp = async (
               }
             );
           } else if (input.topBadges.length > 0) {
-            composeBadgeRow(input.topBadges, input.badgeTopOffset, {
+            const hasOnlyTopSingletonBadge =
+              input.topBadges.length === 1 &&
+              remainingLeftBadges.length === 0 &&
+              remainingRightBadges.length === 0;
+            const topRowY = hasOnlyTopSingletonBadge
+              ? resolveSideBadgeStartY(input.topBadges)
+              : input.badgeTopOffset;
+            composeBadgeRow(input.topBadges, topRowY, {
               regionLeft: input.posterRowHorizontalInset,
               regionWidth: posterRowRegionWidth,
               align: 'center',
