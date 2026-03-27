@@ -153,6 +153,41 @@
 
 <a id="v2-46-0"></a>
 
+<a id="v2-46-1"></a>
+
+## [v2.46.1] - 27/03/2026
+
+### Fixed
+* scale quality badge gaps proportionally for large posters
+  
+  BUG 15: Quality badge spacing is incorrect on large posters with right vertical layout.
+  
+  Root cause: Quality badges are scaled 1.25x larger than rating badges but the spacing
+  between them was not scaled proportionally, resulting in cramped vertical spacing when
+  6+ badges are displayed on the right side of large posters.
+  
+  Changes:
+  • Scale quality badge gaps by 1.25x in composeQualityBadgeColumn (poster side placement)
+  • Scale quality badge gaps by 1.25x in renderQualityBadgeColumnAt (backdrop columns)
+  • Scale quality badge gaps in total height calculations for proper positioning
+  • Scale quality badge gaps in protected rects calculation for collision detection
+  
+  Impact: Poster and backdrop quality badges now have consistent visual spacing regardless
+  of layout size. Particularly improves silver style badges which use intrinsic widths.
+  
+  Tests: All 187 tests pass including 2 new regression tests.
+* keep capture dates current
+  
+  Use a runtime formatted date for generated capture stamps.
+  
+  Refresh README references to the latest local build date.
+
+### Documentation
+* add fork notice
+  
+  Add a prominent [!IMPORTANT] callout at the top of the README clarifying that this
+  repository is a fork of the original ERDB project at https://github.com/realbestia1/erdb.
+
 ## [v2.46.0] - 27/03/2026
 
 ### Added
