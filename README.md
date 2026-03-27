@@ -2,6 +2,9 @@
 
 ERDB generates poster/backdrop/logo images with dynamic ratings and quality badges on the fly.
 
+> [!IMPORTANT]
+> This repository is a fork of the original ERDB project at [realbestia1/erdb](https://github.com/realbestia1/erdb).
+
 <!-- changelog-links:start -->
 
 > [!TIP]
