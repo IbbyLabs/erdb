@@ -170,6 +170,7 @@ import {
 } from '@/lib/serviceBaseUrls';
 import {
   buildIncludeImageLanguage,
+  filterByLanguageWithFallback,
   normalizeImageLanguage,
   pickByLanguageWithFallback,
 } from '@/lib/imageLanguage';
@@ -2984,8 +2985,13 @@ const pickPosterByPreference = (
   }
 
   if (preference === 'random') {
+    const scopedPosters = filterByLanguageWithFallback(
+      posters,
+      preferredLang,
+      fallbackLang,
+    );
     const uniquePosters = [...new Map(
-      posters
+      scopedPosters
         .filter((poster: any) => typeof poster?.file_path === 'string' && poster.file_path.trim())
         .map((poster: any) => [poster.file_path, poster] as const)
     ).values()];
@@ -3039,8 +3045,13 @@ const pickBackdropByPreference = (
   }
 
   if (preference === 'random') {
+    const scopedBackdrops = filterByLanguageWithFallback(
+      backdrops,
+      preferredLang,
+      fallbackLang,
+    );
     const uniqueBackdrops = [...new Map(
-      backdrops
+      scopedBackdrops
         .filter((backdrop: any) => typeof backdrop?.file_path === 'string' && backdrop.file_path.trim())
         .map((backdrop: any) => [backdrop.file_path, backdrop] as const)
     ).values()];
@@ -8815,9 +8826,14 @@ export async function handleImageRequest(
             requestedImageLang,
             FALLBACK_IMAGE_LANGUAGE
           );
+          const scopedLogoCollection = filterByLanguageWithFallback(
+            logoCollection,
+            requestedImageLang,
+            FALLBACK_IMAGE_LANGUAGE,
+          );
           const randomLogoCandidate = pickDeterministicItemBySeed(
             [...new Map(
-              logoCollection
+              scopedLogoCollection
                 .filter((logo: any) => typeof logo?.file_path === 'string' && logo.file_path.trim())
                 .map((logo: any) => [logo.file_path, logo] as const)
             ).values()],
