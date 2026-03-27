@@ -16,7 +16,7 @@ const DOCS_IMAGES_DIR = path.join(ROOT_DIR, 'docs', 'images');
 const RENDER_ORIGIN_OVERRIDE = process.env.DOC_SCREENSHOT_ORIGIN || '';
 const RENDER_NEXT_PORT = Number.parseInt(process.env.DOC_RENDER_PORT || '3216', 10);
 const FIXTURE_NEXT_PORT = Number.parseInt(process.env.DOC_METADATA_FIXTURE_PORT || '3217', 10);
-const CAPTURE_DATE = 'March 23, 2026';
+const CAPTURE_DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const tmdbKey = process.env.ERDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
 const mdblistKey = process.env.ERDB_README_PREVIEW_MDBLIST_KEY || process.env.MDBLIST_KEY || '';

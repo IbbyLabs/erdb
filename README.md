@@ -114,7 +114,7 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
 
 ## Rendering Option Comparisons
 
-These static comparison boards highlight the newer rendering controls that are easier to evaluate side by side than in a single live card. They cover `logoBackground`, `logoRatingsMax`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, and a few layout and style combinations from the local March 23, 2026 build.
+These static comparison boards highlight the newer rendering controls that are easier to evaluate side by side than in a single live card. They cover `logoBackground`, `logoRatingsMax`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, and a few layout and style combinations from the local March 27, 2026 build.
 
 The current quality badge behavior uses local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges also include a small `AGE` label above the rating so age ratings read more clearly at a glance.
 
@@ -607,7 +607,7 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, ERDB
 
 ### Metadata Translation In Action
 
-These screenshots were regenerated from the local March 23, 2026 codebase using deterministic proxy fixtures.
+These screenshots were regenerated from the local March 27, 2026 codebase using deterministic proxy fixtures.
 
 To make each merge mode visible on demand, a local fixture addon returned controlled upstream metadata for three real IDs:
 
