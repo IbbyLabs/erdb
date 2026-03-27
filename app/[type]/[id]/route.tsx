@@ -7107,8 +7107,19 @@ export async function handleImageRequest(
       ? `${requestedIdSourceCandidate}:${cleanIdWithoutExtension}`
       : cleanIdWithoutExtension;
   const cleanId = normalizeErdbId(requestedCleanId) ?? requestedCleanId;
-  if ((imageType === 'backdrop' || imageType === 'logo') && isAmbiguousTmdbErdbId(cleanId)) {
-    return respond('TMDB media type is required for backdrop and logo IDs. Use tmdb:movie:{tmdb_id} or tmdb:tv:{tmdb_id}.', 400);
+  const tmdbIdScopeParam = String(request.nextUrl.searchParams.get('tmdbIdScope') || '')
+    .trim()
+    .toLowerCase();
+  const useStrictTmdbIdScope = tmdbIdScopeParam === 'strict';
+  if (
+    useStrictTmdbIdScope &&
+    (imageType === 'backdrop' || imageType === 'logo') &&
+    isAmbiguousTmdbErdbId(cleanId)
+  ) {
+    return respond(
+      'Strict TMDB ID scope requires tmdb:movie:{tmdb_id} or tmdb:tv:{tmdb_id} for backdrop and logo requests.',
+      400,
+    );
   }
   const requestedFallbackUrl = request.nextUrl.searchParams.get('fallbackUrl');
 

@@ -128,6 +128,7 @@ import {
   type PosterQualityBadgesPosition,
   type SavedUiConfig,
   type StreamBadgesSetting,
+  type TmdbIdScopeMode,
 } from '@/lib/uiConfig';
 import {
   CONFIGURATOR_PRESETS,
@@ -280,6 +281,22 @@ const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = 
   { id: 'auto', label: 'Auto' },
   { id: 'on', label: 'On' },
   { id: 'off', label: 'Off' },
+];
+const TMDB_ID_SCOPE_MODE_OPTIONS: Array<{
+  id: TmdbIdScopeMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'soft',
+    label: 'Soft',
+    description: 'Default. Accepts tmdb:id for compatibility.',
+  },
+  {
+    id: 'strict',
+    label: 'Strict',
+    description: 'Prevents logo and backdrop collisions by requiring tmdb:movie:id or tmdb:tv:id.',
+  },
 ];
 const QUALITY_BADGE_SIDE_OPTIONS: Array<{ id: QualityBadgesSide; label: string }> = [
   { id: 'left', label: 'Left' },
@@ -530,7 +547,8 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | none
-id (path)               | IMDb (tt...), TMDB (tmdb:movie:id / tmdb:tv:id, poster also accepts tmdb:id), Kitsu (kitsu:id), AniList, MAL, TVDB, AniDB | none
+id (path)               | IMDb (tt...), TMDB (tmdb:id, tmdb:movie:id, tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL, TVDB, AniDB | none
+tmdbIdScope             | soft, strict                                                         | soft
 ratings                 | ${RATING_PROVIDER_DOC_VALUES} (global fallback)                      | all
 posterRatings           | ${RATING_PROVIDER_DOC_VALUES} (poster only)                          | all
 backdropRatings         | ${RATING_PROVIDER_DOC_VALUES} (backdrop only)                        | all
@@ -599,7 +617,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | service fallback when available
 simklClientId           | Your SIMKL client_id for direct SIMKL ratings                        | none
 
-TMDB NOTE: Backdrop and logo require tmdb:movie:id or tmdb:tv:id. Bare tmdb:id remains poster only for compatibility.
+TMDB NOTE: Default tmdbIdScope=soft keeps compatibility and accepts tmdb:id. Set tmdbIdScope=strict to require tmdb:movie:id or tmdb:tv:id for backdrop and logo so TMDB movie and TV collisions cannot return incorrect artwork.
 ACCESS NOTE: erdbKey is optional and only needed when the ERDB host protects render and proxy routes with ERDB_REQUEST_API_KEY or ERDB_REQUEST_API_KEYS.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 QUALITY NOTE: Media quality badges use local asset based artwork for 4K, Bluray, HDR10, Dolby Vision, and Dolby Atmos. Certification badges include a small AGE label above the rating.
@@ -1169,6 +1187,7 @@ export default function Home() {
   const [erdbKey, setErdbKey] = useState('');
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
+  const [tmdbIdScope, setTmdbIdScope] = useState<TmdbIdScopeMode>('soft');
   const [fanartKey, setFanartKey] = useState('');
   const [simklClientId, setSimklClientId] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
@@ -1655,6 +1674,7 @@ export default function Home() {
 
       setErdbKey(normalized.settings.erdbKey);
       setTmdbKey(normalized.settings.tmdbKey);
+      setTmdbIdScope(normalized.settings.tmdbIdScope);
       setMdblistKey(normalized.settings.mdblistKey);
       setFanartKey(normalized.settings.fanartKey);
       setSimklClientId(normalized.settings.simklClientId);
@@ -1744,6 +1764,7 @@ export default function Home() {
       settings: {
         erdbKey: erdbKey.trim(),
         tmdbKey: tmdbKey.trim(),
+        tmdbIdScope,
         mdblistKey: mdblistKey.trim(),
         fanartKey: fanartKey.trim(),
         simklClientId: simklClientId.trim(),
@@ -1829,6 +1850,7 @@ export default function Home() {
     [
       erdbKey,
       tmdbKey,
+      tmdbIdScope,
       mdblistKey,
       fanartKey,
       simklClientId,
@@ -2227,6 +2249,9 @@ export default function Home() {
       query.set('simklClientId', simklClientId.trim());
     }
     query.set('tmdbKey', normalizedTmdbKey);
+    if (tmdbIdScope !== 'soft') {
+      query.set('tmdbIdScope', tmdbIdScope);
+    }
     const shouldSendFanartKey =
       (previewType === 'poster' &&
         (posterArtworkSource === 'fanart' || posterArtworkSource === 'random')) ||
@@ -2386,6 +2411,7 @@ export default function Home() {
     mdblistKey,
     erdbKey,
     tmdbKey,
+    tmdbIdScope,
     fanartKey,
     simklClientId,
   ]);
@@ -2475,6 +2501,10 @@ export default function Home() {
       }
 
       if (response.status === 400 && body.toLowerCase().includes('tmdb')) {
+        if (body.toLowerCase().includes('strict tmdb id scope')) {
+          setPreviewErrorDetails('Strict TMDB ID scope blocked an ambiguous TMDB ID. Use tmdb:movie:id or tmdb:tv:id, or switch TMDB ID scope to Soft.');
+          return;
+        }
         setPreviewErrorDetails('TMDB key is missing. Add your TMDB v3 key in Inputs.');
         return;
       }
@@ -2581,7 +2611,7 @@ export default function Home() {
     .join('\n\n');
   const baseStructureTemplate = useMemo(
     () =>
-      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterImageSize={posterImageSize}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&posterEdgeOffset={posterEdgeOffset}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
+      `${baseUrl || 'http://localhost:3000'}/{type}/{id}.jpg?ratings={ratings}&lang={lang}&ratingStyle={style}&imageText={text}&posterImageSize={posterImageSize}&posterRatingsLayout={layout}&posterRatingsMaxPerSide={max}&posterEdgeOffset={posterEdgeOffset}&backdropRatingsLayout={bLayout}&sideRatingsPosition={sidePos}&sideRatingsOffset={sideOffset}&tmdbIdScope={tmdbIdScope}&erdbKey={erdbKey}&tmdbKey={tmdbKey}&mdblistKey={mdbKey}&fanartKey={fanartKey}`,
     [baseUrl],
   );
   const displayedBaseStructureTemplate = useMemo(
@@ -3532,8 +3562,34 @@ export default function Home() {
           <input type="password" value={simklClientId} onChange={(e) => setSimklClientId(e.target.value)} placeholder="client_id (optional)" className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none" />
         </div>
       </div>
+      <div className="mt-3">
+        <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">TMDB ID Scope</label>
+        <div className="grid gap-2 md:grid-cols-2">
+          {TMDB_ID_SCOPE_MODE_OPTIONS.map((option) => {
+            const isActive = tmdbIdScope === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setTmdbIdScope(option.id)}
+                className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                  isActive
+                    ? 'border-violet-500/70 bg-violet-500/12 text-white'
+                    : 'border-white/10 bg-black text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+                }`}
+              >
+                <div className="font-semibold">{option.label}</div>
+                <div className="mt-0.5 text-[11px] text-zinc-400">{option.description}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
         {ERDB_REQUEST_KEY_HELP_COPY}
+      </p>
+      <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+        Soft is recommended for compatibility. Switch to Strict if you sometimes see incorrect logo or backdrop artwork from TMDB ID collisions.
       </p>
       <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
         {FANART_KEY_HELP_COPY}
@@ -6315,6 +6371,11 @@ export default function Home() {
                         <td className="px-5 py-2 text-zinc-400 text-xs">SIMKL client_id for direct SIMKL ratings</td>
                         <td className="px-5 py-2 text-zinc-500 text-xs">none</td>
                       </tr>
+                      <tr>
+                        <td className="px-5 py-2 font-mono text-violet-400 text-xs">tmdbIdScope</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">TMDB ID collision handling mode</td>
+                        <td className="px-5 py-2 text-zinc-500 text-xs">soft</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -6330,6 +6391,8 @@ export default function Home() {
                   <span className="font-mono text-zinc-200">erdbKey</span> is optional. Add it only when the ERDB host protects render or proxy routes with <span className="font-mono text-zinc-200">ERDB_REQUEST_API_KEY</span> or <span className="font-mono text-zinc-200">ERDB_REQUEST_API_KEYS</span>.
                   <br />
                   <span className="font-mono text-zinc-200">fanartKey</span> is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to <span className="font-mono text-zinc-200">ERDB_FANART_API_KEY</span> or <span className="font-mono text-zinc-200">FANART_API_KEY</span> when the server has one.
+                  <br />
+                  <span className="font-mono text-zinc-200">tmdbIdScope=soft</span> is the default for compatibility. Set <span className="font-mono text-zinc-200">tmdbIdScope=strict</span> to require typed TMDB IDs for backdrop and logo requests when you need to prevent movie and TV ID collisions.
                   <br />
                   Poster <span className="font-mono text-zinc-200">posterArtworkSource=fanart</span> uses fanart.tv poster art for <span className="font-mono text-zinc-200">original</span>, <span className="font-mono text-zinc-200">clean</span>, <span className="font-mono text-zinc-200">alternative</span>, and <span className="font-mono text-zinc-200">random</span>. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. Random uses a seeded pick. <span className="font-mono text-zinc-200">posterArtworkSource=cinemeta</span> uses the official MetaHub Cinemeta poster when ERDB can resolve an IMDb ID, then falls back to TMDB. <span className="font-mono text-zinc-200">posterArtworkSource=random</span> picks a seeded random source across TMDB, fanart, and Cinemeta when available.
                   <br />
@@ -6511,7 +6574,7 @@ export default function Home() {
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-bold text-zinc-300 text-xs">TMDB</td>
-                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb:id or tmdb:movie:id or tmdb:tv:id</td>
+                        <td className="px-5 py-2 text-zinc-400 text-xs">tmdb:id or tmdb:movie:id or tmdb:tv:id (typed recommended)</td>
                         <td className="px-5 py-2 font-mono text-violet-200/50 text-xs">tmdb:movie:603, tmdb:tv:1399</td>
                       </tr>
                       <tr>
@@ -6560,7 +6623,7 @@ export default function Home() {
                     </div>
                     <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
                       <span className="text-violet-500 font-bold">id (required):</span>
-                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">IMDb ID (tt...), TMDB ID (prefer tmdb:movie:id or tmdb:tv:id), or Kitsu ID (kitsu:...).</span>
+                      <span className="min-w-0 text-zinc-400 [overflow-wrap:anywhere]">IMDb ID (tt...), TMDB ID (tmdb:id or typed tmdb:movie:id or tmdb:tv:id), or Kitsu ID (kitsu:...).</span>
                     </div>
                     <div className="grid gap-1 sm:grid-cols-[auto,1fr] sm:gap-2">
                       <span className="text-violet-500 font-bold">erdbKey (optional):</span>

@@ -291,7 +291,8 @@ Main endpoint:
 | Parameter | Description | Supported Values | Default |
 |-----------|-------------|------------------|---------|
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` | - |
-| `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:movie:id`, `tmdb:tv:id`; poster also accepts `tmdb:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123` or `mal:456` | - |
+| `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123` or `mal:456` | - |
+| `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
 | `posterGenreBadge` | Poster genre badge mode | `off`, `text`, `icon`, `both` | `off` |
@@ -350,7 +351,7 @@ RPDB compatibility aliases are accepted where they map cleanly in ERDB: `order`/
 
 `myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without the MAL client id, ERDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, ERDB still falls back to MDBList when `mdblistKey` is present.
 
-Backdrop and logo require explicit TMDB media type. Use `tmdb:movie:id` or `tmdb:tv:id` to avoid movie versus TV collisions. Poster still accepts bare `tmdb:id` for backward compatibility.
+`tmdbIdScope=soft` is the default for compatibility and accepts bare `tmdb:id`. Set `tmdbIdScope=strict` to require `tmdb:movie:id` or `tmdb:tv:id` for backdrop and logo requests to avoid movie versus TV collisions.
 
 Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, ERDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
@@ -413,7 +414,8 @@ Endpoint: GET /{type}/{id}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | -
-id (path)               | IMDb (tt...), TMDB (tmdb:movie:id / tmdb:tv:id; poster also accepts tmdb:id), Kitsu (kitsu:id), AniList, MAL          | -
+id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL                            | -
+tmdbIdScope             | soft, strict                                                                                                           | soft
 ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
                         | anilist, kitsu (global fallback)                                     |
@@ -458,7 +460,7 @@ mdblistKey (REQUIRED)   | Your MDBList.com API Key                              
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
 simklClientId           | Your SIMKL client id for direct SIMKL ratings                        | -
 
-TMDB NOTE: Backdrop and logo require tmdb:movie:id or tmdb:tv:id. Bare tmdb:id remains poster only for compatibility.
+TMDB NOTE: Default tmdbIdScope=soft keeps compatibility and accepts tmdb:id. Set tmdbIdScope=strict to require tmdb:movie:id or tmdb:tv:id for backdrop and logo.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
 POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.

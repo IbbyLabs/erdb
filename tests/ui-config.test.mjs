@@ -43,6 +43,7 @@ const buildSampleSettings = () =>
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
+      tmdbIdScope: 'strict',
       lang: 'fr',
       posterImageSize: 'large',
       posterImageText: 'clean',
@@ -127,6 +128,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
       simklClientId: '',
+      tmdbIdScope: 'strict',
       lang: 'fr',
       posterImageSize: 'large',
       posterImageText: 'clean',
@@ -214,6 +216,11 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       debugMetaTranslation: true,
     },
   });
+
+  const configString = buildConfigString('https://erdb.example.com', parsed.settings);
+  assert.notEqual(configString, '');
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.tmdbIdScope, 'strict');
 });
 
 test('workspace normalization ignores legacy proxy enabled flags', () => {
@@ -372,6 +379,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
     fanartKey: 'fanart-key-789',
+    tmdbIdScope: 'strict',
     posterRatings: 'imdb,tmdb',
     backdropRatings: 'mdblist',
     logoRatings: '',
@@ -443,6 +451,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
     fanartKey: 'fanart-key-789',
+    tmdbIdScope: 'strict',
     translateMeta: true,
     translateMetaMode: 'prefer-requested-language',
     debugMetaTranslation: true,

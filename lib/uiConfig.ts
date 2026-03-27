@@ -96,6 +96,7 @@ export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | '
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'random';
 export type LogoBackground = 'transparent' | 'dark';
+export type TmdbIdScopeMode = 'soft' | 'strict';
 type ErdbImageType = 'poster' | 'backdrop' | 'logo';
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
@@ -110,6 +111,7 @@ export type SharedErdbSettings = {
   mdblistKey: string;
   fanartKey: string;
   simklClientId: string;
+  tmdbIdScope: TmdbIdScopeMode;
   lang: string;
   posterImageSize: PosterImageSize;
   posterImageText: PosterImageTextPreference;
@@ -215,6 +217,7 @@ const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'o
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
 const LOGO_BACKGROUND_SET = new Set<LogoBackground>(['transparent', 'dark']);
+const TMDB_ID_SCOPE_MODE_SET = new Set<TmdbIdScopeMode>(['soft', 'strict']);
 
 const normalizeBoolean = (value: unknown, fallback = false) => {
   if (typeof value === 'boolean') return value;
@@ -234,6 +237,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   mdblistKey: '',
   fanartKey: '',
   simklClientId: '',
+  tmdbIdScope: 'soft',
   lang: 'en',
   posterImageSize: 'normal',
   posterImageText: 'clean',
@@ -559,6 +563,16 @@ const normalizeLogoBackground = (
     : fallback;
 };
 
+const normalizeTmdbIdScopeMode = (
+  value: unknown,
+  fallback: TmdbIdScopeMode,
+): TmdbIdScopeMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return TMDB_ID_SCOPE_MODE_SET.has(normalized as TmdbIdScopeMode)
+    ? (normalized as TmdbIdScopeMode)
+    : fallback;
+};
+
 export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings => {
   const defaults = createDefaultSharedErdbSettings();
   if (!value || typeof value !== 'object') {
@@ -623,6 +637,7 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
       typeof candidate.fanartKey === 'string' ? candidate.fanartKey.trim() : defaults.fanartKey,
     simklClientId:
       typeof candidate.simklClientId === 'string' ? candidate.simklClientId.trim() : defaults.simklClientId,
+    tmdbIdScope: normalizeTmdbIdScopeMode(candidate.tmdbIdScope, defaults.tmdbIdScope),
     lang: typeof candidate.lang === 'string' && candidate.lang.trim() ? candidate.lang.trim() : defaults.lang,
     posterImageSize: normalizePosterImageSize(
       candidate.posterImageSize ?? candidate.posterSize ?? candidate.imageSize,
@@ -954,6 +969,9 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   const simklClientId = settings.simklClientId.trim();
   if (simklClientId) {
     payload.simklClientId = simklClientId;
+  }
+  if (settings.tmdbIdScope !== 'soft') {
+    payload.tmdbIdScope = settings.tmdbIdScope;
   }
 
   const posterRatings = stringifyRatingPreferencesAllowEmpty(settings.posterRatingPreferences);

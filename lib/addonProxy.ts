@@ -17,6 +17,7 @@ const ERDB_OPTIONAL_PARAMS = [
   'imageSize',
   'posterType',
   'ratingValueMode',
+  'tmdbIdScope',
   'genreBadge',
   'genreBadgeStyle',
   'genreBadgePosition',
@@ -182,6 +183,7 @@ export type ProxyConfig = {
   imageSize?: string;
   posterType?: string;
   ratingValueMode?: string;
+  tmdbIdScope?: string;
   genreBadge?: string;
   genreBadgeStyle?: string;
   genreBadgePosition?: string;
@@ -283,6 +285,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'imageSize',
   'posterType',
   'ratingValueMode',
+  'tmdbIdScope',
   'genreBadge',
   'genreBadgeStyle',
   'genreBadgePosition',
