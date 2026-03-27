@@ -151,6 +151,114 @@
 
 <a id="v2-45-1"></a>
 
+<a id="v2-46-0"></a>
+
+## [v2.46.0] - 27/03/2026
+
+### Added
+* add poster ID source selector with mode guidance
+  
+  I added a visible UI control to let users switch between poster ID modes
+  (auto, tmdb, imdb) directly on the settings page without code changes.
+  
+  This includes:
+  • Reactive state management for posterIdMode with default auto mode
+  • Real time pattern preview updates as user selects different modes
+  • Comprehensive help text for each mode explaining when to use it
+  • Dynamic preset mapping showing current poster pattern format
+  
+  The auto mode defaults to typed TMDB IDs for strongest rewrite
+  coverage, with explicit TMDB and IMDb fallback options available.
+  All existing tests pass with no breaking changes.
+* add tmdbIdScope soft/strict setting
+  
+  Adds a tmdbIdScope param (soft | strict) to control how bare tmdb:id
+  values behave on backdrop and logo routes.
+  
+  Soft (default) keeps backward compatible movie first resolution.
+  Strict returns 400 for ambiguous IDs, requiring tmdb:movie:id or
+  tmdb:tv:id. Poster routes are never gated.
+  
+  Wired through proxy passthrough, UI configurator, README, and tests.
+
+### Fixed
+* split poster and backdrop side placement
+  
+  Keep poster and backdrop side placement independent by introducing per type side position and offset fields across UI state, config normalization, route parsing, proxy forwarding, and render seed inputs.
+  
+  Preserve backward compatibility by continuing to accept legacy shared side placement fields as fallback input while preferring the new per type fields in exported config and generated URLs.
+  
+  Add focused regression coverage for normalization fallback behavior, proxy forwarding, and render seed independence between poster and backdrop side placement.
+* include plural rating style aliases in typed config
+  
+  Add ratingsStyle and per type plural rating style keys to ProxyConfig and PROXY_OPTIONAL_STRING_KEYS so proxy style alias resolution compiles under strict key typing.
+  
+  Update the rating style compatibility test assertion to match request.nextUrl.searchParams access in route parsing, preventing a false negative.
+  
+  Validation:
+  
+  • nocorrect npm run build
+  
+  • nocorrect npm test
+* accept plural rating style aliases
+  
+  Accept plural rating style query aliases for poster, backdrop, and logo image requests so clients that send backdropRatingsStyle or related variants resolve to the requested badge shape instead of falling back to the default glass style.
+  
+  Mirror the same alias handling in proxy image rewrites so proxied requests preserve the intended rating style when legacy or plural keys are used.
+  
+  Add focused regression coverage for direct route parsing and proxy rewrite behavior to prevent silent fallback regressions for square backdrop badges.
+* preserve compact dual badge anchor when one rating is missing
+  
+  Keep lone compact critics or audience badges aligned to the configured side anchor.
+  
+  Stop the left right odd badge fallback from forcing singleton badges to the top offset while preserving existing paired and three badge left right rendering behavior.
+* require typed IDs for logo and backdrop requests
+  
+  Add TMDB ID scope helpers in addonProxy to distinguish explicit media type IDs from ambiguous bare tmdb:id input.
+  
+  Reject ambiguous bare TMDB IDs with HTTP 400 for logo and backdrop routes so collisions between movie and tv IDs cannot silently return wrong artwork.
+  
+  Keep poster behavior backward compatible for now.
+  
+  Update tests, README, and UI API docs to document the typed TMDB requirement for logo and backdrop endpoints.
+* enforce language scoped random artwork picks
+  
+  Random TMDB artwork selection could choose logos, posters, or backdrops from unrelated languages even when lang was explicitly set. I now scope random TMDB candidates to requested language, fallback language, and neutral assets before deterministic seed selection.
+  
+  I introduced filterByLanguageWithFallback in image language utilities and wired it into random selection paths for logo, poster, and backdrop. When no scoped candidates exist, selection still falls back to the original full list to preserve resilience.
+  
+  I added regression coverage for the new language filter utility and re ran the test suite successfully.
+* honor type style aliases with canonical ratingStyle precedence
+  
+  Resolve badge style query parsing inconsistency where posterRatingStyle was ignored by direct image routes even though ratingStyle already worked.
+  
+  Keep ratingStyle as the canonical public parameter and preserve backward compatibility with legacy aliases by applying this precedence chain: ratingStyle, per type alias, style.
+  
+  Add per type alias handling in the image route parser for posterRatingStyle, backdropRatingStyle, and logoRatingStyle so each output type can accept the matching scoped style key.
+  
+  Update user facing API references in README and configurator prompt surfaces to document canonical usage and alias support consistently.
+  
+  Add a targeted regression test that asserts both the per type alias selector and the final precedence expression in the route source.
+
+### Other Changes
+* add render seed scale regression coverage
+  
+  Add regression coverage for rating badge scale cache busting across poster, backdrop, and logo outputs.
+  
+  Add historical regression assertions that genre scale and rating scale both invalidate the render seed while genre only changes do not alter the rating scale token position.
+  
+  Keep production behavior unchanged and harden tests around the historical stale cache failure mode from v2.29.4.
+* fix rating style compatibility assertion
+  
+  Update the rating style query param compatibility test to match the actual request.nextUrl.searchParams access pattern used in the image route.
+  
+  Keep the new plural rating style alias coverage intact while removing the false negative that caused the full test suite to fail after the backdrop alias fix.
+  
+  Validated with the focused compatibility test and a full npm test run.
+* Revert "test(params): fix rating style compatibility assertion"
+  
+  This reverts commit 4653a184903950f26973a06d833db36dc4ded067.
+
 ## [v2.45.1] - 26/03/2026
 
 ### Other Changes
