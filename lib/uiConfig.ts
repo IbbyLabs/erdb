@@ -104,6 +104,7 @@ export type AiometadataUrlPatterns = {
   logoUrlPattern: string;
   episodeThumbnailUrlPattern: string;
 };
+export type AiometadataPosterIdMode = 'auto' | 'tmdb' | 'imdb';
 
 export type SharedErdbSettings = {
   erdbKey: string;
@@ -1330,6 +1331,7 @@ export const buildAiometadataUrlPatterns = (
   settings: SharedErdbSettings,
   options?: {
     hideCredentials?: boolean;
+    posterIdMode?: AiometadataPosterIdMode;
   },
 ): AiometadataUrlPatterns | null => {
   const origin = normalizeBaseUrl(baseUrl);
@@ -1338,6 +1340,8 @@ export const buildAiometadataUrlPatterns = (
   }
 
   const hideCredentials = options?.hideCredentials ?? true;
+  const posterIdMode = options?.posterIdMode ?? 'auto';
+  const useTmdbPosterIds = posterIdMode === 'imdb' ? false : true;
   const needsFanartKey =
     settings.posterArtworkSource === 'fanart' ||
     settings.posterArtworkSource === 'random' ||
@@ -1418,7 +1422,9 @@ export const buildAiometadataUrlPatterns = (
     );
 
   return {
-    posterUrlPattern: `${origin}/poster/{imdb_id}.jpg?${buildQueryString('poster')}`,
+    posterUrlPattern: useTmdbPosterIds
+      ? `${origin}/poster/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('poster', { idSource: 'tmdb' })}`
+      : `${origin}/poster/{imdb_id}.jpg?${buildQueryString('poster')}`,
     backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('backdrop', { idSource: 'tmdb' })}`,
     logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString('logo', { idSource: 'tmdb' })}`,
     episodeThumbnailUrlPattern: `${origin}/thumbnail/{imdb_id}/S{season}E{episode}.jpg?${buildQueryString('thumbnail')}`,

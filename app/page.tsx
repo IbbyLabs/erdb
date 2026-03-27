@@ -1202,6 +1202,7 @@ export default function Home() {
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
+  const [posterIdMode, setPosterIdMode] = useState<'auto' | 'tmdb' | 'imdb'>('auto');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
   const [previewErrorDetails, setPreviewErrorDetails] = useState('');
@@ -2555,8 +2556,9 @@ export default function Home() {
     () =>
       buildAiometadataUrlPatterns(baseUrl, currentUiConfig.settings, {
         hideCredentials: hideAiometadataCredentials,
+        posterIdMode,
       }),
-    [baseUrl, currentUiConfig, hideAiometadataCredentials]
+    [baseUrl, currentUiConfig, hideAiometadataCredentials, posterIdMode]
   );
 
   const proxyUrl = useMemo(
@@ -2584,7 +2586,7 @@ export default function Home() {
           key: 'poster',
           label: 'Poster URL Pattern',
           value: aiometadataPatterns.posterUrlPattern,
-          description: 'Matches the live AIOMetadata poster preset and uses IMDb IDs.',
+          description: 'Defaults to typed TMDB IDs in auto mode for stronger rewrite coverage.',
         },
         {
           key: 'background',
@@ -5828,14 +5830,64 @@ export default function Home() {
                     </button>
                   </div>
                   <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                    These presets match the live AIOMetadata defaults: poster uses IMDb, background and logo use type aware TMDB IDs, and episode thumbs use IMDb with season and episode placeholders.
+                    These presets match the live AIOMetadata defaults: background and logo use type aware TMDB IDs, episode thumbs use IMDb with season and episode placeholders, and poster uses the selected ID source mode.
                   </p>
                   <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
                     <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
                       <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                        <div className="text-[11px] font-semibold text-zinc-200">Poster ID source</div>
+                        <p className="mt-2 text-[10px] leading-4 text-zinc-500 mb-3">
+                          Determines which database ID to include in poster URLs. Most users should leave this on auto for best poster rewrite coverage.
+                        </p>
+                        <div className="space-y-3">
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="posterIdMode"
+                              value="auto"
+                              checked={posterIdMode === 'auto'}
+                              onChange={(e) => setPosterIdMode(e.target.value as 'auto' | 'tmdb' | 'imdb')}
+                              className="mt-1 h-4 w-4 rounded-full border-white/20 bg-black accent-violet-500"
+                            />
+                            <span className="space-y-1">
+                              <span className="block text-[11px] font-medium text-zinc-300">Auto (typed TMDB)</span>
+                              <span className="block text-[10px] text-zinc-600">Pick this if posters fail to rewrite or you want the most reliable behavior. Defaults to TMDB IDs with type prefix.</span>
+                            </span>
+                          </label>
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="posterIdMode"
+                              value="tmdb"
+                              checked={posterIdMode === 'tmdb'}
+                              onChange={(e) => setPosterIdMode(e.target.value as 'auto' | 'tmdb' | 'imdb')}
+                              className="mt-1 h-4 w-4 rounded-full border-white/20 bg-black accent-violet-500"
+                            />
+                            <span className="space-y-1">
+                              <span className="block text-[11px] font-medium text-zinc-300">TMDB</span>
+                              <span className="block text-[10px] text-zinc-600">Same as auto but explicit. Use this if you want to be sure you are always using TMDB IDs.</span>
+                            </span>
+                          </label>
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="posterIdMode"
+                              value="imdb"
+                              checked={posterIdMode === 'imdb'}
+                              onChange={(e) => setPosterIdMode(e.target.value as 'auto' | 'tmdb' | 'imdb')}
+                              className="mt-1 h-4 w-4 rounded-full border-white/20 bg-black accent-violet-500"
+                            />
+                            <span className="space-y-1">
+                              <span className="block text-[11px] font-medium text-zinc-300">IMDb</span>
+                              <span className="block text-[10px] text-zinc-600">Only use this if your setup requires IMDb compatibility. Poster rewrites may fail if IMDb IDs are not available.</span>
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
                         <div className="text-[11px] font-semibold text-zinc-200">Preset mapping</div>
                         <p className="mt-2 text-[11px] leading-5 text-zinc-500">
-                          Poster: <span className="font-mono text-zinc-300">{'{imdb_id}'}</span>
+                          Poster: <span className="font-mono text-zinc-300">{posterIdMode === 'imdb' ? '{imdb_id}' : 'tmdb:{type}:{tmdb_id}'}</span>
                         </p>
                         <p className="mt-1 text-[11px] leading-5 text-zinc-500">
                           Background: <span className="font-mono text-zinc-300">tmdb:{'{type}'}:{'{tmdb_id}'}</span>
@@ -5848,20 +5900,22 @@ export default function Home() {
                         </p>
                       </div>
                       <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
-                        <label className="flex items-start gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={hideAiometadataCredentials}
-                            onChange={(event) => setHideAiometadataCredentials(event.target.checked)}
-                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
-                          />
-                          <span className="space-y-1">
-                            <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
-                            <span className="block text-[11px] leading-5 text-zinc-500">
-                              Only affects the exported AIOMetadata patterns below. Live ERDB request URLs still use the real keys you provide and are replaced here with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
+                        <div className="space-y-3">
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={hideAiometadataCredentials}
+                              onChange={(event) => setHideAiometadataCredentials(event.target.checked)}
+                              className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                            />
+                            <span className="space-y-1">
+                              <span className="block text-[11px] font-semibold text-zinc-200">Hide credentials</span>
+                              <span className="block text-[11px] leading-5 text-zinc-500">
+                                Only affects the exported AIOMetadata patterns below. Live ERDB request URLs still use the real keys you provide and are replaced here with placeholders such as <span className="font-mono text-zinc-300">{'{erdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{tmdb_key}'}</span>, <span className="font-mono text-zinc-300">{'{mdblist_key}'}</span>, and <span className="font-mono text-zinc-300">{'{fanart_key}'}</span> when needed.
+                              </span>
                             </span>
-                          </span>
-                        </label>
+                          </label>
+                        </div>
                       </div>
                     </div>
 

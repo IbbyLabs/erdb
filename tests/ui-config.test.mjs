@@ -522,7 +522,12 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     hideCredentials: true,
   });
 
-  assert.equal(patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'), true);
+  assert.equal(
+    patterns?.posterUrlPattern.startsWith(
+      'https://erdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+    ),
+    true,
+  );
   assert.equal(
     patterns?.backgroundUrlPattern.startsWith(
       'https://erdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
@@ -584,6 +589,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
+  assert.match(patterns?.posterUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterImageSize=large/);
 });
 
@@ -595,7 +601,9 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
   });
 
   assert.equal(
-    patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'),
+    patterns?.posterUrlPattern.startsWith(
+      'https://erdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+    ),
     true,
   );
   assert.equal(
@@ -623,6 +631,36 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
     assert.match(value, /erdbKey=shared-erdb-key-000/);
     assert.match(value, /fanartKey=fanart-key-789/);
   }
+});
+
+test('AIOMetadata export auto poster ID mode resolves to typed TMDB poster URLs', () => {
+  const config = buildSampleSettings();
+
+  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+    hideCredentials: true,
+    posterIdMode: 'auto',
+  });
+
+  assert.equal(
+    patterns?.posterUrlPattern.startsWith(
+      'https://erdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+    ),
+    true,
+  );
+});
+
+test('AIOMetadata export supports IMDb poster ID mode override', () => {
+  const config = buildSampleSettings();
+
+  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+    hideCredentials: true,
+    posterIdMode: 'imdb',
+  });
+
+  assert.equal(patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'), true);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
+  assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
 });
 
 test('proxy manifest generation stops when required inputs are missing', () => {
