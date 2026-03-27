@@ -52,6 +52,36 @@ const createInput = (overrides = {}) => ({
   ...overrides,
 });
 
+const buildScaleOverrideForType = (imageType, scale) =>
+  imageType === 'poster'
+    ? { posterRatingBadgeScale: scale }
+    : imageType === 'backdrop'
+      ? { backdropRatingBadgeScale: scale }
+      : { logoRatingBadgeScale: scale };
+
+const findChangedTokenIndexes = (leftKey, rightKey) => {
+  const left = leftKey.split('|');
+  const right = rightKey.split('|');
+  const changed = [];
+  const maxLength = Math.max(left.length, right.length);
+  for (let index = 0; index < maxLength; index += 1) {
+    if ((left[index] || '') !== (right[index] || '')) {
+      changed.push(index);
+    }
+  }
+  return changed;
+};
+
+const resolveRatingScaleTokenIndex = (imageType) => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType }));
+  const scaledKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType, ...buildScaleOverrideForType(imageType, 131) }),
+  );
+  const changedIndexes = findChangedTokenIndexes(baseKey, scaledKey);
+  assert.equal(changedIndexes.length, 1);
+  return changedIndexes[0];
+};
+
 test('final image render seed changes when poster rating badge scale changes', () => {
   const baseKey = buildFinalImageRenderSeedKey(createInput());
   const scaledKey = buildFinalImageRenderSeedKey(
@@ -59,6 +89,50 @@ test('final image render seed changes when poster rating badge scale changes', (
   );
 
   assert.notEqual(baseKey, scaledKey);
+});
+
+test('final image render seed changes when backdrop rating badge scale changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const scaledKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropRatingBadgeScale: 121 }),
+  );
+
+  assert.notEqual(baseKey, scaledKey);
+});
+
+test('final image render seed changes when logo rating badge scale changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'logo' }));
+  const scaledKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'logo', logoRatingBadgeScale: 127 }),
+  );
+
+  assert.notEqual(baseKey, scaledKey);
+});
+
+test('historical regression: genre scale and rating scale each bust the render cache key', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const ratingScaledKey = buildFinalImageRenderSeedKey(
+    createInput({ posterRatingBadgeScale: 118 }),
+  );
+  const genreScaledKey = buildFinalImageRenderSeedKey(
+    createInput({ genreBadgeScale: 152 }),
+  );
+
+  assert.notEqual(baseKey, ratingScaledKey);
+  assert.notEqual(baseKey, genreScaledKey);
+});
+
+test('historical regression: changing genre scale does not alter rating scale cache input token', () => {
+  for (const imageType of ['poster', 'backdrop', 'logo']) {
+    const ratingTokenIndex = resolveRatingScaleTokenIndex(imageType);
+    const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType }));
+    const genreScaledKey = buildFinalImageRenderSeedKey(
+      createInput({ imageType, genreBadgeScale: 163 }),
+    );
+    const baseTokens = baseKey.split('|');
+    const genreTokens = genreScaledKey.split('|');
+    assert.equal(baseTokens[ratingTokenIndex], genreTokens[ratingTokenIndex]);
+  }
 });
 
 test('final image render seed changes when poster edge offset changes', () => {
