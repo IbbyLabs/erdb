@@ -259,7 +259,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
               <a href="#preview" onClick={handleAnchorClick} className="px-3 py-2 rounded-full hover:text-white hover:bg-white/[0.04] transition-colors">Configurator</a>
               <a href="#proxy" onClick={handleAnchorClick} className="px-3 py-2 rounded-full hover:text-white hover:bg-white/[0.04] transition-colors">Addon Proxy</a>
               <a href="#docs" onClick={handleAnchorClick} className="px-3 py-2 rounded-full hover:text-white hover:bg-white/[0.04] transition-colors">API Docs</a>
-              <a href="https://github.com/realbestia1/erdb" className="ml-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[10px] text-slate-100 hover:bg-white/10 transition-colors">GitHub</a>
+              <a href="https://github.com/realbestia1/erdb" className="ml-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[10px] text-slate-100 hover:bg-white/10 transition-colors">Upstream ERDB</a>
             </div>
           </div>
         </nav>
@@ -281,6 +281,9 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                   Without the State.
                 </span>
               </h1>
+              <p className="text-lg text-slate-400 leading-relaxed max-w-xl">
+                Built by IbbyLabs, based on ERDB by RealBestia.
+              </p>
               <p className="text-lg text-slate-400 leading-relaxed max-w-xl">
                 Generate expressive posters, backdrops, and logos for addons in real time.
                 Pass parameters once and ship beautiful media metadata anywhere.
@@ -305,6 +308,9 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
                   Proxy ready for addons
+                </div>
+                <div className="px-5 pb-4 pt-3 text-[11px] text-slate-500">
+                  Mapped anime IDs such as AniList, MAL, TVDB, and AniDB depend on mapping availability for the title.
                 </div>
               </div>
             </div>
@@ -839,27 +845,27 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">id <span className="text-slate-500">(path)</span></td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">IMDb, TMDB, Kitsu, etc.</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">IMDb, TMDB, Kitsu, AniList, MAL, TVDB, AniDB</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">-</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (global fallback)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu (global fallback)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterRatings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (poster only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu (poster only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropRatings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (backdrop only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu (backdrop only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">logoRatings</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, letterboxd, metacritic, trakt, simkl, myanimelist, anilist, kitsu (logo only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu (logo only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">all</td>
                       </tr>
                       <tr>
@@ -894,22 +900,22 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">qualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media (global fallback)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media, silver (global fallback)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">posterQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media (poster only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media, silver (poster only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">backdropQualityBadgesStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media (backdrop only)</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, media, silver (backdrop only)</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass</td>
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">ratingStyle</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">glass, square, plain, stacked</td>
                         <td className="px-5 py-2 text-slate-500 text-xs">glass (poster/backdrop), plain (logo)</td>
                       </tr>
                       <tr>
@@ -1000,8 +1006,8 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       </tr>
                       <tr>
                         <td className="px-5 py-2 font-mono text-orange-400 text-xs">logo</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">none (base params only)</td>
-                        <td className="px-5 py-2 text-slate-400 text-xs">-</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">logoRatings, logoRatingsMax, logoBackground, logoArtworkSource</td>
+                        <td className="px-5 py-2 text-slate-400 text-xs">all providers list, auto if omitted, transparent or gradient or solid, tmdb or fanart or cinemeta or random</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1045,7 +1051,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                       <tr>
                         <td className="px-5 py-2 font-bold text-slate-300 text-xs">Anime</td>
                         <td className="px-5 py-2 text-slate-400 text-xs">provider:id</td>
-                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">anilist:123, mal:456</td>
+                        <td className="px-5 py-2 font-mono text-orange-200/50 text-xs">anilist:123, mal:456, tvdb:12345, anidb:6789</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1091,7 +1097,7 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                     </div>
                     <div className="flex gap-2">
                       <span className="text-orange-500 font-bold shrink-0">id (required):</span>
-                      <span className="text-slate-400">IMDb ID (tt...), TMDB ID (tmdb:...), or Kitsu ID (kitsu:...).</span>
+                      <span className="text-slate-400">IMDb ID (tt...), TMDB ID (tmdb:id or typed tmdb:movie:id or tmdb:tv:id), Kitsu ID (kitsu:...), AniList, MAL, TVDB, or AniDB.</span>
                     </div>
                     <div className="flex gap-2">
                       <span className="text-orange-500 font-bold shrink-0">tmdbKey (required):</span>

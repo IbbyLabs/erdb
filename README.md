@@ -3,7 +3,7 @@
 ERDB generates poster/backdrop/logo images with dynamic ratings and quality badges on the fly.
 
 > [!IMPORTANT]
-> This repository is a fork of the original ERDB project at [realbestia1/erdb](https://github.com/realbestia1/erdb).
+> This project is built and maintained by IbbyLabs, and based on ERDB by RealBestia, which you can find at [realbestia1/erdb](https://github.com/realbestia1/erdb).
 
 <!-- changelog-links:start -->
 
@@ -285,6 +285,10 @@ Note: to update ERDB quickly, go to the Space settings and click
 Main endpoint:
 `GET /{type}/{id}.jpg?ratings={providers}&lang={lang}&ratingStyle={style}...`
 
+Response format note:
+- Poster and backdrop responses are returned as JPEG.
+- Logo requests keep the `.jpg` route shape but may return PNG when transparency is preserved.
+
 ### Examples
 - **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en`
 - **Plain backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
@@ -294,7 +298,7 @@ Main endpoint:
 | Parameter | Description | Supported Values | Default |
 |-----------|-------------|------------------|---------|
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` | - |
-| `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123` or `mal:456` | - |
+| `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |

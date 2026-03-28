@@ -186,7 +186,7 @@
 * add fork notice
   
   Add a prominent [!IMPORTANT] callout at the top of the README clarifying that this
-  repository is a fork of the original ERDB project at https://github.com/realbestia1/erdb.
+  project is based on ERDB by RealBestia at https://github.com/realbestia1/erdb.
 
 ## [v2.46.0] - 27/03/2026
 
