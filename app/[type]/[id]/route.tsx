@@ -7387,7 +7387,6 @@ export async function handleImageRequest(
   const backdropRatingsLayout = normalizeBackdropRatingLayout(
     request.nextUrl.searchParams.get('backdropRatingsLayout') ?? rpdbRatingBarAliases.backdropRatingsLayout,
   );
-  // Extract per-type side placement fields with fallback to legacy shared fields
   const posterSideRatingsPosition = normalizeSideRatingPosition(
     request.nextUrl.searchParams.get('posterSideRatingsPosition') ??
     request.nextUrl.searchParams.get('sideRatingsPosition') ??
@@ -7410,7 +7409,6 @@ export async function handleImageRequest(
     request.nextUrl.searchParams.get('sideRatingsOffset'),
     DEFAULT_SIDE_RATING_OFFSET
   );
-  // Type-scoped selection
   const sideRatingsPosition = imageType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
   const sideRatingsOffset = imageType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
   const globalStreamBadgesSetting = normalizeStreamBadgesSetting(request.nextUrl.searchParams.get('streamBadges'));
