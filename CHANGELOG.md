@@ -155,6 +155,53 @@
 
 <a id="v2-46-1"></a>
 
+<a id="v2-47-0"></a>
+
+## [v2.47.0] - 28/03/2026
+
+### Added
+* support provider corner radius
+  
+  Add optional iconCornerRadius support to the local badge icon pipeline without importing the weaker upstream provider URL changes.
+  
+  • extend rating provider metadata and runtime badges with optional iconCornerRadius
+  • include iconCornerRadius in memory and object storage icon cache keys
+  • apply rounded rect masking after the existing local corner background cleanup step
+  • thread iconCornerRadius through badge SVG rendering so square badges use matching clip and border radii
+  • enable built in rounded corners for IMDb and SIMKL while keeping the current icon URLs
+  
+  fix(logo layout): preserve full width for dense badge rows
+  
+  • add preserveBadgeSize support to the shared badge row composer and use it for logo rows
+  • increase logo badge icon, font, padding, and gap metrics
+  • let logoBadgeMaxWidth use the full available container width
+  • bump the render cache version for the visual layout change
+  
+  fix(stream badges): use actual season and episode in TV badge ID
+  
+      Align Torrentio badge cache IDs and fetch IDs for TV with the actual season and episode from the request.
+  
+  • append season and episode to the TV badge cache ID before TTL calculation
+  • replace the hardcoded :1:1 fetch suffix with request aware season and episode values
+  • keep the local imdbId resolution path and surrounding cache logic intact
+  
+      This prevents different episodes from sharing the same badge lookup and cache bucket while preserving the local branch's richer ID resolution behavior.
+
+### Documentation
+* align public docs with runtime behavior
+  
+  • update README response and ID docs to match current poster, backdrop, logo, and mapped anime behavior
+  • refresh configurator copy to remove stale logo quality badge guidance and add mapping availability notes
+  • align home page API tables and changelog wording with the current supported providers, styles, and branding
+
+### Other Changes
+* sync upstream changes
+* align workspace updates
+  
+  Apply current workspace adjustments for routing and TypeScript config.
+  
+  Keep behavior unchanged while resolving editor and configuration consistency.
+
 ## [v2.46.1] - 27/03/2026
 
 ### Fixed
