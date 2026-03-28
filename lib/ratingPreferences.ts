@@ -18,6 +18,7 @@ export const RATING_PROVIDER_OPTIONS = [
     label: 'IMDb',
     iconUrl: 'https://www.google.com/s2/favicons?domain=imdb.com&sz=64',
     accentColor: '#f5c518',
+    iconCornerRadius: 8,
   },
   {
     id: 'tomatoes',
@@ -61,6 +62,7 @@ export const RATING_PROVIDER_OPTIONS = [
     label: 'SIMKL',
     iconUrl: 'https://www.google.com/s2/favicons?domain=simkl.com&sz=64',
     accentColor: '#00b4ff',
+    iconCornerRadius: 16,
   },
   {
     id: 'rogerebert',

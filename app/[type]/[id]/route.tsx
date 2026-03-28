@@ -367,7 +367,7 @@ const normalizeBlockbusterDensity = (
   }
   return fallback;
 };
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v75';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v76';
 const ERDB_REQUEST_API_KEYS = getConfiguredErdbRequestKeys();
 const ANILIST_GRAPHQL_URL = process.env.ERDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const MYANIMELIST_API_BASE_URL =
@@ -704,6 +704,7 @@ type RatingBadge = {
   sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  iconCornerRadius?: number;
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   iconScalePercent?: number;
@@ -3183,10 +3184,10 @@ const isTmdbSourceImageUrl = (value: string) => {
   }
 };
 
-const buildProviderIconStorageKey = (iconUrl: string) =>
-  `icons/${PROVIDER_ICON_CACHE_VERSION}/${sha1Hex(iconUrl)}.png`;
-const buildProviderIconMemoryCacheKey = (iconUrl: string) =>
-  `icon:${PROVIDER_ICON_CACHE_VERSION}:${iconUrl}`;
+const buildProviderIconStorageKey = (iconUrl: string, iconCornerRadius = 0) =>
+  `icons/${PROVIDER_ICON_CACHE_VERSION}/${sha1Hex(`${iconUrl}|r:${iconCornerRadius}`)}.png`;
+const buildProviderIconMemoryCacheKey = (iconUrl: string, iconCornerRadius = 0) =>
+  `icon:${PROVIDER_ICON_CACHE_VERSION}:${iconUrl}|r:${iconCornerRadius}`;
 
 const isLightNeutralPixel = (r: number, g: number, b: number, alpha: number) => {
   if (alpha < 200) return false;
@@ -3258,10 +3259,15 @@ const stripCornerBackgroundFromIcon = async (sharp: any, buffer: Buffer) => {
     .toBuffer();
 };
 
-const readProviderIconFromStorage = async (iconUrl: string): Promise<string | null> => {
+const readProviderIconFromStorage = async (
+  iconUrl: string,
+  iconCornerRadius = 0,
+): Promise<string | null> => {
   if (!isObjectStorageConfigured()) return null;
   try {
-    const payload = await getCachedImageFromObjectStorage(buildProviderIconStorageKey(iconUrl));
+    const payload = await getCachedImageFromObjectStorage(
+      buildProviderIconStorageKey(iconUrl, iconCornerRadius)
+    );
     if (!payload) return null;
     const buffer = Buffer.from(payload.body);
     const contentType = toImageContentType(payload.contentType);
@@ -3271,10 +3277,14 @@ const readProviderIconFromStorage = async (iconUrl: string): Promise<string | nu
   }
 };
 
-const writeProviderIconToStorage = async (iconUrl: string, buffer: Buffer) => {
+const writeProviderIconToStorage = async (
+  iconUrl: string,
+  buffer: Buffer,
+  iconCornerRadius = 0,
+) => {
   if (!isObjectStorageConfigured()) return;
   try {
-    await putCachedImageToObjectStorage(buildProviderIconStorageKey(iconUrl), {
+    await putCachedImageToObjectStorage(buildProviderIconStorageKey(iconUrl, iconCornerRadius), {
       body: bufferToArrayBuffer(buffer),
       contentType: 'image/png',
       cacheControl: buildSourceImageFallbackCacheControl(PROVIDER_ICON_CACHE_TTL_MS),
@@ -3611,14 +3621,17 @@ const getRemoteImageAspectRatio = async (imgUrl: string): Promise<number | null>
   }
 };
 
-const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> => {
+const getProviderIconDataUri = async (
+  iconUrl: string,
+  iconCornerRadius = 0,
+): Promise<string | null> => {
   const normalizedIconUrl = iconUrl.trim();
   if (!normalizedIconUrl) return null;
   if (normalizedIconUrl.startsWith('data:')) {
     return normalizedIconUrl;
   }
 
-  const memoryCacheKey = buildProviderIconMemoryCacheKey(normalizedIconUrl);
+  const memoryCacheKey = buildProviderIconMemoryCacheKey(normalizedIconUrl, iconCornerRadius);
 
   const localCached = getMetadata<string>(memoryCacheKey);
   if (localCached) {
@@ -3629,7 +3642,7 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
     const warmLocal = getMetadata<string>(memoryCacheKey);
     if (warmLocal) return warmLocal;
 
-    const storageCached = await readProviderIconFromStorage(normalizedIconUrl);
+    const storageCached = await readProviderIconFromStorage(normalizedIconUrl, iconCornerRadius);
     if (storageCached) {
       setMetadata(memoryCacheKey, storageCached, PROVIDER_ICON_CACHE_TTL_MS);
       return storageCached;
@@ -3648,12 +3661,22 @@ const getProviderIconDataUri = async (iconUrl: string): Promise<string | null> =
         })
         .png({ compressionLevel: 6 })
         .toBuffer();
-      const outputBuffer = await stripCornerBackgroundFromIcon(sharp, resizedBuffer);
+      let outputBuffer = await stripCornerBackgroundFromIcon(sharp, resizedBuffer);
+      if (iconCornerRadius > 0) {
+        const radius = Math.max(1, Math.min(48, Math.round(iconCornerRadius)));
+        const roundedMask = Buffer.from(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="${radius}" ry="${radius}" fill="white"/></svg>`
+        );
+        outputBuffer = await sharp(outputBuffer)
+          .composite([{ input: roundedMask, blend: 'dest-in' }])
+          .png({ compressionLevel: 6 })
+          .toBuffer();
+      }
       const outputContentType = 'image/png';
 
       const dataUri = `data:${outputContentType};base64,${outputBuffer.toString('base64')}`;
       setMetadata(memoryCacheKey, dataUri, PROVIDER_ICON_CACHE_TTL_MS);
-      await writeProviderIconToStorage(normalizedIconUrl, outputBuffer);
+      await writeProviderIconToStorage(normalizedIconUrl, outputBuffer, iconCornerRadius);
 
       return dataUri;
     } catch {
@@ -5041,6 +5064,7 @@ const buildBadgeSvg = ({
   accentColor,
   monogram,
   iconDataUri,
+  iconCornerRadius = 0,
   iconKey,
   labelText,
   value,
@@ -5074,6 +5098,7 @@ const buildBadgeSvg = ({
   accentColor: string;
   monogram: string;
   iconDataUri?: string | null;
+  iconCornerRadius?: number;
   iconKey?: BadgeKey;
   labelText?: string;
   value: string;
@@ -5361,7 +5386,7 @@ ${monogramText}
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${iconRadius}" fill="rgb(10,10,10)" />`
+        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${Math.max(4, iconCornerRadius || iconRadius)}" fill="rgb(10,10,10)" />`
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="1.5" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
@@ -5369,13 +5394,15 @@ ${monogramText}
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconRadius - 1)}" />`
+        ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconCornerRadius || iconRadius - 1)}" />`
         : `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 1)}" />`;
   const iconBorder =
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? ''
+        ? iconCornerRadius > 0
+          ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconCornerRadius || iconRadius - 1)}" fill="none" stroke="rgba(255,255,255,0.18)" />`
+          : ''
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 0.75)}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.75" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="none" stroke="rgba(255,255,255,0.45)" />`;
@@ -5456,7 +5483,10 @@ const renderWithSharp = async (
     if (input.badges.length > 0) {
       const iconEntries = await Promise.all(
         input.badges.map(async (badge) => {
-          const iconDataUri = await getProviderIconDataUri(badge.iconUrl);
+          const iconDataUri = await getProviderIconDataUri(
+            badge.iconUrl,
+            badge.iconCornerRadius || 0
+          );
           const preferNeutralGlassPlate = await shouldUseNeutralGlassPlateForIcon(iconDataUri);
           return [badge.key, { dataUri: iconDataUri, preferNeutralGlassPlate }] as const;
         })
@@ -5920,6 +5950,7 @@ const renderWithSharp = async (
         align?: 'left' | 'center' | 'right';
         splitAcrossHalves?: boolean;
         spreadAcrossThirds?: boolean;
+        preserveBadgeSize?: boolean;
       }
     ) => {
       if (rowBadges.length === 0) return;
@@ -5956,7 +5987,7 @@ const renderWithSharp = async (
         rowEntries.reduce((acc, entry) => acc + entry.badgeWidth, 0) +
         Math.max(0, rowEntries.length - 1) * rowGap;
       let rowWidth = measureCurrentRowWidth();
-      if (rowWidth > effectiveMaxWidth && rowEntries.length > 1 && rowGap > 0) {
+      if (!options?.preserveBadgeSize && rowWidth > effectiveMaxWidth && rowEntries.length > 1 && rowGap > 0) {
         const shrinkPerGap = Math.min(
           rowGap,
           Math.max(1, Math.ceil((rowWidth - effectiveMaxWidth) / (rowEntries.length - 1)))
@@ -5964,7 +5995,7 @@ const renderWithSharp = async (
         rowGap = Math.max(0, rowGap - shrinkPerGap);
         rowWidth = measureCurrentRowWidth();
       }
-      if (rowWidth > effectiveMaxWidth) {
+      if (!options?.preserveBadgeSize && rowWidth > effectiveMaxWidth) {
         let overflow = rowWidth - effectiveMaxWidth;
         let guard = 0;
         while (overflow > 0 && guard < rowEntries.length * 8) {
@@ -6162,6 +6193,7 @@ const renderWithSharp = async (
         accentColor: badge.accentColor,
         monogram,
         iconDataUri: iconRenderStateByProvider.get(badge.key)?.dataUri || null,
+        iconCornerRadius: badge.iconCornerRadius,
         iconKey: badge.key,
         labelText: badge.label,
         value: badge.value,
@@ -6676,7 +6708,10 @@ const renderWithSharp = async (
           input.outputHeight +
           Math.max(0, Math.floor((input.logoBadgeBandHeight - rowsTotalHeight) / 2));
         for (const row of rows) {
-          composeBadgeRow(row, rowY, { maxRowWidth: input.logoBadgeMaxWidth });
+          composeBadgeRow(row, rowY, {
+            maxRowWidth: input.logoBadgeMaxWidth,
+            preserveBadgeSize: true,
+          });
           rowY += ratingBadgeHeight + input.badgeGap;
         }
       }
@@ -8057,6 +8092,11 @@ export async function handleImageRequest(
       if (!torrentioIdForCache && tmdbIdForCache) {
         torrentioIdForCache = `tmdb:${tmdbIdForCache}`;
       }
+      if (mediaType === 'tv' && torrentioIdForCache) {
+        const streamSeason = season || '1';
+        const streamEpisode = episode || '1';
+        torrentioIdForCache = `${torrentioIdForCache}:${streamSeason}:${streamEpisode}`;
+      }
       const streamBadgesWindowTtlMs = shouldRenderStreamBadges
           ? mediaType && torrentioIdForCache
           ? getRatingCacheTtlMs({
@@ -8763,7 +8803,9 @@ export async function handleImageRequest(
               return { badges: [], cacheTtlMs: TORRENTIO_CACHE_TTL_MS };
             }
             const torrentioType = mediaType === 'movie' ? 'movie' : 'series';
-            const torrentioId = torrentioType === 'series' ? `${baseTorrentioId}:1:1` : baseTorrentioId;
+            const torrentioId = torrentioType === 'series'
+              ? `${baseTorrentioId}:${season || '1'}:${episode || '1'}`
+              : baseTorrentioId;
             const torrentioCacheTtlMs = getRatingCacheTtlMs({
               id: baseTorrentioId,
               mediaType: resolvedRatingMediaType,
@@ -9580,6 +9622,7 @@ export async function handleImageRequest(
           sourceValue,
           iconUrl: providerAppearance?.iconUrl || appearance.iconUrl,
           accentColor: providerAppearance?.accentColor || appearance.accentColor,
+          iconCornerRadius: 'iconCornerRadius' in meta ? meta.iconCornerRadius : undefined,
           iconScalePercent:
             providerAppearance?.iconScalePercent || DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
           stackedLineVisible:
@@ -9793,11 +9836,11 @@ export async function handleImageRequest(
         badgeTopOffset = 24;
         badgeBottomOffset = 24;
       } else if (useLogoBadgeLayout) {
-        badgeIconSize = 80;
-        badgeFontSize = 60;
-        badgePaddingY = 20;
-        badgePaddingX = 32;
-        badgeGap = 18;
+        badgeIconSize = 92;
+        badgeFontSize = 68;
+        badgePaddingY = 24;
+        badgePaddingX = 38;
+        badgeGap = 22;
       }
       badgeTopOffset = Math.max(12, Math.round(badgeTopOffset * overlayAutoScale));
       badgeBottomOffset = Math.max(12, Math.round(badgeBottomOffset * overlayAutoScale));
@@ -10051,7 +10094,7 @@ export async function handleImageRequest(
       const badgesForIcons = cappedRatingBadges;
       const logoNaturalWidth = useLogoBadgeLayout ? outputWidth : 0;
       const finalOutputWidth = useLogoBadgeLayout && logoBadgeRowWidth > 0
-        ? Math.min(LOGO_MAX_WIDTH, Math.max(logoNaturalWidth, logoBadgeRowWidth + 72))
+        ? Math.max(logoNaturalWidth, logoBadgeRowWidth + 72)
         : outputWidth;
       const logoImageWidth = useLogoBadgeLayout ? logoNaturalWidth : 0;
       const logoImageHeight = useLogoBadgeLayout ? outputHeight : 0;
@@ -10071,13 +10114,7 @@ export async function handleImageRequest(
       );
       const estimatedLogoWidth = logoImageWidth;
       const logoBadgeContainerMaxWidth = Math.max(0, finalOutputWidth - 24);
-      const logoBadgeMaxWidth = Math.min(
-        logoBadgeContainerMaxWidth,
-        Math.max(
-          Math.min(520, logoBadgeContainerMaxWidth),
-          Math.max(Math.round(estimatedLogoWidth * 1.18), logoBadgeRowWidth + 24)
-        )
-      );
+      const logoBadgeMaxWidth = logoBadgeContainerMaxWidth;
       const logoBadgeBandHeight = useLogoBadgeLayout && cappedRatingBadges.length > 0
         ? Math.max(
             ratingStyle === 'stacked' ? 196 : 170,
