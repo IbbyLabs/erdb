@@ -170,6 +170,7 @@ pre {
 }
 
 .erdb-nav-mobile-row,
+.erdb-nav-mobile-status,
 .erdb-mobile-nav-drawer {
 	display: none;
 }
@@ -219,6 +220,26 @@ pre {
 		radial-gradient(circle at top right, rgba(124, 58, 237, 0.18), transparent 42%);
 	box-shadow: 0 32px 72px -48px rgba(2, 1, 8, 0.98);
 	backdrop-filter: blur(18px);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transform: translateY(-0.65rem) scale(0.98);
+	transform-origin: top center;
+	transition:
+		opacity 0.22s ease,
+		transform 0.22s ease,
+		visibility 0s linear 0.22s;
+}
+
+.erdb-mobile-nav-drawer.is-open {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transform: translateY(0) scale(1);
+	transition:
+		opacity 0.22s ease,
+		transform 0.22s ease,
+		visibility 0s linear 0s;
 }
 
 .erdb-mobile-nav-status,
@@ -1470,7 +1491,7 @@ pre {
 
 @media (max-width: 860px) {
 	.erdb-chrome {
-		position: static;
+		position: relative;
 		top: auto;
 	}
 
@@ -1488,6 +1509,12 @@ pre {
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
+	}
+
+	.erdb-nav-mobile-status {
+		display: grid;
+		width: 100%;
+		gap: 0.75rem;
 	}
 
 	.erdb-nav-mobile-row .site-brand-lockup {

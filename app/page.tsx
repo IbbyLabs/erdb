@@ -269,7 +269,7 @@ const BRAND_GITHUB_URL = process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://gi
 const BRAND_SUPPORT_URL = process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 const BRAND_UPTIME_URL = process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
 const BRAND_DISCORD_AIO_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_URL || 'https://discord.gg/5S2nTdV2uD';
-const BRAND_DISCORD_AIO_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_LABEL || 'ERDB in AIOStreams';
+const BRAND_DISCORD_AIO_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_LABEL || 'ERDB in AIOStreams Discord';
 const BRAND_DISCORD_OFFICIAL_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_URL || 'https://discord.gg/wPY2pcqjmm';
 const BRAND_DISCORD_OFFICIAL_LABEL = process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_LABEL || 'Official ERDB Discord';
 const BRAND_DISCORD_DM_URL = process.env.NEXT_PUBLIC_BRAND_DISCORD_DM_URL || 'https://discord.com/users/947862578682548255';
@@ -3189,10 +3189,16 @@ export default function Home() {
         {previewUrl && !previewErrored ? (
           <div className="z-10 w-full flex flex-col items-center gap-8">
             <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
-              ? 'aspect-[2/3] w-full max-w-[18rem]'
+              ? workspaceCenterView === 'preview'
+                ? 'aspect-[2/3] w-full max-w-[24rem]'
+                : 'aspect-[2/3] w-full max-w-[18rem]'
               : previewType === 'logo'
-                ? 'h-48 w-full max-w-xl'
-                : 'aspect-video w-full max-w-2xl'
+                ? workspaceCenterView === 'preview'
+                  ? 'h-56 w-full max-w-2xl'
+                  : 'h-48 w-full max-w-xl'
+                : workspaceCenterView === 'preview'
+                  ? 'aspect-video w-full max-w-4xl'
+                  : 'aspect-video w-full max-w-2xl'
               }`}>
               <Image
                 key={previewUrl}
@@ -5515,7 +5521,7 @@ export default function Home() {
               <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
               <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
               <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-nav-link">github</a>
-              <UptimePill label="Uptime" />
+              <UptimePill label="Uptime Tracker" />
               <SupportPill label="Support" />
             </div>
           </div>
@@ -5535,36 +5541,38 @@ export default function Home() {
               </span>
             </button>
           </div>
-          {isMobileNavOpen ? (
-            <div id="site-mobile-nav" className="erdb-mobile-nav-drawer">
-              <div className="erdb-mobile-nav-status">
-                <DeploymentVersionPill compact />
-                <LatestReleasePill
-                  compact
-                  releaseTag={latestReleaseTag}
-                  releaseUrl={latestReleaseUrl}
-                  loading={isLatestReleaseLoading}
-                  pendingTag={pendingReleaseTag}
-                />
-              </div>
-              <div className="erdb-mobile-nav-links">
-                <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
-                <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
-                <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
-                <a
-                  href={BRAND_GITHUB_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="erdb-nav-link"
-                  onClick={closeMobileNav}
-                >
-                  github
-                </a>
-                <UptimePill label="Uptime" />
-                <SupportPill label="Support" />
-              </div>
+          <div className="erdb-nav-mobile-status">
+            <DeploymentVersionPill compact />
+            <LatestReleasePill
+              compact
+              releaseTag={latestReleaseTag}
+              releaseUrl={latestReleaseUrl}
+              loading={isLatestReleaseLoading}
+              pendingTag={pendingReleaseTag}
+            />
+          </div>
+          <div
+            id="site-mobile-nav"
+            aria-hidden={!isMobileNavOpen}
+            className={`erdb-mobile-nav-drawer${isMobileNavOpen ? ' is-open' : ''}`}
+          >
+            <div className="erdb-mobile-nav-links">
+              <a href="#preview" onClick={handleAnchorClick} className="erdb-nav-link">Configurator</a>
+              <a href="#proxy" onClick={handleAnchorClick} className="erdb-nav-link">Addon Proxy</a>
+              <a href="#docs" onClick={handleAnchorClick} className="erdb-nav-link">API Docs</a>
+              <a
+                href={BRAND_GITHUB_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="erdb-nav-link"
+                onClick={closeMobileNav}
+              >
+                github
+              </a>
+              <UptimePill label="Uptime Tracker" />
+              <SupportPill label="Support" />
             </div>
-          ) : null}
+          </div>
         </div>
       </nav>
 
@@ -5575,15 +5583,6 @@ export default function Home() {
             <div className="erdb-hero-copy">
               <div className="erdb-hero-meta">
                 <p className="site-section-eyebrow font-mono">IbbyLabs image engine</p>
-                <div className="erdb-version-pill-group">
-                  <DeploymentVersionPill />
-                  <LatestReleasePill
-                    releaseTag={latestReleaseTag}
-                    releaseUrl={latestReleaseUrl}
-                    loading={isLatestReleaseLoading}
-                    pendingTag={pendingReleaseTag}
-                  />
-                </div>
               </div>
               <h1 className="erdb-hero-title font-bold text-white">
                 Stunning Ratings.<br />
@@ -5955,23 +5954,18 @@ export default function Home() {
                   ) : workspaceCenterView === 'preview' ? (
                     <div className="mt-3 space-y-3">
                       {workspacePreviewFrame}
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Presentation</div>
-                          <div className="mt-2 text-sm font-semibold text-white">
-                            {activePresentationOptionMeta?.label || 'Standard'}
-                          </div>
+                      <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(19,15,33,0.92),rgba(10,8,18,0.98))] p-4">
+                        <div className="flex flex-wrap gap-2">
+                          {currentSetupItems.map((item) => (
+                            <div key={item.label} className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-2">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{item.label}</span>
+                              <span className="ml-2 text-[11px] font-semibold text-white">{item.value}</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Style</div>
-                          <div className="mt-2 text-sm font-semibold text-white">
-                            {RATING_STYLE_OPTIONS.find((option) => option.id === activeRatingStyle)?.label || 'Default'}
-                          </div>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Providers</div>
-                          <div className="mt-2 text-sm font-semibold text-white">{enabledProviderCount} active</div>
-                        </div>
+                        <p className="mt-3 text-[12px] leading-6 text-zinc-400">
+                          Preview stays focused on the live render so I can judge badge balance, artwork crop, and spacing without the sample board competing for attention.
+                        </p>
                       </div>
                     </div>
                   ) : (
@@ -6057,6 +6051,7 @@ export default function Home() {
                     </div>
                   ) : null}
 
+                  {workspaceCenterView === 'preview' ? null : (
                   <div className="mt-4 border-t border-white/10 pt-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -6137,6 +6132,7 @@ export default function Home() {
                     </div>
                   )}
                   </div>
+                  )}
                     </div>
                   </div>
                 </div>
@@ -7398,7 +7394,7 @@ export default function Home() {
             <a href="#proxy" onClick={handleAnchorClick} className="erdb-footer-link">Addon Proxy</a>
             <a href="#docs" onClick={handleAnchorClick} className="erdb-footer-link">API Docs</a>
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">github</a>
-            <a href={BRAND_DISCORD_AIO_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">ERDB in AIOStreams</a>
+            <a href={BRAND_DISCORD_AIO_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">ERDB in AIOStreams Discord</a>
             <a href={BRAND_DISCORD_OFFICIAL_URL} target="_blank" rel="noreferrer" className="erdb-footer-link">Official ERDB Discord</a>
           </div>
           <div className="site-page-credit">
