@@ -4090,10 +4090,10 @@ const getSummaryBadgeHorizontalMetrics = (
 ) => {
   const summaryLabel = label.trim().toUpperCase();
   const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
-  const chipPaddingX = Math.max(10, Math.round(paddingX * 0.55));
+  const chipPaddingX = Math.max(9, Math.round(paddingX * 0.48));
   const chipWidth = estimateSummaryLabelWidth(summaryLabel, summaryLabelFontSize) + chipPaddingX * 2;
-  const contentGap = Math.max(10, Math.round(paddingX * 0.7));
-  const sideInset = Math.max(12, Math.round(paddingX * 0.95));
+  const contentGap = Math.max(8, Math.round(paddingX * 0.52));
+  const sideInset = Math.max(10, Math.round(paddingX * 0.78));
   return {
     summaryLabel,
     summaryLabelFontSize,
@@ -4984,10 +4984,10 @@ const buildGenreBadgeSvg = (
         : 4
       : showText
         ? showIcon
-          ? 16
-          : 18
-        : 14;
-  const iconGap = showIcon && showText ? Math.max(9, Math.round(height * 0.22)) : 0;
+          ? 13
+          : 15
+        : 12;
+  const iconGap = showIcon && showText ? Math.max(7, Math.round(height * 0.16)) : 0;
   const labelWidth = showText ? estimateGenreBadgeLabelWidth(label, fontSize) : 0;
   const width = Math.max(
     height,
@@ -4995,17 +4995,19 @@ const buildGenreBadgeSvg = (
   );
   const iconX = paddingX;
   const iconY = Math.round((height - iconSize) / 2);
+  const iconCenterX = Math.round(iconX + iconSize / 2);
+  const iconCenterY = Math.round(iconY + iconSize / 2);
   const textX = iconX + (showIcon ? iconSize + iconGap : 0);
   const textCenterX = textX + Math.round(labelWidth / 2);
-  const textY = Math.round(height * 0.62);
+  const textY = Math.round(height / 2 + fontSize * 0.05);
   const iconMarkup = showIcon
-    ? `<g transform="translate(${iconX} ${iconY}) scale(${iconSize / 24})">${buildGenreBadgeIconMarkup({
+    ? `<g transform="translate(${iconCenterX} ${iconCenterY}) scale(${iconSize / 24}) translate(-12 -12)">${buildGenreBadgeIconMarkup({
         familyId: genreBadge.familyId,
         color: genreBadge.accentColor,
       })}</g>`
     : '';
   const textMarkup = showText
-    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}">${escapeXml(label)}</text>`
+    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}">${escapeXml(label)}</text>`
     : '';
   const plainShadowFilter = `<defs><filter id="genreBadgeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" flood-color="rgba(0,0,0,0.68)"/><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="rgba(0,0,0,0.32)"/></filter></defs>`;
 
@@ -5178,13 +5180,18 @@ ${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accen
         summaryLabel,
         summaryLabelFontSize,
         sideInset,
+        contentGap,
+        chipWidth,
       } = getSummaryBadgeHorizontalMetrics(labelText || '', fontSize, paddingX);
-      const labelX = sideInset;
+      const valueWidth = estimateBadgeTextWidth(value, fontSize, false);
+      const contentWidth = chipWidth + contentGap + valueWidth;
+      const contentLeft = Math.max(sideInset, Math.round((width - contentWidth) / 2));
+      const labelX = Math.round(contentLeft + chipWidth / 2);
       const labelY = Math.max(
         Math.round(height * 0.38),
         Math.round(centerY - summaryLabelFontSize * 0.25),
       );
-      const valueX = width - sideInset;
+      const valueX = contentLeft + contentWidth;
       const valueY = Math.round(centerY + fontSize * 0.22);
       const accentRailWidth = Math.max(24, Math.round(width * 0.14));
       const accentRailY = Math.max(
@@ -5194,7 +5201,7 @@ ${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accen
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
 ${accentBarVisible ? `<rect x="${sideInset}" y="${accentRailY}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />` : ''}
-<text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="start" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
+<text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
 <text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
@@ -5254,14 +5261,17 @@ ${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accen
       summaryLabelFontSize,
       sideInset,
       chipWidth,
+      contentGap,
     } = getSummaryBadgeHorizontalMetrics(labelText || '', fontSize, paddingX);
+    const valueWidth = estimateBadgeTextWidth(value, fontSize, false);
     const chipHeight = Math.max(summaryLabelFontSize + 12, Math.round(height * 0.56));
     const chipY = Math.round((height - chipHeight) / 2);
     const chipRadius = Math.round(chipHeight / 2);
-    const chipX = sideInset;
+    const contentWidth = chipWidth + contentGap + valueWidth;
+    const chipX = Math.max(sideInset, Math.round((width - contentWidth) / 2));
     const labelX = Math.round(chipX + chipWidth / 2);
     const labelY = Math.round(chipY + chipHeight / 2 + 1);
-    const valueX = width - sideInset;
+    const valueX = chipX + contentWidth;
     const valueY = Math.round(centerY + 1);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
@@ -5386,7 +5396,7 @@ ${monogramText}
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${Math.max(4, iconCornerRadius || iconRadius)}" fill="rgb(10,10,10)" />`
+        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${Math.max(4, iconCornerRadius || iconRadius)}" fill="${iconKey === 'tomatoes' || iconKey === 'tomatoesaudience' ? 'rgba(255,248,240,0.96)' : 'rgb(10,10,10)'}" />`
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="1.5" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
@@ -5413,7 +5423,7 @@ ${monogramText}
       ? ''
       : ratingStyle === 'plain'
         ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet"${plainIconFilter} />`
-        : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#icon-clip)" />${iconBorder}`;
+        : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#icon-clip)" />${iconBorder}`;
   const monogramText =
     iconDataUri
       ? ''

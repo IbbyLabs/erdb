@@ -393,6 +393,16 @@ const SIMPLE_PRESENTATION_IDS: RatingPresentation[] = [
   'average',
   'blockbuster',
 ];
+const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
+  'standard',
+  'editorial',
+  'average',
+  'dual',
+  'minimal',
+  'dual-minimal',
+  'blockbuster',
+  'none',
+];
 const RATING_PROVIDER_DOC_VALUES = ALL_RATING_PREFERENCES.join(', ');
 const QUALITY_BADGE_DOC_VALUES = QUALITY_BADGE_OPTIONS.map((option) => option.id).join(', ');
 const TMDB_LANGUAGE_DOC_COPY = 'Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)';
@@ -1520,11 +1530,12 @@ export default function Home() {
       frame = 0;
       const navIsSticky = isNavSticky();
       const maxDistance = Math.max(180, Math.min(320, hero.offsetHeight * 0.45));
-      const progress = navIsSticky
+      const shouldCompactNav = navIsSticky && window.innerWidth < 861;
+      const progress = shouldCompactNav
         ? Math.min(1, Math.max(0, window.scrollY / maxDistance))
         : 0;
       page.style.setProperty('--scroll-compact-progress', progress.toFixed(3));
-      page.dataset.compactNav = navIsSticky && progress > 0.04 ? 'true' : 'false';
+      page.dataset.compactNav = shouldCompactNav && progress > 0.04 ? 'true' : 'false';
       page.style.setProperty(
         '--workspace-sticky-top',
         `${Math.ceil((navRef.current ?? nav).getBoundingClientRect().height + 16)}px`,
@@ -3095,6 +3106,12 @@ export default function Home() {
   const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
   const isEditorialPresentation = activeRatingPresentation === 'editorial';
   const usesStackedRatingStyle = activeRatingStyle === 'stacked';
+  const selectorGroupClass = 'flex flex-wrap gap-1 rounded-lg border border-white/10 bg-zinc-900 p-1';
+  const selectorButtonClass = (active: boolean) =>
+    `rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+      active ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+    }`;
+  const settingsCardClass = 'rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2';
   const layoutPlacementHelp =
     previewType === 'poster'
       ? 'top, bottom, left, or right'
@@ -3264,9 +3281,11 @@ export default function Home() {
       </div>
 
       {isWizardActive ? (
-        wizardRecommendedPreset ? (
-          <div className="mt-4 space-y-4">
-            <div className="rounded-2xl border border-violet-500/30 bg-[linear-gradient(145deg,rgba(76,29,149,0.18),rgba(9,9,11,0.88))] p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
+          <div className="max-h-[min(92vh,880px)] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-violet-500/30 bg-[linear-gradient(180deg,rgba(22,16,36,0.96),rgba(7,7,11,0.98))] p-4 shadow-[0_28px_120px_rgba(0,0,0,0.55)] md:p-5">
+            {wizardRecommendedPreset ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-violet-500/30 bg-[linear-gradient(145deg,rgba(76,29,149,0.18),rgba(9,9,11,0.88))] p-4">
               <div className="flex flex-col items-start gap-3">
                 <div className="min-w-0">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
@@ -3316,9 +3335,9 @@ export default function Home() {
                 </button>
               </div>
             </div>
-          </div>
-        ) : wizardActiveQuestion ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+              </div>
+            ) : wizardActiveQuestion ? (
+              <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
@@ -3375,8 +3394,10 @@ export default function Home() {
                 Cancel
               </button>
             </div>
+              </div>
+            ) : null}
           </div>
-        ) : null
+        </div>
       ) : (
         <>
           <div className="mt-4 grid gap-3">
@@ -3673,29 +3694,33 @@ export default function Home() {
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
       <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
       <div className="grid gap-2 md:grid-cols-2">
-        {RATING_PRESENTATION_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            onClick={() => setRatingPresentationForType(option.id)}
-            className={`rounded-xl border p-3 text-left transition-colors ${
-              activeRatingPresentation === option.id
-                ? 'border-violet-500/60 bg-violet-500/10 text-white'
-                : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
-            }`}
-          >
-            <div className="flex min-h-[3rem] flex-col items-start gap-2">
-              <span className="min-w-0 break-words text-sm font-semibold">{option.label}</span>
-              {activeRatingPresentation === option.id && (
-                <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
-                  Selected
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
-              {option.description}
-            </p>
-          </button>
-        ))}
+        {PRESENTATION_SECTION_ORDER.map((id) => {
+          const option = RATING_PRESENTATION_OPTIONS.find((entry) => entry.id === id);
+          if (!option) return null;
+          return (
+            <button
+              key={option.id}
+              onClick={() => setRatingPresentationForType(option.id)}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                activeRatingPresentation === option.id
+                  ? 'border-violet-500/60 bg-violet-500/10 text-white'
+                  : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+              }`}
+            >
+              <div className="flex min-h-[3rem] flex-col items-start gap-2">
+                <span className="min-w-0 break-words text-sm font-semibold">{option.label}</span>
+                {activeRatingPresentation === option.id && (
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                    Selected
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                {option.description}
+              </p>
+            </button>
+          );
+        })}
       </div>
       {layoutPlacementHelp ? (
         <p className="text-[11px] leading-relaxed text-zinc-500">
@@ -3901,24 +3926,25 @@ export default function Home() {
   const lookSection = (
     <>
       <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div>
+        <div className="text-[11px] font-semibold text-zinc-400">Appearance</div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
-            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {RATING_STYLE_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeRatingStyle === opt.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>{opt.label}</button>
+                <button key={opt.id} onClick={() => setRatingStyleForType(opt.id as RatingStyle)} className={selectorButtonClass(activeRatingStyle === opt.id)}>{opt.label}</button>
               ))}
             </div>
           </div>
           {previewType !== 'logo' && (
-            <div>
+            <div className={settingsCardClass}>
               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
-              <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+              <div className={selectorGroupClass}>
                 {activeImageTextOptions.map((option) => (
                   <button
                     key={option.id}
                     onClick={() => setImageTextForType(option.id)}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeImageText === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}
+                    className={selectorButtonClass(activeImageText === option.id)}
                     title={option.description}
                   >
                     {option.label}
@@ -3927,16 +3953,14 @@ export default function Home() {
               </div>
             </div>
           )}
-          <div>
+          <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Rating Values</span>
-            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {RATING_VALUE_MODE_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setRatingValueMode(option.id)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    ratingValueMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={selectorButtonClass(ratingValueMode === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -3944,16 +3968,14 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div>
+          <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
-            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {GENRE_BADGE_MODE_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setActiveGenreBadgeMode(option.id)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    activeGenreBadgeMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={selectorButtonClass(activeGenreBadgeMode === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -3961,16 +3983,14 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div>
+          <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Style</span>
-            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {GENRE_BADGE_STYLE_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setActiveGenreBadgeStyle(option.id)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    activeGenreBadgeStyle === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={selectorButtonClass(activeGenreBadgeStyle === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -3978,16 +3998,14 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div>
+          <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
-            <div className="erdb-toggle-group flex flex-wrap gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setActiveGenreBadgePosition(option.id)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    activeGenreBadgePosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={selectorButtonClass(activeGenreBadgePosition === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -3995,16 +4013,14 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div>
+          <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Anime Grouping</span>
-            <div className="erdb-toggle-group flex flex-wrap gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {GENRE_BADGE_ANIME_GROUPING_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setActiveGenreBadgeAnimeGrouping(option.id)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    activeGenreBadgeAnimeGrouping === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={selectorButtonClass(activeGenreBadgeAnimeGrouping === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -4018,9 +4034,9 @@ export default function Home() {
           Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
         </p>
         {(previewType === 'poster' || previewType === 'backdrop') ? (
-          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+          <div className={settingsCardClass}>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
-            <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+            <div className={selectorGroupClass}>
               {activeArtworkSourceOptions.map((option) => (
                 <button
                   key={option.id}
@@ -4031,9 +4047,7 @@ export default function Home() {
                     }
                     setPosterArtworkSource(option.id);
                   }}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    activeArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={selectorButtonClass(activeArtworkSource === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -4055,16 +4069,12 @@ export default function Home() {
                 <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
                   Poster Size
                 </div>
-                <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                <div className={selectorGroupClass}>
                   {POSTER_IMAGE_SIZE_OPTIONS.map((option) => (
                     <button
                       key={option.id}
                       onClick={() => setPosterImageSize(option.id)}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        posterImageSize === option.id
-                          ? 'bg-zinc-800 text-white'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
+                      className={selectorButtonClass(posterImageSize === option.id)}
                       title={option.description}
                     >
                       {option.label}
@@ -4403,35 +4413,66 @@ export default function Home() {
   );
 
   const qualitySection = (
-    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
       <div className="text-[11px] font-semibold text-zinc-400">
         Quality Badges · {qualityBadgeTypeLabel}
       </div>
-      {previewType !== 'logo' && (
-        <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-          {STREAM_BADGE_OPTIONS.map(option => (
-            <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${activeStreamBadges === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-              {option.label}
-            </button>
-          ))}
+      <div className="grid gap-3 md:grid-cols-2">
+        {previewType !== 'logo' && (
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Stream Badges</span>
+            <div className={selectorGroupClass}>
+              {STREAM_BADGE_OPTIONS.map(option => (
+                <button key={option.id} onClick={() => setActiveStreamBadges(option.id)} className={selectorButtonClass(activeStreamBadges === option.id)}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className={settingsCardClass}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Badge Style</span>
+          <div className={selectorGroupClass}>
+            {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
+              <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={selectorButtonClass(activeQualityBadgesStyle === option.id)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
-      <div>
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
-        <div className="flex flex-wrap gap-1">
-          {QUALITY_BADGE_STYLE_OPTIONS.map(option => (
-            <button key={`quality-style-${option.id}`} onClick={() => setActiveQualityBadgesStyle(option.id)} className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${activeQualityBadgesStyle === option.id ? 'border-violet-500/60 bg-zinc-800 text-white' : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'}`}>
-              {option.label}
-            </button>
-          ))}
+        <div className={settingsCardClass}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
+          <div className="flex items-center gap-2">
+            <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
+            <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
+          </div>
         </div>
+        {shouldShowQualityBadgesSide && (
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Side</span>
+            <div className={selectorGroupClass}>
+              {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
+                <button key={option.id} onClick={() => setQualityBadgesSide(option.id)} className={selectorButtonClass(qualityBadgesSide === option.id)}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {shouldShowQualityBadgesPosition && (
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Position</span>
+            <div className={selectorGroupClass}>
+              {QUALITY_BADGE_POSITION_OPTIONS.map(option => (
+                <button key={option.id} onClick={() => setPosterQualityBadgesPosition(option.id)} className={selectorButtonClass(posterQualityBadgesPosition === option.id)}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Max badges</span>
-        <input type="number" value={activeQualityBadgesMax ?? ''} onChange={(e) => setActiveQualityBadgesMax(normalizeOptionalBadgeCountInput(e.target.value))} placeholder="Auto" min={POSTER_RATINGS_MAX_PER_SIDE_MIN} className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none" />
-        <button onClick={() => setActiveQualityBadgesMax(null)} className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800">Auto</button>
-      </div>
-      <div>
+      <div className={settingsCardClass}>
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
           Visible Quality Badges
         </span>
@@ -4452,30 +4493,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-      {shouldShowQualityBadgesSide && (
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Side</span>
-          <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-            {QUALITY_BADGE_SIDE_OPTIONS.map(option => (
-              <button key={option.id} onClick={() => setQualityBadgesSide(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${qualityBadgesSide === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {shouldShowQualityBadgesPosition && (
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Position</span>
-          <div className="erdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
-            {QUALITY_BADGE_POSITION_OPTIONS.map(option => (
-              <button key={option.id} onClick={() => setPosterQualityBadgesPosition(option.id)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${posterQualityBadgesPosition === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
       <p className="text-[11px] leading-relaxed text-zinc-500">
         Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, no background styling, and silver mark styling without losing context.
       </p>
@@ -5775,7 +5792,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="workspace-export" className="scroll-mt-24 xl:col-start-1">
+            <div id="workspace-export" className="scroll-mt-24 xl:col-span-2 xl:col-start-1">
               <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
                 <div className="erdb-panel-head">
                   <div>
