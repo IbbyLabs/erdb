@@ -756,14 +756,14 @@ pre {
 	position: relative;
 	z-index: 1;
 	display: grid;
-	gap: clamp(4.75rem, 7vw, 6.5rem);
+	gap: clamp(3rem, 5vw, 4.5rem);
 	width: 100%;
 	min-width: 0;
 }
 
 .erdb-section {
 	display: grid;
-	gap: 2rem;
+	gap: 1.25rem;
 	min-width: 0;
 }
 
@@ -788,15 +788,15 @@ pre {
 
 .erdb-section-copy {
 	margin: 0;
-	font-size: 1rem;
-	line-height: 1.7;
+	font-size: 0.95rem;
+	line-height: 1.55;
 	max-width: 44rem;
 }
 
 .erdb-hero-section {
 	position: relative;
 	overflow: visible;
-	padding: calc(clamp(1.8rem, 4vw, 2.7rem) - 0.85rem * var(--scroll-compact-progress));
+	padding: calc(clamp(1.4rem, 3vw, 2rem) - 0.85rem * var(--scroll-compact-progress));
 	border-radius: calc(2rem - 0.22rem * var(--scroll-compact-progress));
 	border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
 	background:
@@ -804,7 +804,7 @@ pre {
 		radial-gradient(circle at top right, rgba(122, 82, 214, 0.16), transparent 34%);
 	box-shadow: var(--shadow-soft);
 	backdrop-filter: blur(14px);
-	min-height: calc(clamp(24rem, 42vw, 30rem) - 4.5rem * var(--scroll-compact-progress));
+	min-height: calc(clamp(20rem, 36vw, 26rem) - 4.5rem * var(--scroll-compact-progress));
 	transition: padding 0.24s ease, border-radius 0.24s ease, min-height 0.24s ease, box-shadow 0.24s ease;
 }
 
@@ -1242,9 +1242,23 @@ pre {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
-	gap: 1rem;
+	gap: 0.75rem;
 	flex-wrap: wrap;
-	margin-bottom: 0.15rem;
+	margin-bottom: 0;
+}
+
+.erdb-accordion-body {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.25s ease;
+}
+
+.erdb-accordion-body[data-open='true'] {
+	grid-template-rows: 1fr;
+}
+
+.erdb-accordion-body > .erdb-accordion-inner {
+	overflow: hidden;
 }
 
 .erdb-toggle-group {
@@ -1302,8 +1316,8 @@ pre {
 .erdb-panel-copy {
 	margin: 0;
 	max-width: 38rem;
-	font-size: 0.95rem;
-	line-height: 1.7;
+	font-size: 0.9rem;
+	line-height: 1.55;
 }
 
 .erdb-hero-panel {
@@ -1413,8 +1427,8 @@ pre {
 }
 
 .erdb-footer {
-	margin-top: 2.4rem;
-	padding-top: 1.5rem;
+	margin-top: 1.5rem;
+	padding-top: 1rem;
 	border-top: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
 	background: transparent;
 }
@@ -1548,11 +1562,11 @@ pre {
 	}
 
 	.erdb-main {
-		gap: 4.25rem;
+		gap: 2.75rem;
 	}
 
 	.erdb-section {
-		gap: 1.4rem;
+		gap: 1rem;
 	}
 
 	.erdb-hero-section {

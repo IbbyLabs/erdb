@@ -374,19 +374,22 @@ type LocalUiSettingsStorage = {
   presetId?: ConfiguratorPresetId | null;
   stickyPreview?: boolean;
 };
-type AdvancedConfiguratorSectionId =
+type WorkspacePanelId =
+  | 'configurator'
+  | 'center-view'
+  | 'config-string'
+  | 'aio-urls'
+  | 'addon-proxy'
+  | 'current-setup'
+  | 'quick-actions';
+type WorkspaceSectionId =
   | 'essentials'
   | 'presentation'
   | 'look'
   | 'quality'
-  | 'providers';
-const DEFAULT_ADVANCED_OPEN_SECTIONS: AdvancedConfiguratorSectionId[] = [
-  'essentials',
-  'presentation',
-  'look',
-  'quality',
-  'providers',
-];
+  | 'providers'
+  | 'quicktune'
+  | 'presets';
 const SIMPLE_PRESENTATION_IDS: RatingPresentation[] = [
   'standard',
   'minimal',
@@ -402,6 +405,16 @@ const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
   'dual-minimal',
   'blockbuster',
   'none',
+];
+type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
+const WORKSPACE_CENTER_VIEW_OPTIONS: Array<{
+  id: WorkspaceCenterView;
+  label: string;
+  description: string;
+}> = [
+  { id: 'showcase', label: 'Showcase', description: 'Rich visual board with the live result and support samples.' },
+  { id: 'preview', label: 'Preview', description: 'Focused live result with the fewest distractions.' },
+  { id: 'guide', label: 'Guide', description: 'Summary view that explains the current setup and next steps.' },
 ];
 const RATING_PROVIDER_DOC_VALUES = ALL_RATING_PREFERENCES.join(', ');
 const QUALITY_BADGE_DOC_VALUES = QUALITY_BADGE_OPTIONS.map((option) => option.id).join(', ');
@@ -902,11 +915,11 @@ function ConfiguratorAccordionSection({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left"
+        className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
       >
         <div className="min-w-0">
           <div className="text-sm font-semibold text-white">{title}</div>
-          <div className="mt-1 text-[11px] leading-5 text-zinc-500">{description}</div>
+          <div className="mt-0.5 text-[11px] leading-5 text-zinc-500">{description}</div>
         </div>
         <ChevronRight
           className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
@@ -914,7 +927,11 @@ function ConfiguratorAccordionSection({
           }`}
         />
       </button>
-      {isOpen ? <div className="border-t border-white/10 px-4 py-4">{children}</div> : null}
+      <div className="erdb-accordion-body" data-open={isOpen}>
+        <div className="erdb-accordion-inner">
+          <div className="border-t border-white/10 px-4 py-3">{children}</div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -1235,7 +1252,8 @@ export default function Home() {
     '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'error' | 'invalid'
   >('');
   const [configAutoSave, setConfigAutoSave] = useState(false);
-  const [stickyPreviewEnabled, setStickyPreviewEnabled] = useState(false);
+  const [stickyPreviewEnabled, setStickyPreviewEnabled] = useState(true);
+  const [workspaceCenterView, setWorkspaceCenterView] = useState<WorkspaceCenterView>('showcase');
   const [experienceMode, setExperienceMode] = useState<ConfiguratorExperienceMode>(
     DEFAULT_CONFIGURATOR_EXPERIENCE_MODE,
   );
@@ -1248,9 +1266,8 @@ export default function Home() {
   const [wizardAnswers, setWizardAnswers] = useState<Partial<ConfiguratorWizardAnswers>>({});
   const [wizardQuestionIndex, setWizardQuestionIndex] = useState(0);
   const [isWizardActive, setIsWizardActive] = useState(false);
-  const [openAdvancedSections, setOpenAdvancedSections] = useState<
-    AdvancedConfiguratorSectionId[]
-  >(DEFAULT_ADVANCED_OPEN_SECTIONS);
+  const [openWorkspacePanels, setOpenWorkspacePanels] = useState<Set<WorkspacePanelId>>(() => new Set(['configurator', 'center-view', 'quick-actions']));
+  const [openWorkspaceSection, setOpenWorkspaceSection] = useState<WorkspaceSectionId | null>(null);
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
 
   const [copied, setCopied] = useState(false);
@@ -2960,6 +2977,14 @@ export default function Home() {
     setWizardAnswers({});
     setWizardQuestionIndex(0);
     setIsWizardActive(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById('preset-studio-guide')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    });
   }, []);
 
   const handleExitWizard = useCallback(() => {
@@ -2988,11 +3013,18 @@ export default function Home() {
     []
   );
 
-  const handleToggleAdvancedSection = useCallback((sectionId: AdvancedConfiguratorSectionId) => {
-    setOpenAdvancedSections((current) =>
-      current.includes(sectionId)
-        ? current.filter((entry) => entry !== sectionId)
-        : [...current, sectionId]
+  const handleToggleWorkspacePanel = useCallback((panelId: WorkspacePanelId) => {
+    setOpenWorkspacePanels((current) => {
+      const next = new Set(current);
+      if (next.has(panelId)) next.delete(panelId);
+      else next.add(panelId);
+      return next;
+    });
+  }, []);
+
+  const handleToggleWorkspaceSection = useCallback((sectionId: WorkspaceSectionId) => {
+    setOpenWorkspaceSection((current) =>
+      current === sectionId ? null : sectionId
     );
   }, []);
 
@@ -3135,6 +3167,78 @@ export default function Home() {
   const quickPresentationOptions = SIMPLE_PRESENTATION_IDS.map((id) =>
     RATING_PRESENTATION_OPTIONS.find((option) => option.id === id),
   ).filter((option): option is (typeof RATING_PRESENTATION_OPTIONS)[number] => Boolean(option));
+  const activePresentationOptionMeta =
+    RATING_PRESENTATION_OPTIONS.find((option) => option.id === activeRatingPresentation) || null;
+  const activeArtworkSourceSummary =
+    previewType === 'logo' ? activeLogoSourceOptionMeta : activeArtworkSourceOptionMeta;
+  const enabledProviderCount = ratingProviderRows.filter((row) => row.enabled).length;
+  const showcaseGenreCards = genrePreviewCards.slice(0, 4);
+  const activeTypeLabel =
+    previewType === 'poster' ? 'Poster' : previewType === 'backdrop' ? 'Backdrop' : 'Logo';
+  const currentSetupItems = [
+    { label: 'Artwork', value: activeArtworkSourceSummary?.label || 'Default' },
+    { label: 'Text', value: previewType === 'logo' ? 'Logo' : activeImageTextOptionMeta?.label || 'Clean' },
+    { label: 'Badge mode', value: GENRE_BADGE_MODE_OPTIONS.find((option) => option.id === genrePreviewMode)?.label || 'Both' },
+    { label: 'Output', value: activeTypeLabel },
+    { label: 'Presentation', value: activePresentationOptionMeta?.label || 'Standard' },
+    { label: 'Style', value: RATING_STYLE_OPTIONS.find((option) => option.id === activeRatingStyle)?.label || 'Default' },
+  ];
+  const workspacePreviewFrame = (
+    <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),_transparent_58%),linear-gradient(180deg,rgba(12,10,20,0.92),rgba(6,6,10,0.96))] p-4">
+      <div className="rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[360px] sm:min-h-[420px] flex items-center justify-center flex-col">
+        {previewUrl && !previewErrored ? (
+          <div className="z-10 w-full flex flex-col items-center gap-8">
+            <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
+              ? 'aspect-[2/3] w-full max-w-[18rem]'
+              : previewType === 'logo'
+                ? 'h-48 w-full max-w-xl'
+                : 'aspect-video w-full max-w-2xl'
+              }`}>
+              <Image
+                key={previewUrl}
+                src={previewUrl}
+                alt="Preview"
+                unoptimized
+                fill
+                className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                onError={() => {
+                  void handlePreviewImageError(previewUrl);
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="w-full max-w-md text-center">
+            <div className="mx-auto flex h-52 w-full max-w-[15rem] items-end justify-center rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.18),_transparent_62%),linear-gradient(180deg,rgba(28,20,46,0.95),rgba(10,8,18,0.98))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+              <div className="grid w-full grid-cols-[1fr_auto] gap-3">
+                <div className="flex items-end">
+                  <div className="rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-200">
+                    {activeTypeLabel}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-12 w-12 rounded-2xl border border-white/10 bg-white/10" />
+                  <div className="h-12 w-12 rounded-2xl border border-white/10 bg-white/10" />
+                </div>
+                <div className="col-span-2 flex flex-wrap gap-2">
+                  <div className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">4K</div>
+                  <div className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">HDR</div>
+                  <div className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">DV</div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 text-sm text-zinc-400 leading-6">
+              {previewErrored
+                ? previewErrorDetails || 'Preview could not be rendered with the current media ID or settings.'
+                : tmdbKey.trim()
+                  ? 'No preview available.'
+                  : 'Add a TMDB key to unlock the live render. The center stage will swap this placeholder for the real output.'}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     if (ratingProviderRows.some((row) => row.id === activeProviderEditorId)) {
@@ -3257,19 +3361,23 @@ export default function Home() {
   );
 
   const presetHubSection = (
-    <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+    <div className="rounded-2xl border border-white/10 bg-black/35 p-3">
+      <button type="button" onClick={() => handleToggleWorkspaceSection('presets')} className="flex w-full items-center justify-between gap-4 text-left">
         <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             Guided Setup
           </div>
-          <h4 className="mt-2 text-lg font-semibold text-white">Preset Studio</h4>
-          <p className="mt-2 max-w-2xl text-[12px] leading-6 text-zinc-400">
+          <h4 className="mt-1 text-lg font-semibold text-white">Preset Studio</h4>
+          <p className="mt-1 max-w-2xl text-[12px] leading-6 text-zinc-400">
             Start from a preset, or answer a few questions and let ERDB recommend one for you.
             Presets only touch rendering and proxy defaults. Your keys and manifest URL stay intact.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspaceSection === 'presets' ? 'rotate-90 text-violet-300' : ''}`} />
+      </button>
+      <div className="erdb-accordion-body" data-open={openWorkspaceSection === 'presets'}>
+        <div className="erdb-accordion-inner">
+      <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={isWizardActive ? handleExitWizard : handleBeginWizard}
@@ -3277,12 +3385,13 @@ export default function Home() {
           >
             {isWizardActive ? 'Exit Guide' : 'Guide Me'}
           </button>
-        </div>
       </div>
 
       {isWizardActive ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-          <div className="max-h-[min(92vh,880px)] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-violet-500/30 bg-[linear-gradient(180deg,rgba(22,16,36,0.96),rgba(7,7,11,0.98))] p-4 shadow-[0_28px_120px_rgba(0,0,0,0.55)] md:p-5">
+        <div
+          id="preset-studio-guide"
+          className="mt-4 rounded-[28px] border border-violet-500/30 bg-[linear-gradient(180deg,rgba(22,16,36,0.96),rgba(7,7,11,0.98))] p-4 shadow-[0_28px_120px_rgba(0,0,0,0.35)] md:p-5"
+        >
             {wizardRecommendedPreset ? (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-violet-500/30 bg-[linear-gradient(145deg,rgba(76,29,149,0.18),rgba(9,9,11,0.88))] p-4">
@@ -3396,11 +3505,10 @@ export default function Home() {
             </div>
               </div>
             ) : null}
-          </div>
         </div>
       ) : (
         <>
-          <div className="mt-4 grid gap-3">
+          <div className="mt-3 grid gap-2">
             {CONFIGURATOR_PRESETS.map((preset) => {
               const isSelected = selectedPresetId === preset.id;
               const presetIcon =
@@ -3417,7 +3525,7 @@ export default function Home() {
                   key={preset.id}
                   type="button"
                   onClick={() => handleApplyPreset(preset.id)}
-                  className={`min-w-0 rounded-2xl border p-4 text-left transition-colors ${
+                  className={`min-w-0 rounded-2xl border p-3 text-left transition-colors ${
                     isSelected
                       ? 'bg-zinc-900/80 text-white'
                       : 'border-white/10 bg-zinc-950/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-950'
@@ -3458,7 +3566,7 @@ export default function Home() {
                       {preset.badge}
                     </span>
                   </div>
-                  <div className="mt-4 grid gap-2">
+                  <div className="mt-2 grid gap-1.5">
                     {preset.bullets.map((bullet) => (
                       <div
                         key={`${preset.id}-${bullet}`}
@@ -3473,16 +3581,16 @@ export default function Home() {
             })}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-zinc-950/40 p-4">
+          <div className="mt-3 rounded-2xl border border-dashed border-white/10 bg-zinc-950/40 p-3">
             <div className="text-sm font-semibold text-white">Not sure what to pick?</div>
-            <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+            <p className="mt-1 text-[11px] leading-5 text-zinc-500">
               The guide recommends a preset based on deployment, density, and how much manual tuning
               you expect to do afterwards.
             </p>
             <button
               type="button"
               onClick={handleBeginWizard}
-              className="mt-4 rounded-lg border border-white/10 bg-black/40 px-4 py-2 text-xs font-semibold text-white hover:bg-black/60"
+              className="mt-2 rounded-lg border border-white/10 bg-black/40 px-4 py-2 text-xs font-semibold text-white hover:bg-black/60"
             >
               Guide me to a preset
             </button>
@@ -3490,7 +3598,7 @@ export default function Home() {
         </>
       )}
 
-      <div className="mt-4 rounded-xl border border-white/10 bg-zinc-950/60 p-4">
+      <div className="mt-3 rounded-xl border border-white/10 bg-zinc-950/60 p-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             Wizard Summary
@@ -3511,6 +3619,8 @@ export default function Home() {
               }`
             : 'Apply a preset to get a curated starting point, then keep tuning from there.'}
         </p>
+      </div>
+        </div>
       </div>
     </div>
   );
@@ -5097,17 +5207,8 @@ export default function Home() {
     </div>
   );
 
-  const simpleQuickTuneSection = (
-    <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-        Quick Tune
-      </div>
-      <h4 className="mt-2 text-lg font-semibold text-white">Everyday artwork controls</h4>
-      <p className="mt-2 text-[12px] leading-6 text-zinc-400">
-        Simple mode keeps the obvious artwork switches here. Advanced mode reveals manual provider
-        ordering, badge sizing, layout offsets, and per source styling.
-      </p>
-      <div className="mt-4 space-y-4">
+  const simpleQuickTuneInner = (
+    <div className="space-y-4">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
             Presentation
@@ -5306,20 +5407,34 @@ export default function Home() {
             </div>
           ) : null}
         </div>
-      </div>
     </div>
   );
 
   const simpleConfiguratorContent = (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-white/10 bg-black/35 p-4 space-y-4">
-        {workspaceManagementSection}
-        <div className="border-t border-white/10" />
-        {accessKeysSection}
-        <div className="border-t border-white/10" />
-        {mediaTargetSection}
-      </div>
-      {simpleQuickTuneSection}
+    <div className="space-y-3">
+      <ConfiguratorAccordionSection
+        title="Essentials"
+        description="Workspace actions, access keys, and the active media target."
+        isOpen={openWorkspaceSection === 'essentials'}
+        onToggle={() => handleToggleWorkspaceSection('essentials')}
+        tone="accent"
+      >
+        <div className="space-y-3">
+          {workspaceManagementSection}
+          <div className="border-t border-white/10" />
+          {accessKeysSection}
+          <div className="border-t border-white/10" />
+          {mediaTargetSection}
+        </div>
+      </ConfiguratorAccordionSection>
+      <ConfiguratorAccordionSection
+        title="Quick Tune"
+        description="Everyday artwork controls for presentation, style, and providers."
+        isOpen={openWorkspaceSection === 'quicktune'}
+        onToggle={() => handleToggleWorkspaceSection('quicktune')}
+      >
+        {simpleQuickTuneInner}
+      </ConfiguratorAccordionSection>
     </div>
   );
 
@@ -5328,11 +5443,11 @@ export default function Home() {
       <ConfiguratorAccordionSection
         title="Essentials"
         description="Workspace actions, access keys, and the active media target."
-        isOpen={openAdvancedSections.includes('essentials')}
-        onToggle={() => handleToggleAdvancedSection('essentials')}
+        isOpen={openWorkspaceSection === 'essentials'}
+        onToggle={() => handleToggleWorkspaceSection('essentials')}
         tone="accent"
       >
-        <div className="space-y-4">
+        <div className="space-y-3">
           {workspaceManagementSection}
           <div className="border-t border-white/10" />
           {accessKeysSection}
@@ -5343,32 +5458,32 @@ export default function Home() {
       <ConfiguratorAccordionSection
         title="Presentation"
         description="Choose the overall badge treatment, aggregate source, and accent behavior."
-        isOpen={openAdvancedSections.includes('presentation')}
-        onToggle={() => handleToggleAdvancedSection('presentation')}
+        isOpen={openWorkspaceSection === 'presentation'}
+        onToggle={() => handleToggleWorkspaceSection('presentation')}
       >
         {presentationSection}
       </ConfiguratorAccordionSection>
       <ConfiguratorAccordionSection
         title="Look & Layout"
         description="Artwork source, genre badges, layouts, logo output, and badge sizing."
-        isOpen={openAdvancedSections.includes('look')}
-        onToggle={() => handleToggleAdvancedSection('look')}
+        isOpen={openWorkspaceSection === 'look'}
+        onToggle={() => handleToggleWorkspaceSection('look')}
       >
         <div className="space-y-3">{lookSection}</div>
       </ConfiguratorAccordionSection>
       <ConfiguratorAccordionSection
         title="Quality Badges"
         description="Stream badges, visible media marks, and quality badge positioning."
-        isOpen={openAdvancedSections.includes('quality')}
-        onToggle={() => handleToggleAdvancedSection('quality')}
+        isOpen={openWorkspaceSection === 'quality'}
+        onToggle={() => handleToggleWorkspaceSection('quality')}
       >
         {qualitySection}
       </ConfiguratorAccordionSection>
       <ConfiguratorAccordionSection
         title="Providers"
         description="Manual ordering, per provider enablement, and custom styling overrides."
-        isOpen={openAdvancedSections.includes('providers')}
-        onToggle={() => handleToggleAdvancedSection('providers')}
+        isOpen={openWorkspaceSection === 'providers'}
+        onToggle={() => handleToggleWorkspaceSection('providers')}
       >
         {providersSection}
       </ConfiguratorAccordionSection>
@@ -5453,7 +5568,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="erdb-main w-full px-6 py-16 md:py-20 2xl:px-8">
+      <main className="erdb-main w-full px-6 py-10 md:py-14 2xl:px-8">
         <section ref={heroRef} className="erdb-hero-section relative">
           <div className="erdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
           <div className="erdb-hero-grid">
@@ -5569,8 +5684,8 @@ export default function Home() {
         </section>
 
         <section id="preview" className="erdb-section scroll-mt-24">
-          <div className="rounded-[32px] border border-violet-500/15 bg-[radial-gradient(ellipse_at_top,_rgba(139,92,246,0.12),_transparent_60%),linear-gradient(180deg,rgba(30,22,42,0.95),rgba(14,10,22,0.98))] p-5 md:p-6 xl:p-8">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="rounded-[32px] border border-violet-500/15 bg-[radial-gradient(ellipse_at_top,_rgba(139,92,246,0.12),_transparent_60%),linear-gradient(180deg,rgba(30,22,42,0.95),rgba(14,10,22,0.98))] p-4 md:p-5 xl:p-6">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
               <SectionHeader
                 eyebrow="Workspace"
                 title="Configurator & Proxy"
@@ -5592,10 +5707,10 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="mt-6 erdb-surface-grid grid items-start gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)_minmax(0,1fr)] xl:gap-6">
-            <div id="workspace-settings" className="space-y-5 scroll-mt-24 xl:col-start-1">
-              <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
-                <div className="erdb-panel-head">
+            <div className="mt-4 erdb-surface-grid grid items-start gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)_minmax(20rem,0.86fr)] xl:gap-4">
+            <div id="workspace-settings" className="space-y-3 scroll-mt-24">
+              <div className="erdb-panel erdb-panel-form rounded-3xl border border-white/10 bg-zinc-900/60 p-3 md:p-4">
+                <button type="button" onClick={() => handleToggleWorkspacePanel('configurator')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Inputs</p>
                     <h3 className="erdb-panel-title text-white">Configurator</h3>
@@ -5603,23 +5718,30 @@ export default function Home() {
                       Pick a setup mode, start from a preset, then tune the same state that powers the preview, config string, and addon proxy.
                     </p>
                   </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('configurator') ? 'rotate-90 text-violet-300' : ''}`} />
+                </button>
+                <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('configurator')}>
+                  <div className="erdb-accordion-inner">
+                    <div className="space-y-3 mt-3">
+                    <div className="flex flex-wrap gap-2 min-[861px]:hidden">
+                      <a
+                        href="#workspace-preview"
+                        onClick={handleAnchorClick}
+                        className="erdb-nav-link text-[11px]"
+                      >
+                        Jump to preview
+                      </a>
+                    </div>
+                    {setupModeSection}
+                    {presetHubSection}
+                    {experienceMode === 'simple' ? simpleConfiguratorContent : advancedConfiguratorContent}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 min-[861px]:hidden">
-                  <a
-                    href="#workspace-preview"
-                    onClick={handleAnchorClick}
-                    className="erdb-nav-link text-[11px]"
-                  >
-                    Jump to preview
-                  </a>
-                </div>
-                {setupModeSection}
-                {presetHubSection}
-                {experienceMode === 'simple' ? simpleConfiguratorContent : advancedConfiguratorContent}
               </div>
             </div>
 
-            <div id="workspace-preview" className="space-y-5 scroll-mt-24 xl:col-start-2 xl:self-stretch">
+            <div id="workspace-preview" className="space-y-3 scroll-mt-24">
               <div
                 className={
                   stickyPreviewEnabled
@@ -5628,34 +5750,56 @@ export default function Home() {
                 }
               >
                 <div
-                  className={`erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6 ${
+                  className={`erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-4 ${
                     stickyPreviewEnabled
                       ? 'xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] xl:overflow-auto'
                       : ''
                   }`}
                 >
-                  <div className="erdb-panel-head">
+                  <button type="button" onClick={() => handleToggleWorkspacePanel('center-view')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
                     <div>
                       <p className="erdb-panel-eyebrow font-mono">Output</p>
-                      <h3 className="text-xl font-semibold text-white">Preview Output</h3>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        Stateless dynamic layout generated via query parameters.
+                      <h3 className="text-xl font-semibold text-white">Center View</h3>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        Switch between a richer showcase board, a focused preview, or a guide summary without leaving the workspace.
                       </p>
                     </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-zinc-500">Sticky preview</span>
-                    <button
-                      type="button"
-                      onClick={() => setStickyPreviewEnabled((current) => !current)}
-                      className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                        stickyPreviewEnabled
-                          ? 'border-violet-500/60 bg-zinc-800 text-white'
-                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {stickyPreviewEnabled ? 'On' : 'Off'}
-                    </button>
+                    <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('center-view') ? 'rotate-90 text-violet-300' : ''}`} />
+                  </button>
+                  <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('center-view')}>
+                    <div className="erdb-accordion-inner">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex gap-1 rounded-xl border border-white/10 bg-zinc-950/80 p-1">
+                      {WORKSPACE_CENTER_VIEW_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setWorkspaceCenterView(option.id)}
+                          className={`rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wide transition-colors ${
+                            workspaceCenterView === option.id
+                              ? 'bg-violet-500/20 text-white ring-1 ring-inset ring-violet-400/40'
+                              : 'text-zinc-400 hover:text-white'
+                          }`}
+                          title={option.description}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-zinc-500">Sticky rail</span>
+                      <button
+                        type="button"
+                        onClick={() => setStickyPreviewEnabled((current) => !current)}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                          stickyPreviewEnabled
+                            ? 'border-violet-500/60 bg-zinc-800 text-white'
+                            : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {stickyPreviewEnabled ? 'On' : 'Off'}
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-2 min-[861px]:hidden">
                     <a
@@ -5666,145 +5810,355 @@ export default function Home() {
                       Back to settings
                     </a>
                   </div>
-                  <div className="mt-4 flex flex-wrap justify-end gap-2">
-                    {(['poster', 'backdrop', 'logo'] as const).map((type) => (
-                      <span
-                        key={`preview-pill-${type}`}
-                        className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
-                          previewType === type
-                            ? 'border-violet-500/60 bg-zinc-800 text-white'
-                            : 'border-white/10 bg-zinc-950 text-zinc-400'
-                        }`}
-                      >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </span>
-                    ))}
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {(['poster', 'backdrop', 'logo'] as const).map((type) => (
+                        <button
+                          key={`preview-pill-${type}`}
+                          type="button"
+                          onClick={() => setPreviewType(type)}
+                          className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                            previewType === type
+                              ? 'border-violet-500/60 bg-zinc-800 text-white'
+                              : 'border-white/10 bg-zinc-950 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        {WORKSPACE_CENTER_VIEW_OPTIONS.find((option) => option.id === workspaceCenterView)?.label}
+                      </div>
+                      <div className="mt-1 text-[11px] leading-5 text-zinc-400 max-w-xs">
+                        {WORKSPACE_CENTER_VIEW_OPTIONS.find((option) => option.id === workspaceCenterView)?.description}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/70 p-4 min-h-[280px] sm:min-h-[320px] flex items-center justify-center flex-col">
-                    {previewUrl && !previewErrored ? (
-                      <div className="z-10 w-full flex flex-col items-center gap-8">
-                        <div className={`relative shadow-2xl shadow-black ring-1 ring-white/10 rounded-2xl overflow-hidden ${previewType === 'poster'
-                          ? 'aspect-[2/3] w-full max-w-[18rem]'
-                          : previewType === 'logo'
-                            ? 'h-48 w-full max-w-xl'
-                            : 'aspect-video w-full max-w-2xl'
-                          }`}>
-                          <Image
-                            key={previewUrl}
-                            src={previewUrl}
-                            alt="Preview"
-                            unoptimized
-                            fill
-                            className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
-                            onError={() => {
-                              void handlePreviewImageError(previewUrl);
-                            }}
-                          />
+                  {workspaceCenterView === 'showcase' ? (
+                    <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(16rem,0.88fr)]">
+                      <div className="space-y-4">
+                        {workspacePreviewFrame}
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Presentation</div>
+                            <div className="mt-2 text-sm font-semibold text-white">
+                              {activePresentationOptionMeta?.label || 'Standard'}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Style</div>
+                            <div className="mt-2 text-sm font-semibold text-white">
+                              {RATING_STYLE_OPTIONS.find((option) => option.id === activeRatingStyle)?.label || 'Default'}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Providers</div>
+                            <div className="mt-2 text-sm font-semibold text-white">{enabledProviderCount} active</div>
+                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="text-sm text-zinc-500 text-center max-w-sm leading-6">
-                        {previewErrored
-                          ? previewErrorDetails || 'Preview could not be rendered with the current media ID or settings.'
-                          : tmdbKey.trim()
-                            ? 'No preview available.'
-                            : 'Add a TMDB key to enable live preview.'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre Badge Samples</div>
-                    <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                      Curated movie, show, animation, and anime renders that keep the badge decision fixed while you compare mode, style, and placement.
-                    </p>
-                  </div>
-                  <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-zinc-900">
-                    {GENRE_BADGE_MODE_OPTIONS.map((option) => (
-                      <button
-                        key={`genre-preview-mode-${option.id}`}
-                        type="button"
-                        onClick={() => setGenrePreviewMode(option.id)}
-                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                          genrePreviewMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
-                        }`}
-                        title={option.description}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {tmdbKey.trim() ? (
-                  <div className="mt-5 grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1">
-                    {genrePreviewCards.map(({ sample, url }) => {
-                      const family = GENRE_BADGE_FAMILY_META[sample.familyId];
-                      const accentStyle = {
-                        borderColor: hexToRgbaCss(family.accentColor, 0.45),
-                        backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(family.accentColor, 0.18)}, rgba(24,24,27,0.88) 62%)`,
-                      };
-                      const mediaFrameClass =
-                        sample.previewType === 'poster'
-                          ? 'aspect-[2/3]'
-                          : sample.previewType === 'logo'
-                            ? 'h-40'
-                            : 'aspect-video';
+                      <div className="space-y-4">
+                        <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.14),_transparent_65%),linear-gradient(180deg,rgba(24,18,38,0.95),rgba(14,10,24,0.98))] p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Genre samples</div>
+                          <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+                            Curated renders show how the current genre badge choices land across media types.
+                          </p>
+                          <div className="mt-3 flex gap-1 rounded-lg border border-white/10 bg-zinc-950/80 p-1">
+                            {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                              <button
+                                key={`genre-preview-mode-${option.id}`}
+                                type="button"
+                                onClick={() => setGenrePreviewMode(option.id)}
+                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                  genrePreviewMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                                }`}
+                                title={option.description}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          {tmdbKey.trim() ? (
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                              {showcaseGenreCards.map(({ sample, url }) => {
+                                const family = GENRE_BADGE_FAMILY_META[sample.familyId];
+                                const accentStyle = {
+                                  borderColor: hexToRgbaCss(family.accentColor, 0.45),
+                                  backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(family.accentColor, 0.18)}, rgba(24,24,27,0.88) 62%)`,
+                                };
+                                const mediaFrameClass =
+                                  sample.previewType === 'poster'
+                                    ? 'aspect-[2/3]'
+                                    : sample.previewType === 'logo'
+                                      ? 'h-24'
+                                      : 'aspect-video';
 
-                      return (
-                        <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
-                          <div className="flex min-h-[3.5rem] flex-col items-start gap-2">
-                            <div className="min-w-0">
-                              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                                {sample.typeLabel}
-                              </div>
-                              <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
+                                return (
+                                  <article key={sample.key} className="flex h-full flex-col gap-2 rounded-2xl border border-white/10 bg-zinc-950/60 p-2.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <div className="text-[9px] font-semibold uppercase tracking-wide text-zinc-500">
+                                          {sample.typeLabel}
+                                        </div>
+                                        <h4 className="mt-1 truncate text-[11px] font-semibold text-white">{sample.title}</h4>
+                                      </div>
+                                      <span
+                                        className="shrink-0 rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white"
+                                        style={accentStyle}
+                                      >
+                                        {family.label}
+                                      </span>
+                                    </div>
+                                    <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-black/70 ${mediaFrameClass}`}>
+                                      <Image
+                                        key={url}
+                                        src={url}
+                                        alt={`${sample.title} ${sample.typeLabel} genre sample`}
+                                        unoptimized
+                                        fill
+                                        className={sample.previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                                      />
+                                    </div>
+                                  </article>
+                                );
+                              })}
                             </div>
-                            <span
-                              className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
-                              style={accentStyle}
-                            >
-                              {family.label}
-                            </span>
+                          ) : (
+                            <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
+                              Add a TMDB key to load the sample board.
+                            </div>
+                          )}
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Quick notes</div>
+                          <div className="mt-3 space-y-3">
+                            <p className="text-[11px] leading-5 text-zinc-400">
+                              Showcase keeps the live render visible while the side tiles explain badge choices and the current output mode.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-200">
+                                {activeTypeLabel}
+                              </span>
+                              <span className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-200">
+                                {activePresentationOptionMeta?.label || 'Standard'}
+                              </span>
+                              <span className="rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-200">
+                                {enabledProviderCount} active
+                              </span>
+                            </div>
                           </div>
-                          <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-black/70 shadow-xl shadow-black/40 ${mediaFrameClass}`}>
-                            <Image
-                              key={url}
-                              src={url}
-                              alt={`${sample.title} ${sample.typeLabel} genre sample`}
-                              unoptimized
-                              fill
-                              className={sample.previewType === 'logo' ? 'object-contain' : 'object-cover'}
-                            />
+                        </div>
+                      </div>
+                    </div>
+                  ) : workspaceCenterView === 'preview' ? (
+                    <div className="mt-3 space-y-3">
+                      {workspacePreviewFrame}
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Presentation</div>
+                          <div className="mt-2 text-sm font-semibold text-white">
+                            {activePresentationOptionMeta?.label || 'Standard'}
                           </div>
-                          <p className="text-[11px] leading-5 text-zinc-400">{sample.decision}</p>
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="mt-5 rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
-                    Add a TMDB key above to load the curated sample board.
-                  </div>
-                )}
-              </div>
-            </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Style</div>
+                          <div className="mt-2 text-sm font-semibold text-white">
+                            {RATING_STYLE_OPTIONS.find((option) => option.id === activeRatingStyle)?.label || 'Default'}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Providers</div>
+                          <div className="mt-2 text-sm font-semibold text-white">{enabledProviderCount} active</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Preset</div>
+                          <div className="mt-2 text-lg font-semibold text-white">
+                            {selectedPresetMeta?.label || 'Custom'}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Output</div>
+                          <div className="mt-2 text-lg font-semibold text-white">{activeTypeLabel}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Presentation</div>
+                          <div className="mt-2 text-lg font-semibold text-white">
+                            {activePresentationOptionMeta?.label || 'Standard'}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Providers</div>
+                          <div className="mt-2 text-lg font-semibold text-white">{enabledProviderCount} active</div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(44,28,76,0.9),rgba(24,16,38,0.96))] p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/20 text-sm font-semibold text-white">1</div>
+                            <div>
+                              <div className="text-sm font-semibold text-white">Add keys</div>
+                              <p className="mt-1 text-[12px] leading-5 text-zinc-300">
+                                TMDB powers the live render. MDBList and the optional source keys round out provider coverage and exports.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(33,24,58,0.92),rgba(20,14,34,0.98))] p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/20 text-sm font-semibold text-white">2</div>
+                            <div>
+                              <div className="text-sm font-semibold text-white">Tune output</div>
+                              <p className="mt-1 text-[12px] leading-5 text-zinc-300">
+                                Keep the left rail for layout, presentation, genre badges, quality badges, and provider order.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(28,21,50,0.92),rgba(16,12,29,0.98))] p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/20 text-sm font-semibold text-white">3</div>
+                            <div>
+                              <div className="text-sm font-semibold text-white">Copy result</div>
+                              <p className="mt-1 text-[12px] leading-5 text-zinc-300">
+                                Export a config string, manifest URL, or AIOMetadata pattern once the center view looks right.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWorkspaceCenterView('preview')}
+                          className="rounded-xl border border-violet-400/30 bg-violet-500/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-violet-500/30"
+                        >
+                          Open preview
+                        </button>
+                        <a
+                          href="#workspace-export"
+                          onClick={handleAnchorClick}
+                          className="rounded-xl border border-white/10 bg-zinc-950/70 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-200 transition-colors hover:text-white"
+                        >
+                          Open export
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {workspaceCenterView === 'showcase' && !tmdbKey.trim() ? (
+                    <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
+                      Add a TMDB key if you want the showcase sample board to render alongside the live preview.
+                    </div>
+                  ) : null}
 
-            <div id="workspace-export" className="scroll-mt-24 xl:col-span-2 xl:col-start-1">
-              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4 md:p-5">
-                <div className="erdb-panel-head">
+                  <div className="mt-4 border-t border-white/10 pt-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        {workspaceCenterView === 'guide' ? 'Reference Board' : 'Genre Badge Samples'}
+                      </div>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                        {workspaceCenterView === 'guide'
+                          ? 'Keep a visual reference board nearby while you answer the setup questions or review the recommended preset.'
+                          : 'Curated movie, show, animation, and anime renders that keep the badge decision fixed while you compare mode, style, and placement.'}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-zinc-900">
+                      {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                        <button
+                          key={`genre-preview-mode-${option.id}`}
+                          type="button"
+                          onClick={() => setGenrePreviewMode(option.id)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            genrePreviewMode === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                          }`}
+                          title={option.description}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {tmdbKey.trim() ? (
+                    <div className="mt-3 grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1">
+                      {genrePreviewCards.map(({ sample, url }) => {
+                        const family = GENRE_BADGE_FAMILY_META[sample.familyId];
+                        const accentStyle = {
+                          borderColor: hexToRgbaCss(family.accentColor, 0.45),
+                          backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(family.accentColor, 0.18)}, rgba(24,24,27,0.88) 62%)`,
+                        };
+                        const mediaFrameClass =
+                          sample.previewType === 'poster'
+                            ? 'aspect-[2/3]'
+                            : sample.previewType === 'logo'
+                              ? 'h-40'
+                              : 'aspect-video';
+
+                        return (
+                          <article key={sample.key} className="flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 p-3">
+                            <div className="flex min-h-[3.5rem] flex-col items-start gap-2">
+                              <div className="min-w-0">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                                  {sample.typeLabel}
+                                </div>
+                                <h4 className="mt-1 text-sm font-semibold text-white">{sample.title}</h4>
+                              </div>
+                              <span
+                                className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white"
+                                style={accentStyle}
+                              >
+                                {family.label}
+                              </span>
+                            </div>
+                            <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-black/70 shadow-xl shadow-black/40 ${mediaFrameClass}`}>
+                              <Image
+                                key={url}
+                                src={url}
+                                alt={`${sample.title} ${sample.typeLabel} genre sample`}
+                                unoptimized
+                                fill
+                                className={sample.previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                              />
+                            </div>
+                            <p className="text-[11px] leading-5 text-zinc-400">{sample.decision}</p>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-xl border border-dashed border-white/10 bg-zinc-950/40 px-4 py-5 text-[11px] leading-5 text-zinc-500">
+                      Add a TMDB key above to load the curated sample board.
+                    </div>
+                  )}
+                  </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            <div id="workspace-export" className="scroll-mt-24">
+              <div className="space-y-3">
+              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+                <button type="button" onClick={() => handleToggleWorkspacePanel('config-string')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Export</p>
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Code2 className="w-5 h-5 text-violet-500" /> ERDB Config String
                     </h3>
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-zinc-400">
                       Base64url string containing API keys and all settings. Base URL is detected automatically from the current domain.
                     </p>
                   </div>
-                </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('config-string') ? 'rotate-90 text-violet-300' : ''}`} />
+                </button>
+                <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('config-string')}>
+                  <div className="erdb-accordion-inner">
                 <p className="mt-3 text-[11px] leading-5 text-zinc-500">
                   Use this when another tool expects one ERDB config field. The settings travel inside this string, not inside your saved workspace by itself.
                 </p>
@@ -5846,40 +6200,53 @@ export default function Home() {
                     Add TMDB key and MDBList key to generate a valid config string.
                   </p>
                 )}
-                <div className="mt-5 border-t border-white/10 pt-5">
+                  </div>
+                </div>
+              </div>
+              <div className="erdb-panel erdb-panel-emphasis rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+                <button type="button" onClick={() => handleToggleWorkspacePanel('aio-urls')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Export</p>
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Code2 className="w-5 h-5 text-violet-500" /> AIOMetadata URLs
+                    </h3>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      Ready to paste URL patterns for the AIOMetadata art override fields.
+                    </p>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('aio-urls') ? 'rotate-90 text-violet-300' : ''}`} />
+                </button>
+                <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('aio-urls')}>
+                  <div className="erdb-accordion-inner">
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleCopyAiometadata}
+                    disabled={!aiometadataPatternRows.length}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                      aiometadataPatternRows.length
+                        ? aiometadataCopied
+                          ? 'bg-green-500 text-white'
+                          : 'bg-violet-500 text-white hover:bg-violet-400'
+                        : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {aiometadataCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>COPIED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Clipboard className="w-3.5 h-3.5" />
+                        <span>COPY ALL</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="mt-3 border-t border-white/10 pt-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                        AIOMetadata URLs
-                      </div>
-                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
-                        Ready to paste URL patterns for the AIOMetadata art override fields.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleCopyAiometadata}
-                      disabled={!aiometadataPatternRows.length}
-                      className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                        aiometadataPatternRows.length
-                          ? aiometadataCopied
-                            ? 'bg-green-500 text-white'
-                            : 'bg-violet-500 text-white hover:bg-violet-400'
-                          : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {aiometadataCopied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>COPIED</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clipboard className="w-3.5 h-3.5" />
-                          <span>COPY ALL</span>
-                        </>
-                      )}
-                    </button>
+                    <div />
                   </div>
                   <p className="mt-3 text-[11px] leading-5 text-zinc-500">
                     These presets match the live AIOMetadata defaults: background and logo use type aware TMDB IDs, episode thumbs use IMDb with season and episode placeholders, and poster uses the selected ID source mode.
@@ -5997,12 +6364,24 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+                  </div>
+                </div>
+              </div>
               </div>
             </div>
+            </div>
 
-            <div id="proxy" className="scroll-mt-24 xl:col-start-3 xl:row-start-1">
-              <div className="erdb-panel erdb-panel-form space-y-4 rounded-3xl border border-white/10 bg-zinc-900/60 p-6">
-                <div className="erdb-panel-head">
+            <div id="proxy" className="space-y-3 scroll-mt-24">
+              <div
+                className={
+                  stickyPreviewEnabled
+                    ? 'xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-10 xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] xl:overflow-auto'
+                    : ''
+                }
+              >
+              <div className="space-y-3">
+              <div className="erdb-panel erdb-panel-form rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+                <button type="button" onClick={() => handleToggleWorkspacePanel('addon-proxy')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
                   <div>
                     <p className="erdb-panel-eyebrow font-mono">Proxy</p>
                     <h3 className="erdb-panel-title text-white">Addon Proxy</h3>
@@ -6010,7 +6389,11 @@ export default function Home() {
                       Paste a Stremio addon manifest here. The generated ERDB proxy manifest carries the configurator values from this workspace as its ERDB source of truth.
                     </p>
                   </div>
-                </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('addon-proxy') ? 'rotate-90 text-violet-300' : ''}`} />
+                </button>
+                <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('addon-proxy')}>
+                  <div className="erdb-accordion-inner">
+                <div className="space-y-3 mt-3">
                 <div className="rounded-2xl border border-white/10 bg-black/35 p-4 space-y-3">
                   <div className="text-[11px] font-semibold text-zinc-400">ERDB parameters</div>
                   <p className="text-[11px] leading-5 text-zinc-500">
@@ -6163,14 +6546,91 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+                </div>
+                  </div>
+                </div>
+              </div>
+              <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+                <button type="button" onClick={() => handleToggleWorkspacePanel('current-setup')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Support</p>
+                    <h3 className="text-lg font-semibold text-white">Current Setup</h3>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      A compact snapshot of the active output so the right rail stays useful while the configurator keeps scrolling.
+                    </p>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('current-setup') ? 'rotate-90 text-violet-300' : ''}`} />
+                </button>
+                <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('current-setup')}>
+                  <div className="erdb-accordion-inner">
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                  {currentSetupItems.map((item) => (
+                    <div key={item.label} className="min-w-0 rounded-xl border border-white/10 bg-zinc-950/70 px-3 py-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{item.label}</div>
+                      <div className="mt-1 min-w-0 break-words text-sm font-semibold leading-5 text-white">
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                  </div>
+                </div>
+              </div>
+              <div className="erdb-panel erdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+                <button type="button" onClick={() => handleToggleWorkspacePanel('quick-actions')} className="erdb-panel-head flex w-full items-center justify-between gap-4 text-left">
+                  <div>
+                    <p className="erdb-panel-eyebrow font-mono">Support</p>
+                    <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${openWorkspacePanels.has('quick-actions') ? 'rotate-90 text-violet-300' : ''}`} />
+                </button>
+                <div className="erdb-accordion-body" data-open={openWorkspacePanels.has('quick-actions')}>
+                  <div className="erdb-accordion-inner">
+                <div className="mt-3 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenWorkspacePanels((c) => new Set([...c, 'center-view']));
+                      scrollToHash('#workspace-preview');
+                    }}
+                    className="rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-200 transition-colors hover:text-white"
+                  >
+                    Jump to center
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenWorkspacePanels((c) => new Set([...c, 'config-string', 'aio-urls']));
+                      scrollToHash('#workspace-export');
+                    }}
+                    className="rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-200 transition-colors hover:text-white"
+                  >
+                    Jump to export
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenWorkspacePanels((c) => new Set([...c, 'center-view']));
+                      setWorkspaceCenterView('preview');
+                      scrollToHash('#workspace-preview');
+                    }}
+                    className="rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-200 transition-colors hover:text-white"
+                  >
+                    Focus preview
+                  </button>
+                </div>
+                  </div>
+                </div>
+              </div>
+              </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-        <section id="docs" className="erdb-section scroll-mt-24 pb-20">
-          <div className="w-full space-y-8">
+        <section id="docs" className="erdb-section scroll-mt-24 pb-12">
+          <div className="w-full space-y-5">
             <SectionHeader
               eyebrow="Developers"
               title="Reference surfaces with clearer grouping"
@@ -6195,7 +6655,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="erdb-panel erdb-doc-card bg-zinc-900/40 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/10 bg-zinc-900/60">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
