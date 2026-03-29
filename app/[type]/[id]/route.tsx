@@ -75,6 +75,12 @@ import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 import { resolveReverseMappedAnimeImageTarget } from '@/lib/animeReverseMapping';
 import { normalizeAnimeMappingSeason } from '@/lib/animeMapping';
+import { fitCompositeOverlaysToCanvas } from '@/lib/compositeOverlay';
+import {
+  resolveQualityBadgeColumnLayout,
+  resolveQualityBadgeGap,
+  resolveQualityBadgeHeight,
+} from '@/lib/qualityBadgeLayout';
 import {
   buildObjectStorageImageKey,
   buildObjectStorageSourceImageKey,
@@ -5515,6 +5521,15 @@ const renderWithSharp = async (
     };
     const badgeBaseHeight = input.badgeIconSize + input.badgePaddingY * 2;
     const ratingBadgeHeight = getBadgeHeightFromMetrics(sideColumnMetrics, input.ratingStyle);
+    const overlayAutoScale = resolveOverlayAutoScale({
+      imageType: input.imageType,
+      outputWidth: input.outputWidth,
+      outputHeight: input.outputHeight,
+    });
+    const posterQualityRowReferenceHeight =
+      input.imageType === 'poster'
+        ? Math.max(44, Math.round(50 * overlayAutoScale))
+        : ratingBadgeHeight;
     const qualityBadgeScaleRatio = Math.max(0.7, input.qualityBadgeScalePercent / 100);
     const posterEdgeInset =
       input.imageType === 'poster'
@@ -6501,8 +6516,15 @@ const renderWithSharp = async (
       side: QualityBadgesSide
     ) => {
       if (columnBadges.length === 0) return;
-      const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
-      const qualityGap = Math.round(input.badgeGap * 1.25);
+      const columnLayout = resolveQualityBadgeColumnLayout({
+        referenceBadgeHeight: ratingBadgeHeight,
+        qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+        badgeGap: input.badgeGap,
+        badgeCount: columnBadges.length,
+        availableHeight: input.outputHeight - Math.max(input.badgeTopOffset, startY) - input.badgeBottomOffset,
+      });
+      const qualityHeight = columnLayout.height;
+      const qualityGap = columnLayout.gap;
       const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const uniformBadgeWidth = useIntrinsicWidths
         ? null
@@ -6536,74 +6558,67 @@ const renderWithSharp = async (
     const composeQualityBadgeRow = (
       rowBadges: RatingBadge[],
       rowY: number,
-      baseHeight?: number
+      baseHeight?: number,
+      origin: 'top' | 'bottom' = 'top',
     ) => {
       if (rowBadges.length === 0) return;
       const maxRowWidth = Math.max(0, input.outputWidth - 24);
       const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
-      let qualityHeight = Math.max(
-        36,
-        Math.round((baseHeight ?? badgeBaseHeight * 1.05) * qualityBadgeScaleRatio),
-      );
-      let badgeWidth =
+      const qualityHeight = resolveQualityBadgeHeight({
+        referenceBadgeHeight:
+          input.imageType === 'poster' ? posterQualityRowReferenceHeight : (baseHeight ?? ratingBadgeHeight),
+        qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+        layout: 'row',
+      });
+      const badgeWidth =
         useIntrinsicWidths
           ? null
           : Math.min(
               Math.max(64, Math.round(qualityHeight * 1.75)),
               Math.max(64, input.outputWidth - 24)
             );
-      let rowGap = input.badgeGap;
-      let specs = rowBadges
-        .map((badge) =>
-          buildQualityBadgeSvg(
-            badge,
-            qualityHeight,
-            badgeWidth ?? undefined,
-            input.qualityBadgesStyle
-          )
-        )
-        .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec));
-      let rowWidth =
-        specs.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specs.length - 1) * rowGap;
-      if (rowWidth > maxRowWidth && specs.length > 1) {
-        const ratio = Math.max(0.45, maxRowWidth / rowWidth);
-        const heightRatio = Math.max(0.72, Math.min(1, ratio));
-        qualityHeight = Math.max(30, Math.floor(qualityHeight * heightRatio));
-        if (badgeWidth !== null) {
-          badgeWidth = Math.min(
-            Math.max(58, Math.floor(badgeWidth * ratio)),
-            Math.max(58, input.outputWidth - 24)
-          );
-        }
-        specs = rowBadges
-          .map((badge) =>
-            buildQualityBadgeSvg(
-              badge,
-              qualityHeight,
-              badgeWidth ?? undefined,
-              input.qualityBadgesStyle
+      const rowGap = resolveQualityBadgeGap({ badgeGap: input.badgeGap, layout: 'row' });
+      const targetRowCount =
+        input.imageType === 'poster' ? Math.max(1, Math.ceil(rowBadges.length / 3)) : 1;
+      const badgeRows = splitBadgesAcrossRowCount(rowBadges, targetRowCount);
+      const specRows = badgeRows
+        .map((badgeRow) =>
+          badgeRow
+            .map((badge) =>
+              buildQualityBadgeSvg(
+                badge,
+                qualityHeight,
+                badgeWidth ?? undefined,
+                input.qualityBadgesStyle
+              )
             )
-          )
-          .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec));
-        rowWidth =
-          specs.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specs.length - 1) * rowGap;
-        if (rowWidth > maxRowWidth) {
-          const availableForGaps = Math.max(0, maxRowWidth - specs.reduce((sum, spec) => sum + spec.width, 0));
-          rowGap = specs.length > 1 ? Math.max(0, Math.floor(availableForGaps / (specs.length - 1))) : 0;
-          rowWidth =
-            specs.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specs.length - 1) * rowGap;
-        }
-      }
-      let rowX = Math.floor((input.outputWidth - rowWidth) / 2);
+            .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec))
+        )
+        .filter((specRow) => specRow.length > 0);
+
+      const totalHeight =
+        specRows.reduce((sum, specRow) => sum + Math.max(...specRow.map((spec) => spec.height), 0), 0) +
+        Math.max(0, specRows.length - 1) * rowGap;
+      let startY =
+        origin === 'bottom'
+          ? rowY - totalHeight + Math.max(...(specRows.at(-1)?.map((spec) => spec.height) || [0]))
+          : rowY;
       const rowEdgeInset = input.imageType === 'poster' ? posterEdgeInset : 12;
-      rowX = Math.max(
-        rowEdgeInset,
-        Math.min(rowX, Math.max(rowEdgeInset, input.outputWidth - rowWidth - rowEdgeInset))
-      );
-      for (const spec of specs) {
-        overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
-        trackGenreCollisionRect(rowX, rowY, spec.width, spec.height);
-        rowX += spec.width + rowGap;
+      for (const specRow of specRows) {
+        const rowWidth =
+          specRow.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specRow.length - 1) * rowGap;
+        let rowX = Math.floor((input.outputWidth - rowWidth) / 2);
+        rowX = Math.max(
+          rowEdgeInset,
+          Math.min(rowX, Math.max(rowEdgeInset, input.outputWidth - rowWidth - rowEdgeInset))
+        );
+        const rowHeight = Math.max(...specRow.map((spec) => spec.height), 0);
+        for (const spec of specRow) {
+          overlays.push({ input: Buffer.from(spec.svg), top: startY, left: rowX });
+          trackGenreCollisionRect(rowX, startY, spec.width, spec.height);
+          rowX += spec.width + rowGap;
+        }
+        startY += rowHeight + rowGap;
       }
     };
     const renderQualityBadgeColumnAt = (
@@ -6876,35 +6891,45 @@ const renderWithSharp = async (
         paddingY: input.badgePaddingY,
         gap: input.badgeGap,
       };
-      const qualityBadgeHeight = Math.max(
-        44,
-        Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio),
-      );
+      const qualityBadgeHeight = resolveQualityBadgeHeight({
+        referenceBadgeHeight: ratingBadgeHeight,
+        qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+        layout: 'column',
+      });
       if (qualityPlacement === 'bottom') {
-        const bottomQualityHeight = Math.max(
-          36,
-          Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
-        );
+        const bottomQualityHeight = resolveQualityBadgeHeight({
+          referenceBadgeHeight: posterQualityRowReferenceHeight,
+          qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+          layout: 'row',
+        });
         const bottomY = Math.max(
           input.badgeTopOffset,
           input.outputHeight - input.badgeBottomOffset - bottomQualityHeight
         );
-        composeQualityBadgeRow(input.qualityBadges, bottomY, bottomQualityHeight);
+        composeQualityBadgeRow(input.qualityBadges, bottomY, bottomQualityHeight, 'bottom');
       } else if (qualityPlacement === 'top') {
-        const topQualityHeight = Math.max(
-          36,
-          Math.round(badgeBaseHeight * 1.05 * qualityBadgeScaleRatio),
-        );
+        const topQualityHeight = resolveQualityBadgeHeight({
+          referenceBadgeHeight: posterQualityRowReferenceHeight,
+          qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+          layout: 'row',
+        });
         const topY = Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset);
-        composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight);
+        composeQualityBadgeRow(input.qualityBadges, topY, topQualityHeight, 'top');
       } else {
-        const qualityGap = Math.round(input.badgeGap * 1.25);
-        const qualityTotalHeight =
-          input.qualityBadges.length * qualityBadgeHeight +
-          Math.max(0, input.qualityBadges.length - 1) * qualityGap;
         const centeredStartY = Math.max(
           input.badgeTopOffset,
-          Math.round((input.outputHeight - qualityTotalHeight) / 2)
+          Math.round(
+            (
+              input.outputHeight -
+              resolveQualityBadgeColumnLayout({
+                referenceBadgeHeight: ratingBadgeHeight,
+                qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+                badgeGap: input.badgeGap,
+                badgeCount: input.qualityBadges.length,
+                availableHeight: input.outputHeight - input.badgeTopOffset - input.badgeBottomOffset,
+              }).totalHeight
+            ) / 2
+          )
         );
         let qualityStartY = centeredStartY;
         const shouldTopAlignQuality =
@@ -6936,7 +6961,11 @@ const renderWithSharp = async (
     }
 
     if (input.imageType === 'backdrop' && input.qualityBadges.length > 0) {
-      const qualityHeight = Math.max(44, Math.round(badgeBaseHeight * 1.25 * qualityBadgeScaleRatio));
+      const qualityHeight = resolveQualityBadgeHeight({
+        referenceBadgeHeight: ratingBadgeHeight,
+        qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+        layout: 'column',
+      });
       const useIntrinsicQualityWidths = usesIntrinsicQualityBadgeWidths(input.qualityBadgesStyle);
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
@@ -7087,6 +7116,13 @@ const renderWithSharp = async (
           : { r: 0, g: 0, b: 0, alpha: 0 }
         : { r: 17, g: 17, b: 17, alpha: 1 };
 
+    const fittedOverlays = await fitCompositeOverlaysToCanvas(
+      sharp,
+      overlays,
+      input.outputWidth,
+      input.finalOutputHeight,
+    );
+
     const pipeline = sharp({
       create: {
         width: input.outputWidth,
@@ -7094,7 +7130,7 @@ const renderWithSharp = async (
         channels: 4,
         background,
       },
-    }).composite(overlays);
+    }).composite(fittedOverlays);
 
     let finalBuffer: Buffer;
     let outputContentType = outputFormatToContentType(input.outputFormat);
@@ -9872,7 +9908,7 @@ export async function handleImageRequest(
       );
       const effectiveQualityBadgeScalePercent = Math.max(
         1,
-        Math.round(qualityBadgeScalePercent * overlayAutoScale),
+        qualityBadgeScalePercent,
       );
       const scaledBadgeMetrics = scaleBadgeMetrics(
         {
