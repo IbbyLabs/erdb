@@ -157,6 +157,44 @@
 
 <a id="v2-47-0"></a>
 
+<a id="v2-48-0"></a>
+
+## [v2.48.0] - 29/03/2026
+
+### Added
+* refine preview and mobile nav
+  
+  Surface release status in the mobile layout without unmounting the drawer.
+  
+  Give the preview workspace more room and condense setup details into focused pills.
+  
+  Refresh a few public labels to better match the current navigation copy.
+
+### Fixed
+* stabilize quality badge layout
+  
+  Keep quality badge sizing consistent across poster and backdrop outputs.
+  
+  Fit composite overlays to the final canvas before sharp composites them.
+  
+  Add focused tests for overlay fitting and column layout behavior.
+* streamline the configurator workspace flow
+  
+  Reduce friction across the configurator by regrouping the main workspace.
+  
+  Add collapsible panels for settings, export, and proxy tasks.
+  
+  Bring preset guidance inline and add support views for preview and setup.
+  
+  Tighten spacing and defaults to keep the workspace easier to scan.
+* polish poster badges and configurator layout
+  
+  Tighten poster badge alignment for normalized values, labeled average layouts, and genre badges.
+  
+  Improve tomato contrast in square dark badges and keep genre icon centering stable as scale changes.
+  
+  Regroup presentation controls, unify configurator selector styling, move the guide flow into a modal, reduce workspace export dead space, and disable desktop nav shrinking on scroll.
+
 ## [v2.47.0] - 28/03/2026
 
 ### Added
