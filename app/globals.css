@@ -1406,6 +1406,67 @@ pre {
 	min-width: 0;
 }
 
+.workspace-showcase-grid {
+	display: grid;
+	gap: 1rem;
+	container-type: inline-size;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-showcase-meta-grid {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+.workspace-showcase-mode-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+}
+
+.workspace-showcase-mode-group > button {
+	flex: 1 1 4.75rem;
+	min-width: 0;
+}
+
+.workspace-showcase-card-grid {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+.workspace-showcase-card-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 0.5rem;
+}
+
+.workspace-showcase-card-copy {
+	flex: 1 1 7rem;
+	min-width: 0;
+}
+
+.workspace-showcase-card-title {
+	margin-top: 0.25rem;
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+}
+
+.workspace-showcase-card-badge {
+	max-width: 100%;
+	flex-shrink: 0;
+	text-align: center;
+	line-height: 1.35;
+}
+
+@container (min-width: 44rem) {
+	.workspace-showcase-grid {
+		grid-template-columns: minmax(19rem, 20rem) minmax(0, 1fr);
+	}
+}
+
 .erdb-main > *,
 .erdb-section > *,
 .erdb-hero-grid > *,

@@ -5836,25 +5836,25 @@ export default function Home() {
                     </div>
                   </div>
                   {workspaceCenterView === 'showcase' ? (
-                    <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(16rem,0.88fr)]">
+                    <div className="workspace-showcase-grid mt-3">
                       <div className="space-y-4">
                         {workspacePreviewFrame}
-                        <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="workspace-showcase-meta-grid">
                           <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
                             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Presentation</div>
-                            <div className="mt-2 text-sm font-semibold text-white">
+                            <div className="mt-2 break-words text-sm font-semibold leading-5 text-white">
                               {activePresentationOptionMeta?.label || 'Standard'}
                             </div>
                           </div>
                           <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
                             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Style</div>
-                            <div className="mt-2 text-sm font-semibold text-white">
+                            <div className="mt-2 break-words text-sm font-semibold leading-5 text-white">
                               {RATING_STYLE_OPTIONS.find((option) => option.id === activeRatingStyle)?.label || 'Default'}
                             </div>
                           </div>
                           <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
                             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Providers</div>
-                            <div className="mt-2 text-sm font-semibold text-white">{enabledProviderCount} active</div>
+                            <div className="mt-2 break-words text-sm font-semibold leading-5 text-white">{enabledProviderCount} active</div>
                           </div>
                         </div>
                       </div>
@@ -5864,7 +5864,7 @@ export default function Home() {
                           <p className="mt-2 text-[11px] leading-5 text-zinc-400">
                             Curated renders show how the current genre badge choices land across media types.
                           </p>
-                          <div className="mt-3 flex gap-1 rounded-lg border border-white/10 bg-zinc-950/80 p-1">
+                          <div className="workspace-showcase-mode-group mt-3 rounded-lg border border-white/10 bg-zinc-950/80 p-1">
                             {GENRE_BADGE_MODE_OPTIONS.map((option) => (
                               <button
                                 key={`genre-preview-mode-${option.id}`}
@@ -5880,7 +5880,7 @@ export default function Home() {
                             ))}
                           </div>
                           {tmdbKey.trim() ? (
-                            <div className="mt-4 grid grid-cols-2 gap-3">
+                            <div className="workspace-showcase-card-grid mt-4">
                               {showcaseGenreCards.map(({ sample, url }) => {
                                 const family = GENRE_BADGE_FAMILY_META[sample.familyId];
                                 const accentStyle = {
@@ -5896,15 +5896,15 @@ export default function Home() {
 
                                 return (
                                   <article key={sample.key} className="flex h-full flex-col gap-2 rounded-2xl border border-white/10 bg-zinc-950/60 p-2.5">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="min-w-0">
+                                    <div className="workspace-showcase-card-head">
+                                      <div className="workspace-showcase-card-copy">
                                         <div className="text-[9px] font-semibold uppercase tracking-wide text-zinc-500">
                                           {sample.typeLabel}
                                         </div>
-                                        <h4 className="mt-1 truncate text-[11px] font-semibold text-white">{sample.title}</h4>
+                                        <h4 className="workspace-showcase-card-title text-[11px] font-semibold text-white">{sample.title}</h4>
                                       </div>
                                       <span
-                                        className="shrink-0 rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white"
+                                        className="workspace-showcase-card-badge rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white"
                                         style={accentStyle}
                                       >
                                         {family.label}
