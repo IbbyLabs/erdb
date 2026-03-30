@@ -159,6 +159,17 @@
 
 <a id="v2-48-0"></a>
 
+<a id="v2-48-1"></a>
+
+## [v2.48.1] - 30/03/2026
+
+### Fixed
+* stabilize showcase preview layout
+  
+  Keep the showcase preview at a usable size by switching to content aware grid behavior before the center rail gets squeezed.
+  
+  Wrap showcase metadata, sample titles, and badge chips so labels stay inside their cards instead of truncating or overflowing.
+
 ## [v2.48.0] - 29/03/2026
 
 ### Added
