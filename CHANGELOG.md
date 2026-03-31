@@ -161,6 +161,17 @@
 
 <a id="v2-48-1"></a>
 
+<a id="v2-48-2"></a>
+
+## [v2.48.2] - 31/03/2026
+
+### Added
+* add XRDB transition notice
+  
+  Expose a XRDB rebrand notice in the README, app metadata, and homepage surfaces.
+  Add a Docker compose migration warning for self hosted users.
+  Show a live countdown for the rest of today in the transition banner.
+
 ## [v2.48.1] - 30/03/2026
 
 ### Fixed
