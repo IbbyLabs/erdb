@@ -8,7 +8,8 @@ const fullBrandName = 'IbbyLabs Easy Ratings Database';
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: `${fullBrandName} | Stateless Ratings Engine`,
-  description: 'ERDB generates poster, backdrop, and logo images with dynamic ratings for addons and media tools.',
+  description:
+    'ERDB generates poster, backdrop, and logo images with dynamic ratings for addons and media tools. The project is transitioning to XRDB, so expect some visual changes and short lived breakages during the refactor.',
   applicationName: fullBrandName,
   manifest: '/site.webmanifest',
   appleWebApp: {
@@ -30,13 +31,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     title: fullBrandName,
-    description: 'Stateless ratings image engine for posters, backdrops, logos, and Stremio addon integrations.',
+    description:
+      'Stateless ratings image engine for posters, backdrops, logos, and Stremio addon integrations. ERDB is transitioning to XRDB as a standalone project.',
     images: ['/favicon.png'],
   },
   twitter: {
     card: 'summary_large_image',
     title: fullBrandName,
-    description: 'Stateless ratings image engine for posters, backdrops, logos, and Stremio addon integrations.',
+    description:
+      'Stateless ratings image engine for posters, backdrops, logos, and Stremio addon integrations. ERDB is transitioning to XRDB as a standalone project.',
     images: ['/favicon.png'],
   },
 };

@@ -1,7 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import type { ChangeEvent, Dispatch, MouseEvent, RefObject, SetStateAction } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type Dispatch,
+  type MouseEvent,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import {
   Image as ImageIcon,
   Star,
@@ -41,6 +50,7 @@ import {
   type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
+import { formatCountdownToMidnight } from '@/lib/transitionCountdown';
 
 type PreviewType = 'poster' | 'backdrop' | 'logo';
 type ProxyEnabledTypes = Record<PreviewType, boolean>;
@@ -160,6 +170,7 @@ const POSTER_QUALITY_BADGE_POSITION_OPTIONS: Array<{
 ];
 
 export function HomePageView({ refs, state, derived, actions }: HomePageViewProps) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const { navRef } = refs;
   const {
     previewType,
@@ -235,6 +246,16 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
     toggleConfigStringVisibility,
     toggleProxyUrlVisibility,
   } = actions;
+  const transitionCountdownLabel = useMemo(() => formatCountdownToMidnight(nowMs), [nowMs]);
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setNowMs(Date.now());
+    }, 60_000);
+    return () => {
+      clearInterval(tick);
+    };
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#06070b] text-slate-200 selection:bg-orange-400/30 font-[var(--font-body)]">
@@ -288,6 +309,23 @@ export function HomePageView({ refs, state, derived, actions }: HomePageViewProp
                 Generate expressive posters, backdrops, and logos for addons in real time.
                 Pass parameters once and ship beautiful media metadata anywhere.
               </p>
+              <div className="max-w-2xl rounded-[1.6rem] border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100 shadow-[0_18px_60px_-40px_rgba(251,191,36,0.7)]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-200">XRDB Transition Notice</div>
+                <div className="mt-2 inline-flex rounded-full border border-amber-300/20 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-100">
+                  Today ends in {transitionCountdownLabel}
+                </div>
+                <p className="mt-2 leading-relaxed">
+                  ERDB is moving to <span className="font-semibold text-white">XRDB</span> and will continue as its own standalone project.
+                  The repo, branding, logo, and public image assets will change as the transition continues.
+                </p>
+                <p className="mt-2 leading-relaxed text-amber-50/90">
+                  A major refactor is already in progress to improve structure, reliability, and long term maintainability.
+                  Expect some bugs, rough edges, and temporary breakages while the XRDB launch settles.
+                </p>
+                <p className="mt-2 leading-relaxed text-amber-50/90">
+                  If you self host with Docker, plan to update your compose files to use the new XRDB repo and image name when the rebrand goes live.
+                </p>
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 <a href="#preview" onClick={handleAnchorClick} className="px-6 py-3 rounded-full bg-white text-black font-semibold hover:bg-slate-100 transition-colors">
                   Open Configurator

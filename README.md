@@ -5,6 +5,12 @@ ERDB generates poster/backdrop/logo images with dynamic ratings and quality badg
 > [!IMPORTANT]
 > This project is built and maintained by IbbyLabs, and based on ERDB by RealBestia, which you can find at [realbestia1/erdb](https://github.com/realbestia1/erdb).
 
+> [!WARNING]
+> ERDB is being rebranded into **XRDB** and will continue as its own standalone project.
+> The name, repo, logo, and public image assets will change as the transition moves forward.
+> I am also shipping a major refactor to improve structure, reliability, and long term maintainability, so expect some bugs, rough edges, and short lived breakages while XRDB settles in.
+> If you self host with Docker, plan to update your compose files to point at the new XRDB repo and image name once the rebrand goes live.
+
 <!-- changelog-links:start -->
 
 > [!TIP]
