@@ -22,6 +22,7 @@ export function handleProxyManifestOptions(request: NextRequest) {
 export async function handleProxyManifestGet(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const sourceUrl = searchParams.get('url');
+  const catalogPlan = searchParams.get('catalogPlan');
   const tmdbKey = searchParams.get('tmdbKey');
   const mdblistKey = searchParams.get('mdblistKey');
 
@@ -57,7 +58,7 @@ export async function handleProxyManifestGet(request: NextRequest) {
     return buildError(request, 'Source manifest is not valid JSON.', 502);
   }
 
-  return NextResponse.json(buildProxyManifestPayload(manifest, sourceUrl), {
+  return NextResponse.json(buildProxyManifestPayload(manifest, sourceUrl, { catalogPlan }), {
     status: 200,
     headers: resolveCorsHeaders(request),
   });

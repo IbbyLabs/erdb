@@ -8,6 +8,7 @@ import {
 import { DEFAULT_BACKDROP_RATING_LAYOUT, type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_CONFIGURATOR_EXPERIENCE_MODE, type ConfiguratorExperienceMode, type ConfiguratorPresetId } from '@/lib/configuratorPresets';
 import { DEFAULT_METADATA_TRANSLATION_MODE, type MetadataTranslationMode } from '@/lib/metadataTranslation';
+import { type ProxyCatalogRule } from '@/lib/proxyCatalogRules';
 import {
   DEFAULT_EPISODE_ID_MODE,
   THUMBNAIL_RATING_PREFERENCES,
@@ -147,6 +148,7 @@ export function useConfiguratorWorkspaceState() {
   const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
   const [proxyTranslateMetaMode, setProxyTranslateMetaMode] = useState<MetadataTranslationMode>(DEFAULT_METADATA_TRANSLATION_MODE);
   const [proxyDebugMetaTranslation, setProxyDebugMetaTranslation] = useState(false);
+  const [proxyCatalogRules, setProxyCatalogRules] = useState<ProxyCatalogRule[]>([]);
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
@@ -254,6 +256,7 @@ export function useConfiguratorWorkspaceState() {
     posterStreamBadges,
     previewType,
     proxyDebugMetaTranslation,
+    proxyCatalogRules,
     proxyManifestUrl,
     proxyTranslateMeta,
     proxyTranslateMetaMode,
@@ -344,6 +347,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterStreamBadges,
     setPreviewType,
     setProxyDebugMetaTranslation,
+    setProxyCatalogRules,
     setProxyManifestUrl,
     setProxyTranslateMeta,
     setProxyTranslateMetaMode,

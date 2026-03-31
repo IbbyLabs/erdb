@@ -95,6 +95,11 @@ import {
   normalizeEpisodeIdMode,
   type EpisodeIdMode,
 } from './episodeIdentity.ts';
+import {
+  encodeProxyCatalogRules,
+  normalizeProxyCatalogRules,
+  type ProxyCatalogRule,
+} from './proxyCatalogRules.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -211,6 +216,7 @@ export type SavedProxySettings = {
   translateMetaMode: MetadataTranslationMode;
   debugMetaTranslation: boolean;
   episodeIdMode: EpisodeIdMode;
+  catalogRules: ProxyCatalogRule[];
 };
 
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
@@ -340,6 +346,7 @@ export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
     translateMetaMode: DEFAULT_METADATA_TRANSLATION_MODE,
     debugMetaTranslation: false,
     episodeIdMode: DEFAULT_EPISODE_ID_MODE,
+    catalogRules: [],
   },
 });
 
@@ -926,6 +933,7 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
       translateMetaMode?: unknown;
       debugMetaTranslation?: unknown;
       episodeIdMode?: unknown;
+      catalogRules?: unknown;
     };
   };
 
@@ -950,6 +958,7 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
         candidate.proxy?.episodeIdMode,
         defaults.proxy.episodeIdMode,
       ),
+      catalogRules: normalizeProxyCatalogRules(candidate.proxy?.catalogRules),
     },
   };
 };
@@ -1519,6 +1528,10 @@ export const buildProxyPayload = (
   }
   if (proxy.episodeIdMode !== DEFAULT_EPISODE_ID_MODE) {
     payload.episodeIdMode = normalizeEpisodeIdMode(proxy.episodeIdMode, DEFAULT_EPISODE_ID_MODE);
+  }
+  const encodedCatalogPlan = encodeProxyCatalogRules(proxy.catalogRules);
+  if (encodedCatalogPlan) {
+    payload.catalogPlan = encodedCatalogPlan;
   }
 
   return payload;

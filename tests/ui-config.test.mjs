@@ -116,6 +116,7 @@ const buildSampleSettings = () =>
       translateMeta: true,
       translateMetaMode: 'prefer-requested-language',
       debugMetaTranslation: true,
+      catalogRules: [{ key: 'movie:top', title: 'Cinema Prime', discoverOnly: true }],
     },
   });
 
@@ -225,6 +226,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       translateMetaMode: 'prefer-requested-language',
       debugMetaTranslation: true,
       episodeIdMode: 'imdb',
+      catalogRules: [{ key: 'movie:top', title: 'Cinema Prime', discoverOnly: true }],
     },
   });
 
@@ -262,6 +264,7 @@ test('workspace normalization ignores legacy proxy enabled flags', () => {
     translateMetaMode: 'fill-missing',
     debugMetaTranslation: false,
     episodeIdMode: 'imdb',
+    catalogRules: [],
   });
 });
 
@@ -535,6 +538,9 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     logoBackground: 'dark',
     logoArtworkSource: 'fanart',
     providerAppearance: encodeRatingProviderAppearanceOverrides(SAMPLE_PROVIDER_APPEARANCE),
+    catalogPlan: Buffer.from(
+      JSON.stringify([{ key: 'movie:top', title: 'Cinema Prime', discoverOnly: true }]),
+    ).toString('base64url'),
     xrdbBase: 'https://xrdb.example.com',
   });
 });

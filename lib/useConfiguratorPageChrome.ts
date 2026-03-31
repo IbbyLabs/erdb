@@ -6,6 +6,7 @@ import {
   type MouseEvent,
 } from 'react';
 import { type SupportedLanguageOption } from '@/lib/configuratorPageOptions';
+import { buildTmdbSupportedLanguageOptions } from '@/lib/configuratorLanguageOptions.ts';
 
 export function useConfiguratorPageChrome({
   initialSupportedLanguages,
@@ -74,20 +75,25 @@ export function useConfiguratorPageChrome({
       return;
     }
 
-    fetch(`https://api.themoviedb.org/3/configuration/languages?api_key=${tmdbKey}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!Array.isArray(data)) {
+    Promise.all([
+      fetch(`https://api.themoviedb.org/3/configuration/languages?api_key=${tmdbKey}`).then((res) =>
+        res.json(),
+      ),
+      fetch(`https://api.themoviedb.org/3/configuration/primary_translations?api_key=${tmdbKey}`).then(
+        (res) => res.json(),
+      ),
+    ])
+      .then(([languages, primaryTranslations]) => {
+        if (!Array.isArray(languages)) {
           return;
         }
-        const formatted = data
-          .map((item: any) => ({
-            code: item.iso_639_1,
-            flag: '🌐',
-            label: item.english_name || item.name,
-          }))
-          .sort((left, right) => left.label.localeCompare(right.label));
-        setSupportedLanguages(formatted);
+        const formatted = buildTmdbSupportedLanguageOptions({
+          languages,
+          primaryTranslations: Array.isArray(primaryTranslations) ? primaryTranslations : [],
+        });
+        if (formatted.length > 0) {
+          setSupportedLanguages(formatted);
+        }
       })
       .catch(() => {});
   }, [tmdbKey]);

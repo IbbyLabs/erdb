@@ -46,6 +46,8 @@ const createInput = (overrides = {}) => ({
   logoBackground: 'dark',
   effectiveRatingPreferences: ['imdb', 'tmdb'],
   providerAppearanceOverrides: {},
+  mdblistStateKey: 'mdblist:none',
+  simklStateKey: 'simkl:none',
   streamBadgesCacheKeySeed: 'off',
   fanartKeyHash: 'fanart-hash',
   fanartClientKeyHash: 'fanart-client-hash',
@@ -210,6 +212,24 @@ test('final image render seed includes canonical provider appearance overrides',
   );
 
   assert.equal(baseKey, reorderedKey);
+  assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed changes when MDBList provider state changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ mdblistStateKey: 'mdblist:manual:abcd1234' }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed changes when SIMKL provider state changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ simklStateKey: 'simkl:client:abcd1234' }),
+  );
+
   assert.notEqual(baseKey, changedKey);
 });
 

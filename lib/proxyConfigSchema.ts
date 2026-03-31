@@ -146,6 +146,7 @@ export type ProxyConfig = {
   xrdbKey?: string;
   tmdbKey: string;
   mdblistKey: string;
+  catalogPlan?: string;
   simklClientId?: string;
   fanartKey?: string;
   translateMeta?: boolean;
@@ -373,6 +374,7 @@ const CONFIG_STRING_KEYS = [
   'logoBackground',
   'logoSource',
   'xrdbBase',
+  'catalogPlan',
 ] as const satisfies readonly (keyof ProxyConfig)[];
 
 const CONFIG_BOOLEAN_KEYS = [
@@ -398,6 +400,7 @@ export const XRDB_RESERVED_PARAMS = new Set<string>([
   'xrdbKey',
   'tmdbKey',
   'mdblistKey',
+  'catalogPlan',
   'simklClientId',
   'fanartKey',
   'fallbackUrl',

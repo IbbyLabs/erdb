@@ -34,6 +34,7 @@ test('proxy route handler parses query config without consuming the resource pat
     tmdbKey: 'tmdb',
     mdblistKey: 'mdblist',
     translateMetaMode: 'hybrid',
+    catalogPlan: 'ZXhhbXBsZQ',
   });
 
   const parsed = parseProxyRouteConfig(searchParams, ['meta', 'movie', 'tt123.json']);
@@ -43,6 +44,7 @@ test('proxy route handler parses query config without consuming the resource pat
   assert.equal(parsed.config?.tmdbKey, 'tmdb');
   assert.equal(parsed.config?.mdblistKey, 'mdblist');
   assert.equal(parsed.config?.translateMetaMode, 'fill-missing');
+  assert.equal(parsed.config?.catalogPlan, 'ZXhhbXBsZQ');
   assert.deepEqual(parsed.resourceSegments, ['meta', 'movie', 'tt123.json']);
 });
 

@@ -48,3 +48,45 @@ test('buildProxyManifestPayload stamps proxy identity onto a source manifest', (
   assert.equal(payload.name, 'XRDB Proxy | Source Addon');
   assert.equal(payload.description, 'Source description (served through XRDB Proxy)');
 });
+
+test('buildProxyManifestPayload applies XRDB catalog rules without changing proxy identity', () => {
+  const payload = buildProxyManifestPayload(
+    {
+      id: 'source.addon',
+      name: 'Source Addon',
+      description: 'Source description',
+      catalogs: [
+        {
+          type: 'movie',
+          id: 'top',
+          name: 'Top',
+          extra: [{ name: 'search', isRequired: false }],
+        },
+        {
+          type: 'series',
+          id: 'calendar',
+          name: 'Calendar',
+        },
+      ],
+    },
+    'https://addon.example.com/manifest.json',
+    {
+      catalogPlan: Buffer.from(
+        JSON.stringify([
+          { key: 'movie:top', title: 'Cinema Prime', discoverOnly: true },
+          { key: 'series:calendar', hidden: true },
+        ]),
+      ).toString('base64url'),
+    },
+  );
+
+  assert.deepEqual(payload.catalogs, [
+    {
+      type: 'movie',
+      id: 'top',
+      name: 'Cinema Prime',
+      extra: [],
+    },
+  ]);
+  assert.match(payload.id, /^xrdb\.proxy\.[a-f0-9]{12}$/);
+});

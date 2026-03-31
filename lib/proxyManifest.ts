@@ -1,4 +1,5 @@
 import { buildProxyId } from './proxyIdUtils.ts';
+import { applyProxyCatalogRules, decodeProxyCatalogRules } from './proxyCatalogRules.ts';
 
 type ProxyCorsContext = {
   requestOrigin: string | null;
@@ -41,15 +42,20 @@ export const buildProxyCorsHeaders = ({
 export const buildProxyManifestPayload = (
   manifest: Record<string, unknown>,
   sourceManifestUrl: string,
-  configSeed?: string,
+  options?: {
+    catalogPlan?: string | null;
+    configSeed?: string;
+  },
 ) => {
+  const catalogRules = decodeProxyCatalogRules(options?.catalogPlan);
+  const rewrittenManifest = applyProxyCatalogRules(manifest, catalogRules);
   const sourceName = typeof manifest.name === 'string' ? manifest.name : 'Addon';
   const sourceDescription =
     typeof manifest.description === 'string' ? manifest.description : 'Served through the image proxy';
 
   return {
-    ...manifest,
-    id: buildProxyId(sourceManifestUrl, configSeed),
+    ...rewrittenManifest,
+    id: buildProxyId(sourceManifestUrl, options?.configSeed),
     name: `XRDB Proxy | ${sourceName}`,
     description: `${sourceDescription} (served through XRDB Proxy)`,
   };

@@ -120,7 +120,10 @@ export async function handleProxyGet(
     }
 
     return NextResponse.json(
-      buildProxyManifestPayload(manifest, config.url, configSeed),
+      buildProxyManifestPayload(manifest, config.url, {
+        configSeed,
+        catalogPlan: config.catalogPlan,
+      }),
       {
         status: 200,
         headers: buildJsonCorsHeaders(request),

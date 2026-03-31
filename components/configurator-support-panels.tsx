@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+
 import {
   Check,
   ChevronRight,
@@ -15,6 +17,11 @@ import {
   type MetadataTranslationMode,
 } from '@/lib/metadataTranslation';
 import type { ConfiguratorExperienceMode } from '@/lib/configuratorPresets';
+import {
+  normalizeProxyCatalogRules,
+  readProxyCatalogDescriptors,
+  type ProxyCatalogRule,
+} from '@/lib/proxyCatalogRules';
 
 export type CurrentSetupItem = {
   label: string;
@@ -38,6 +45,10 @@ export function ConfiguratorSupportPanels({
   onSelectProxyTranslateMetaMode,
   proxyDebugMetaTranslation,
   onToggleProxyDebugMetaTranslation,
+  proxyCatalogRules,
+  onChangeProxyCatalogRules,
+  tmdbKey,
+  mdblistKey,
   displayedProxyUrl,
   proxyUrl,
   baseUrl,
@@ -67,6 +78,10 @@ export function ConfiguratorSupportPanels({
   onSelectProxyTranslateMetaMode: (value: MetadataTranslationMode) => void;
   proxyDebugMetaTranslation: boolean;
   onToggleProxyDebugMetaTranslation: (value: boolean) => void;
+  proxyCatalogRules: ProxyCatalogRule[];
+  onChangeProxyCatalogRules: (value: ProxyCatalogRule[]) => void;
+  tmdbKey: string;
+  mdblistKey: string;
   displayedProxyUrl: string;
   proxyUrl: string;
   baseUrl: string;
@@ -80,6 +95,98 @@ export function ConfiguratorSupportPanels({
   onJumpToExport: () => void;
   onFocusPreview: () => void;
 }) {
+  const [catalogLoadError, setCatalogLoadError] = useState('');
+  const [catalogLoadState, setCatalogLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [catalogManifest, setCatalogManifest] = useState<Record<string, unknown> | null>(null);
+  const [catalogRequestKey, setCatalogRequestKey] = useState('');
+
+  const normalizedManifestUrl = proxyManifestUrl.trim();
+  const normalizedTmdbKey = tmdbKey.trim();
+  const normalizedMdblistKey = mdblistKey.trim();
+  const activeCatalogRequestKey =
+    normalizedManifestUrl && normalizedTmdbKey && normalizedMdblistKey
+      ? `${normalizedManifestUrl}::${normalizedTmdbKey}::${normalizedMdblistKey}`
+      : '';
+
+  useEffect(() => {
+    if (!activeCatalogRequestKey) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setCatalogRequestKey(activeCatalogRequestKey);
+      setCatalogLoadState('loading');
+      setCatalogLoadError('');
+
+      const target = new URL('/proxy/manifest.json', window.location.origin);
+      target.searchParams.set('url', normalizedManifestUrl);
+      target.searchParams.set('tmdbKey', normalizedTmdbKey);
+      target.searchParams.set('mdblistKey', normalizedMdblistKey);
+
+      try {
+        const response = await fetch(target.toString(), { cache: 'no-store' });
+        if (!response.ok) {
+          const message = await response.text();
+          throw new Error(message || `Manifest request failed with ${response.status}`);
+        }
+        const payload = await response.json();
+        if (cancelled) return;
+        setCatalogManifest(payload && typeof payload === 'object' ? payload : null);
+        setCatalogLoadState('ready');
+      } catch (error) {
+        if (cancelled) return;
+        setCatalogManifest(null);
+        setCatalogLoadState('error');
+        setCatalogLoadError(error instanceof Error ? error.message : 'Unable to load source catalogs.');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCatalogRequestKey, normalizedManifestUrl, normalizedMdblistKey, normalizedTmdbKey]);
+
+  const effectiveCatalogLoadState = !activeCatalogRequestKey
+    ? 'idle'
+    : catalogRequestKey === activeCatalogRequestKey
+      ? catalogLoadState
+      : 'loading';
+  const effectiveCatalogLoadError =
+    effectiveCatalogLoadState === 'error' && catalogRequestKey === activeCatalogRequestKey
+      ? catalogLoadError
+      : '';
+  const effectiveCatalogManifest =
+    effectiveCatalogLoadState === 'ready' && catalogRequestKey === activeCatalogRequestKey
+      ? catalogManifest
+      : null;
+
+  const catalogDescriptors = useMemo(
+    () => (effectiveCatalogManifest ? readProxyCatalogDescriptors(effectiveCatalogManifest) : []),
+    [effectiveCatalogManifest],
+  );
+  const catalogRulesByKey = useMemo(
+    () => new Map(proxyCatalogRules.map((rule) => [rule.key, rule])),
+    [proxyCatalogRules],
+  );
+
+  const updateCatalogRule = (key: string, nextRule: Partial<ProxyCatalogRule>) => {
+    const currentRule = catalogRulesByKey.get(key) || { key };
+    const mergedRule = normalizeProxyCatalogRules([
+      {
+        ...currentRule,
+        ...nextRule,
+        key,
+      },
+    ])[0];
+    const nextRules = proxyCatalogRules.filter((rule) => rule.key !== key);
+    onChangeProxyCatalogRules(mergedRule ? [...nextRules, mergedRule] : nextRules);
+  };
+
+  const clearCatalogRules = () => {
+    onChangeProxyCatalogRules([]);
+  };
+
   return (
     <div id="proxy" className="space-y-3 scroll-mt-24">
       <div
@@ -188,6 +295,135 @@ export function ConfiguratorSupportPanels({
                         <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[11px] leading-5 text-zinc-500">
                           Simple mode keeps proxy translation on with the safe defaults from the preset.
                           Switch to advanced mode if you want to change merge mode or attach debug provenance.
+                        </div>
+                      ) : null}
+
+                      {experienceMode === 'advanced' ? (
+                        <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-3">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Catalog controls</div>
+                              <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                                Tune catalog names, visibility, and search behavior for the generated XRDB proxy manifest.
+                              </p>
+                            </div>
+                            {proxyCatalogRules.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={clearCatalogRules}
+                                className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-800"
+                              >
+                                Reset controls
+                              </button>
+                            ) : null}
+                          </div>
+
+                          {effectiveCatalogLoadState === 'idle' ? (
+                            <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[11px] leading-5 text-zinc-500">
+                              Add a manifest URL, TMDB key, and MDBList key to load catalog controls.
+                            </div>
+                          ) : null}
+
+                          {effectiveCatalogLoadState === 'loading' ? (
+                            <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[11px] leading-5 text-zinc-500">
+                              Loading catalog controls...
+                            </div>
+                          ) : null}
+
+                          {effectiveCatalogLoadState === 'error' ? (
+                            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-[11px] leading-5 text-rose-200">
+                              {effectiveCatalogLoadError || 'Unable to load source catalogs.'}
+                            </div>
+                          ) : null}
+
+                          {effectiveCatalogLoadState === 'ready' && catalogDescriptors.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[11px] leading-5 text-zinc-500">
+                              The source manifest did not expose any catalogs that XRDB can tune here.
+                            </div>
+                          ) : null}
+
+                          {effectiveCatalogLoadState === 'ready' && catalogDescriptors.length > 0 ? (
+                            <div className="space-y-3">
+                              {catalogDescriptors.map((catalog) => {
+                                const rule = catalogRulesByKey.get(catalog.key);
+                                const title = rule?.title || '';
+                                const isVisible = rule?.hidden !== true;
+                                const searchEnabled =
+                                  catalog.searchSupported &&
+                                  rule?.discoverOnly !== true &&
+                                  rule?.searchEnabled !== false;
+                                const discoverOnly = catalog.searchSupported && rule?.discoverOnly === true;
+
+                                return (
+                                  <div key={catalog.key} className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                      <div>
+                                        <div className="text-[11px] font-semibold text-zinc-100">{catalog.name}</div>
+                                        <div className="mt-1 font-mono text-[10px] text-zinc-500">{catalog.type}:{catalog.id}</div>
+                                      </div>
+                                      <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300">
+                                        <input
+                                          type="checkbox"
+                                          checked={isVisible}
+                                          onChange={(event) => updateCatalogRule(catalog.key, { hidden: !event.target.checked })}
+                                          className="h-3 w-3 accent-violet-500"
+                                        />
+                                        <span>Visible</span>
+                                      </label>
+                                    </div>
+
+                                    <div className="mt-3">
+                                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Display name</label>
+                                      <input
+                                        type="text"
+                                        value={title}
+                                        onChange={(event) => updateCatalogRule(catalog.key, { title: event.target.value })}
+                                        placeholder={catalog.name}
+                                        className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+                                      />
+                                    </div>
+
+                                    {catalog.searchSupported ? (
+                                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                        <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[11px] font-semibold text-zinc-300">
+                                          <input
+                                            type="checkbox"
+                                            checked={searchEnabled}
+                                            onChange={(event) =>
+                                              updateCatalogRule(catalog.key, {
+                                                searchEnabled: event.target.checked,
+                                                discoverOnly: event.target.checked ? false : rule?.discoverOnly,
+                                              })
+                                            }
+                                            className="h-3 w-3 accent-violet-500"
+                                          />
+                                          <span>Search</span>
+                                        </label>
+                                        <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[11px] font-semibold text-zinc-300">
+                                          <input
+                                            type="checkbox"
+                                            checked={discoverOnly}
+                                            onChange={(event) =>
+                                              updateCatalogRule(catalog.key, {
+                                                discoverOnly: event.target.checked,
+                                                searchEnabled: event.target.checked ? false : rule?.searchEnabled,
+                                              })
+                                            }
+                                            className="h-3 w-3 accent-violet-500"
+                                          />
+                                          <span>Discover only</span>
+                                        </label>
+                                      </div>
+                                    ) : (
+                                      <div className="mt-3 rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] leading-5 text-zinc-500">
+                                        This source catalog does not expose a search path.
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>

@@ -92,6 +92,7 @@ import {
   FANART_ARTWORK_SOURCE_SET,
   FANART_CLIENT_KEY,
   FINAL_IMAGE_RENDERER_CACHE_VERSION,
+  MDBLIST_API_KEYS,
   RAW_IMDB_ID_RE,
   SIMKL_CLIENT_ID,
   TORRENTIO_CACHE_TTL_MS,
@@ -128,6 +129,41 @@ import {
 } from './imageRouteDisplayPrefs.ts';
 
 type ImageType = (typeof ALLOWED_IMAGE_TYPES extends Set<infer T> ? T : never) & ('poster' | 'backdrop' | 'logo');
+
+const MDBLIST_STATEFUL_RATING_PROVIDERS = new Set<RatingPreference>([
+  'mdblist',
+  'tomatoes',
+  'tomatoesaudience',
+  'letterboxd',
+  'metacritic',
+  'metacriticuser',
+  'rogerebert',
+  'trakt',
+]);
+
+const buildCredentialStateKey = (label: string, value?: string | null) => {
+  const normalized = String(value || '').trim();
+  return normalized ? `${label}:client:${sha1Hex(normalized).slice(0, 12)}` : `${label}:none`;
+};
+
+const buildPoolAwareStateKey = ({
+  label,
+  directValue,
+  pooledValues,
+}: {
+  label: string;
+  directValue?: string | null;
+  pooledValues: string[];
+}) => {
+  const normalizedDirect = String(directValue || '').trim();
+  if (normalizedDirect) {
+    return `${label}:manual:${sha1Hex(normalizedDirect).slice(0, 12)}`;
+  }
+  if (pooledValues.length > 0) {
+    return `${label}:pool:${sha1Hex(pooledValues.join('|')).slice(0, 12)}`;
+  }
+  return `${label}:none`;
+};
 
 export type ImageRouteRequestState = {
   imageType: ImageType;
@@ -785,10 +821,24 @@ export const resolveImageRouteRequestState = async ({
   const renderCacheBuster = (searchParams.get('cb') || '').trim();
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
   const selectedRatings = new Set<RatingPreference>(ratingPreferences);
+  const usesMdblistSeed = effectiveRatingPreferences.some((provider) =>
+    MDBLIST_STATEFUL_RATING_PROVIDERS.has(provider),
+  );
+  const usesSimklSeed = selectedRatings.has('simkl');
   const usesFanartArtwork =
     (imageType === 'poster' && posterUsesFanartArtwork) ||
     (imageType === 'backdrop' && backdropUsesFanartArtwork) ||
     (imageType === 'logo' && logoUsesFanartArtwork);
+  const mdblistStateKey = usesMdblistSeed
+    ? buildPoolAwareStateKey({
+        label: 'mdblist',
+        directValue: mdblistKey,
+        pooledValues: MDBLIST_API_KEYS,
+      })
+    : 'mdblist:off';
+  const simklStateKey = usesSimklSeed
+    ? buildCredentialStateKey('simkl', simklClientId)
+    : 'simkl:off';
   const fanartKeyHash = usesFanartArtwork ? sha1Hex(fanartKey || '').slice(0, 12) : '-';
   const fanartClientKeyHash = usesFanartArtwork
     ? sha1Hex(fanartClientKey || '').slice(0, 12)
@@ -852,6 +902,8 @@ export const resolveImageRouteRequestState = async ({
     logoBackground,
     effectiveRatingPreferences,
     providerAppearanceOverrides,
+    mdblistStateKey,
+    simklStateKey,
     streamBadgesCacheKeySeed,
     fanartKeyHash,
     fanartClientKeyHash,

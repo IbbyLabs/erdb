@@ -56,6 +56,8 @@ type FinalImageRenderSeedInput = {
   logoBackground: string;
   effectiveRatingPreferences: string[];
   providerAppearanceOverrides: RatingProviderAppearanceOverrides;
+  mdblistStateKey: string;
+  simklStateKey: string;
   streamBadgesCacheKeySeed: string;
   fanartKeyHash: string;
   fanartClientKeyHash: string;
@@ -131,11 +133,13 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isLogo ? input.logoBackground : '-',
     input.effectiveRatingPreferences.join(',') || 'none',
     providerAppearanceKey,
+    input.mdblistStateKey || '-',
+    input.simklStateKey || '-',
     input.streamBadgesCacheKeySeed,
     input.fanartKeyHash || '-',
     input.fanartClientKeyHash || '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v6',
+    'v7',
   ].join('|');
 };
