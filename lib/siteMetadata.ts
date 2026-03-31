@@ -3,9 +3,9 @@ import { BRAND_DISPLAY_NAME, BRAND_FULL_NAME, BRAND_NAME } from './siteBrand.ts'
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const SITE_DESCRIPTION =
-  'XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo artwork with dynamic ratings for addons and media tools.';
+  'This XRDB repository is archived. Visit the active XRDB repo for current releases, docs, and updates.';
 const SITE_SOCIAL_DESCRIPTION =
-  'XRDB, eXtended Ratings DataBase, is a stateless artwork engine for posters, backdrops, thumbnails, logos, and addon integrations.';
+  'This XRDB repository is archived. Visit the active XRDB repo for current releases, docs, and updates.';
 
 const resolveMetadataBase = (appUrl?: string) => new URL(appUrl || DEFAULT_APP_URL);
 

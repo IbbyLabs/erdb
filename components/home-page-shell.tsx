@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpenText, Layers3, Sparkles, Wand2 } from 'lucide-react';
 
-import { BrandLockup, DeploymentVersionPill, SupportPill, UptimePill } from '@/components/site-chrome';
+import { BrandLockup, DeploymentVersionPill, ProjectArchiveNotice, SupportPill, UptimePill } from '@/components/site-chrome';
 import { SitePageOutro } from '@/components/site-page-outro';
-import { BRAND_DISPLAY_NAME, BRAND_FULL_NAME, BRAND_GITHUB_URL, BRAND_NAME } from '@/lib/siteBrand';
+import { BRAND_DISPLAY_NAME, BRAND_FULL_NAME, BRAND_GITHUB_LABEL, BRAND_GITHUB_URL, BRAND_NAME } from '@/lib/siteBrand';
 
 const homeLaunchTracks = [
   {
@@ -43,7 +43,7 @@ export function HomePageShell() {
             <div className="xrdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
               <Link href="/configurator" className="xrdb-nav-link">Configurator</Link>
               <Link href="/docs" className="xrdb-nav-link">Docs</Link>
-              <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="xrdb-nav-link">GitHub</a>
+              <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="xrdb-nav-link">{BRAND_GITHUB_LABEL}</a>
               <UptimePill label="Uptime Tracker" />
               <SupportPill label="Support" />
             </div>
@@ -52,6 +52,8 @@ export function HomePageShell() {
       </nav>
 
       <main className="xrdb-main w-full px-6 py-10 md:py-14 2xl:px-8">
+        <ProjectArchiveNotice />
+
         <section className="xrdb-hero-section relative">
           <div className="xrdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
           <div className="xrdb-hero-grid">

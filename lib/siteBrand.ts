@@ -5,7 +5,14 @@ export const BRAND_FULL_NAME = 'eXtended Ratings DataBase';
 export const BRAND_DISPLAY_NAME = `${BRAND_NAME} | ${BRAND_FULL_NAME}`;
 
 export const BRAND_GITHUB_URL =
-  process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/xrdb';
+  process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/XRDB';
+export const BRAND_GITHUB_LABEL =
+  process.env.NEXT_PUBLIC_BRAND_GITHUB_LABEL || 'XRDB Repo';
+export const BRAND_ARCHIVE_TITLE =
+  process.env.NEXT_PUBLIC_BRAND_ARCHIVE_TITLE || 'This repository is archived';
+export const BRAND_ARCHIVE_COPY =
+  process.env.NEXT_PUBLIC_BRAND_ARCHIVE_COPY ||
+  'New releases, fixes, docs, and active development now live in the XRDB repo. Use that repo for current updates, installs, and issue tracking.';
 export const BRAND_SUPPORT_URL =
   process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 export const BRAND_UPTIME_URL =

@@ -3,6 +3,11 @@
 XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo artwork with dynamic ratings, quality badges, and export ready integrations.
 
 > [!IMPORTANT]
+> This repository is archived.
+> New releases, fixes, docs, and active development now live in [IbbyLabs/XRDB](https://github.com/IbbyLabs/XRDB).
+> Use that repo for current updates, installs, and issue tracking.
+
+> [!NOTE]
 > XRDB, eXtended Ratings DataBase, is built by IbbyLabs for artwork workflows, media tools, and addon integrations.
 
 <!-- changelog-links:start -->
@@ -34,11 +39,11 @@ Current priorities for XRDB, eXtended Ratings DataBase:
 
 ## Quick Start
 
-## Install From GitHub
+## Install From Active Repo
 
 ```bash
-git clone https://github.com/IbbyLabs/xrdb
-cd xrdb
+git clone https://github.com/IbbyLabs/XRDB
+cd XRDB
 ```
 
 Use Node 22.x locally. The repo now includes `.nvmrc` and `.node-version` so native packages such as `better-sqlite3` stay aligned with CI and release scripts.
@@ -181,7 +186,7 @@ Store `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` in lo
 
 If the GHCR package already existed before it was linked to this repository, open the package in GitHub and:
 
-1. connect it to `IbbyLabs/xrdb`
+1. connect it to `IbbyLabs/XRDB`
 2. allow the package to follow repository permissions
 3. set visibility to public if you want anonymous pulls
 

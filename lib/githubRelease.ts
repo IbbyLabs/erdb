@@ -1,5 +1,5 @@
 export const LATEST_GITHUB_RELEASE_TTL_SECONDS = 60;
-const DEFAULT_GITHUB_REPOSITORY_URL = 'https://github.com/IbbyLabs/xrdb';
+const DEFAULT_GITHUB_REPOSITORY_URL = 'https://github.com/IbbyLabs/XRDB';
 
 export type GitHubRepository = {
   owner: string;

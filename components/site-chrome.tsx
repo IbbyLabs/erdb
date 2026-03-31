@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronRight, ExternalLink, Tag, Terminal } from 'lucide-react';
 import {
+  BRAND_ARCHIVE_COPY,
+  BRAND_ARCHIVE_TITLE,
   BRAND_DISPLAY_NAME,
   BRAND_FULL_NAME,
+  BRAND_GITHUB_LABEL,
+  BRAND_GITHUB_URL,
   BRAND_NAME,
   BRAND_SUPPORT_URL,
   BRAND_UPTIME_URL,
@@ -178,6 +182,34 @@ export function DiscordPill({ href, label, title }: { href: string; label: strin
       </svg>
       <span>{label}</span>
     </a>
+  );
+}
+
+export function ProjectArchiveNotice({ compact = false }: { compact?: boolean }) {
+  return (
+    <section
+      className={`rounded-[28px] border border-amber-400/20 bg-[linear-gradient(180deg,rgba(61,34,9,0.96),rgba(22,12,5,0.98))] shadow-[0_28px_80px_-50px_rgba(245,158,11,0.55)] ${
+        compact ? 'p-4 md:p-5' : 'p-5 md:p-6'
+      }`}
+      aria-label="Archive notice"
+    >
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1.5">
+          <p className="site-section-eyebrow font-mono text-amber-200">Archive notice</p>
+          <h2 className="text-lg font-semibold text-white">{BRAND_ARCHIVE_TITLE}</h2>
+          <p className="max-w-3xl text-sm leading-6 text-amber-50/80">{BRAND_ARCHIVE_COPY}</p>
+        </div>
+        <a
+          href={BRAND_GITHUB_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-amber-300/20 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-100 transition-colors hover:border-amber-200/40 hover:bg-amber-300/15 hover:text-white"
+        >
+          <span>{BRAND_GITHUB_LABEL}</span>
+          <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        </a>
+      </div>
+    </section>
   );
 }
 
