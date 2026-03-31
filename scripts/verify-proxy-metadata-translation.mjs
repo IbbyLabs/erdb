@@ -349,11 +349,11 @@ const main = async () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        ERDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
-        ERDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
-        ERDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
-        ERDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
-        ERDB_ANILIST_GRAPHQL_URL: `http://127.0.0.1:${mockPort}/anilist`,
+        XRDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
+        XRDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
+        XRDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
+        XRDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
+        XRDB_ANILIST_GRAPHQL_URL: `http://127.0.0.1:${mockPort}/anilist`,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -391,9 +391,9 @@ const main = async () => {
     );
     assert.equal(moviePayload.meta.title, 'Film Francais');
     assert.equal(moviePayload.meta.overview, 'Resume film FR');
-    assert.equal(moviePayload.meta._erdbMetaTranslation.mode, 'fill-missing');
-    assert.equal(moviePayload.meta._erdbMetaTranslation.fields.title.source, 'tmdb');
-    assert.equal(moviePayload.meta._erdbMetaTranslation.fields.overview.reason, 'filled-blank');
+    assert.equal(moviePayload.meta._xrdbMetaTranslation.mode, 'fill-missing');
+    assert.equal(moviePayload.meta._xrdbMetaTranslation.fields.title.source, 'tmdb');
+    assert.equal(moviePayload.meta._xrdbMetaTranslation.fields.overview.reason, 'filled-blank');
 
     const showPayload = await getJson(
       buildProxyUrl('meta/series/show-language.json', {
@@ -405,19 +405,19 @@ const main = async () => {
     );
     assert.equal(showPayload.meta.name, 'Emission FR');
     assert.equal(showPayload.meta.description, 'Resume serie FR');
-    assert.equal(showPayload.meta._erdbMetaTranslation.fields.title.reason, 'preferred-requested-language');
+    assert.equal(showPayload.meta._xrdbMetaTranslation.fields.title.reason, 'preferred-requested-language');
     assert.equal(showPayload.meta.videos[0].title, 'Pilot original');
     assert.equal(showPayload.meta.videos[0].description, 'Original ep description');
-    assert.equal(showPayload.meta.videos[0]._erdbMetaTranslation.fields.title.source, 'upstream');
-    assert.deepEqual(showPayload.meta.videos[0]._erdbMetaTranslation.tmdbTarget.requestedLanguage, {
+    assert.equal(showPayload.meta.videos[0]._xrdbMetaTranslation.fields.title.source, 'upstream');
+    assert.deepEqual(showPayload.meta.videos[0]._xrdbMetaTranslation.tmdbTarget.requestedLanguage, {
       title: false,
       overview: false,
     });
     assert.equal(showPayload.meta.videos[1].title, 'Episode Deux FR');
     assert.equal(showPayload.meta.videos[1].description, 'Resume episode deux FR');
-    assert.equal(showPayload.meta.videos[1]._erdbMetaTranslation.fields.title.source, 'tmdb');
+    assert.equal(showPayload.meta.videos[1]._xrdbMetaTranslation.fields.title.source, 'tmdb');
     assert.equal(
-      showPayload.meta.videos[1]._erdbMetaTranslation.fields.title.reason,
+      showPayload.meta.videos[1]._xrdbMetaTranslation.fields.title.reason,
       'preferred-requested-language',
     );
 
@@ -431,8 +431,8 @@ const main = async () => {
     );
     assert.equal(animePayload.meta.name, 'ランダムアニメ');
     assert.equal(animePayload.meta.description, 'Kitsu synopsis fallback');
-    assert.equal(animePayload.meta._erdbMetaTranslation.fields.title.source, 'kitsu');
-    assert.equal(animePayload.meta._erdbMetaTranslation.fields.title.reason, 'fallback-anime');
+    assert.equal(animePayload.meta._xrdbMetaTranslation.fields.title.source, 'kitsu');
+    assert.equal(animePayload.meta._xrdbMetaTranslation.fields.title.reason, 'fallback-anime');
 
     const catalogPayload = await getJson(
       buildProxyUrl('catalog/series/mixed.json', {

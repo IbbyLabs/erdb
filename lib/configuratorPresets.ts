@@ -4,15 +4,15 @@ import type { MetadataTranslationMode } from './metadataTranslation.ts';
 import {
   ALL_RATING_PREFERENCES,
   type RatingPreference,
-} from './ratingPreferences.ts';
-import type { SavedProxySettings, SavedUiConfig, SharedErdbSettings } from './uiConfig.ts';
+} from './ratingProviderCatalog.ts';
+import type { SavedProxySettings, SavedUiConfig, SharedXrdbSettings } from './uiConfig.ts';
 import { normalizeSavedUiConfig } from './uiConfig.ts';
 
 export type ConfiguratorExperienceMode = 'simple' | 'advanced';
 export type ConfiguratorPresetId = 'starter' | 'balanced' | 'public-fast' | 'full-stack';
 
 type ConfiguratorPresetPatch = {
-  settings: Partial<SharedErdbSettings>;
+  settings: Partial<SharedXrdbSettings>;
   proxy?: Partial<SavedProxySettings>;
 };
 
@@ -109,7 +109,7 @@ export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
     id: 'balanced',
     label: 'Balanced',
     badge: 'Recommended',
-    description: 'The best default for most ERDB installs: expressive output without a heavy provider stack.',
+    description: 'The best default for most XRDB installs: expressive output without a heavy provider stack.',
     bullets: [
       'Uses IMDb, TMDB, and MDBList for posters and backdrops.',
       'Keeps the default badge layouts and clean artwork text.',
@@ -147,7 +147,7 @@ export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
     id: 'public-fast',
     label: 'Public Fast',
     badge: 'Public Instance',
-    description: 'Optimized for public ERDB instances where predictable latency matters more than long tail coverage.',
+    description: 'Optimized for public XRDB instances where predictable latency matters more than long tail coverage.',
     bullets: [
       'Matches the README Public Fast guidance for ratings and proxy translation.',
       'Disables poster and backdrop stream badges to avoid latency spikes.',
@@ -185,7 +185,7 @@ export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
     id: 'full-stack',
     label: 'Full Stack',
     badge: 'Fully Fledged',
-    description: 'Dense, feature rich rendering for people who want the whole ERDB surface turned on.',
+    description: 'Dense, feature rich rendering for people who want the whole XRDB surface turned on.',
     bullets: [
       'Enables the full provider list with stacked and blockbuster heavy presentation defaults.',
       'Keeps every quality badge visible with richer media marks.',
@@ -238,13 +238,13 @@ export const CONFIGURATOR_WIZARD_QUESTION_ORDER = [
 export const CONFIGURATOR_WIZARD_QUESTIONS = {
   deployment: {
     id: 'deployment',
-    title: 'Where will this ERDB setup run?',
+    title: 'Where will this XRDB setup run?',
     description: 'Public hosts should stay lighter by default so cold renders remain predictable.',
     options: [
       {
         value: 'personal',
         label: 'Personal library',
-        description: 'Prioritize nice output for your own setup or a small private group.',
+        description: 'Prioritize richer artwork for a personal setup or a small private group.',
       },
       {
         value: 'public',
@@ -287,8 +287,8 @@ export const CONFIGURATOR_WIZARD_QUESTIONS = {
       },
       {
         value: 'hands-on',
-        label: 'I will tune it myself',
-        description: 'Start from a richer base and plan to tweak the details manually.',
+        label: 'Manual tuning',
+        description: 'Start from a richer base and plan to tune the details manually.',
       },
     ],
   },

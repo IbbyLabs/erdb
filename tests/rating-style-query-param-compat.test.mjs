@@ -2,18 +2,18 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const routeSource = readFileSync(
-  new URL('../app/[type]/[id]/route.tsx', import.meta.url),
+const requestStateSource = readFileSync(
+  new URL('../lib/imageRouteRequestState.ts', import.meta.url),
   'utf8',
 );
 
 test('rating style query param precedence keeps canonical and legacy aliases', () => {
   assert.match(
-    routeSource,
-    /const typeRatingStyleParam =\s*imageType === 'poster'\s*\?\s*request\.nextUrl\.searchParams\.get\('posterRatingStyle'\)\s*\?\?\s*request\.nextUrl\.searchParams\.get\('posterRatingsStyle'\)\s*:\s*imageType === 'backdrop'\s*\?\s*request\.nextUrl\.searchParams\.get\('backdropRatingStyle'\)\s*\?\?\s*request\.nextUrl\.searchParams\.get\('backdropRatingsStyle'\)\s*:\s*imageType === 'logo'\s*\?\s*request\.nextUrl\.searchParams\.get\('logoRatingStyle'\)\s*\?\?\s*request\.nextUrl\.searchParams\.get\('logoRatingsStyle'\)\s*:\s*null;/,
+    requestStateSource,
+    /const typeRatingStyleParam =\s*imageType === 'poster'\s*\?\s*searchParams\.get\('posterRatingStyle'\)\s*\?\?\s*searchParams\.get\('posterRatingsStyle'\)\s*:\s*imageType === 'backdrop'\s*\?\s*searchParams\.get\('backdropRatingStyle'\)\s*\?\?\s*searchParams\.get\('backdropRatingsStyle'\)\s*:\s*searchParams\.get\('logoRatingStyle'\)\s*\?\?\s*searchParams\.get\('logoRatingsStyle'\);/,
   );
   assert.match(
-    routeSource,
-    /request\.nextUrl\.searchParams\.get\('ratingStyle'\)\s*\|\|\s*request\.nextUrl\.searchParams\.get\('ratingsStyle'\)\s*\|\|\s*typeRatingStyleParam\s*\|\|\s*request\.nextUrl\.searchParams\.get\('style'\)/,
+    requestStateSource,
+    /searchParams\.get\('ratingStyle'\)\s*\|\|\s*searchParams\.get\('ratingsStyle'\)\s*\|\|\s*typeRatingStyleParam\s*\|\|\s*searchParams\.get\('style'\)/,
   );
 });

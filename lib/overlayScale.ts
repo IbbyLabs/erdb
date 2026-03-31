@@ -1,4 +1,4 @@
-type ErdbImageType = 'poster' | 'backdrop' | 'logo';
+type XrdbImageType = 'poster' | 'backdrop' | 'logo';
 
 const POSTER_BASE_WIDTH = 580;
 const POSTER_BASE_HEIGHT = 859;
@@ -13,7 +13,7 @@ export const resolveOverlayAutoScale = ({
   outputWidth,
   outputHeight,
 }: {
-  imageType: ErdbImageType;
+  imageType: XrdbImageType;
   outputWidth: number;
   outputHeight: number;
 }) => {

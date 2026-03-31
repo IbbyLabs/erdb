@@ -24,7 +24,7 @@ test('README preview target URLs inject the dedicated keys server side', () => {
   assert.ok(definition);
 
   const url = buildReadmePreviewTargetUrl({
-    origin: 'https://erdb.ibbylabs.dev',
+    origin: 'https://xrdb.ibbylabs.dev',
     definition,
     tmdbKey: 'tmdb-preview-key',
     mdblistKey: 'mdblist-preview-key',
@@ -33,46 +33,46 @@ test('README preview target URLs inject the dedicated keys server side', () => {
 
   assert.equal(
     url.toString(),
-    'https://erdb.ibbylabs.dev/poster/mal%3A16498.jpg?tmdbKey=tmdb-preview-key&mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
+    'https://xrdb.ibbylabs.dev/poster/mal%3A16498.jpg?tmdbKey=tmdb-preview-key&mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
   );
 });
 
-test('README preview origin prefers the internal app origin when configured', () => {
+test('README preview origin prefers the preview app origin when configured', () => {
   assert.equal(
     resolveReadmePreviewOrigin({
-      requestOrigin: 'https://erdb.ibbylabs.dev',
-      internalOrigin: 'http://127.0.0.1:3000/',
+      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      previewOrigin: 'http://127.0.0.1:3000/',
     }),
     'http://127.0.0.1:3000/'
   );
 
   assert.equal(
     resolveReadmePreviewOrigin({
-      requestOrigin: 'https://erdb.ibbylabs.dev',
-      internalOrigin: 'not a url',
+      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      previewOrigin: 'not a url',
     }),
-    'https://erdb.ibbylabs.dev/'
+    'https://xrdb.ibbylabs.dev/'
   );
 });
 
 test('README preview origins fall back through the container bind host before the public origin', () => {
   assert.deepEqual(
     resolveReadmePreviewOrigins({
-      requestOrigin: 'https://erdb.ibbylabs.dev',
-      internalOrigin: 'http://127.0.0.1:3000/',
+      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      previewOrigin: 'http://127.0.0.1:3000/',
       bindHost: 'b31b3ce79adc',
       port: '3000',
     }),
-    ['http://127.0.0.1:3000/', 'http://b31b3ce79adc:3000/', 'https://erdb.ibbylabs.dev/']
+    ['http://127.0.0.1:3000/', 'http://b31b3ce79adc:3000/', 'https://xrdb.ibbylabs.dev/']
   );
 
   assert.deepEqual(
     resolveReadmePreviewOrigins({
-      requestOrigin: 'https://erdb.ibbylabs.dev',
-      internalOrigin: 'http://127.0.0.1:3000/',
+      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      previewOrigin: 'http://127.0.0.1:3000/',
       bindHost: '0.0.0.0',
       port: '3000',
     }),
-    ['http://127.0.0.1:3000/', 'https://erdb.ibbylabs.dev/']
+    ['http://127.0.0.1:3000/', 'https://xrdb.ibbylabs.dev/']
   );
 });

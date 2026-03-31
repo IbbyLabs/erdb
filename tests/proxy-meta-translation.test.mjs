@@ -13,7 +13,7 @@ test('anime metadata translation falls back through MAL reverse mapping', async 
   const mappingUrls = [];
 
   const result = await resolveTmdbTranslationTarget({
-    erdbId: 'myanimelist:1',
+    xrdbId: 'myanimelist:1',
     metaType: 'series',
     tmdbKey: 'tmdb-key-123',
     lang: 'fr',
@@ -65,7 +65,7 @@ test('direct IMDb translation does not invoke anime reverse mapping', async () =
   const tmdbUrls = [];
 
   const result = await resolveTmdbTranslationTarget({
-    erdbId: 'tt0213338',
+    xrdbId: 'tt0213338',
     metaType: 'series',
     tmdbKey: 'tmdb-key-123',
     lang: 'fr',
@@ -109,7 +109,7 @@ test('anime mapping translation falls back to the alternate TMDB media type when
   const tmdbUrls = [];
 
   const result = await resolveTmdbTranslationTarget({
-    erdbId: 'anilist:16498',
+    xrdbId: 'anilist:16498',
     metaType: 'series',
     tmdbKey: 'tmdb-key-123',
     lang: 'fr',
@@ -180,7 +180,7 @@ test('TMDB translation availability requires an exact requested locale match whe
 
 test('anime text fallback prefers localized anime-native titles and Kitsu overview text', async () => {
   const fallback = await resolveAnimeTextFallback({
-    erdbId: 'mal:1',
+    xrdbId: 'mal:1',
     lang: 'ja',
     fetchAnimeMappingJson: async () => ({
       ok: true,
@@ -241,7 +241,7 @@ test('anime text fallback prefers localized anime-native titles and Kitsu overvi
   });
 });
 
-test('fill-missing mode preserves meaningful upstream title and overview text', () => {
+test('fill-missing mode preserves meaningful source title and overview text', () => {
   const meta = {
     name: 'Cowboy Bebop',
     description: 'Existing richer overview',
@@ -257,8 +257,8 @@ test('fill-missing mode preserves meaningful upstream title and overview text', 
     name: 'Cowboy Bebop',
     description: 'Existing richer overview',
   });
-  assert.equal(debug.title.source, 'upstream');
-  assert.equal(debug.overview.source, 'upstream');
+  assert.equal(debug.title.source, 'source');
+  assert.equal(debug.overview.source, 'source');
 });
 
 test('fill-missing mode replaces placeholder and blank fields in place', () => {
@@ -279,14 +279,14 @@ test('fill-missing mode replaces placeholder and blank fields in place', () => {
   });
 });
 
-test('prefer-upstream mode keeps non-empty placeholder text untouched', () => {
+test('prefer-source mode keeps non-empty placeholder text untouched', () => {
   const meta = {
     title: 'N/A',
     overview: 'unknown',
   };
 
   applyTranslatedTextFields(meta, {
-    mode: 'prefer-upstream',
+    mode: 'prefer-source',
     tmdbTitle: 'Titre traduit',
     tmdbOverview: 'Resume traduit',
   });
@@ -297,7 +297,7 @@ test('prefer-upstream mode keeps non-empty placeholder text untouched', () => {
   });
 });
 
-test('prefer-requested-language mode replaces meaningful upstream text when TMDB has an exact translation', () => {
+test('prefer-requested-language mode replaces meaningful source text when TMDB has an exact translation', () => {
   const meta = {
     name: 'Cowboy Bebop',
     description: 'Existing English overview',
@@ -378,7 +378,7 @@ test('seeded random metadata cases follow the documented merge rules', () => {
 
     if (mode === 'prefer-tmdb' && hasTmdb) return tmdbValue;
     if (mode === 'prefer-requested-language' && hasTmdb && tmdbExact) return tmdbValue;
-    if (mode === 'prefer-upstream' ? hasExistingNonEmpty : hasExistingMeaningful) return existingValue;
+    if (mode === 'prefer-source' ? hasExistingNonEmpty : hasExistingMeaningful) return existingValue;
     if (mode === 'prefer-requested-language' && hasAnime && animeExact) return animeValue;
     if (hasTmdb) return tmdbValue;
     if (hasAnime) return animeValue;
@@ -386,7 +386,7 @@ test('seeded random metadata cases follow the documented merge rules', () => {
     return existingValue;
   };
 
-  const modes = ['fill-missing', 'prefer-upstream', 'prefer-requested-language', 'prefer-tmdb'];
+  const modes = ['fill-missing', 'prefer-source', 'prefer-requested-language', 'prefer-tmdb'];
   for (let index = 0; index < 120; index += 1) {
     const mode = pick(modes);
     const titleStatus = pick(statuses);

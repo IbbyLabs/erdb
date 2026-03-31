@@ -6,7 +6,7 @@ import { DEFAULT_GENRE_BADGE_MODE } from './genreBadge.ts';
 
 type FinalImageRenderSeedInput = {
   cacheVersion: string;
-  imageType: 'poster' | 'backdrop' | 'logo';
+  imageType: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
   outputFormat: string;
   cleanId: string;
   requestedImageLang: string;
@@ -65,12 +65,12 @@ type FinalImageRenderSeedInput = {
 
 export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) => {
   const isPoster = input.imageType === 'poster';
-  const isBackdrop = input.imageType === 'backdrop';
+  const isBackdrop = input.imageType === 'backdrop' || input.imageType === 'thumbnail';
   const isLogo = input.imageType === 'logo';
   const ratingBadgeScale =
     input.imageType === 'poster'
       ? input.posterRatingBadgeScale
-      : input.imageType === 'backdrop'
+      : input.imageType === 'backdrop' || input.imageType === 'thumbnail'
         ? input.backdropRatingBadgeScale
         : input.logoRatingBadgeScale;
   const qualityBadgeScale =

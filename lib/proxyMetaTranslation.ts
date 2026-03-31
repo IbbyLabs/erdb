@@ -17,10 +17,10 @@ export type TmdbTranslationTarget = {
   details: Record<string, unknown>;
 };
 
-export type TranslationFieldSource = 'upstream' | 'tmdb' | 'anilist' | 'kitsu' | 'none';
+export type TranslationFieldSource = 'source' | 'tmdb' | 'anilist' | 'kitsu' | 'none';
 export type TextFieldStatus = 'missing' | 'blank' | 'placeholder' | 'present';
 export type TextFieldReason =
-  | 'preserved-upstream'
+  | 'preserved-source'
   | 'preferred-requested-language'
   | 'preferred-tmdb'
   | 'filled-missing'
@@ -209,8 +209,8 @@ const extractTmdbIdFromAnimeMapping = (payload: any) => {
   return null;
 };
 
-const parseAnimeMappingLookup = (erdbId: string): AnimeMappingLookup | null => {
-  const parts = erdbId.split(':');
+const parseAnimeMappingLookup = (xrdbId: string): AnimeMappingLookup | null => {
+  const parts = xrdbId.split(':');
   const rawPrefix = (parts[0] || '').trim().toLowerCase();
   const prefix = rawPrefix === 'myanimelist' ? 'mal' : rawPrefix;
   if (!ANIME_MAPPING_PROVIDER_SET.has(prefix as AnimeMappingProvider)) {
@@ -227,7 +227,7 @@ const parseAnimeMappingLookup = (erdbId: string): AnimeMappingLookup | null => {
   };
 };
 
-export const isAnimeErdbId = (erdbId: string) => parseAnimeMappingLookup(erdbId) !== null;
+export const isAnimeXrdbId = (xrdbId: string) => parseAnimeMappingLookup(xrdbId) !== null;
 
 const buildAnimeMappingUrl = (lookup: AnimeMappingLookup) => {
   const url = new URL(`${ANIME_MAPPING_BASE_URL}/${lookup.provider}/${encodeURIComponent(lookup.externalId)}`);
@@ -300,26 +300,26 @@ const resolveDetailsForTypes = async ({
 };
 
 export const resolveTmdbTranslationTarget = async ({
-  erdbId,
+  xrdbId,
   metaType,
   tmdbKey,
   lang,
   fetchTmdbJson,
   fetchAnimeMappingJson,
 }: {
-  erdbId: string;
+  xrdbId: string;
   metaType: unknown;
   tmdbKey: string;
   lang: string | null;
   fetchTmdbJson: JsonFetcher;
   fetchAnimeMappingJson: JsonFetcher;
 }): Promise<TmdbTranslationTarget | null> => {
-  if (!erdbId) return null;
+  if (!xrdbId) return null;
 
   const stremioType = normalizeStremioType(metaType);
 
-  if (erdbId.startsWith('tmdb:')) {
-    const parts = erdbId.split(':');
+  if (xrdbId.startsWith('tmdb:')) {
+    const parts = xrdbId.split(':');
     const explicitTypeCandidate = (parts[1] || '').trim().toLowerCase();
     if ((explicitTypeCandidate === 'movie' || explicitTypeCandidate === 'tv') && parts.length >= 3) {
       const tmdbId = normalizePositiveInteger(parts[2]);
@@ -346,8 +346,8 @@ export const resolveTmdbTranslationTarget = async ({
     });
   }
 
-  if (IMDB_RE.test(erdbId)) {
-    const findUrl = new URL(`${TMDB_API_BASE_URL}/find/${encodeURIComponent(erdbId)}`);
+  if (IMDB_RE.test(xrdbId)) {
+    const findUrl = new URL(`${TMDB_API_BASE_URL}/find/${encodeURIComponent(xrdbId)}`);
     findUrl.searchParams.set('api_key', tmdbKey);
     findUrl.searchParams.set('external_source', 'imdb_id');
     if (lang) {
@@ -393,7 +393,7 @@ export const resolveTmdbTranslationTarget = async ({
     return null;
   }
 
-  const animeLookup = parseAnimeMappingLookup(erdbId);
+  const animeLookup = parseAnimeMappingLookup(xrdbId);
   if (!animeLookup) return null;
 
   const mappingData = await fetchAnimeMappingJson(buildAnimeMappingUrl(animeLookup));
@@ -695,19 +695,19 @@ const buildAnimeOverviewCandidate = ({
 };
 
 export const resolveAnimeTextFallback = async ({
-  erdbId,
+  xrdbId,
   lang,
   fetchAnimeMappingJson,
   fetchKitsuJson,
   fetchAniListMediaJson,
 }: {
-  erdbId: string;
+  xrdbId: string;
   lang: string | null;
   fetchAnimeMappingJson: JsonFetcher;
   fetchKitsuJson: JsonFetcher;
   fetchAniListMediaJson: AniListMediaFetcher;
 }): Promise<AnimeTextFallback | null> => {
-  const animeLookup = parseAnimeMappingLookup(erdbId);
+  const animeLookup = parseAnimeMappingLookup(xrdbId);
   if (!animeLookup) return null;
 
   const mappingData = await fetchAnimeMappingJson(buildAnimeMappingUrl(animeLookup));
@@ -873,7 +873,7 @@ const selectFieldCandidate = ({
 }) => {
   const hasTmdb = hasMeaningfulText(tmdb.value);
   const hasAnime = hasMeaningfulText(anime.value);
-  const preserveExisting = mode === 'prefer-upstream' ? existing.hasNonEmptyText : existing.hasMeaningfulText;
+  const preserveExisting = mode === 'prefer-source' ? existing.hasNonEmptyText : existing.hasMeaningfulText;
 
   if (mode === 'prefer-tmdb' && hasTmdb) {
     return { candidate: tmdb, reason: 'preferred-tmdb' as TextFieldReason };
@@ -887,10 +887,10 @@ const selectFieldCandidate = ({
     return {
       candidate: {
         value: existing.value,
-        source: 'upstream' as TranslationFieldSource,
+        source: 'source' as TranslationFieldSource,
         exactRequestedLanguage: null,
       },
-      reason: 'preserved-upstream' as TextFieldReason,
+      reason: 'preserved-source' as TextFieldReason,
     };
   }
 
@@ -919,10 +919,10 @@ const selectFieldCandidate = ({
     return {
       candidate: {
         value: existing.value,
-        source: 'upstream' as TranslationFieldSource,
+        source: 'source' as TranslationFieldSource,
         exactRequestedLanguage: null,
       },
-      reason: 'preserved-upstream' as TextFieldReason,
+      reason: 'preserved-source' as TextFieldReason,
     };
   }
 
@@ -954,7 +954,7 @@ const applyFieldSelection = (
 
   const changed =
     candidate.source !== 'none' &&
-    candidate.source !== 'upstream' &&
+    candidate.source !== 'source' &&
     hasMeaningfulText(candidate.value) &&
     candidate.value !== existing.value;
 
@@ -967,7 +967,7 @@ const applyFieldSelection = (
     reason,
     existingStatus: existing.status,
     outputKey: existing.key,
-    exactRequestedLanguage: candidate.source === 'upstream' || candidate.source === 'none'
+    exactRequestedLanguage: candidate.source === 'source' || candidate.source === 'none'
       ? null
       : candidate.exactRequestedLanguage,
     changed,

@@ -4,11 +4,40 @@ import { dirname, resolve } from 'node:path';
 import { normalizeCommitForDisplay } from './commit-display-utils.mjs';
 
 const COMMIT_LIMIT = 120;
+const PUBLIC_COMMIT_TYPES = new Set(['feat', 'fix', 'perf', 'build', 'revert']);
+const INTERNAL_TITLE_PATTERNS = [
+  /\bcheckpoint\b/i,
+  /\bcleanup\b/i,
+  /\bfork\b/i,
+  /\binheritance\b/i,
+  /\broadmap\b/i,
+  /\brefactor\b/i,
+  /\brewrite\b/i,
+  /\btransition\b/i,
+  /\bupstream\b/i,
+  /\btmp\b/i,
+];
 const prettyFormat = '%H%x1f%h%x1f%an%x1f%ae%x1f%cI%x1f%s%x1f%b%x1e';
 const output = execSync(`git log --first-parent -n ${COMMIT_LIMIT} --date=iso-strict --pretty=format:${prettyFormat}`, {
   encoding: 'utf8',
   stdio: ['ignore', 'pipe', 'pipe'],
 });
+
+function isPublicCommitEntry(entry) {
+  if (!entry?.title) {
+    return false;
+  }
+
+  if (INTERNAL_TITLE_PATTERNS.some((pattern) => pattern.test(entry.title))) {
+    return false;
+  }
+
+  if (entry.type === 'chore') {
+    return /^release\b/i.test(entry.title);
+  }
+
+  return PUBLIC_COMMIT_TYPES.has(entry.type);
+}
 
 const commitRecords = output
   .split('\x1e')
@@ -22,7 +51,7 @@ const commitRecords = output
       body,
     });
 
-    const isUpstream = authorName !== 'IbbyLabs' && !authorEmail.includes('IbbyLabs');
+    const isImported = authorName !== 'IbbyLabs' && !authorEmail.includes('IbbyLabs');
 
     return {
       hash: String(hash || '').trim(),
@@ -31,13 +60,14 @@ const commitRecords = output
         name: authorName,
         email: authorEmail,
       },
-      isUpstream,
+      isImported,
       date: String(date || '').trim(),
       type: normalized.type,
       title: normalized.title,
-      body: normalized.body,
+      body: null,
     };
   })
+  .filter((entry) => isPublicCommitEntry(entry))
   .filter((entry) => entry.hash && entry.shortHash && entry.date && entry.title);
 
 const payload = {

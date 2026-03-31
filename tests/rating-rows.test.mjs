@@ -5,7 +5,7 @@ import {
   buildDefaultRatingRows,
   enabledOrderedToRows,
   rowsToEnabledOrdered,
-} from '../lib/ratingRows.ts';
+} from '../lib/ratingProviderRows.ts';
 
 test('default rating rows enable every provider in catalog order', () => {
   const rows = buildDefaultRatingRows();
@@ -33,4 +33,11 @@ test('empty enabled order keeps every provider available but disabled', () => {
   assert.equal(rowsToEnabledOrdered(rows).length, 0);
   assert.ok(rows.length > 0);
   assert.ok(rows.every((row) => row.enabled === false));
+});
+
+test('unknown providers are never invented when rebuilding row state', () => {
+  const rows = enabledOrderedToRows(['imdb', 'imdb', 'anilist']);
+
+  assert.deepEqual(rowsToEnabledOrdered(rows), ['imdb', 'imdb', 'anilist']);
+  assert.ok(rows.every((row) => typeof row.id === 'string'));
 });

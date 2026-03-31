@@ -1,6 +1,6 @@
-import type { BackdropRatingLayout } from './backdropRatingLayout.ts';
-import type { PosterRatingLayout } from './posterRatingLayout.ts';
-import type { RatingPreference } from './ratingPreferences.ts';
+import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
+import type { PosterRatingLayout } from './posterLayoutOptions.ts';
+import type { RatingPreference } from './ratingProviderCatalog.ts';
 
 export type RatingPresentation =
   | 'standard'

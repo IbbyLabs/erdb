@@ -191,17 +191,17 @@ const buildReadmePreviewBindOrigin = ({
 
 export const resolveReadmePreviewOrigins = ({
   requestOrigin,
-  internalOrigin = null,
+  previewOrigin = null,
   bindHost = null,
   port = null,
 }: {
   requestOrigin: string;
-  internalOrigin?: string | null;
+  previewOrigin?: string | null;
   bindHost?: string | null;
   port?: string | number | null;
 }) => {
   const candidates = [
-    normalizeReadmePreviewOrigin(internalOrigin),
+    normalizeReadmePreviewOrigin(previewOrigin),
     buildReadmePreviewBindOrigin({ bindHost, port }),
     normalizeReadmePreviewOrigin(requestOrigin),
   ].filter((value): value is string => Boolean(value));
@@ -211,10 +211,10 @@ export const resolveReadmePreviewOrigins = ({
 
 export const resolveReadmePreviewOrigin = ({
   requestOrigin,
-  internalOrigin = null,
+  previewOrigin = null,
 }: {
   requestOrigin: string;
-  internalOrigin?: string | null;
+  previewOrigin?: string | null;
 }) => {
-  return resolveReadmePreviewOrigins({ requestOrigin, internalOrigin })[0] || requestOrigin;
+  return resolveReadmePreviewOrigins({ requestOrigin, previewOrigin })[0] || requestOrigin;
 };

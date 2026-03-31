@@ -1,4 +1,4 @@
-import type { RatingPreference } from './ratingPreferences.ts';
+import type { RatingPreference } from './ratingProviderCatalog.ts';
 import {
   METACRITIC_LOGO_DATA_URI,
   SIMKL_LOGO_DATA_URI,

@@ -23,15 +23,15 @@ const copyPreviewHeaders = (response: Response, contentLength?: number) => {
   const headers = new Headers();
   const contentType = response.headers.get('content-type');
   const cacheControl = response.headers.get('cache-control');
-  const upstreamContentLength = response.headers.get('content-length');
+  const sourceContentLength = response.headers.get('content-length');
   const etag = response.headers.get('etag');
 
   if (contentType) headers.set('content-type', contentType);
   if (cacheControl) headers.set('cache-control', cacheControl);
   if (typeof contentLength === 'number' && Number.isFinite(contentLength) && contentLength >= 0) {
     headers.set('content-length', String(contentLength));
-  } else if (upstreamContentLength) {
-    headers.set('content-length', upstreamContentLength);
+  } else if (sourceContentLength) {
+    headers.set('content-length', sourceContentLength);
   }
   if (etag) headers.set('etag', etag);
   headers.set('x-robots-tag', 'noindex');
@@ -49,21 +49,21 @@ export async function GET(
     return buildTextResponse('Unknown README preview.', 404);
   }
 
-  const tmdbKey = process.env.ERDB_README_PREVIEW_TMDB_KEY?.trim();
+  const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY?.trim();
   if (!tmdbKey) {
     return buildTextResponse('README preview TMDB key is not configured.', 503);
   }
 
-  const mdblistKey = process.env.ERDB_README_PREVIEW_MDBLIST_KEY?.trim() || null;
+  const mdblistKey = process.env.XRDB_README_PREVIEW_MDBLIST_KEY?.trim() || null;
   const cacheBuster = request.nextUrl.searchParams.get('cb');
   const previewOrigins = resolveReadmePreviewOrigins({
     requestOrigin: request.nextUrl.origin,
-    internalOrigin: process.env.PREVIEW_INTERNAL_ORIGIN,
+    previewOrigin: process.env.XRDB_PREVIEW_ORIGIN,
     bindHost: process.env.HOSTNAME,
     port: process.env.PORT,
   });
 
-  let upstreamResponse: Response | null = null;
+  let sourceResponse: Response | null = null;
   for (const previewOrigin of previewOrigins) {
     const targetUrl = buildReadmePreviewTargetUrl({
       origin: previewOrigin,
@@ -74,27 +74,27 @@ export async function GET(
     });
 
     try {
-      upstreamResponse = await fetch(targetUrl.toString(), { cache: 'no-store' });
+      sourceResponse = await fetch(targetUrl.toString(), { cache: 'no-store' });
     } catch {
       continue;
     }
 
-    if (upstreamResponse.ok) {
+    if (sourceResponse.ok) {
       break;
     }
   }
 
-  if (!upstreamResponse) {
+  if (!sourceResponse) {
     return buildTextResponse('README preview fetch failed.', 502);
   }
 
-  if (!upstreamResponse.ok) {
-    const fallbackBody = await upstreamResponse.text().catch(() => 'README preview fetch failed.');
+  if (!sourceResponse.ok) {
+    const fallbackBody = await sourceResponse.text().catch(() => 'README preview fetch failed.');
     return new NextResponse(fallbackBody, {
-      status: upstreamResponse.status,
+      status: sourceResponse.status,
       headers: {
         'content-type':
-          upstreamResponse.headers.get('content-type') || 'text/plain; charset=utf-8',
+          sourceResponse.headers.get('content-type') || 'text/plain; charset=utf-8',
         'cache-control': 'no-store',
         'x-robots-tag': 'noindex',
       },
@@ -103,13 +103,13 @@ export async function GET(
 
   let payload: ArrayBuffer;
   try {
-    payload = await upstreamResponse.arrayBuffer();
+    payload = await sourceResponse.arrayBuffer();
   } catch {
     return buildTextResponse('README preview fetch failed.', 502);
   }
 
   return new NextResponse(payload, {
-    status: upstreamResponse.status,
-    headers: copyPreviewHeaders(upstreamResponse, payload.byteLength),
+    status: sourceResponse.status,
+    headers: copyPreviewHeaders(sourceResponse, payload.byteLength),
   });
 }

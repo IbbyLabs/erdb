@@ -8,12 +8,12 @@ const normalizeBaseUrl = (value: string | undefined, fallback: string) => {
 };
 
 export const resolveServiceBaseUrls = (env: Record<string, string | undefined> = process.env) => ({
-  tmdbApiBaseUrl: normalizeBaseUrl(env.ERDB_TMDB_API_BASE_URL, DEFAULT_TMDB_API_BASE_URL),
+  tmdbApiBaseUrl: normalizeBaseUrl(env.XRDB_TMDB_API_BASE_URL, DEFAULT_TMDB_API_BASE_URL),
   animeMappingBaseUrl: normalizeBaseUrl(
-    env.ERDB_ANIME_MAPPING_BASE_URL,
+    env.XRDB_ANIME_MAPPING_BASE_URL,
     DEFAULT_ANIME_MAPPING_BASE_URL,
   ),
-  kitsuApiBaseUrl: normalizeBaseUrl(env.ERDB_KITSU_API_BASE_URL, DEFAULT_KITSU_API_BASE_URL),
+  kitsuApiBaseUrl: normalizeBaseUrl(env.XRDB_KITSU_API_BASE_URL, DEFAULT_KITSU_API_BASE_URL),
 });
 
 const configuredServiceBaseUrls = resolveServiceBaseUrls();

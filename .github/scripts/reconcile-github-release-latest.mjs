@@ -17,7 +17,7 @@ async function requestJson(url, token, init = {}) {
   const headers = {
     Accept: 'application/vnd.github+json',
     Authorization: `Bearer ${token}`,
-    'User-Agent': 'erdb/reconcile-release-latest',
+    'User-Agent': 'xrdb/reconcile-release-latest',
     'X-GitHub-Api-Version': '2022-11-28',
     ...init.headers,
   };

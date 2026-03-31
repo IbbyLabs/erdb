@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 const DISCORD_EMBED_COLOR = 0x7c3aed;
 const MAX_RELEASE_LOOKUP_ATTEMPTS = Number(process.env.RELEASE_LOOKUP_ATTEMPTS || 5);
 const RELEASE_LOOKUP_DELAY_SECONDS = Number(process.env.RELEASE_LOOKUP_DELAY_SECONDS || 2);
-const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/erdb/main/public/favicon-96x96.png';
+const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/favicon-96x96.png';
 
 function normalizeReleaseTag(value) {
   if (typeof value !== 'string') {
@@ -291,7 +291,7 @@ function buildSectionFields(body) {
   if (!fields.length) {
     fields.push({
       name: 'Summary',
-      value: 'New ERDB release published.',
+      value: 'New XRDB release published.',
       inline: false,
     });
   }
@@ -308,7 +308,7 @@ function resolveCompareUrl(repository, currentTag, previousTag) {
 }
 
 function resolvePackageUrl(repository) {
-  const [, repoName = 'erdb'] = repository.split('/');
+  const [, repoName = 'xrdb'] = repository.split('/');
   return `https://github.com/${repository}/pkgs/container/${repoName}`;
 }
 
@@ -406,7 +406,7 @@ export function buildDiscordReleasePayload({
   ].filter((field) => field.value);
 
   return {
-    username: 'ERDB Releases',
+    username: 'XRDB Releases',
     avatar_url: AVATAR_URL,
     allowed_mentions: { parse: [] },
     embeds: [
@@ -416,11 +416,11 @@ export function buildDiscordReleasePayload({
           url: repositoryUrl,
           icon_url: AVATAR_URL,
         },
-        title: release.name || release.tag_name || 'ERDB Release',
+        title: release.name || release.tag_name || 'XRDB Release',
         url: release.html_url || repositoryUrl,
         description: isTagFallback
-          ? `New ERDB tag published for \`${release.tag_name}\`.`
-          : `New ERDB release published for \`${release.tag_name}\`.`,
+          ? `New XRDB tag published for \`${release.tag_name}\`.`
+          : `New XRDB release published for \`${release.tag_name}\`.`,
         color: DISCORD_EMBED_COLOR,
         thumbnail: {
           url: AVATAR_URL,
@@ -441,7 +441,7 @@ async function fetchJson(url, token) {
     headers: {
       Accept: 'application/vnd.github+json',
       Authorization: `Bearer ${token}`,
-      'User-Agent': 'erdb/discord-release',
+      'User-Agent': 'xrdb/discord-release',
       'X-GitHub-Api-Version': '2022-11-28',
     },
   });

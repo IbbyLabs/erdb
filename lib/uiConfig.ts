@@ -2,7 +2,7 @@ import {
   DEFAULT_BACKDROP_RATING_LAYOUT,
   normalizeBackdropRatingLayout,
   type BackdropRatingLayout,
-} from './backdropRatingLayout.ts';
+} from './backdropLayoutOptions.ts';
 import {
   DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   POSTER_RATINGS_MAX_PER_SIDE_MIN,
@@ -10,7 +10,7 @@ import {
   normalizePosterRatingLayout,
   normalizePosterRatingsMaxPerSide,
   type PosterRatingLayout,
-} from './posterRatingLayout.ts';
+} from './posterLayoutOptions.ts';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
   DEFAULT_RATING_STYLE,
@@ -18,7 +18,7 @@ import {
   normalizeRatingStyle,
   type QualityBadgeStyle,
   type RatingStyle,
-} from './ratingStyle.ts';
+} from './ratingAppearance.ts';
 import {
   AGGREGATE_RATING_SOURCE_ACCENTS,
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
@@ -39,7 +39,7 @@ import {
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
   ALL_RATING_PREFERENCES,
-} from './ratingPreferences.ts';
+} from './ratingProviderCatalog.ts';
 import {
   DEFAULT_RATING_VALUE_MODE,
   normalizeRatingValueMode,
@@ -88,6 +88,13 @@ import {
   DEFAULT_POSTER_EDGE_OFFSET,
   normalizePosterEdgeOffset,
 } from './posterEdgeOffset.ts';
+import {
+  buildEpisodePatternBaseId,
+  DEFAULT_EPISODE_ID_MODE,
+  filterThumbnailRatingPreferences,
+  normalizeEpisodeIdMode,
+  type EpisodeIdMode,
+} from './episodeIdentity.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -97,7 +104,7 @@ export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' |
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'random';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
-type ErdbImageType = 'poster' | 'backdrop' | 'logo';
+type XrdbImageType = 'poster' | 'backdrop' | 'logo';
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
   backgroundUrlPattern: string;
@@ -105,9 +112,10 @@ export type AiometadataUrlPatterns = {
   episodeThumbnailUrlPattern: string;
 };
 export type AiometadataPosterIdMode = 'auto' | 'tmdb' | 'imdb';
+export type AiometadataEpisodeIdMode = EpisodeIdMode;
 
-export type SharedErdbSettings = {
-  erdbKey: string;
+export type SharedXrdbSettings = {
+  xrdbKey: string;
   tmdbKey: string;
   mdblistKey: string;
   fanartKey: string;
@@ -138,6 +146,7 @@ export type SharedErdbSettings = {
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
+  thumbnailRatingPreferences: RatingPreference[];
   logoRatingPreferences: RatingPreference[];
   posterStreamBadges: StreamBadgesSetting;
   backdropStreamBadges: StreamBadgesSetting;
@@ -192,7 +201,7 @@ export type SharedErdbSettings = {
 
 export type SavedUiConfig = {
   version: 1;
-  settings: SharedErdbSettings;
+  settings: SharedXrdbSettings;
   proxy: SavedProxySettings;
 };
 
@@ -201,6 +210,7 @@ export type SavedProxySettings = {
   translateMeta: boolean;
   translateMetaMode: MetadataTranslationMode;
   debugMetaTranslation: boolean;
+  episodeIdMode: EpisodeIdMode;
 };
 
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
@@ -236,8 +246,8 @@ const normalizeBoolean = (value: unknown, fallback = false) => {
   return fallback;
 };
 
-export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
-  erdbKey: '',
+export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
+  xrdbKey: '',
   tmdbKey: '',
   mdblistKey: '',
   fanartKey: '',
@@ -268,6 +278,7 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
   logoGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
+  thumbnailRatingPreferences: filterThumbnailRatingPreferences(DEFAULT_RATING_PREFERENCES),
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   posterStreamBadges: 'auto',
   backdropStreamBadges: 'auto',
@@ -322,12 +333,13 @@ export const createDefaultSharedErdbSettings = (): SharedErdbSettings => ({
 
 export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
   version: 1,
-  settings: createDefaultSharedErdbSettings(),
+  settings: createDefaultSharedXrdbSettings(),
   proxy: {
     manifestUrl: '',
     translateMeta: false,
     translateMetaMode: DEFAULT_METADATA_TRANSLATION_MODE,
     debugMetaTranslation: false,
+    episodeIdMode: DEFAULT_EPISODE_ID_MODE,
   },
 });
 
@@ -582,13 +594,13 @@ const normalizeTmdbIdScopeMode = (
     : fallback;
 };
 
-export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings => {
-  const defaults = createDefaultSharedErdbSettings();
+export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings => {
+  const defaults = createDefaultSharedXrdbSettings();
   if (!value || typeof value !== 'object') {
     return defaults;
   }
 
-  const candidate = value as Partial<Record<keyof SharedErdbSettings, unknown>> & Record<string, unknown>;
+  const candidate = value as Partial<Record<keyof SharedXrdbSettings, unknown>> & Record<string, unknown>;
   const rawPosterImageText =
     typeof candidate.posterImageText === 'string' ? candidate.posterImageText.trim().toLowerCase() : '';
   const rawBackdropImageText =
@@ -642,7 +654,7 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
   const legacySideRatingsOffset = normalizeSideRatingOffset(candidate.sideRatingsOffset);
 
   return {
-    erdbKey: typeof candidate.erdbKey === 'string' ? candidate.erdbKey.trim() : defaults.erdbKey,
+    xrdbKey: typeof candidate.xrdbKey === 'string' ? candidate.xrdbKey.trim() : defaults.xrdbKey,
     tmdbKey: typeof candidate.tmdbKey === 'string' ? candidate.tmdbKey.trim() : defaults.tmdbKey,
     mdblistKey:
       typeof candidate.mdblistKey === 'string' ? candidate.mdblistKey.trim() : defaults.mdblistKey,
@@ -732,6 +744,12 @@ export const normalizeSharedErdbSettings = (value: unknown): SharedErdbSettings 
     backdropRatingPreferences: normalizeRatingPreferencesList(
       candidate.backdropRatingPreferences ?? candidate.backdropRatings ?? sharedRatingsInput,
       defaults.backdropRatingPreferences,
+    ),
+    thumbnailRatingPreferences: filterThumbnailRatingPreferences(
+      normalizeRatingPreferencesList(
+        candidate.thumbnailRatingPreferences ?? candidate.thumbnailRatings ?? sharedRatingsInput,
+        defaults.thumbnailRatingPreferences,
+      ),
     ),
     logoRatingPreferences: normalizeRatingPreferencesList(
       candidate.logoRatingPreferences ?? candidate.logoRatings ?? sharedRatingsInput,
@@ -907,12 +925,13 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
       translateMeta?: unknown;
       translateMetaMode?: unknown;
       debugMetaTranslation?: unknown;
+      episodeIdMode?: unknown;
     };
   };
 
   return {
     version: 1,
-    settings: normalizeSharedErdbSettings(candidate.settings),
+    settings: normalizeSharedXrdbSettings(candidate.settings),
     proxy: {
       manifestUrl:
         typeof candidate.proxy?.manifestUrl === 'string'
@@ -926,6 +945,10 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
       debugMetaTranslation: normalizeBoolean(
         candidate.proxy?.debugMetaTranslation,
         defaults.proxy.debugMetaTranslation,
+      ),
+      episodeIdMode: normalizeEpisodeIdMode(
+        candidate.proxy?.episodeIdMode,
+        defaults.proxy.episodeIdMode,
       ),
     },
   };
@@ -942,17 +965,17 @@ export const parseSavedUiConfig = (raw: string): SavedUiConfig | null => {
 export const serializeSavedUiConfig = (config: SavedUiConfig) =>
   JSON.stringify(normalizeSavedUiConfig(config), null, 2);
 
-const ERDB_IMAGE_TYPES: ErdbImageType[] = ['poster', 'backdrop', 'logo'];
+const XRDB_IMAGE_TYPES: XrdbImageType[] = ['poster', 'backdrop', 'logo'];
 
 const appendSharedOrPerTypePayload = <Value extends string | number | boolean>(options: {
   payload: Record<string, string | number | boolean>;
   globalKey: string;
-  perTypeKeys: Record<ErdbImageType, string>;
-  values: Record<ErdbImageType, Value>;
+  perTypeKeys: Record<XrdbImageType, string>;
+  values: Record<XrdbImageType, Value>;
   defaultValue: Value;
 }) => {
   const { payload, globalKey, perTypeKeys, values, defaultValue } = options;
-  const [firstType, ...remainingTypes] = ERDB_IMAGE_TYPES;
+  const [firstType, ...remainingTypes] = XRDB_IMAGE_TYPES;
   const sharedValue = values[firstType];
   const allValuesMatch = remainingTypes.every((type) => values[type] === sharedValue);
 
@@ -963,15 +986,15 @@ const appendSharedOrPerTypePayload = <Value extends string | number | boolean>(o
     return;
   }
 
-  for (const type of ERDB_IMAGE_TYPES) {
+  for (const type of XRDB_IMAGE_TYPES) {
     if (values[type] !== defaultValue) {
       payload[perTypeKeys[type]] = values[type];
     }
   }
 };
 
-const buildSharedPayload = (settings: SharedErdbSettings) => {
-  const erdbKey = settings.erdbKey.trim();
+const buildSharedPayload = (settings: SharedXrdbSettings) => {
+  const xrdbKey = settings.xrdbKey.trim();
   const tmdbKey = settings.tmdbKey.trim();
   const mdblistKey = settings.mdblistKey.trim();
   const fanartKey = settings.fanartKey.trim();
@@ -983,8 +1006,8 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
     tmdbKey,
     mdblistKey,
   };
-  if (erdbKey) {
-    payload.erdbKey = erdbKey;
+  if (xrdbKey) {
+    payload.xrdbKey = xrdbKey;
   }
   if (fanartKey) {
     payload.fanartKey = fanartKey;
@@ -999,14 +1022,19 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
 
   const posterRatings = stringifyRatingPreferencesAllowEmpty(settings.posterRatingPreferences);
   const backdropRatings = stringifyRatingPreferencesAllowEmpty(settings.backdropRatingPreferences);
+  const thumbnailRatings = stringifyRatingPreferencesAllowEmpty(settings.thumbnailRatingPreferences);
   const logoRatings = stringifyRatingPreferencesAllowEmpty(settings.logoRatingPreferences);
-  const ratingsMatch = posterRatings === backdropRatings && posterRatings === logoRatings;
+  const ratingsMatch =
+    posterRatings === backdropRatings &&
+    posterRatings === thumbnailRatings &&
+    posterRatings === logoRatings;
 
   if (ratingsMatch) {
     payload.ratings = posterRatings;
   } else {
     payload.posterRatings = posterRatings;
     payload.backdropRatings = backdropRatings;
+    payload.thumbnailRatings = thumbnailRatings;
     payload.logoRatings = logoRatings;
   }
 
@@ -1279,7 +1307,7 @@ const buildSharedPayload = (settings: SharedErdbSettings) => {
   return payload;
 };
 
-export const buildConfigPayload = (baseUrl: string, settings: SharedErdbSettings) => {
+export const buildConfigPayload = (baseUrl: string, settings: SharedXrdbSettings) => {
   const origin = normalizeBaseUrl(baseUrl);
   const sharedPayload = buildSharedPayload(settings);
   if (!origin || !sharedPayload) {
@@ -1292,7 +1320,7 @@ export const buildConfigPayload = (baseUrl: string, settings: SharedErdbSettings
   };
 };
 
-export const buildConfigString = (baseUrl: string, settings: SharedErdbSettings) => {
+export const buildConfigString = (baseUrl: string, settings: SharedXrdbSettings) => {
   const payload = buildConfigPayload(baseUrl, settings);
   if (!payload) {
     return '';
@@ -1303,7 +1331,7 @@ export const buildConfigString = (baseUrl: string, settings: SharedErdbSettings)
 const AIO_TMDB_KEY_PLACEHOLDER = '{tmdb_key}';
 const AIO_MDBLIST_KEY_PLACEHOLDER = '{mdblist_key}';
 const AIO_FANART_KEY_PLACEHOLDER = '{fanart_key}';
-const AIO_ERDB_KEY_PLACEHOLDER = '{erdb_key}';
+const AIO_XRDB_KEY_PLACEHOLDER = '{xrdb_key}';
 const AIO_SIMKL_CLIENT_ID_PLACEHOLDER = '{simkl_client_id}';
 
 const restoreAiometadataPlaceholders = (value: string) => {
@@ -1311,7 +1339,7 @@ const restoreAiometadataPlaceholders = (value: string) => {
     AIO_TMDB_KEY_PLACEHOLDER,
     AIO_MDBLIST_KEY_PLACEHOLDER,
     AIO_FANART_KEY_PLACEHOLDER,
-    AIO_ERDB_KEY_PLACEHOLDER,
+    AIO_XRDB_KEY_PLACEHOLDER,
     AIO_SIMKL_CLIENT_ID_PLACEHOLDER,
     '{imdb_id}',
     '{tmdb_id}',
@@ -1356,10 +1384,11 @@ const chooseAiometadataCredentialValue = ({
 
 export const buildAiometadataUrlPatterns = (
   baseUrl: string,
-  settings: SharedErdbSettings,
+  settings: SharedXrdbSettings,
   options?: {
     hideCredentials?: boolean;
     posterIdMode?: AiometadataPosterIdMode;
+    episodeIdMode?: AiometadataEpisodeIdMode;
   },
 ): AiometadataUrlPatterns | null => {
   const origin = normalizeBaseUrl(baseUrl);
@@ -1369,6 +1398,7 @@ export const buildAiometadataUrlPatterns = (
 
   const hideCredentials = options?.hideCredentials ?? true;
   const posterIdMode = options?.posterIdMode ?? 'auto';
+  const episodeIdMode = normalizeEpisodeIdMode(options?.episodeIdMode, DEFAULT_EPISODE_ID_MODE);
   const useTmdbPosterIds = posterIdMode === 'imdb' ? false : true;
   const needsFanartKey =
     settings.posterArtworkSource === 'fanart' ||
@@ -1378,15 +1408,15 @@ export const buildAiometadataUrlPatterns = (
     settings.logoArtworkSource === 'fanart' ||
     settings.logoArtworkSource === 'random';
 
-  const exportSettings: SharedErdbSettings = {
+  const exportSettings: SharedXrdbSettings = {
     ...settings,
-    erdbKey: settings.erdbKey.trim()
+    xrdbKey: settings.xrdbKey.trim()
       ? chooseAiometadataCredentialValue({
-          value: settings.erdbKey,
-          placeholder: AIO_ERDB_KEY_PLACEHOLDER,
+          value: settings.xrdbKey,
+          placeholder: AIO_XRDB_KEY_PLACEHOLDER,
           hideCredentials,
         })
-      : settings.erdbKey.trim(),
+      : settings.xrdbKey.trim(),
     tmdbKey: chooseAiometadataCredentialValue({
       value: settings.tmdbKey,
       placeholder: AIO_TMDB_KEY_PLACEHOLDER,
@@ -1455,14 +1485,14 @@ export const buildAiometadataUrlPatterns = (
       : `${origin}/poster/{imdb_id}.jpg?${buildQueryString('poster')}`,
     backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('backdrop', { idSource: 'tmdb' })}`,
     logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString('logo', { idSource: 'tmdb' })}`,
-    episodeThumbnailUrlPattern: `${origin}/thumbnail/{imdb_id}/S{season}E{episode}.jpg?${buildQueryString('thumbnail')}`,
+    episodeThumbnailUrlPattern: `${origin}/thumbnail/${buildEpisodePatternBaseId(episodeIdMode)}/S{season}E{episode}.jpg?${buildQueryString('thumbnail')}`,
   };
 };
 
 export const buildProxyPayload = (
   baseUrl: string,
   proxy: SavedProxySettings,
-  settings: SharedErdbSettings,
+  settings: SharedXrdbSettings,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
   const normalizedManifestUrl = normalizeManifestUrl(proxy.manifestUrl);
@@ -1474,7 +1504,7 @@ export const buildProxyPayload = (
   const payload: Record<string, string | number | boolean> = {
     url: normalizedManifestUrl,
     ...sharedPayload,
-    erdbBase: origin,
+    xrdbBase: origin,
   };
 
   if (proxy.translateMeta) {
@@ -1487,6 +1517,9 @@ export const buildProxyPayload = (
       payload.debugMetaTranslation = true;
     }
   }
+  if (proxy.episodeIdMode !== DEFAULT_EPISODE_ID_MODE) {
+    payload.episodeIdMode = normalizeEpisodeIdMode(proxy.episodeIdMode, DEFAULT_EPISODE_ID_MODE);
+  }
 
   return payload;
 };
@@ -1494,7 +1527,7 @@ export const buildProxyPayload = (
 export const buildProxyUrl = (
   baseUrl: string,
   proxy: SavedProxySettings,
-  settings: SharedErdbSettings,
+  settings: SharedXrdbSettings,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
   const payload = buildProxyPayload(baseUrl, proxy, settings);

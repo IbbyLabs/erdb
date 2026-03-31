@@ -1,7 +1,7 @@
 # Changelog
 
 > [!NOTE]
-> This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
+> This changelog reflects the full project history, including older sync and release housekeeping entries from earlier stages of the codebase.
 
 <a id="v2-23-1"></a>
 
@@ -282,7 +282,7 @@
 * add fork notice
   
   Add a prominent [!IMPORTANT] callout at the top of the README clarifying that this
-  project is based on ERDB by RealBestia at https://github.com/realbestia1/erdb.
+  project is based on XRDB by RealBestia at https://github.com/realbestia1/xrdb.
 
 ## [v2.46.0] - 27/03/2026
 
@@ -528,7 +528,7 @@
 ### Fixed
 * normalize custom base url before stream lookups
   
-  Normalize ERDB_TORRENTIO_BASE_URL so full manifest URLs and trailing slashes do not break stream badge requests.
+  Normalize XRDB_TORRENTIO_BASE_URL so full manifest URLs and trailing slashes do not break stream badge requests.
   
   Extract Torrentio URL helpers into lib/torrentioUrl.ts and reuse them from the route handler.
   
@@ -562,7 +562,7 @@
 ## [v2.40.2] - 26/03/2026
 
 ### Fixed
-* scope exported ERDB URL params per media type
+* scope exported XRDB URL params per media type
   
   Stop reusing one shared query string for all AIOMetadata art patterns.
   
@@ -659,7 +659,7 @@
   • Implement fetchSimklId() function to resolve Simkl item IDs via /redirect endpoint
   • Refactor fetchSimklRating() to two stage flow: resolve ID first, then fetch ratings by ID
   • Enforce simkl api key header authentication (remove query param leakage)
-  • Update .env.example with ERDB_SIMKL_ID_CACHE_TTL_MS documentation
+  • Update .env.example with XRDB_SIMKL_ID_CACHE_TTL_MS documentation
   
   Addresses Simkl API requirements for proper authentication and endpoint usage.
 
@@ -841,8 +841,8 @@
 ## [v2.31.0] - 25/03/2026
 
 ### Added
-* add optional ERDB request protection
-* add ERDB community Discord links
+* add optional XRDB request protection
+* add XRDB community Discord links
 
 ### Other Changes
 * notify Discord after release workflow completes
@@ -1101,7 +1101,7 @@
   
   Add a dark logo background option to the image renderer and use it for the curated The Boys logo preset so the live README sample stays visible on GitHub's light canvas.
   
-  Replace the old video attachment URLs with static demo thumbnails captured from the live erdb.ibbylabs.dev fork and link them to the live Configurator and Addon Proxy sections.
+  Replace the old video attachment URLs with static demo thumbnails captured from the live xrdb.ibbylabs.dev fork and link them to the live Configurator and Addon Proxy sections.
 
 <a id="v2-21-4"></a>
 
@@ -1255,11 +1255,11 @@
 ### Added
 * add configurable metadata translation modes and anime fallback
   
-  Expose proxy side metadata translation controls end to end so generated proxy manifests can opt into localized metadata merging without changing the shared ERDB image renderer settings.
+  Expose proxy side metadata translation controls end to end so generated proxy manifests can opt into localized metadata merging without changing the shared XRDB image renderer settings.
   
   Add explicit fill missing, prefer upstream, prefer requested language, and prefer tmdb modes, verify exact TMDB translation availability before requested language replacement, and use AniList or Kitsu text as a fallback when anime native IDs cannot get strong TMDB text.
   
-  Also attach optional _erdbMetaTranslation provenance data for debugging, wire the new settings through saved UI config and the configurator, update the README, and add regression coverage for translation target resolution, selection modes, and proxy payload encoding.
+  Also attach optional _xrdbMetaTranslation provenance data for debugging, wire the new settings through saved UI config and the configurator, update the README, and add regression coverage for translation target resolution, selection modes, and proxy payload encoding.
 
 <a id="v2-19-0"></a>
 
@@ -1290,11 +1290,11 @@
 ### Fixed
 * canonicalize MAL addon proxy IDs for anime image rewrites
   
-  Accept both mal:* and myanimelist:* addon IDs in proxy normalization, and canonicalize both forms to mal:* before building ERDB image URLs.
+  Accept both mal:* and myanimelist:* addon IDs in proxy normalization, and canonicalize both forms to mal:* before building XRDB image URLs.
   
   This keeps proxy side poster/background/logo rewrites aligned with the renderer's native anime mapping provider set, which recognizes mal as the canonical MyAnimeList provider prefix.
   
-  Also add regression coverage for MAL alias normalization so anime addons emitting either form continue to resolve stable ERDB image URLs.
+  Also add regression coverage for MAL alias normalization so anime addons emitting either form continue to resolve stable XRDB image URLs.
 
 ### Other Changes
 * sync upstream changes
@@ -1310,7 +1310,7 @@
   
   • add hydration safe client origin handling for generated URLs
   • add offset aware smooth scrolling for nav, hero, and footer anchor links
-  • add a prominent ERDB Discord support callout styled to match the landing page
+  • add a prominent XRDB Discord support callout styled to match the landing page
   • keep the new support entry configurable with brand Discord env vars
   • only apply clean poster title and logo overlays when the selected poster is actually textless
   
@@ -1478,7 +1478,7 @@
 ### Added
 * add show/hide toggles for config string and proxy URL
   
-  Add ability to toggle visibility of the ERDB config string and
+  Add ability to toggle visibility of the XRDB config string and
   generated proxy URL to prevent accidental exposure during
   screen sharing or streaming.
   
@@ -1515,13 +1515,13 @@
   
   Config (`uiConfig.ts`):
   • Add type, default (`auto`), normalizer, and include in
-    `SharedErdbSettings`, `normalizeSharedErdbSettings`, and
+    `SharedXrdbSettings`, `normalizeSharedXrdbSettings`, and
     `buildSharedPayload`
 * add posterQualityBadgesPosition to addon proxy config
   
   Register `posterQualityBadgesPosition` across the proxy layer:
   
-  • Add to `ERDB_OPTIONAL_PARAMS` array
+  • Add to `XRDB_OPTIONAL_PARAMS` array
   • Include in the `ProxyConfig` type definition
   • Add to `PROXY_OPTIONAL_STRING_KEYS` for optional string handling
   
@@ -1577,8 +1577,8 @@
     (proxy/security, cache TTLs, Torrentio, IMDb, Sharp rendering)
   • README: add Environment Variables section with tables for all settings
   • README: fix release command (npm run release:patch, not npm run release patch)
-  • Add missing env vars: ERDB_TORRENTIO_CACHE_TTL_MS, ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS,
-    ERDB_TRUST_PROXY_HEADERS, ERDB_PROXY_ALLOWED_ORIGINS
+  • Add missing env vars: XRDB_TORRENTIO_CACHE_TTL_MS, XRDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS,
+    XRDB_TRUST_PROXY_HEADERS, XRDB_PROXY_ALLOWED_ORIGINS
 
 <a id="v2-13-7"></a>
 
@@ -1637,7 +1637,7 @@
 ### Fixed
 * strip internal port from public facing image URLs
   
-  When ERDB runs behind a reverse proxy (ERDB_TRUST_PROXY_HEADERS=true),
+  When XRDB runs behind a reverse proxy (XRDB_TRUST_PROXY_HEADERS=true),
   the internal port (e.g. :3000) was leaking into generated image URLs.
   This made all poster, backdrop, and logo URLs unreachable through the
   reverse proxy, causing blank posters and missing badges in Stremio.
@@ -1661,7 +1661,7 @@
   This ensures Torrentio returns all available streams for accurate
   badge generation regardless of content language.
   
-  Also adds ERDB_TORRENTIO_BASE_URL env var for custom Torrentio instances.
+  Also adds XRDB_TORRENTIO_BASE_URL env var for custom Torrentio instances.
 
 <a id="v2-13-0"></a>
 
@@ -1704,7 +1704,7 @@
   
   • fix(proxy): rewrite TMDB translation payloads to fetch at the season level instead of concurrently per episode, preventing TMDB API rate limit bans
   • feat(cache): implement TTL based map for TMDB fetch caching to prevent permanent memory leaks
-  • fix(sharp): cap unset ERDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources
+  • fix(sharp): cap unset XRDB_SHARP_CONCURRENCY and MEMORY_MB parameters to safe thresholds (2 threads, 512MB) rather than maxing out host resources
   • feat(cache): integrate disk level eviction sweeper (pruneOldestImageCache) for local object storage S3 fallbacks
   • feat(cache): integrate SQLite hook for pruneOldestMetadata to cap local JSON cache rows
   • security(cors): correct proxy manifest and proxy endpoints to default to Access Control Allow Origin: * rather than aggressively reflecting arbitrary origin headers
@@ -1739,7 +1739,7 @@
 ### Added
 * collapse proxy configuration into the shared configurator flow
   
-  Remove the duplicate proxy side ERDB controls so the addon proxy only accepts an upstream manifest URL and consumes the configurator state above as its single source of truth.
+  Remove the duplicate proxy side XRDB controls so the addon proxy only accepts an upstream manifest URL and consumes the configurator state above as its single source of truth.
   
   Drop proxy enabled type state from the saved workspace model and proxy URL builder, while continuing to normalize older saved payloads that still include legacy enabled flags.
   
@@ -1752,7 +1752,7 @@
 ### Added
 * unify configurator and addon proxy workflows
   
-  • remove the duplicated proxy side ERDB settings state and drive both exports from one shared configuration model
+  • remove the duplicated proxy side XRDB settings state and drive both exports from one shared configuration model
   
   • add full workspace save and JSON download/import support with migration from the legacy API key only local storage format
   
@@ -1769,7 +1769,7 @@
 ### Fixed
 * use configured CORS fallback origin in proxy routes
   
-  When ERDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access Control Allow Origin and caused client side failures.
+  When XRDB_PROXY_ALLOWED_ORIGINS is configured and a proxy request arrives without an Origin header, request.nextUrl.origin can resolve to an internal container hostname in production. That value was being returned in Access Control Allow Origin and caused client side failures.
   
   Update both proxy route handlers to keep wildcard support, preserve valid Origin echoing, and otherwise fall back to the first configured allowed origin whenever the allowlist is non empty but the request origin is missing or not permitted.
 
@@ -1919,7 +1919,7 @@
 ### Added
 * refresh branding, stabilize UI, and improve release pipeline
   
-  • update ERDB page structure and styling with a redesigned hero, section headers, and panel system
+  • update XRDB page structure and styling with a redesigned hero, section headers, and panel system
   
   • fix layout overflow and preview regressions by tightening responsive shrink behavior and client side preview URL handling
   
@@ -2016,14 +2016,13 @@
   
   Introduce stream/quality badges sourced from Torrentio and per type quality/rating controls. README: add new query/config params (streamBadges, posterStreamBadges, backdropStreamBadges, qualityBadgesSide, qualityBadgesStyle, poster/backdropQualityBadgesStyle and per type ratings overrides) and update URL build documentation. route.tsx: bump final image renderer cache version to v20; add Torrentio integration (fetchTorrentioBadges) with caching, dedupe in flight requests and TTL; new types (StreamBadgeKey, BadgeKey, StreamQualityFlags) and helpers to normalize settings and parse/merge stream flags from filenames. Add STREAM_BADGE_META, generation of quality badge SVGs (buildQualityBadgeSvg) and logic to include qualityBadges in the rendering pipeline for poster and backdrop (columns/rows, positioning, style). Update badge/build/render logic to accept quality badges and adjust provider icon mapping key type and some square style rendering details. Also add small fixes: support data: URIs for provider icons, add stream timing to server timing header, and adjust final image cache seed to account for stream badge state. Other file updates reflect README and UI/config changes.
 * add addon proxy support
-* bootstrap ERDB project
+* bootstrap XRDB project
 
 ### Fixed
 * update image rendering route (15 commits)
 * handle square style stroke width in badge
   
   Update buildQualityBadgeSvg in app/[type]/[id]/route.tsx to add a specific strokeWidth case for style === 'square' (Math.max(1, Math.round(h * 0.05))). Previously the ternary only handled 'glass' and a default; this change ensures square badges use a slightly smaller stroke. Also split the expression across multiple lines for readability.
-* fix typo in HuggingFace Guide section
 * update multiple project areas
   
   Touches image rendering route and project tooling.
@@ -2040,10 +2039,6 @@
 
 ### Documentation
 * refresh README guide (12 commits)
-* refresh README guide
-  
-  Removed note about using Dockerfile.hf for Hugging Face Spaces.
-
 ### Other Changes
 * update deployment setup (5 commits)
 * update deployment setup
@@ -2051,7 +2046,6 @@
   Touches deployment setup and project tooling.
 * remove demo videos (2 commits)
 * add demo videos
-* add Hugging Face Docker support
 * update multiple project areas
   
   Touches deployment setup and image rendering route.
@@ -2065,4 +2059,3 @@
 * update project internals
   
   Touches project internals, project tooling, and README guide.
-

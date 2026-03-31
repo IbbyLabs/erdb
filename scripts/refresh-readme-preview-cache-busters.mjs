@@ -15,7 +15,7 @@ if (!version) {
 
 const normalizedVersion = version.replace(/[^0-9A-Za-z]+/g, '-');
 const previewUrlPattern =
-  /(https:\/\/erdb\.ibbylabs\.dev\/preview\/([^"?\s]+)\?cb=)([^"\s<]+)/g;
+  /(https:\/\/xrdb\.ibbylabs\.dev\/preview\/([^"?\s]+)\?cb=)([^"\s<]+)/g;
 
 const readme = await fs.readFile(README_PATH, 'utf8');
 

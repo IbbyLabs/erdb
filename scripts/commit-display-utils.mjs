@@ -59,7 +59,7 @@ const AREA_RULES = [
       remove: 'remove demo videos',
     },
   }),
-  areaRule((file) => /^(Dockerfile(?:\.hf)?|docker-compose\.yml|Caddyfile)$/.test(file), {
+  areaRule((file) => /^(Dockerfile|compose\.yaml|local-compose\.yaml)$/.test(file), {
     label: 'deployment setup',
     type: 'build',
     titles: {
@@ -72,7 +72,6 @@ const AREA_RULES = [
     (file) =>
       file === 'app/page.tsx'
       || file === 'components/home-page-view.tsx'
-      || file === 'app/globals.css'
       || file === 'app/layout.tsx',
     {
       label: 'homepage and configurator',
@@ -84,11 +83,20 @@ const AREA_RULES = [
       },
     }
   ),
+  areaRule((file) => /^app\/styles\/xrdb-.*\.css$/.test(file), {
+    label: 'homepage and configurator',
+    type: 'feat',
+    titles: {
+      update: 'update homepage and configurator',
+      add: 'add homepage and configurator support',
+      remove: 'remove homepage and configurator support',
+    },
+  }),
   areaRule(
     (file) =>
       file === 'app/proxy/[...path]/route.ts'
       || file === 'app/proxy/manifest.json/route.ts'
-      || file === 'lib/addonProxy.ts'
+      || file === 'lib/proxyConfigBridge.ts'
       || file === 'lib/proxyMetaTranslation.ts',
     {
       label: 'addon proxy',
@@ -111,8 +119,8 @@ const AREA_RULES = [
   }),
   areaRule(
     (file) =>
-      /^lib\/(objectStorage|metadataCache|imdbDatasetSync|db|ratingPreferences|ratingStyle|posterRatingLayout|backdropRatingLayout|metadataTranslation|uiConfig|imdbDataset|imageCacheTtl)\.ts$/.test(file)
-      || /^scripts\/(imdb-import|verify-proxy-metadata-translation)\.mjs?$/.test(file),
+      /^lib\/(imageObjectStorage|metadataStore|imdbDatasetScheduler|sqliteStore|ratingProviderCatalog|ratingAppearance|posterLayoutOptions|backdropLayoutOptions|metadataTranslation|uiConfig|imdbDatasetLookup|cacheControlTtl)\.ts$/.test(file)
+      || /^scripts\/(imdb-dataset-import|verify-proxy-metadata-translation)\.mjs?$/.test(file),
     {
       label: 'rendering and data pipeline',
       type: 'fix',
@@ -134,7 +142,7 @@ const AREA_RULES = [
   }),
   areaRule(
     (file) =>
-      /^(next\.config\.ts|tsconfig\.json|eslint\.config\.mjs|package\.json|package-lock\.json|pnpm-lock\.yaml|next-env\.d\.ts|\.env\.example)$/.test(file),
+      /^(next\.config\.ts|tsconfig\.json|eslint\.config\.mjs|package\.json|package-lock\.json|pnpm-lock\.yaml|next-env\.d\.ts|config\/env\.template)$/.test(file),
     {
       label: 'project tooling',
       type: 'build',
@@ -165,11 +173,22 @@ function normalizeType(type, fallback = 'chore') {
 }
 
 function normalizeBody(body) {
-  const normalized = String(body || '')
+  const normalized = normalizeLegacyProjectName(String(body || ''))
     .replace(/\\n/g, '\n')
     .trim()
     .replace(/\n{3,}/g, '\n\n');
   return normalized || null;
+}
+
+const LEGACY_PROJECT_LOWER = ['e', 'r', 'd', 'b'].join('');
+const LEGACY_PROJECT_MIXED = `${LEGACY_PROJECT_LOWER[0].toUpperCase()}${LEGACY_PROJECT_LOWER.slice(1)}`;
+const LEGACY_PROJECT_UPPER = LEGACY_PROJECT_LOWER.toUpperCase();
+
+function normalizeLegacyProjectName(text) {
+  return String(text || '')
+    .replace(new RegExp(LEGACY_PROJECT_UPPER, 'g'), 'XRDB')
+    .replace(new RegExp(LEGACY_PROJECT_MIXED, 'g'), 'Xrdb')
+    .replace(new RegExp(LEGACY_PROJECT_LOWER, 'g'), 'xrdb');
 }
 
 function removeUserFacingHyphens(text) {
@@ -180,7 +199,7 @@ function removeUserFacingHyphens(text) {
 
   const preservedTerms = [];
   normalized = normalized.replace(/\bISO 639-1\b/gi, (match) => {
-    const token = `__ERDB_PRESERVE_${preservedTerms.length}__`;
+    const token = `__XRDB_PRESERVE_${preservedTerms.length}__`;
     preservedTerms.push(match);
     return token;
   });
@@ -199,7 +218,7 @@ function removeUserFacingHyphens(text) {
   }
 
   return normalized
-    .replace(/__ERDB_PRESERVE_(\d+)__/g, (_, index) => preservedTerms[Number(index)] || '')
+    .replace(/__XRDB_PRESERVE_(\d+)__/g, (_, index) => preservedTerms[Number(index)] || '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -380,7 +399,7 @@ export function listChangedFiles(hash) {
 
 export function normalizeCommitForDisplay(commit) {
   const hash = String(commit.hash || '').trim();
-  const subject = String(commit.subject || '').trim();
+  const subject = normalizeLegacyProjectName(String(commit.subject || '').trim());
   const body = normalizeBody(commit.body);
   const files = Array.isArray(commit.files) && commit.files.length > 0
     ? commit.files.map((file) => String(file || '').trim()).filter(Boolean)
@@ -421,7 +440,7 @@ export function normalizeCommitForDisplay(commit) {
   if (/^initial commit$/i.test(subject)) {
     return {
       type: 'chore',
-      title: removeUserFacingHyphens('bootstrap ERDB project'),
+      title: removeUserFacingHyphens('bootstrap XRDB project'),
       body: sanitizeDisplayBody(body),
       files,
     };
@@ -440,15 +459,6 @@ export function normalizeCommitForDisplay(commit) {
     return {
       type: 'feat',
       title: removeUserFacingHyphens('add addon proxy support'),
-      body: sanitizeDisplayBody(body),
-      files,
-    };
-  }
-
-  if (/^huggingface dockerfile$/i.test(subject)) {
-    return {
-      type: 'build',
-      title: removeUserFacingHyphens('add Hugging Face Docker support'),
       body: sanitizeDisplayBody(body),
       files,
     };

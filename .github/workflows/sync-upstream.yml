@@ -20,7 +20,7 @@ jobs:
 
       - name: Fetch upstream
         run: |
-          git remote add upstream https://github.com/realbestia1/erdb.git
+          git remote add upstream https://github.com/realbestia1/xrdb.git
           git fetch upstream
 
       - name: Check for new upstream commits
@@ -48,4 +48,4 @@ jobs:
             --base main \
             --head "${{ steps.sync.outputs.branch }}" \
             --title "chore: sync upstream" \
-            --body "Automated upstream sync from [realbestia1/erdb](https://github.com/realbestia1/erdb)."
+            --body "Automated upstream sync from [realbestia1/xrdb](https://github.com/realbestia1/xrdb)."

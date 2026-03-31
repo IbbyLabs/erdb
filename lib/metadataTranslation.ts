@@ -1,6 +1,6 @@
 export type MetadataTranslationMode =
   | 'fill-missing'
-  | 'prefer-upstream'
+  | 'prefer-source'
   | 'prefer-requested-language'
   | 'prefer-tmdb';
 
@@ -14,12 +14,12 @@ export const METADATA_TRANSLATION_MODE_OPTIONS: Array<{
   {
     id: 'fill-missing',
     label: 'Fill Missing',
-    description: 'Keep good upstream metadata, but replace blanks and placeholders.',
+    description: 'Keep good source addon metadata, but replace blanks and placeholders.',
   },
   {
-    id: 'prefer-upstream',
-    label: 'Prefer Upstream',
-    description: 'Keep upstream metadata that already has content and only fill truly absent fields.',
+    id: 'prefer-source',
+    label: 'Prefer Source',
+    description: 'Keep source addon metadata that already has content and only fill truly absent fields.',
   },
   {
     id: 'prefer-requested-language',

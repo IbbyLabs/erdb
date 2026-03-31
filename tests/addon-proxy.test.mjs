@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildErdbImageUrl, decodeProxyConfig } from '../lib/addonProxy.ts';
+import { buildXrdbImageUrl, decodeProxyConfig } from '../lib/proxyConfigBridge.ts';
 import { encodeRatingProviderAppearanceOverrides } from '../lib/badgeCustomization.ts';
 import { buildProxyUrl, normalizeSavedUiConfig } from '../lib/uiConfig.ts';
 
@@ -17,7 +17,7 @@ test('generated proxy manifest carries configurator settings into rewritten logo
   };
   const uiConfig = normalizeSavedUiConfig({
     settings: {
-      erdbKey: 'proxy-erdb-key-123',
+      xrdbKey: 'proxy-xrdb-key-123',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -47,31 +47,31 @@ test('generated proxy manifest carries configurator settings into rewritten logo
     },
   });
 
-  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
 
   assert.ok(encodedConfig);
 
   const decodedProxyConfig = decodeProxyConfig(encodedConfig);
   assert.ok(decodedProxyConfig);
-  assert.equal(decodedProxyConfig.erdbKey, 'proxy-erdb-key-123');
+  assert.equal(decodedProxyConfig.xrdbKey, 'proxy-xrdb-key-123');
 
   const rewrittenLogoUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL(
         `https://proxy.example.net/proxy/${encodedConfig}/meta/series/example.json?logoRatings=myanimelist,anilist&logoRatingsMax=1&logoBackground=transparent&logoRatingStyle=glass&lang=ja`
       ),
       imageType: 'logo',
-      erdbId: 'mal:16498',
+      xrdbId: 'mal:16498',
       tmdbKey: decodedProxyConfig.tmdbKey,
       mdblistKey: decodedProxyConfig.mdblistKey,
       config: decodedProxyConfig,
     })
   );
 
-  assert.equal(rewrittenLogoUrl.origin, 'https://erdb.example.com');
+  assert.equal(rewrittenLogoUrl.origin, 'https://xrdb.example.com');
   assert.equal(rewrittenLogoUrl.pathname, '/logo/mal%3A16498.jpg');
-  assert.equal(rewrittenLogoUrl.searchParams.get('erdbKey'), 'proxy-erdb-key-123');
+  assert.equal(rewrittenLogoUrl.searchParams.get('xrdbKey'), 'proxy-xrdb-key-123');
   assert.equal(rewrittenLogoUrl.searchParams.get('tmdbKey'), 'tmdb-key-123');
   assert.equal(rewrittenLogoUrl.searchParams.get('mdblistKey'), 'mdblist-key-456');
   assert.equal(rewrittenLogoUrl.searchParams.get('fanartKey'), 'fanart-key-789');
@@ -102,12 +102,12 @@ test('generated proxy manifest carries configurator settings into rewritten logo
 
 test('proxy image rewrites upgrade legacy logo source params to artwork source params', () => {
   const rewrittenLogoUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL(
         'https://proxy.example.net/proxy/example/meta/series/example.json?logoSource=fanart&logoBackground=dark'
       ),
       imageType: 'logo',
-      erdbId: 'tt0386676',
+      xrdbId: 'tt0386676',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       config: {
@@ -135,7 +135,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   };
   const uiConfig = normalizeSavedUiConfig({
     settings: {
-      erdbKey: 'proxy-erdb-key-456',
+      xrdbKey: 'proxy-xrdb-key-456',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -166,19 +166,19 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
     },
   });
 
-  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
   assert.ok(encodedConfig);
 
   const decodedProxyConfig = decodeProxyConfig(encodedConfig);
   assert.ok(decodedProxyConfig);
-  assert.equal(decodedProxyConfig.erdbKey, 'proxy-erdb-key-456');
+  assert.equal(decodedProxyConfig.xrdbKey, 'proxy-xrdb-key-456');
 
   const rewrittenPosterUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL('https://proxy.example.net/proxy/example/meta/movie/example.json'),
       imageType: 'poster',
-      erdbId: 'tt0468569',
+      xrdbId: 'tt0468569',
       tmdbKey: decodedProxyConfig.tmdbKey,
       mdblistKey: decodedProxyConfig.mdblistKey,
       config: decodedProxyConfig,
@@ -186,7 +186,7 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
   );
 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterRatings'), 'imdb,trakt,metacritic');
-  assert.equal(rewrittenPosterUrl.searchParams.get('erdbKey'), 'proxy-erdb-key-456');
+  assert.equal(rewrittenPosterUrl.searchParams.get('xrdbKey'), 'proxy-xrdb-key-456');
   assert.equal(rewrittenPosterUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenPosterUrl.searchParams.get('ratingValueMode'), 'normalized');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterGenreBadge'), 'both');
@@ -215,10 +215,10 @@ test('proxy image rewrites carry side rating placement for poster layouts', () =
 
 test('proxy image rewrites can preserve the upstream image as a fallback URL', () => {
   const rewrittenPosterUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL('https://proxy.example.net/proxy/example/meta/movie/example.json'),
       imageType: 'poster',
-      erdbId: 'tt11003218',
+      xrdbId: 'tt11003218',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fallbackUrl: 'https://images.example.com/posters/tt11003218.jpg',
@@ -239,7 +239,7 @@ test('proxy image rewrites can preserve the upstream image as a fallback URL', (
 test('proxy image rewrites carry artwork source selection for backdrops', () => {
   const uiConfig = normalizeSavedUiConfig({
     settings: {
-      erdbKey: 'proxy-erdb-key-789',
+      xrdbKey: 'proxy-xrdb-key-789',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -264,19 +264,19 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
     },
   });
 
-  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
   assert.ok(encodedConfig);
 
   const decodedProxyConfig = decodeProxyConfig(encodedConfig);
   assert.ok(decodedProxyConfig);
-  assert.equal(decodedProxyConfig.erdbKey, 'proxy-erdb-key-789');
+  assert.equal(decodedProxyConfig.xrdbKey, 'proxy-xrdb-key-789');
 
   const rewrittenBackdropUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
       imageType: 'backdrop',
-      erdbId: 'tt0386676',
+      xrdbId: 'tt0386676',
       tmdbKey: decodedProxyConfig.tmdbKey,
       mdblistKey: decodedProxyConfig.mdblistKey,
       config: decodedProxyConfig,
@@ -284,7 +284,7 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
   );
 
   assert.equal(rewrittenBackdropUrl.searchParams.get('imageText'), 'clean');
-  assert.equal(rewrittenBackdropUrl.searchParams.get('erdbKey'), 'proxy-erdb-key-789');
+  assert.equal(rewrittenBackdropUrl.searchParams.get('xrdbKey'), 'proxy-xrdb-key-789');
   assert.equal(rewrittenBackdropUrl.searchParams.get('fanartKey'), 'fanart-key-789');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropGenreBadge'), 'text');
   assert.equal(rewrittenBackdropUrl.searchParams.get('backdropGenreBadgeStyle'), 'plain');
@@ -305,12 +305,12 @@ test('proxy image rewrites carry artwork source selection for backdrops', () => 
 
 test('proxy image rewrites accept plural rating style aliases for backdrops', () => {
   const rewrittenBackdropUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL(
         'https://proxy.example.net/proxy/example/meta/series/example.json?backdropRatingsStyle=square'
       ),
       imageType: 'backdrop',
-      erdbId: 'tt0133093',
+      xrdbId: 'tt0133093',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       config: {
@@ -338,7 +338,7 @@ test('proxy image rewrites preserve cinemeta as a poster artwork source', () => 
     },
   });
 
-  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
   assert.ok(encodedConfig);
 
@@ -346,10 +346,10 @@ test('proxy image rewrites preserve cinemeta as a poster artwork source', () => 
   assert.ok(decodedProxyConfig);
 
   const rewrittenPosterUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL('https://proxy.example.net/proxy/example/meta/movie/example.json'),
       imageType: 'poster',
-      erdbId: 'tt0133093',
+      xrdbId: 'tt0133093',
       tmdbKey: decodedProxyConfig.tmdbKey,
       mdblistKey: decodedProxyConfig.mdblistKey,
       config: decodedProxyConfig,
@@ -372,7 +372,7 @@ test('proxy image rewrites preserve cinemeta as a backdrop artwork source', () =
     },
   });
 
-  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
   assert.ok(encodedConfig);
 
@@ -380,10 +380,10 @@ test('proxy image rewrites preserve cinemeta as a backdrop artwork source', () =
   assert.ok(decodedProxyConfig);
 
   const rewrittenBackdropUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
       imageType: 'backdrop',
-      erdbId: 'tt0944947',
+      xrdbId: 'tt0944947',
       tmdbKey: decodedProxyConfig.tmdbKey,
       mdblistKey: decodedProxyConfig.mdblistKey,
       config: decodedProxyConfig,
@@ -405,7 +405,7 @@ test('proxy image rewrites preserve cinemeta as a logo artwork source', () => {
     },
   });
 
-  const proxyUrl = buildProxyUrl('https://erdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
   assert.ok(encodedConfig);
 
@@ -413,10 +413,10 @@ test('proxy image rewrites preserve cinemeta as a logo artwork source', () => {
   assert.ok(decodedProxyConfig);
 
   const rewrittenLogoUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
       imageType: 'logo',
-      erdbId: 'tt0944947',
+      xrdbId: 'tt0944947',
       tmdbKey: decodedProxyConfig.tmdbKey,
       mdblistKey: decodedProxyConfig.mdblistKey,
       config: decodedProxyConfig,
@@ -428,12 +428,12 @@ test('proxy image rewrites preserve cinemeta as a logo artwork source', () => {
 
 test('proxy image rewrites upgrade legacy clean source params to artwork source params', () => {
   const rewrittenPosterUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL(
         'https://proxy.example.net/proxy/example/meta/movie/example.json?imageText=alternative&posterCleanSource=fanart'
       ),
       imageType: 'poster',
-      erdbId: 'tt0133093',
+      xrdbId: 'tt0133093',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       config: {
@@ -448,14 +448,14 @@ test('proxy image rewrites upgrade legacy clean source params to artwork source 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterCleanSource'), null);
 });
 
-test('proxy image rewrites pass RPDB compatibility query aliases through to ERDB', () => {
+test('proxy image rewrites pass RPDB compatibility query aliases through to XRDB', () => {
   const rewrittenPosterUrl = new URL(
-    buildErdbImageUrl({
+    buildXrdbImageUrl({
       reqUrl: new URL(
         'https://proxy.example.net/proxy/example/meta/movie/example.json?order=imdb,tomatoes-critics,metacritic-audience&ratingBarPos=right-top&fontScale=1.2&imageSize=verylarge&textless=true&posterType=textless-order'
       ),
       imageType: 'poster',
-      erdbId: 'tt0133093',
+      xrdbId: 'tt0133093',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       config: {

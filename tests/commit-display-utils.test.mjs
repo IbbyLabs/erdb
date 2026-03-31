@@ -45,8 +45,8 @@ test('normalizes placeholder subjects by summarizing the touched areas', () => {
     body: '',
     files: [
       'app/[type]/[id]/route.tsx',
-      'lib/objectStorage.ts',
-      '.env.example',
+      'lib/imageObjectStorage.ts',
+      'env.template',
     ],
   });
 
@@ -54,7 +54,7 @@ test('normalizes placeholder subjects by summarizing the touched areas', () => {
   assert.equal(normalized.title, 'update multiple project areas');
   assert.equal(
     normalized.body,
-    'Touches image rendering route, project tooling, and rendering and data pipeline.'
+    'Touches image rendering route, project internals, and rendering and data pipeline.'
   );
 });
 

@@ -4,7 +4,7 @@ import {
   ALL_RATING_PREFERENCES,
   normalizeRatingPreference,
   type RatingPreference,
-} from './ratingPreferences.ts';
+} from './ratingProviderCatalog.ts';
 
 export const DEFAULT_BADGE_SCALE_PERCENT = 100;
 export const MIN_BADGE_SCALE_PERCENT = 70;

@@ -40,8 +40,8 @@ jobs:
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
             type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && github.ref_type != 'tag' }}
           labels: |
-            org.opencontainers.image.title=ERDB
-            org.opencontainers.image.description=ERDB generates poster, backdrop, and logo images with dynamic ratings on the fly.
+            org.opencontainers.image.title=XRDB
+            org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with dynamic ratings on the fly.
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme

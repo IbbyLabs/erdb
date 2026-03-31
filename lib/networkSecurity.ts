@@ -75,7 +75,7 @@ const resolveHostAddresses = async (hostname: string) => {
   return addresses;
 };
 
-export const assertSafeUpstreamUrl = async (input: string) => {
+export const assertSafeSourceUrl = async (input: string) => {
   const raw = String(input || '').trim();
   if (!raw) {
     throw new Error('Missing URL.');
@@ -97,7 +97,7 @@ export const assertSafeUpstreamUrl = async (input: string) => {
   }
 
   if (
-    process.env.ERDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS === 'true' &&
+    process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS === 'true' &&
     process.env.NODE_ENV !== 'production'
   ) {
     return parsed;

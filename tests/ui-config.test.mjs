@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 
 import {
   decodeProxyConfig,
-  hasExplicitTmdbMediaTypeInErdbId,
-  isAmbiguousTmdbErdbId,
-  normalizeErdbId,
-} from '../lib/addonProxy.ts';
+  hasExplicitTmdbMediaTypeInXrdbId,
+  isAmbiguousTmdbXrdbId,
+  normalizeXrdbId,
+} from '../lib/proxyConfigBridge.ts';
 import { encodeRatingProviderAppearanceOverrides } from '../lib/badgeCustomization.ts';
 import {
   buildAiometadataUrlPatterns,
@@ -39,7 +39,7 @@ const SAMPLE_PROVIDER_APPEARANCE = {
 const buildSampleSettings = () =>
   normalizeSavedUiConfig({
     settings: {
-      erdbKey: 'shared-erdb-key-000',
+      xrdbKey: 'shared-xrdb-key-000',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -64,6 +64,7 @@ const buildSampleSettings = () =>
       logoGenreBadgeAnimeGrouping: 'split',
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
+      thumbnailRatingPreferences: ['tmdb', 'imdb'],
       logoRatingPreferences: [],
       posterStreamBadges: 'on',
       backdropStreamBadges: 'off',
@@ -127,7 +128,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
   assert.deepEqual(parsed, {
     version: 1,
     settings: {
-      erdbKey: 'shared-erdb-key-000',
+      xrdbKey: 'shared-xrdb-key-000',
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       fanartKey: 'fanart-key-789',
@@ -158,6 +159,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       logoGenreBadgeAnimeGrouping: 'split',
       posterRatingPreferences: ['imdb', 'tmdb'],
       backdropRatingPreferences: ['mdblist'],
+      thumbnailRatingPreferences: ['tmdb', 'imdb'],
       logoRatingPreferences: [],
       posterStreamBadges: 'on',
       backdropStreamBadges: 'off',
@@ -222,10 +224,11 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       translateMeta: true,
       translateMetaMode: 'prefer-requested-language',
       debugMetaTranslation: true,
+      episodeIdMode: 'imdb',
     },
   });
 
-  const configString = buildConfigString('https://erdb.example.com', parsed.settings);
+  const configString = buildConfigString('https://xrdb.example.com', parsed.settings);
   assert.notEqual(configString, '');
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.tmdbIdScope, 'strict');
@@ -258,6 +261,7 @@ test('workspace normalization ignores legacy proxy enabled flags', () => {
     translateMeta: false,
     translateMetaMode: 'fill-missing',
     debugMetaTranslation: false,
+    episodeIdMode: 'imdb',
   });
 });
 
@@ -272,7 +276,7 @@ test('workspace normalization accepts hundred point rating value aliases and pre
 
   assert.equal(config.settings.ratingValueMode, 'normalized100');
 
-  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
@@ -304,7 +308,7 @@ test('legacy shared genre badge settings expand to per type fields and re-compre
   assert.equal(config.settings.backdropGenreBadgeScale, 118);
   assert.equal(config.settings.logoGenreBadgeScale, 118);
 
-  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
@@ -330,7 +334,7 @@ test('workspace normalization preserves compact dual aggregate presentation alia
   assert.equal(config.settings.posterRatingPresentation, 'dual-minimal');
   assert.equal(config.settings.backdropRatingPresentation, 'dual-minimal');
 
-  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
@@ -353,7 +357,7 @@ test('workspace normalization accepts none rating presentation to remove all rat
   assert.equal(config.settings.backdropRatingPresentation, 'none');
   assert.equal(config.settings.logoRatingPresentation, 'none');
 
-  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
@@ -373,29 +377,30 @@ test('config payload includes aggregate accent bar visibility when disabled', ()
 
   assert.equal(config.settings.aggregateAccentBarVisible, false);
 
-  const configString = buildConfigString('https://erdb.example.com', config.settings);
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.aggregateAccentBarVisible, false);
 });
 
-test('config string and proxy manifest use the same shared ERDB settings', () => {
+test('config string and proxy manifest use the same shared XRDB settings', () => {
   const config = buildSampleSettings();
-  const baseUrl = 'https://erdb.example.com/';
+  const baseUrl = 'https://xrdb.example.com/';
 
   const configString = buildConfigString(baseUrl, config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.deepEqual(decodedConfig, {
-    baseUrl: 'https://erdb.example.com',
-    erdbKey: 'shared-erdb-key-000',
+    baseUrl: 'https://xrdb.example.com',
+    xrdbKey: 'shared-xrdb-key-000',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
     fanartKey: 'fanart-key-789',
     tmdbIdScope: 'strict',
     posterRatings: 'imdb,tmdb',
     backdropRatings: 'mdblist',
+    thumbnailRatings: 'tmdb,imdb',
     logoRatings: '',
     lang: 'fr',
     ratingValueMode: 'normalized',
@@ -455,7 +460,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
   });
 
   const proxyUrl = buildProxyUrl(baseUrl, config.proxy, config.settings);
-  assert.match(proxyUrl, /^https:\/\/erdb\.example\.com\/proxy\/.+\/manifest\.json$/);
+  assert.match(proxyUrl, /^https:\/\/xrdb\.example\.com\/proxy\/.+\/manifest\.json$/);
 
   const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
   assert.ok(encodedConfig);
@@ -463,7 +468,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
   const decodedProxy = decodeProxyConfig(encodedConfig);
   assert.deepEqual(decodedProxy, {
     url: 'https://addon.example.com/manifest.json',
-    erdbKey: 'shared-erdb-key-000',
+    xrdbKey: 'shared-xrdb-key-000',
     tmdbKey: 'tmdb-key-123',
     mdblistKey: 'mdblist-key-456',
     fanartKey: 'fanart-key-789',
@@ -473,6 +478,7 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     debugMetaTranslation: true,
     posterRatings: 'imdb,tmdb',
     backdropRatings: 'mdblist',
+    thumbnailRatings: 'tmdb,imdb',
     logoRatings: '',
     lang: 'fr',
     ratingValueMode: 'normalized',
@@ -529,44 +535,44 @@ test('config string and proxy manifest use the same shared ERDB settings', () =>
     logoBackground: 'dark',
     logoArtworkSource: 'fanart',
     providerAppearance: encodeRatingProviderAppearanceOverrides(SAMPLE_PROVIDER_APPEARANCE),
-    erdbBase: 'https://erdb.example.com',
+    xrdbBase: 'https://xrdb.example.com',
   });
 });
 
 test('AIOMetadata export builds masked patterns with placeholders', () => {
   const config = buildSampleSettings();
 
-  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
     hideCredentials: true,
   });
 
   assert.equal(
     patterns?.posterUrlPattern.startsWith(
-      'https://erdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
     patterns?.backgroundUrlPattern.startsWith(
-      'https://erdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
     patterns?.logoUrlPattern.startsWith(
-      'https://erdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&',
+      'https://xrdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
     patterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://erdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
+      'https://xrdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
     ),
     true,
   );
 
   for (const value of Object.values(patterns ?? {})) {
-    assert.match(value, /erdbKey=\{erdb_key\}/);
+    assert.match(value, /xrdbKey=\{xrdb_key\}/);
     assert.match(value, /tmdbKey=\{tmdb_key\}/);
     assert.match(value, /mdblistKey=\{mdblist_key\}/);
     assert.match(value, /fanartKey=\{fanart_key\}/);
@@ -583,7 +589,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.equal(value.includes('%7Btmdb_key%7D'), false);
     assert.equal(value.includes('%7Bmdblist_key%7D'), false);
     assert.equal(value.includes('%7Bfanart_key%7D'), false);
-    assert.equal(value.includes('%7Berdb_key%7D'), false);
+    assert.equal(value.includes('%7Bxrdb_key%7D'), false);
   }
 
   assert.match(patterns?.posterUrlPattern ?? '', /posterRatings=imdb%2Ctmdb/);
@@ -618,31 +624,31 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {
   const config = buildSampleSettings();
 
-  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
     hideCredentials: false,
   });
 
   assert.equal(
     patterns?.posterUrlPattern.startsWith(
-      'https://erdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
     patterns?.backgroundUrlPattern.startsWith(
-      'https://erdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
     patterns?.logoUrlPattern.startsWith(
-      'https://erdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&',
+      'https://xrdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&',
     ),
     true,
   );
   assert.equal(
     patterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://erdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
+      'https://xrdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
     ),
     true,
   );
@@ -650,7 +656,7 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
   for (const value of Object.values(patterns ?? {})) {
     assert.match(value, /tmdbKey=tmdb-key-123/);
     assert.match(value, /mdblistKey=mdblist-key-456/);
-    assert.match(value, /erdbKey=shared-erdb-key-000/);
+    assert.match(value, /xrdbKey=shared-xrdb-key-000/);
     assert.match(value, /fanartKey=fanart-key-789/);
   }
 });
@@ -658,14 +664,14 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
 test('AIOMetadata export auto poster ID mode resolves to typed TMDB poster URLs', () => {
   const config = buildSampleSettings();
 
-  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
     hideCredentials: true,
     posterIdMode: 'auto',
   });
 
   assert.equal(
     patterns?.posterUrlPattern.startsWith(
-      'https://erdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
     ),
     true,
   );
@@ -674,12 +680,12 @@ test('AIOMetadata export auto poster ID mode resolves to typed TMDB poster URLs'
 test('AIOMetadata export supports IMDb poster ID mode override', () => {
   const config = buildSampleSettings();
 
-  const patterns = buildAiometadataUrlPatterns('https://erdb.example.com/', config.settings, {
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
     hideCredentials: true,
     posterIdMode: 'imdb',
   });
 
-  assert.equal(patterns?.posterUrlPattern.startsWith('https://erdb.example.com/poster/{imdb_id}.jpg?'), true);
+  assert.equal(patterns?.posterUrlPattern.startsWith('https://xrdb.example.com/poster/{imdb_id}.jpg?'), true);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
@@ -689,13 +695,13 @@ test('proxy manifest generation stops when required inputs are missing', () => {
   const config = buildSampleSettings();
 
   assert.equal(
-    buildProxyUrl('https://erdb.example.com', { ...config.proxy, manifestUrl: '' }, config.settings),
+    buildProxyUrl('https://xrdb.example.com', { ...config.proxy, manifestUrl: '' }, config.settings),
     '',
   );
 
   assert.equal(
     buildProxyUrl(
-      'https://erdb.example.com',
+      'https://xrdb.example.com',
       {
         ...config.proxy,
         manifestUrl: 'https://addon.example.com/manifest.json',
@@ -780,7 +786,7 @@ test('workspace normalization accepts poster image size aliases and payload omit
   });
   assert.equal(defaultNormalized.settings.posterImageSize, 'normal');
 
-  const defaultConfigString = buildConfigString('https://erdb.example.com', defaultNormalized.settings);
+  const defaultConfigString = buildConfigString('https://xrdb.example.com', defaultNormalized.settings);
   assert.notEqual(defaultConfigString, '');
   const defaultPayload = JSON.parse(decodeBase64Url(defaultConfigString));
   assert.equal(defaultPayload.posterImageSize, undefined);
@@ -856,7 +862,7 @@ test('workspace normalization backfills per-type side placement from legacy shar
   assert.equal(config.settings.sideRatingsOffset, 63);
 });
 
-test('workspace normalization keeps explicit ERDB settings over RPDB aliases', () => {
+test('workspace normalization keeps explicit XRDB settings over RPDB aliases', () => {
   const config = normalizeSavedUiConfig({
     settings: {
       ratingBarPos: 'left-top',
@@ -881,24 +887,51 @@ test('workspace normalization keeps explicit ERDB settings over RPDB aliases', (
 });
 
 test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites', () => {
-  assert.equal(normalizeErdbId('mal:456', 'series'), 'mal:456');
-  assert.equal(normalizeErdbId('myanimelist:456', 'series'), 'mal:456');
-  assert.equal(normalizeErdbId('anilist:123:2', 'series'), 'anilist:123:2');
-  assert.equal(normalizeErdbId('tvdb:789:3', 'series'), 'tvdb:789:3');
-  assert.equal(normalizeErdbId('anidb:789', 'series'), 'anidb:789');
-  assert.equal(normalizeErdbId('tt0944947:2', 'series'), 'tt0944947:2');
-  assert.equal(normalizeErdbId('imdb:tt0944947:2', 'series'), 'imdb:tt0944947:2');
-  assert.equal(normalizeErdbId('tmdb:tv:1399:2', 'series'), 'tmdb:tv:1399:2');
-  assert.equal(normalizeErdbId('tmdb:series:1399:2', 'series'), 'tmdb:tv:1399:2');
+  assert.equal(normalizeXrdbId('mal:456', 'series'), 'mal:456');
+  assert.equal(normalizeXrdbId('myanimelist:456', 'series'), 'mal:456');
+  assert.equal(normalizeXrdbId('anilist:123:2', 'series'), 'anilist:123:2');
+  assert.equal(normalizeXrdbId('tvdb:789:3', 'series'), 'tvdb:789:3');
+  assert.equal(normalizeXrdbId('xrdbid:tt0944947:2:1', 'series'), 'xrdbid:tt0944947:2:1');
+  assert.equal(normalizeXrdbId('anidb:789', 'series'), 'anidb:789');
+  assert.equal(normalizeXrdbId('tt0944947:2', 'series'), 'tt0944947:2');
+  assert.equal(normalizeXrdbId('imdb:tt0944947:2', 'series'), 'imdb:tt0944947:2');
+  assert.equal(normalizeXrdbId('tmdb:tv:1399:2', 'series'), 'tmdb:tv:1399:2');
+  assert.equal(normalizeXrdbId('tmdb:series:1399:2', 'series'), 'tmdb:tv:1399:2');
+});
+
+test('AIOMetadata export supports tvdb and xrdbid episode thumbnail patterns', () => {
+  const config = buildSampleSettings();
+
+  const tvdbPatterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+    episodeIdMode: 'tvdb',
+  });
+  const canonPatterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+    episodeIdMode: 'xrdbid',
+  });
+
+  assert.equal(
+    tvdbPatterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://xrdb.example.com/thumbnail/tvdb:{tvdb_id}/S{season}E{episode}.jpg?',
+    ),
+    true,
+  );
+  assert.equal(
+    canonPatterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://xrdb.example.com/thumbnail/xrdbid:{imdb_id}/S{season}E{episode}.jpg?',
+    ),
+    true,
+  );
 });
 
 test('TMDB ID scope helpers detect explicit and ambiguous forms', () => {
-  assert.equal(hasExplicitTmdbMediaTypeInErdbId('tmdb:movie:603'), true);
-  assert.equal(hasExplicitTmdbMediaTypeInErdbId('tmdb:tv:1399:2'), true);
-  assert.equal(hasExplicitTmdbMediaTypeInErdbId('tmdb:603'), false);
+  assert.equal(hasExplicitTmdbMediaTypeInXrdbId('tmdb:movie:603'), true);
+  assert.equal(hasExplicitTmdbMediaTypeInXrdbId('tmdb:tv:1399:2'), true);
+  assert.equal(hasExplicitTmdbMediaTypeInXrdbId('tmdb:603'), false);
 
-  assert.equal(isAmbiguousTmdbErdbId('tmdb:603'), true);
-  assert.equal(isAmbiguousTmdbErdbId('tmdb:movie:603'), false);
-  assert.equal(isAmbiguousTmdbErdbId('tmdb:tv:1399'), false);
-  assert.equal(isAmbiguousTmdbErdbId('tt0133093'), false);
+  assert.equal(isAmbiguousTmdbXrdbId('tmdb:603'), true);
+  assert.equal(isAmbiguousTmdbXrdbId('tmdb:movie:603'), false);
+  assert.equal(isAmbiguousTmdbXrdbId('tmdb:tv:1399'), false);
+  assert.equal(isAmbiguousTmdbXrdbId('tt0133093'), false);
 });

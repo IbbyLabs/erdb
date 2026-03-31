@@ -5,20 +5,20 @@ import { buildDiscordReleasePayload } from '../.github/scripts/post-discord-rele
 
 test('buildDiscordReleasePayload creates a branded embed with release links and parsed sections', () => {
   const payload = buildDiscordReleasePayload({
-    repository: 'IbbyLabs/erdb',
+    repository: 'IbbyLabs/xrdb',
     previousReleaseTag: 'v2.30.0',
     release: {
       tag_name: 'v2.31.0',
       name: 'v2.31.0',
-      html_url: 'https://github.com/IbbyLabs/erdb/releases/tag/v2.31.0',
+      html_url: 'https://github.com/IbbyLabs/xrdb/releases/tag/v2.31.0',
       published_at: '2026-03-25T01:05:37Z',
       body: [
         '[!TIP]',
         'Changelog: read the matching entry or browse the full compare.',
         '',
         '## Added',
-        '- add optional ERDB request protection',
-        '- add ERDB community Discord links',
+        '- add optional XRDB request protection',
+        '- add XRDB community Discord links',
         '',
         '## Other Changes',
         '- notify Discord after release workflow completes',
@@ -26,7 +26,7 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
     },
   });
 
-  assert.equal(payload.username, 'ERDB Releases');
+  assert.equal(payload.username, 'XRDB Releases');
   assert.equal(payload.embeds.length, 1);
   assert.equal(payload.embeds[0].color, 0x7c3aed);
   assert.equal(payload.embeds[0].title, 'v2.31.0');
@@ -42,7 +42,7 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
 
   const addedField = fields.find((field) => field.name === 'Added');
   assert.ok(addedField);
-  assert.match(addedField.value, /optional ERDB request protection/);
+  assert.match(addedField.value, /optional XRDB request protection/);
 
   const changesField = fields.find((field) => field.name === 'Other Changes');
   assert.ok(changesField);

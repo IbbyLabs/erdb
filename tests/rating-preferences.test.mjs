@@ -3,11 +3,14 @@ import assert from 'node:assert/strict';
 
 import {
   RATING_PROVIDER_OPTIONS,
+  parseRatingPreferences,
   orderRatingPreferencesForRender,
   parseRatingPreferencesAllowEmpty,
   normalizeRatingPreference,
   selectAvailableRatingPreferences,
-} from '../lib/ratingPreferences.ts';
+  stringifyRatingPreferences,
+  stringifyRatingPreferencesAllowEmpty,
+} from '../lib/ratingProviderCatalog.ts';
 
 test('explicit rating order is preserved for anime renders', () => {
   const explicit = parseRatingPreferencesAllowEmpty('mdblist,tomatoes,metacritic,letterboxd,trakt,myanimelist,anilist,kitsu');
@@ -88,4 +91,22 @@ test('rating preference normalization accepts RPDB critic and audience aliases',
   assert.equal(normalizeRatingPreference('tomatoes-audience'), 'tomatoesaudience');
   assert.equal(normalizeRatingPreference('metacritic-critics'), 'metacritic');
   assert.equal(normalizeRatingPreference('metacritic-audience'), 'metacriticuser');
+});
+
+test('strict parsing falls back to the full provider list when input is unusable', () => {
+  const parsed = parseRatingPreferences(',,,');
+
+  assert.equal(parsed.length, RATING_PROVIDER_OPTIONS.length);
+  assert.equal(parsed[0], 'tmdb');
+});
+
+test('stringify helpers normalize aliases and dedupe values', () => {
+  assert.equal(
+    stringifyRatingPreferencesAllowEmpty(['anilist', 'anilist', 'kitsu']),
+    'anilist,kitsu',
+  );
+  assert.equal(
+    stringifyRatingPreferences(['anilist', 'anilist', 'kitsu']),
+    'anilist,kitsu',
+  );
 });

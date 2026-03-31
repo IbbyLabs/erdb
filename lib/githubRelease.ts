@@ -1,5 +1,5 @@
 export const LATEST_GITHUB_RELEASE_TTL_SECONDS = 60;
-const DEFAULT_GITHUB_REPOSITORY_URL = 'https://github.com/IbbyLabs/erdb';
+const DEFAULT_GITHUB_REPOSITORY_URL = 'https://github.com/IbbyLabs/xrdb';
 
 export type GitHubRepository = {
   owner: string;
@@ -312,7 +312,7 @@ export async function fetchLatestGitHubRelease({
     response = await fetchImpl(repository.releasesApiUrl, {
       headers: {
         accept: 'application/vnd.github+json',
-        'user-agent': 'erdb/latest-release',
+        'user-agent': 'xrdb/latest-release',
       },
       next: {
         revalidate: LATEST_GITHUB_RELEASE_TTL_SECONDS,

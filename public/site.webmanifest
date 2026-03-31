@@ -1,7 +1,7 @@
 {
-  "name": "IbbyLabs Easy Ratings Database",
-  "short_name": "ERDB",
-  "description": "Stateless ratings image engine for posters, backdrops, logos, and addon integrations.",
+  "name": "XRDB | eXtended Ratings DataBase",
+  "short_name": "XRDB",
+  "description": "Stateless artwork engine for posters, backdrops, thumbnails, logos, and addon integrations.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

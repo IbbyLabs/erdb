@@ -20,9 +20,9 @@ test('resolveServiceBaseUrls falls back to documented defaults when env vars are
 
 test('resolveServiceBaseUrls trims overrides and strips trailing slashes', () => {
   const baseUrls = resolveServiceBaseUrls({
-    ERDB_TMDB_API_BASE_URL: ' https://tmdb.example.com/root/ ',
-    ERDB_ANIME_MAPPING_BASE_URL: 'https://mapping.example.com/api///',
-    ERDB_KITSU_API_BASE_URL: ' https://kitsu.example.com/edge/ ',
+    XRDB_TMDB_API_BASE_URL: ' https://tmdb.example.com/root/ ',
+    XRDB_ANIME_MAPPING_BASE_URL: 'https://mapping.example.com/api///',
+    XRDB_KITSU_API_BASE_URL: ' https://kitsu.example.com/edge/ ',
   });
 
   assert.deepEqual(baseUrls, {

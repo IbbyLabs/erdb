@@ -1,9 +1,9 @@
-# Easy Ratings Database (ERDB): Stateless Edition
+# XRDB: eXtended Ratings DataBase
 
-ERDB generates poster/backdrop/logo images with dynamic ratings and quality badges on the fly.
+XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo artwork with dynamic ratings, quality badges, and export ready integrations.
 
 > [!IMPORTANT]
-> This project is built and maintained by IbbyLabs, and based on ERDB by RealBestia, which you can find at [realbestia1/erdb](https://github.com/realbestia1/erdb).
+> XRDB, eXtended Ratings DataBase, is built by IbbyLabs for artwork workflows, media tools, and addon integrations.
 
 <!-- changelog-links:start -->
 
@@ -12,9 +12,9 @@ ERDB generates poster/backdrop/logo images with dynamic ratings and quality badg
 
 <!-- changelog-links:end -->
 
-## Roadmap
+## Priorities
 
-This is what I am building next for ERDB.
+Current priorities for XRDB, eXtended Ratings DataBase:
 
 1. Better quality badges from more providers, not only one source.
 2. Smarter fallback so images still load when one provider is slow or down.
@@ -22,23 +22,23 @@ This is what I am building next for ERDB.
 4. Cache warming for startup and background updates so popular content is ready faster.
 5. Poster cache warming controls to reduce first load delay.
 6. More control for output sizes for poster backdrop and logo.
-7. Ongoing speed and reliability work for public and self hosted setups.
+7. Ongoing speed and reliability work for public and private setups.
 
-### Delivery plan
+### Release approach
 
-1. I will ship in phases with clear scope.
-2. I will use safe release switches for risky changes.
-3. I will check movie and series flows before each release.
-4. I will track speed and error numbers after each phase.
-5. I will keep rollback simple by turning new paths off fast.
+1. Release work in clear stages.
+2. Use safe rollout switches for risky changes.
+3. Verify both movie and series flows before release.
+4. Track speed and error rates after each stage.
+5. Keep rollback paths simple.
 
 ## Quick Start
 
 ## Install From GitHub
 
 ```bash
-git clone https://github.com/IbbyLabs/erdb
-cd erdb
+git clone https://github.com/IbbyLabs/xrdb
+cd xrdb
 ```
 
 Use Node 22.x locally. The repo now includes `.nvmrc` and `.node-version` so native packages such as `better-sqlite3` stay aligned with CI and release scripts.
@@ -50,26 +50,26 @@ Use Node 22.x locally. The repo now includes `.nvmrc` and `.node-version` so nat
 
 ## Stateless Architecture & API Keys (BYOK)
 
-ERDB is designed with a **Bring Your Own Key (BYOK)** stateless architecture. 
-This means that the ERDB server itself does not permanently store or centrally manage your TMDB, MDBList, or optional Fanart API keys. Instead:
+XRDB is designed with a **Bring Your Own Key (BYOK)** stateless architecture.
+This means that the XRDB server itself does not permanently store or centrally manage your TMDB, MDBList, or optional Fanart API keys. Instead:
 
 1. Keys are saved locally in your browser's `localStorage` when using the configurator UI.
 2. Keys are embedded directly into your generated URLs (`tmdbKey=...&mdblistKey=...&fanartKey=...`) and Addon proxy Base64 configurations when present.
-3. The server solely reads these keys from incoming requests to fetch upstream metadata on the fly.
+3. The server solely reads these keys from incoming requests to fetch source addon metadata on the fly.
 
-This intentional design allows you to host public ERDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
+This intentional design allows you to host public XRDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
-The configurator includes an AIOMetadata export section that generates ready-to-use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live ERDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for best rewrite coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type-aware TMDB IDs, and episode thumbnails use IMDb IDs with season and episode placeholders.
+The configurator includes an AIOMetadata export section that generates ready to use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use IMDb IDs with season and episode placeholders.
 
-Optional server side client ids can extend a few providers beyond the BYOK flow. `ERDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `ERDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `ERDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, ERDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `ERDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
+Optional server side client ids can extend a few providers beyond the BYOK flow. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `XRDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
 
-For `simkl`, ERDB resolves a Simkl item id using `https://api.simkl.com/redirect` and then loads the summary from `https://api.simkl.com/movies/{id}`, `https://api.simkl.com/tv/{id}`, or `https://api.simkl.com/anime/{id}` based on media type hints. Every Simkl request includes `client_id`, `app-name`, and `app-version` query parameters, plus `simkl-api-key` and a browser style `User-Agent` header.
+For `simkl`, XRDB resolves a Simkl item id using `https://api.simkl.com/redirect` and then loads the summary from `https://api.simkl.com/movies/{id}`, `https://api.simkl.com/tv/{id}`, or `https://api.simkl.com/anime/{id}` based on media type hints. Every Simkl request includes `client_id`, `app-name`, and `app-version` query parameters, plus `simkl-api-key` and a browser style `User-Agent` header.
 
 ## Live Preview Gallery
 
 These are live requests against production so readers can see current poster, backdrop, and logo output directly inside GitHub.
 
-The gallery is intended to use the optional server side preview env vars `ERDB_README_PREVIEW_TMDB_KEY` and `ERDB_README_PREVIEW_MDBLIST_KEY` so the README does not need to expose a raw API key.
+The gallery is intended to use the optional server side preview env vars `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` so the README does not need to expose a raw API key.
 
 Each preview URL includes a `cb` cache buster token. The release flow refreshes those tokens automatically so GitHub fetches a fresh set of live previews on each tagged release.
 
@@ -82,9 +82,9 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
     <td><strong>Attack on Titan</strong><br>Japanese text, anime ratings, poster stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-48-1" alt="The Boys poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-48-1" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-48-1" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/the-boys-poster?cb=readme-preview-the-boys-poster-v2-48-1" alt="The Boys poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-48-1" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-48-1" alt="Attack on Titan poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -96,8 +96,8 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
     <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-48-1" alt="Game of Thrones backdrop live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-48-1" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v2-48-1" alt="Game of Thrones backdrop live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-48-1" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -109,8 +109,8 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
     <td><strong>Attack on Titan</strong><br>Japanese logo with anime ratings and quality badges</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-48-1" alt="The Boys logo live preview" width="320"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-48-1"><img src="https://erdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-48-1" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/the-boys-logo?cb=readme-preview-the-boys-logo-v2-48-1" alt="The Boys logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-48-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-48-1" alt="Attack on Titan logo live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -143,22 +143,32 @@ Transparent provider icons now stay transparent across every badge style. In `gl
 
 ## Scalability & Docker
 
-The compose file includes a reverse proxy (Caddy) to handle app scaling.
+The repo now ships two Docker entrypoints:
+
+- [compose.yaml](/Users/ibby/Applications/xrdb/compose.yaml) is the VPS stack file. It matches the style used by popular Traefik based stacks much more closely: prebuilt GHCR image, `env_file: .env`, `expose`, Traefik labels, profiles, and a shared external Docker network.
+- [local-compose.yaml](/Users/ibby/Applications/xrdb/local-compose.yaml) is the local source build file. It keeps the simpler direct port mapping path for local testing.
+
+Sources:
+- https://github.com/Viren070/docker-compose-template
+- https://raw.githubusercontent.com/Viren070/docker-compose-template/main/apps/aiometadata/compose.yaml
+- https://raw.githubusercontent.com/Viren070/docker-compose-template/main/apps/aiostreams/compose.yaml
+- https://raw.githubusercontent.com/Viren070/docker-compose-template/main/apps/stremio-ai-search/compose.yaml
+- https://raw.githubusercontent.com/Viren070/docker-compose-template/main/apps/mediaflow-proxy/compose.yaml
 
 ## Releases & Packages
 
 Pushing a version tag that matches `v*` now starts two independent workflows:
 
 - publishes a GitHub release with notes sourced from the matching changelog entry
-- pushes a multi architecture container image to GHCR as `ghcr.io/ibbylabs/erdb`
+- pushes a multi architecture container image to GHCR as `ghcr.io/ibbylabs/xrdb`
 
 The GitHub release is no longer blocked on the Docker publish job finishing.
 
 Pull examples:
 
 ```bash
-docker pull ghcr.io/ibbylabs/erdb:latest
-docker pull ghcr.io/ibbylabs/erdb:v2.1.0
+docker pull ghcr.io/ibbylabs/xrdb:latest
+docker pull ghcr.io/ibbylabs/xrdb:v2.1.0
 ```
 
 Release flow:
@@ -167,12 +177,12 @@ Release flow:
 npm run release:patch
 ```
 
-Store `ERDB_README_PREVIEW_TMDB_KEY` and `ERDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want the release/doc asset scripts to pick them up automatically. Shell exported vars still win if both are set.
+Store `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want the release/doc asset scripts to pick them up automatically. Shell exported vars still win if both are set.
 
 If the GHCR package already existed before it was linked to this repository, open the package in GitHub and:
 
-1. connect it to `IbbyLabs/erdb`
-2. enable permission inheritance from the repository
+1. connect it to `IbbyLabs/xrdb`
+2. allow the package to follow repository permissions
 3. set visibility to public if you want anonymous pulls
 
 ## Recommended Requirements
@@ -183,43 +193,63 @@ Minimum recommended:
 - CPU: 4 vCPU
 - RAM: 4 GB
 
-Basic start:
+Local source build:
 ```bash
-docker compose up -d --build
+npm run docker:up
 ```
 
-If you are using the bundled Docker setup, the app should bind internally to `0.0.0.0`.
-Set `ERDB_BIND_HOST=0.0.0.0` in the same `.env` file that `docker compose` reads if you need to override it explicitly.
-This is only the container bind host. It is not your public domain name.
-
-Scale to multiple instances (e.g. 4):
+Explicit local source build:
 ```bash
-docker compose up -d --build --scale app=4
+npm run docker:up:local
 ```
 
-The public port is `ERDB_HTTP_PORT` (default `3000`) exposed by Caddy. Set it in the `.env` file.
-Data (SQLite database and image cache) is persisted in `./data`.
-
-Custom port (with scale):
+VPS stack start:
 ```bash
-ERDB_HTTP_PORT=4000 docker compose up -d --build --scale app=4
+npm run docker:up:stack
+```
+
+The VPS stack file expects Traefik or another external reverse proxy in front of it. It uses the published image and does not bind a public port directly.
+
+If you use a Traefik style stack, set:
+
+```env
+XRDB_HOSTNAME=xrdb.example.com
+DOCKER_NETWORK=aio_default
+DOCKER_NETWORK_EXTERNAL=true
+DOCKER_DATA_DIR=/opt/docker/data
+```
+
+That makes the VPS file mount `/opt/docker/data/xrdb` into `/app/data`, which is closer to the template repo shape.
+
+If you route XRDB through gluetun in your own stack, set:
+
+```env
+HTTP_PROXY=http://gluetun:8080
+HTTPS_PROXY=http://gluetun:8080
+```
+
+The repo compose file does not hard wire a `gluetun` dependency because that service usually lives in the surrounding VPS stack instead of the app repo itself.
+
+Local custom port:
+```bash
+XRDB_PORT=4000 docker compose -f local-compose.yaml up -d --build
 ```
 
 ### Public Fast Preset
 
-If you run a shared or public ERDB host, start from a lighter profile before
+If you run a shared or public XRDB host, start from a lighter profile before
 adding more providers or Torrentio badges. This keeps cold renders and Stremio
 catalog bursts predictable.
 
 Host env preset:
 
 ```env
-ERDB_SHARP_CONCURRENCY=4
-ERDB_SHARP_CACHE_MEMORY_MB=512
-ERDB_SHARP_CACHE_ITEMS=2000
-ERDB_SHARP_CACHE_FILES=20000
-ERDB_TORRENTIO_CACHE_TTL_MS=43200000
-ERDB_TORRENTIO_CONCURRENCY=3
+XRDB_SHARP_CONCURRENCY=4
+XRDB_SHARP_CACHE_MEMORY_MB=512
+XRDB_SHARP_CACHE_ITEMS=2000
+XRDB_SHARP_CACHE_FILES=20000
+XRDB_TORRENTIO_CACHE_TTL_MS=43200000
+XRDB_TORRENTIO_CONCURRENCY=3
 ```
 
 Recommended proxy or addon settings:
@@ -237,48 +267,6 @@ Recommended proxy or addon settings:
 
 If you want the absolute fastest public profile, drop `mdblist` too and keep
 the ratings list to `imdb,tmdb`.
-
-## HuggingFace Guide (NOT RECOMMENDED)
-
-(to avoid bans on HuggingFace)
-1. Go to the ERDB GitHub repo: https://github.com/IbbyLabs/erdb
-2. Click the "Fork" button in the top right corner
-3. Choose any name for the fork (do not use "erdb")
-
-### HuggingFace Steps
-
-1. Create a new Space
-2. Choose any name
-3. Select Docker
-4. Select Blank
-5. Set it as a Public space
-6. Click Create Space
-
-Now click "Create the Dockerfile" (near the bottom of the page).
-
-Copy and paste the content of `Dockerfile.hf` into the editor that opens,
-replacing "IbbyLabs" with your GitHub username.
-
-Line to change:
-
-```text
-RUN git clone https://github.com/IbbyLabs/erdb.git .
-```
-
-After the edit, click "Commit new file to main".
-
-### ERDB URL
-
-To get your personal link:
-
-1. Click the three dots in the top right corner
-2. Go to "Embed this Space"
-3. Copy the Direct URL
-
-Done! Your ERDB is ready to use on HuggingFace.
-
-Note: to update ERDB quickly, go to the Space settings and click
-"Factory Rebuild" only after syncing your fork on GitHub.
 
 ## API Usage
 
@@ -354,17 +342,17 @@ Response format note:
 
 In the configurator UI, `minimal` is labeled as `Compact Average`, `average` is labeled as `Labeled Average`, and `dual` is labeled as `Critics + Audience`. The underlying query values stay `minimal`, `average`, and `dual`.
 
-RPDB compatibility aliases are accepted where they map cleanly in ERDB: `order`/`ratingOrder` (rating provider order), `ratingBarPos` (mapped to poster/backdrop layout + side position), `fontScale` (mapped to rating badge scale), `imageSize=verylarge` (mapped to `posterImageSize=4k`), and `textless`/`posterType=textless-*` (mapped to clean poster text mode).
+RPDB compatibility aliases are accepted where they map cleanly in XRDB: `order`/`ratingOrder` (rating provider order), `ratingBarPos` (mapped to poster/backdrop layout + side position), `fontScale` (mapped to rating badge scale), `imageSize=verylarge` (mapped to `posterImageSize=4k`), and `textless`/`posterType=textless-*` (mapped to clean poster text mode).
 
-`myanimelist` and `trakt` can render directly when the server has `ERDB_MAL_CLIENT_ID` or `ERDB_TRAKT_CLIENT_ID`. Without the MAL client id, ERDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, ERDB still falls back to MDBList when `mdblistKey` is present.
+`myanimelist` and `trakt` can render directly when the server has `XRDB_MAL_CLIENT_ID` or `XRDB_TRAKT_CLIENT_ID`. Without the MAL client id, XRDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, XRDB still falls back to MDBList when `mdblistKey` is present.
 
 `tmdbIdScope=soft` is the default for compatibility and accepts bare `tmdb:id`. Set `tmdbIdScope=strict` to require `tmdb:movie:id` or `tmdb:tv:id` for backdrop and logo requests to avoid movie versus TV collisions.
 
-Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, ERDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
+Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, XRDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
-Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime render. When a title mixes drama with a stronger supported family, ERDB still prefers the more specific bucket.
+Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime render. When a title mixes drama with a stronger supported family, XRDB still prefers the more specific bucket.
 
-`fanartKey` is optional. If present, ERDB uses your key first for fanart requests. If it is blank, ERDB falls back to `ERDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
+`fanartKey` is optional. If present, XRDB uses your key first for fanart requests. If it is blank, XRDB falls back to `XRDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
 
 Poster `posterArtworkSource=fanart` uses fanart.tv poster art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
 
@@ -374,11 +362,11 @@ Future work: season aware fanart support is a strong next step for TV because fa
 
 Rendered ratings keep provider native scales by default. Set `ratingValueMode=normalized` to convert everything to a 0 to 10 display scale, or `ratingValueMode=normalized100` to convert everything to a rounded whole number out of 100. Providers that already use `/10` are shown without the suffix in ten point mode, percentage sources are converted to decimal (`69%` -> `6.9`) or whole number (`69`), `/5` sources are doubled (`4.2/5` -> `8.4`) or multiplied by twenty (`84`), and `/4` sources are multiplied by `2.5` (`3.5/4` -> `8.8` or `88`).
 
-When no explicit max is set, ERDB now renders all badges that fit the layout instead of applying a fixed poster or logo badge cap. Use the max params only when you want to intentionally tighten the visible badge count.
+When no explicit max is set, XRDB now renders all badges that fit the layout instead of applying a fixed poster or logo badge cap. Use the max params only when you want to intentionally tighten the visible badge count.
 
 ### Supported ID Formats
 
-ERDB supports multiple formats to identify media:
+XRDB supports multiple formats to identify media:
 
 - **IMDb**: `tt0133093` (standard `tt` + numbers)
 - **TMDB**: `tmdb:603` or explicit `tmdb:movie:603` / `tmdb:tv:1399`
@@ -387,13 +375,13 @@ ERDB supports multiple formats to identify media:
 
 ## Addon Developer Guide
 
-To integrate ERDB into your addon:
+To integrate XRDB into your addon:
 
-1. **Config String**: use a single `erdbConfig` string (base64url) generated by the ERDB configurator. It contains `baseUrl`, `tmdbKey`, `mdblistKey`, optional `fanartKey`, the per type style/text/layout fields, and any optional overrides currently enabled. Defaults are usually omitted.
+1. **Config String**: use a single `xrdbConfig` string (base64url) generated by the XRDB configurator. It contains `baseUrl`, `tmdbKey`, `mdblistKey`, optional `fanartKey`, the per type style/text/layout fields, and any optional overrides currently enabled. Defaults are usually omitted.
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
-3. **Fallback**: if a type is disabled, keep the original artwork (do not call ERDB for that type).
-4. **Decode**: decode `erdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional ERDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `genreBadgeStyle`, `genreBadgePosition`, `genreBadgeScale`, `posterGenreBadge`, `backdropGenreBadge`, `logoGenreBadge`, `posterGenreBadgeStyle`, `backdropGenreBadgeStyle`, `logoGenreBadgeStyle`, `posterGenreBadgePosition`, `backdropGenreBadgePosition`, `logoGenreBadgePosition`, `posterGenreBadgeScale`, `backdropGenreBadgeScale`, `logoGenreBadgeScale`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
+3. **Fallback**: if a type is disabled, keep the original artwork (do not call XRDB for that type).
+4. **Decode**: decode `xrdbConfig` (base64url -> JSON) once and reuse it.
+5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional XRDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `genreBadgeStyle`, `genreBadgePosition`, `genreBadgeScale`, `posterGenreBadge`, `backdropGenreBadge`, `logoGenreBadge`, `posterGenreBadgeStyle`, `backdropGenreBadgeStyle`, `logoGenreBadgeStyle`, `posterGenreBadgePosition`, `backdropGenreBadgePosition`, `logoGenreBadgePosition`, `posterGenreBadgeScale`, `backdropGenreBadgeScale`, `logoGenreBadgeScale`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `poster artwork source`: `posterArtworkSource`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
@@ -404,17 +392,17 @@ The generated configurator payload usually emits the per type fields and omits u
 
 ### AI Integration Prompt
 
-If you are using an AI agent (Claude, ChatGPT, etc.) to build your addon, copy this prompt:
+If you are using an AI agent such as Claude or ChatGPT to build an addon, copy this prompt:
 
 ```text
-Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
+Act as an expert addon developer. Implement the XRDB Stateless API in a media center addon.
 
 --- CONFIG INPUT ---
-Add a single text field called "erdbConfig" (base64url). The user will paste it from the ERDB site after configuring there.
-Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from erdbConfig.
+Add a single text field called "xrdbConfig" (base64url). The user will paste it from the XRDB site after configuring there.
+Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from xrdbConfig.
 
 --- DECODE ---
-Node/JS: const cfg = JSON.parse(Buffer.from(erdbConfig, 'base64url').toString('utf8'));
+Node/JS: const cfg = JSON.parse(Buffer.from(xrdbConfig, 'base64url').toString('utf8'));
 
 --- FULL API REFERENCE ---
 Endpoint: GET /{type}/{id}.jpg?...queryParams
@@ -469,17 +457,17 @@ simklClientId           | Your SIMKL client id for direct SIMKL ratings         
 
 TMDB NOTE: Default tmdbIdScope=soft keeps compatibility and accepts tmdb:id. Set tmdbIdScope=strict to require tmdb:movie:id or tmdb:tv:id for backdrop and logo.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
-FANART NOTE: fanartKey is optional. If present, ERDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, ERDB falls back to ERDB_FANART_API_KEY or FANART_API_KEY when the server has one.
+FANART NOTE: fanartKey is optional. If present, XRDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, XRDB falls back to XRDB_FANART_API_KEY or FANART_API_KEY when the server has one.
 POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
 BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
 LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
 FUTURE NOTE: season aware fanart support is a good next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
 
 --- INTEGRATION REQUIREMENTS ---
-1. Use ONLY the "erdbConfig" field (no modal and no extra settings panels).
+1. Use ONLY the "xrdbConfig" field (no modal and no extra settings panels).
 2. Add toggles to enable/disable: poster, backdrop, logo.
-3. If a type is disabled, keep the original artwork (do not call ERDB for that type).
-4. Build ERDB URLs using the decoded config and inject them into both catalog and meta responses.
+3. If a type is disabled, keep the original artwork (do not call XRDB for that type).
+4. Build XRDB URLs using the decoded config and inject them into both catalog and meta responses.
 
 --- PER TYPE SETTINGS ---
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
@@ -512,44 +500,44 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
 
 ---
 
-## Addon Proxy (Stremio)
+## Proxy for Stremio
 
-ERDB can act as a proxy for any Stremio addon and always replace images
-(poster, background, logo) with the ones generated by ERDB.
+XRDB can act as a proxy for any Stremio addon and always replace images
+(poster, background, logo) with the ones generated by XRDB.
 
 ### Manifest Proxy (Stremio)
 
-Stremio does not use query params here. **You must generate the link from the ERDB site** using the "Addon Proxy" section:
+Stremio does not use query params here. **Generate the link from the XRDB site** using the "Proxy Manifest" section:
 
 ```text
-https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
+https://YOUR_XRDB_HOST/proxy/{config}/manifest.json
 ```
 
 `{config}` is created automatically by the site based on the inserted parameters.
 
 ### Direct Query Proxy Mode (Advanced)
 
-For scripts, testing, or non generated integrations, ERDB also exposes a direct manifest rewrite route:
+For scripts, testing, or non generated integrations, XRDB also exposes a direct manifest route:
 
 ```text
-https://YOUR_ERDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...&fanartKey=...
+https://YOUR_XRDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...&fanartKey=...
 ```
 
 The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The encoded `/proxy/{config}/manifest.json` form is still the normal Stremio install URL.
 
 ### Notes
-- The proxy rewrites `meta.poster`, `meta.background`, and `meta.logo` to ERDB URLs.
+- The proxy routes `meta.poster`, `meta.background`, and `meta.logo` through XRDB URLs.
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` is required.
 - `mdblistKey` is required for MDBList backed ratings and broad fallback coverage.
-- `fanartKey` is optional and is recommended when you use fanart sources. When it is missing, ERDB can fall back to the server key if one exists.
-- For shared/public ERDB instances, start with the Public Fast preset above before enabling long rating lists or Torrentio stream badges.
+- `fanartKey` is optional and is recommended when you use fanart sources. When it is missing, XRDB can fall back to the server key if one exists.
+- For shared/public XRDB instances, start with the Public Fast preset above before enabling long rating lists or Torrentio stream badges.
 - Optional proxy metadata translation can localize `meta.name` / `meta.description` and episode text.
 - `translateMetaMode=fill-missing` is the safe default: keep good addon text and only backfill blanks or placeholders.
-- `translateMetaMode=prefer-upstream` keeps any upstream text that is present, even placeholders like `N/A`.
-- `translateMetaMode=prefer-requested-language` replaces upstream text only when TMDB has an exact translation for the requested language; anime native fallback can still fill missing fields.
+- `translateMetaMode=prefer-source` keeps any source addon text that is present, even placeholders like `N/A`.
+- `translateMetaMode=prefer-requested-language` replaces source addon text only when TMDB has an exact translation for the requested language; anime native fallback can still fill missing fields.
 - `translateMetaMode=prefer-tmdb` prefers TMDB text whenever it is available.
-- When `debugMetaTranslation=true`, the proxy adds an `_erdbMetaTranslation` object to returned metas so you can inspect field provenance.
+- When `debugMetaTranslation=true`, the proxy adds an `_xrdbMetaTranslation` object to returned metas so you can inspect field provenance.
 
 ### Metadata Translation Guide
 
@@ -559,7 +547,7 @@ Metadata translation only changes text in the proxied addon metadata:
 - descriptions / overviews
 - episode titles and descriptions
 
-It does **not** change how artwork is rendered. Posters, backdrops, and logos still follow the normal ERDB image settings.
+It does **not** change how artwork is rendered. Posters, backdrops, and logos still follow the normal XRDB image settings.
 
 #### Recommended Starting Setup
 
@@ -567,7 +555,7 @@ If you just want a sensible default, use this:
 
 | Setting | Recommended Value | Why |
 |---------|-------------------|-----|
-| Language (`lang`) | Your actual viewing language, such as `en`, `it`, `fr`, or `fr-BE` | This tells ERDB which language to look for when translating text. |
+| Language (`lang`) | Your actual viewing language, such as `en`, `it`, `fr`, or `fr-BE` | This tells XRDB which language to look for when translating text. |
 | Translate metadata in the proxy (`translateMeta`) | On | Turns on metadata translation for the proxy. |
 | Merge mode (`translateMetaMode`) | `fill-missing` | Best default for most people. It fixes empty, blank, or placeholder text without overwriting good text from the addon. |
 | Attach debug provenance (`debugMetaTranslation`) | Off | Keep this off unless you are testing or troubleshooting. |
@@ -578,9 +566,9 @@ If you only want one recommendation: use `fill-missing`. It is the safest option
 
 | Setting | What It Does | How To Use It | Recommended For |
 |---------|--------------|---------------|-----------------|
-| Language (`lang`) | Chooses the language ERDB tries to use for translated metadata. | Set this to the language you actually want to read in Stremio. If you want wording for a specific region, use a regional code like `en-GB` or `fr-BE` instead of just `en` or `fr`. | Anyone using metadata translation. |
-| Translate metadata in the proxy (`translateMeta`) | Turns metadata translation on or off for the proxy. | Enable it if you want ERDB to improve titles, descriptions, and episode text coming from another addon. Leave it off if you want to preserve the addon text exactly as it arrives. | Most users should turn it on. |
-| Merge mode (`translateMetaMode`) | Controls how careful or aggressive ERDB should be when deciding whether to replace addon text. | Pick the mode based on whether you want to preserve existing addon wording, prefer exact localized text, or prefer TMDB as the main source. | See the merge mode table below. |
+| Language (`lang`) | Chooses the language XRDB tries to use for translated metadata. | Set this to the language you actually want to read in Stremio. If you want wording for a specific region, use a regional code like `en-GB` or `fr-BE` instead of just `en` or `fr`. | Anyone using metadata translation. |
+| Translate metadata in the proxy (`translateMeta`) | Turns metadata translation on or off for the proxy. | Enable it if you want XRDB to improve titles, descriptions, and episode text coming from another addon. Leave it off if you want to preserve the addon text exactly as it arrives. | Most users should turn it on. |
+| Merge mode (`translateMetaMode`) | Controls how careful or aggressive XRDB should be when deciding whether to replace addon text. | Pick the mode based on whether you want to preserve existing addon wording, prefer exact localized text, or prefer TMDB as the main source. | See the merge mode table below. |
 | Attach debug provenance (`debugMetaTranslation`) | Adds a debug object to each proxied item showing where the final text came from. | Use it when checking whether text came from the addon itself, TMDB, AniList, or Kitsu. Turn it back off for normal use. | Testing, debugging, and comparing behavior. |
 
 #### Merge Mode Guide
@@ -588,9 +576,9 @@ If you only want one recommendation: use `fill-missing`. It is the safest option
 | Mode | What It Feels Like | Best When | Less Ideal When |
 |------|--------------------|-----------|-----------------|
 | `fill-missing` | Conservative and practical. Keeps good addon text, but replaces blanks, empty fields, and obvious placeholders like `N/A`. | You want the safest behavior for general use. | You want TMDB wording to win even when the addon already has decent text. |
-| `prefer-upstream` | Very conservative. If the addon already sent text, ERDB keeps it. | You trust the original addon and only want help when a field is truly absent. | The addon often sends weak placeholders like `N/A`, `unknown`, or `tbd`, because this mode keeps them. |
-| `prefer-requested-language` | Puts language matching first. ERDB replaces existing text only when it finds an exact match for your requested language, then still fills gaps when needed. | You want stronger localization without replacing text with the wrong regional variant. | You want the most aggressive TMDB based behavior, or you do not care about exact language matching. |
-| `prefer-tmdb` | Most opinionated. If TMDB has text, ERDB usually uses it. | You want one consistent source and prefer TMDB wording over addon wording. | You like the addon's custom descriptions, naming, or editorial style. |
+| `prefer-source` | Very conservative. If the addon already sent text, XRDB keeps it. | You trust the source addon and only want help when a field is truly absent. | The addon often sends weak placeholders like `N/A`, `unknown`, or `tbd`, because this mode keeps them. |
+| `prefer-requested-language` | Puts language matching first. XRDB replaces existing text only when it finds an exact match for your requested language, then still fills gaps when needed. | You want stronger localization without replacing text with the wrong regional variant. | You want the most aggressive TMDB based behavior, or you do not care about exact language matching. |
+| `prefer-tmdb` | Most opinionated. If TMDB has text, XRDB usually uses it. | You want one consistent source and prefer TMDB wording over addon wording. | You like the addon's custom descriptions, naming, or editorial style. |
 
 Example: if you request `fr-BE`, `prefer-requested-language` will not treat `fr-FR` as the same thing when deciding whether to replace existing text.
 
@@ -599,7 +587,7 @@ Example: if you request `fr-BE`, `prefer-requested-language` will not treat `fr-
 | If You Want... | Use This Mode | Why |
 |----------------|---------------|-----|
 | The safest overall default | `fill-missing` | It improves bad metadata without unnecessarily replacing good text. |
-| To keep the source addon mostly untouched | `prefer-upstream` | ERDB only fills fields that are actually missing. |
+| To keep the source addon mostly untouched | `prefer-source` | XRDB only fills fields that are actually missing. |
 | Better localization with strict language matching | `prefer-requested-language` | It only replaces text when the requested language is a real match, which helps avoid awkward regional substitutions. |
 | TMDB wording whenever possible | `prefer-tmdb` | It gives you the most consistent TMDB based result. |
 
@@ -607,19 +595,19 @@ Example: if you request `fr-BE`, `prefer-requested-language` will not treat `fr-
 
 - For most users: turn on metadata translation and leave Merge mode on `fill-missing`
 - For people who mainly care about exact localized wording: `prefer-requested-language`
-- For people who trust the addon more than TMDB: `prefer-upstream`
+- For people who trust the source addon more than TMDB: `prefer-source`
 - For people who want TMDB to be the main voice everywhere: `prefer-tmdb`
 
-Anime gets extra fallback help when possible. If TMDB is missing good text, ERDB can still use anime mapping plus AniList or Kitsu data to fill gaps.
+Anime gets extra fallback help when possible. If TMDB is missing good text, XRDB can still use anime mapping plus AniList or Kitsu data to fill gaps.
 
 ### Metadata Translation In Action
 
 These screenshots were regenerated from the local March 27, 2026 codebase using deterministic proxy fixtures.
 
-To make each merge mode visible on demand, a local fixture addon returned controlled upstream metadata for three real IDs:
+To make each merge mode visible on demand, a local fixture addon returned controlled source addon metadata for three real IDs:
 
 1. `tt0133093` (`The Matrix`) with placeholder movie text (`N/A`, blank overview)
-2. `tt0944947` (`Game of Thrones`) with good top level upstream text plus mixed episode text
+2. `tt0944947` (`Game of Thrones`) with good top level source addon text plus mixed episode text
 3. `mal:16498` (`Attack on Titan`) with blank anime text so TMDB and anime fallback behavior are both observable
 
 The fixture environment also mocked the TMDB, anime mapping, AniList, and Kitsu lookups needed for those cases so the screenshots stay reproducible and do not expose live API keys in the captured output.
@@ -632,7 +620,7 @@ Fill Missing in French (France) replaces placeholder movie fields with TMDB Fren
 
 ![Fill missing movie example in French](docs/images/metadata-translation/proxy-translation-fill-missing-movie-fr.png)
 
-Prefer Requested Language in French (Belgium) preserves good upstream series text when TMDB does not have an exact regional match, while still filling missing episode fields.
+Prefer Requested Language in French (Belgium) preserves good source addon series text when TMDB does not have an exact regional match, while still filling missing episode fields.
 
 ![Prefer requested language show example in French Belgium](docs/images/metadata-translation/proxy-translation-prefer-language-show-fr-be.png)
 
@@ -644,101 +632,108 @@ Production validation for this feature covered French (France), French (Belgium)
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
+Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
 
 ### Proxy & Security
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ERDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
-| `ERDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
-| `ERDB_BIND_HOST` | `0.0.0.0` | Docker only helper variable that maps to the container `HOSTNAME` bind address for standalone Next.js |
-| `PREVIEW_INTERNAL_ORIGIN` | `http://127.0.0.1:3000` | Internal fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
-| `ERDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
-| `ERDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
-| `ERDB_TMDB_API_BASE_URL` | `https://api.themoviedb.org/3` | Optional TMDB API base URL override used by image rendering and proxy translation |
-| `ERDB_ANILIST_GRAPHQL_URL` | `https://graphql.anilist.co` | Optional AniList GraphQL endpoint override |
-| `ERDB_ANIME_MAPPING_BASE_URL` | `https://animemapping.stremio.dpdns.org` | Optional anime mapping service base URL override used by image rendering and proxy translation |
-| `ERDB_KITSU_API_BASE_URL` | `https://kitsu.io/api/edge` | Optional Kitsu API base URL override used by image rendering and proxy translation |
-| `ERDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
-| `ERDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
-| `SIMKL_CLIENT_ID` | (empty) | Optional SIMKL client id used for direct `simkl` ratings (also `ERDB_SIMKL_CLIENT_ID`) |
-| `ERDB_SIMKL_APP_NAME` | `erdb` | Simkl app name sent in required `app-name` query parameter |
-| `ERDB_SIMKL_APP_VERSION` | `1.0` | Simkl app version sent in required `app-version` query parameter |
-| `ERDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
-| `ERDB_JIKAN_API_BASE_URL` | `https://api.jikan.moe/v4` | Optional Jikan API base URL override for unauthenticated MAL fallback |
-| `ERDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
+| `XRDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
+| `XRDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
+| `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Preview fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
+| `XRDB_PORT` | `3000` | Host port used by `local-compose.yaml` |
+| `XRDB_DATA_DIR` | `./data` | Host path mounted to `/app/data` by `local-compose.yaml` |
+| `DOCKER_DATA_DIR` | `./data` | Root host data path used by `compose.yaml`, which mounts `${DOCKER_DATA_DIR}/xrdb` into `/app/data` |
+| `DOCKER_NETWORK` | `aio_default` | Docker network name used by `compose.yaml` |
+| `DOCKER_NETWORK_EXTERNAL` | `true` | Marks `DOCKER_NETWORK` as an external network for the VPS stack file |
+| `XRDB_HOSTNAME` | required for `compose.yaml` | Host rule value used by the Traefik labels |
+| `XRDB_TRAEFIK_ENTRYPOINTS` | `websecure` | Traefik entrypoints label value |
+| `XRDB_TRAEFIK_CERTRESOLVER` | `letsencrypt` | Traefik certresolver label value |
+| `XRDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
+| `XRDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
+| `XRDB_TMDB_API_BASE_URL` | `https://api.themoviedb.org/3` | Optional TMDB API base URL override used by image rendering and proxy translation |
+| `XRDB_ANILIST_GRAPHQL_URL` | `https://graphql.anilist.co` | Optional AniList GraphQL endpoint override |
+| `XRDB_ANIME_MAPPING_BASE_URL` | `https://animemapping.stremio.dpdns.org` | Optional anime mapping service base URL override used by image rendering and proxy translation |
+| `XRDB_KITSU_API_BASE_URL` | `https://kitsu.io/api/edge` | Optional Kitsu API base URL override used by image rendering and proxy translation |
+| `XRDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
+| `XRDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
+| `SIMKL_CLIENT_ID` | (empty) | Optional SIMKL client id used for direct `simkl` ratings (also `XRDB_SIMKL_CLIENT_ID`) |
+| `XRDB_SIMKL_APP_NAME` | `xrdb` | Simkl app name sent in required `app-name` query parameter |
+| `XRDB_SIMKL_APP_VERSION` | `1.0` | Simkl app version sent in required `app-version` query parameter |
+| `XRDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
+| `XRDB_JIKAN_API_BASE_URL` | `https://api.jikan.moe/v4` | Optional Jikan API base URL override for unauthenticated MAL fallback |
+| `XRDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
 
 ### Cache TTLs
 
-When these vars are unset, ERDB uses the runtime defaults shown below. The
-bundled `docker compose` setup now defers to those in-app defaults instead of
+When these vars are unset, XRDB uses the runtime defaults shown below. The
+bundled `docker compose` setup now defers to those app defaults instead of
 hardcoding separate cache TTL values.
 
 | Variable | Default | Min | Max | Description |
 |----------|---------|-----|-----|-------------|
-| `ERDB_TMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | TMDB metadata |
-| `ERDB_MDBLIST_CACHE_TTL_MS` | 3 days | 10 min | 30 days | MDBList ratings |
-| `ERDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
-| `ERDB_SIMKL_CACHE_TTL_MS` | 3 days | 10 min | 30 days | SIMKL ratings |
-| `ERDB_SIMKL_ID_CACHE_TTL_MS` | 30 days | 10 min | 30 days | Simkl id resolution cache |
-| `ERDB_SIMKL_ID_EMPTY_CACHE_TTL_MS` | 1 day | 10 min | 30 days | Simkl empty id lookup cache |
-| `ERDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
-| `ERDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
-| `ERDB_IMDB_DATASET_CACHE_TTL_MS` | 7 days | 1 hour | 365 days | Local IMDb dataset |
-| `ERDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Extended cache for old media |
-| `ERDB_MDBLIST_OLD_MOVIE_AGE_DAYS` | 365 | 30 | 3,650 | Age threshold for "old media" logic |
-| `ERDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS` | 1 day | 30 sec | 7 days | Cooldown after MDBList rate limit |
+| `XRDB_TMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | TMDB metadata |
+| `XRDB_MDBLIST_CACHE_TTL_MS` | 3 days | 10 min | 30 days | MDBList ratings |
+| `XRDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
+| `XRDB_SIMKL_CACHE_TTL_MS` | 3 days | 10 min | 30 days | SIMKL ratings |
+| `XRDB_SIMKL_ID_CACHE_TTL_MS` | 30 days | 10 min | 30 days | Simkl id resolution cache |
+| `XRDB_SIMKL_ID_EMPTY_CACHE_TTL_MS` | 1 day | 10 min | 30 days | Simkl empty id lookup cache |
+| `XRDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
+| `XRDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
+| `XRDB_IMDB_DATASET_CACHE_TTL_MS` | 7 days | 1 hour | 365 days | Local IMDb dataset |
+| `XRDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Extended cache for old media |
+| `XRDB_MDBLIST_OLD_MOVIE_AGE_DAYS` | 365 | 30 | 3,650 | Age threshold for "old media" logic |
+| `XRDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS` | 1 day | 30 sec | 7 days | Cooldown after MDBList rate limit |
 
 ### IMDb Dataset Sync
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ERDB_IMDB_DATASET_AUTO_DOWNLOAD` | `true` | Automatically download the IMDb ratings dataset when it is missing or stale |
-| `ERDB_IMDB_DATASET_AUTO_IMPORT` | `true` | Automatically import downloaded IMDb ratings into the local SQLite cache |
-| `ERDB_IMDB_RATINGS_DATASET_PATH` | `./data/imdb/title.ratings.tsv.gz` | Local path for the IMDb ratings dataset |
-| `ERDB_IMDB_DATASET_REFRESH_MS` | `259200000` | Refresh interval for the IMDb dataset sync job |
-| `ERDB_IMDB_DATASET_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide whether a refresh is due |
-| `ERDB_IMDB_DATASET_BASE_URL` | `https://datasets.imdbws.com` | Base URL used for ratings dataset downloads |
-| `ERDB_IMDB_RATINGS_DATASET_URL` | `https://datasets.imdbws.com/title.ratings.tsv.gz` | Override URL for the IMDb ratings dataset |
-| `ERDB_IMDB_DATASET_IMPORT_BATCH` | `5000` | Batch size used during SQLite imports |
-| `ERDB_IMDB_DATASET_IMPORT_PROGRESS` | `0` | Optional persisted import progress marker for resumable imports |
-| `ERDB_IMDB_DATASET_LOG` | `false` | Enable verbose IMDb dataset sync logging |
+| `XRDB_IMDB_DATASET_AUTO_DOWNLOAD` | `true` | Automatically download the IMDb ratings dataset when it is missing or stale |
+| `XRDB_IMDB_DATASET_AUTO_IMPORT` | `true` | Automatically import downloaded IMDb ratings into the local SQLite cache |
+| `XRDB_IMDB_RATINGS_DATASET_PATH` | `./data/imdb/title.ratings.tsv.gz` | Local path for the IMDb ratings dataset |
+| `XRDB_IMDB_DATASET_REFRESH_MS` | `259200000` | Refresh interval for the IMDb dataset sync job |
+| `XRDB_IMDB_DATASET_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide whether a refresh is due |
+| `XRDB_IMDB_DATASET_BASE_URL` | `https://datasets.imdbws.com` | Base URL used for ratings dataset downloads |
+| `XRDB_IMDB_RATINGS_DATASET_URL` | `https://datasets.imdbws.com/title.ratings.tsv.gz` | Override URL for the IMDb ratings dataset |
+| `XRDB_IMDB_DATASET_IMPORT_BATCH` | `5000` | Batch size used during SQLite imports |
+| `XRDB_IMDB_DATASET_IMPORT_PROGRESS` | `0` | Optional persisted import progress marker for resumable imports |
+| `XRDB_IMDB_DATASET_LOG` | `false` | Enable verbose IMDb dataset sync logging |
 
 ### Torrentio
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ERDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL |
-| `ERDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of upstream rate limiting. |
-| `ERDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
+| `XRDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL |
+| `XRDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of source rate limiting. |
+| `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
 
 > **Note:** Torrentio requests use `HTTP_PROXY` / `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set.
 
 ### Sharp Rendering (advanced)
 
-When the Sharp env vars are unset, ERDB currently applies conservative
-in-app defaults instead of deferring to Sharp's own library defaults:
+When the Sharp env vars are unset, XRDB currently applies conservative
+app defaults instead of deferring to Sharp's own library defaults:
 concurrency `2`, cache memory `128 MB`, cache items `100`, and cache files `200`.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ERDB_SHARP_CONCURRENCY` | `2` | Max Sharp threads |
-| `ERDB_SHARP_CACHE_MEMORY_MB` | `128` | Memory (MB) for Sharp internal cache |
-| `ERDB_SHARP_CACHE_ITEMS` | `100` | Max cached items |
-| `ERDB_SHARP_CACHE_FILES` | `200` | Max cached files/handles |
+| `XRDB_SHARP_CONCURRENCY` | `2` | Max Sharp threads |
+| `XRDB_SHARP_CACHE_MEMORY_MB` | `128` | Memory (MB) for the Sharp cache |
+| `XRDB_SHARP_CACHE_ITEMS` | `100` | Max cached items |
+| `XRDB_SHARP_CACHE_FILES` | `200` | Max cached files/handles |
 
 ## Live Demo Cards
 
 <table>
   <tr>
-    <td><strong>Live Configurator Workspace</strong><br>The current configurator and preview workspace running on `erdb.ibbylabs.dev`.</td>
-    <td><strong>Live Addon Proxy Workspace</strong><br>The current proxy panel and export flow running on `erdb.ibbylabs.dev`.</td>
+    <td><strong>Live Configurator Workspace</strong><br>The current configurator and preview workspace running on `xrdb.ibbylabs.dev`.</td>
+    <td><strong>Live Proxy Workspace</strong><br>The current proxy panel and export flow running on `xrdb.ibbylabs.dev`.</td>
   </tr>
   <tr>
-    <td><a href="https://erdb.ibbylabs.dev/#preview"><img src="docs/images/demo-videos/configurator-live-demo.png" alt="Open the live ERDB configurator workspace" width="420"></a></td>
-    <td><a href="https://erdb.ibbylabs.dev/#proxy"><img src="docs/images/demo-videos/addon-proxy-live-demo.png" alt="Open the live ERDB addon proxy workspace" width="304"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/#preview"><img src="docs/images/demo-videos/configurator-live-demo.png" alt="Open the live XRDB configurator workspace" width="420"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/#proxy"><img src="docs/images/demo-videos/addon-proxy-live-demo.png" alt="Open the live XRDB proxy workspace" width="304"></a></td>
   </tr>
 </table>
 
-© 2026 ERDB Project
+© 2026 XRDB Project

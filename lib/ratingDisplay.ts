@@ -1,4 +1,4 @@
-import type { RatingPreference } from './ratingPreferences';
+import type { RatingPreference } from './ratingProviderCatalog';
 
 export type RatingValueMode = 'native' | 'normalized' | 'normalized100';
 

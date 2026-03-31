@@ -18,11 +18,11 @@ const RENDER_NEXT_PORT = Number.parseInt(process.env.DOC_RENDER_PORT || '3216', 
 const FIXTURE_NEXT_PORT = Number.parseInt(process.env.DOC_METADATA_FIXTURE_PORT || '3217', 10);
 const CAPTURE_DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-const tmdbKey = process.env.ERDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
-const mdblistKey = process.env.ERDB_README_PREVIEW_MDBLIST_KEY || process.env.MDBLIST_KEY || '';
+const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
+const mdblistKey = process.env.XRDB_README_PREVIEW_MDBLIST_KEY || process.env.MDBLIST_KEY || '';
 
 if (!tmdbKey) {
-  throw new Error('Missing TMDB key. Set TMDB_KEY or ERDB_README_PREVIEW_TMDB_KEY in your shell, .env, or .env.local before running.');
+  throw new Error('Missing TMDB key. Set TMDB_KEY or XRDB_README_PREVIEW_TMDB_KEY in your shell, .env, or .env.local before running.');
 }
 
 const ensureDir = async (targetPath) => {
@@ -650,10 +650,10 @@ const buildMovieMetadataExcerpt = (payload) => ({
     type: payload?.meta?.type,
     title: payload?.meta?.title,
     overview: payload?.meta?.overview,
-    _erdbMetaTranslation: {
-      requestedLanguage: payload?.meta?._erdbMetaTranslation?.requestedLanguage ?? null,
-      mode: payload?.meta?._erdbMetaTranslation?.mode ?? null,
-      fields: payload?.meta?._erdbMetaTranslation?.fields ?? null,
+    _xrdbMetaTranslation: {
+      requestedLanguage: payload?.meta?._xrdbMetaTranslation?.requestedLanguage ?? null,
+      mode: payload?.meta?._xrdbMetaTranslation?.mode ?? null,
+      fields: payload?.meta?._xrdbMetaTranslation?.fields ?? null,
     },
   },
 });
@@ -669,10 +669,10 @@ const buildShowMetadataExcerpt = (payload) => {
       type: payload?.meta?.type,
       name: payload?.meta?.name,
       description: payload?.meta?.description,
-      _erdbMetaTranslation: {
-        requestedLanguage: payload?.meta?._erdbMetaTranslation?.requestedLanguage ?? null,
-        mode: payload?.meta?._erdbMetaTranslation?.mode ?? null,
-        fields: payload?.meta?._erdbMetaTranslation?.fields ?? null,
+      _xrdbMetaTranslation: {
+        requestedLanguage: payload?.meta?._xrdbMetaTranslation?.requestedLanguage ?? null,
+        mode: payload?.meta?._xrdbMetaTranslation?.mode ?? null,
+        fields: payload?.meta?._xrdbMetaTranslation?.fields ?? null,
       },
     },
     episodePreserved: preservedEpisode
@@ -681,9 +681,9 @@ const buildShowMetadataExcerpt = (payload) => {
           episode: preservedEpisode.episode,
           title: preservedEpisode.title,
           description: preservedEpisode.description,
-          _erdbMetaTranslation: {
-            requestedLanguage: preservedEpisode?._erdbMetaTranslation?.requestedLanguage ?? null,
-            fields: preservedEpisode?._erdbMetaTranslation?.fields ?? null,
+          _xrdbMetaTranslation: {
+            requestedLanguage: preservedEpisode?._xrdbMetaTranslation?.requestedLanguage ?? null,
+            fields: preservedEpisode?._xrdbMetaTranslation?.fields ?? null,
           },
         }
       : null,
@@ -693,9 +693,9 @@ const buildShowMetadataExcerpt = (payload) => {
           episode: filledEpisode.episode,
           title: filledEpisode.title,
           description: filledEpisode.description,
-          _erdbMetaTranslation: {
-            requestedLanguage: filledEpisode?._erdbMetaTranslation?.requestedLanguage ?? null,
-            fields: filledEpisode?._erdbMetaTranslation?.fields ?? null,
+          _xrdbMetaTranslation: {
+            requestedLanguage: filledEpisode?._xrdbMetaTranslation?.requestedLanguage ?? null,
+            fields: filledEpisode?._xrdbMetaTranslation?.fields ?? null,
           },
         }
       : null,
@@ -708,11 +708,11 @@ const buildAnimeMetadataExcerpt = (payload) => ({
     type: payload?.meta?.type,
     name: payload?.meta?.name,
     description: payload?.meta?.description,
-    _erdbMetaTranslation: {
-      requestedLanguage: payload?.meta?._erdbMetaTranslation?.requestedLanguage ?? null,
-      mode: payload?.meta?._erdbMetaTranslation?.mode ?? null,
-      animeFallback: payload?.meta?._erdbMetaTranslation?.animeFallback ?? null,
-      fields: payload?.meta?._erdbMetaTranslation?.fields ?? null,
+    _xrdbMetaTranslation: {
+      requestedLanguage: payload?.meta?._xrdbMetaTranslation?.requestedLanguage ?? null,
+      mode: payload?.meta?._xrdbMetaTranslation?.mode ?? null,
+      animeFallback: payload?.meta?._xrdbMetaTranslation?.animeFallback ?? null,
+      fields: payload?.meta?._xrdbMetaTranslation?.fields ?? null,
     },
   },
 });
@@ -756,11 +756,11 @@ const generateMetadataExamples = async () => {
   const nextServer = await startNextDevServer({
     port: FIXTURE_NEXT_PORT,
     env: {
-      ERDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
-      ERDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
-      ERDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
-      ERDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
-      ERDB_ANILIST_GRAPHQL_URL: `http://127.0.0.1:${mockPort}/anilist`,
+      XRDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
+      XRDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
+      XRDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
+      XRDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
+      XRDB_ANILIST_GRAPHQL_URL: `http://127.0.0.1:${mockPort}/anilist`,
     },
   });
 

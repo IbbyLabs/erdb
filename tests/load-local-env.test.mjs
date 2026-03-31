@@ -7,7 +7,7 @@ import path from 'node:path';
 import { loadLocalEnv } from '../scripts/load-local-env.mjs';
 
 test('loadLocalEnv layers .env.local over .env without overwriting existing env vars', async () => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'erdb-load-local-env-'));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'xrdb-load-local-env-'));
 
   try {
     await fs.writeFile(
@@ -38,7 +38,7 @@ test('loadLocalEnv layers .env.local over .env without overwriting existing env 
 });
 
 test('loadLocalEnv skips missing env files', async () => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'erdb-load-local-env-empty-'));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'xrdb-load-local-env-empty-'));
 
   try {
     const env = {};

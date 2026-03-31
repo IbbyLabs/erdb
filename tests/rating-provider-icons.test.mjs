@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import sharp from 'sharp';
 
-import { RATING_PROVIDER_OPTIONS } from '../lib/ratingPreferences.ts';
+import { RATING_PROVIDER_OPTIONS } from '../lib/ratingProviderCatalog.ts';
 import { METACRITIC_LOGO_DATA_URI, TRAKT_LOGO_DATA_URI } from '../lib/ratingProviderBrandAssets.ts';
 import { resolveRatingProviderBadgeAppearance } from '../lib/ratingProviderIcons.ts';
 
