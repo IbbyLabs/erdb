@@ -22,6 +22,7 @@ import {
   DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
   type RatingProviderAppearanceOverrides,
 } from './badgeCustomization.ts';
+import { resolveXrdbProviderIconScalePercent } from './xrdbBadgeAppearanceDefaults.ts';
 import { buildEditorialRatingOverlaySvg, type EditorialRatingOverlaySpec } from './editorialRatingOverlay.ts';
 import { getEditorialEyebrowText } from './imageRouteDisplayPrefs.ts';
 import type { GenreBadgeFamilyMeta, GenreBadgeFamilyId } from './genreBadge.ts';
@@ -211,7 +212,10 @@ export const resolveImageRouteDisplayState = (input: {
       accentColor: providerAppearance?.accentColor || appearance.accentColor,
       iconCornerRadius: 'iconCornerRadius' in meta ? meta.iconCornerRadius : undefined,
       iconScalePercent:
-        providerAppearance?.iconScalePercent || DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+        providerAppearance?.iconScalePercent ??
+        (useLogoBadgeLayout
+          ? resolveXrdbProviderIconScalePercent(provider)
+          : DEFAULT_PROVIDER_ICON_SCALE_PERCENT),
       stackedLineVisible:
         providerAppearance?.stackedLineVisible === false ? false : undefined,
       stackedLineWidthPercent: providerAppearance?.stackedLineWidthPercent,

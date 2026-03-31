@@ -79,3 +79,65 @@ test('image route display state keeps direct rating badges for standard backdrop
     ['tomatoes', 'imdb'],
   );
 });
+
+test('image route display state applies XRDB provider icon tuning defaults', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    imageType: 'logo',
+    ratingPresentation: 'standard',
+    effectiveRatingPreferences: ['tmdb', 'mdblist', 'imdb', 'simkl'],
+    providerRatings: new Map([
+      ['tmdb', '7.1'],
+      ['mdblist', '78'],
+      ['imdb', '7.4'],
+      ['simkl', '74'],
+    ]),
+    genreBadge: null,
+  });
+
+  const iconScaleByKey = new Map(
+    state.displayRatingBadges.map((badge) => [badge.key, badge.iconScalePercent]),
+  );
+
+  assert.equal(iconScaleByKey.get('tmdb'), 108);
+  assert.equal(iconScaleByKey.get('mdblist'), 108);
+  assert.equal(iconScaleByKey.get('imdb'), 106);
+  assert.equal(iconScaleByKey.get('simkl'), 88);
+});
+
+test('image route display state leaves non logo badge icon scale at the standard default', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    ratingPresentation: 'standard',
+    effectiveRatingPreferences: ['tmdb', 'imdb'],
+    providerRatings: new Map([
+      ['tmdb', '7.1'],
+      ['imdb', '7.4'],
+    ]),
+    genreBadge: null,
+  });
+
+  const iconScaleByKey = new Map(
+    state.displayRatingBadges.map((badge) => [badge.key, badge.iconScalePercent]),
+  );
+
+  assert.equal(iconScaleByKey.get('tmdb'), 100);
+  assert.equal(iconScaleByKey.get('imdb'), 100);
+});
+
+test('image route display state keeps explicit XRDB provider overrides over default icon tuning', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    imageType: 'logo',
+    ratingPresentation: 'standard',
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.4']]),
+    providerAppearanceOverrides: {
+      imdb: { iconScalePercent: 132 },
+    },
+    genreBadge: null,
+  });
+
+  assert.equal(state.displayRatingBadges[0]?.iconScalePercent, 132);
+});

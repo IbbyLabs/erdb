@@ -140,6 +140,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.fanartClientKeyHash || '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v7',
+    'v8',
   ].join('|');
 };
