@@ -17,13 +17,22 @@ import { COMMIT_PAGE_SIZE, type RecentCommit } from '@/lib/recentCommits';
 const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
 
 export function BrandLockup({ compact = false }: { compact?: boolean }) {
+  const accentIndex = BRAND_FULL_NAME.indexOf('X');
+  const eyebrowLead = accentIndex >= 0 ? BRAND_FULL_NAME.slice(0, accentIndex) : BRAND_FULL_NAME;
+  const eyebrowAccent = accentIndex >= 0 ? BRAND_FULL_NAME.slice(accentIndex, accentIndex + 1) : '';
+  const eyebrowTail = accentIndex >= 0 ? BRAND_FULL_NAME.slice(accentIndex + 1) : '';
+
   return (
     <Link href="/" className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
       <span className="site-brand-badge" aria-hidden="true">
         <Image src="/favicon.png" alt="" className="site-brand-logo" width={38} height={38} priority />
       </span>
       <span className="site-brand-copy">
-        <span className="site-brand-eyebrow">{BRAND_FULL_NAME}</span>
+        <span className="site-brand-eyebrow" aria-label={BRAND_FULL_NAME}>
+          <span>{eyebrowLead}</span>
+          {eyebrowAccent ? <span className="site-brand-eyebrow-accent">{eyebrowAccent}</span> : null}
+          <span>{eyebrowTail}</span>
+        </span>
         <span className="site-brand-name">{BRAND_NAME}</span>
       </span>
     </Link>

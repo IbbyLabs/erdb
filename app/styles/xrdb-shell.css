@@ -362,7 +362,25 @@
 	min-width: 0;
 }
 
-.site-brand-eyebrow,
+.site-brand-eyebrow {
+	margin: 0;
+	display: inline-flex;
+	align-items: flex-end;
+	gap: 0.02em;
+	font-size: 0.72rem;
+	line-height: 1.05;
+	font-weight: 700;
+	letter-spacing: 0.13em;
+	color: color-mix(in srgb, var(--brand-muted) 78%, var(--brand-ink) 22%);
+}
+
+.site-brand-eyebrow-accent {
+	font-size: 1.26em;
+	line-height: 0.88;
+	font-weight: 800;
+	color: color-mix(in srgb, var(--brand-ink) 90%, white 10%);
+}
+
 .site-section-eyebrow {
 	margin: 0;
 	font-size: 0.68rem;
@@ -382,8 +400,8 @@
 }
 
 .xrdb-chrome .site-brand-eyebrow {
-	font-size: calc(0.68rem - 0.03rem * var(--scroll-compact-progress));
-	letter-spacing: calc(0.2em - 0.03em * var(--scroll-compact-progress));
+	font-size: calc(0.72rem - 0.04rem * var(--scroll-compact-progress));
+	letter-spacing: calc(0.13em - 0.02em * var(--scroll-compact-progress));
 	transition: font-size 0.24s ease, letter-spacing 0.24s ease;
 }
 
