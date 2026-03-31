@@ -756,7 +756,7 @@ const generateMetadataExamples = async () => {
   const nextServer = await startNextDevServer({
     port: FIXTURE_NEXT_PORT,
     env: {
-      XRDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
+      XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS: 'true',
       XRDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
       XRDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
       XRDB_KITSU_API_BASE_URL: `http://127.0.0.1:${mockPort}/kitsu`,
