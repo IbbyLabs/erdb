@@ -161,6 +161,62 @@
 
 <a id="v2-48-1"></a>
 
+<a id="v3-0-0"></a>
+
+## [v3.0.0] - 31/03/2026
+
+### Added
+* emphasize X in the XRDB wordmark
+  
+  Update the main XRDB lockup so the X in eXtended Ratings DataBase stands out more clearly.
+  
+  • split the long form name around the X in the site chrome
+  • style the X as the visual anchor of the wordmark
+  • keep the rest of the lockup compact across header states
+* add provider badge icon defaults
+  
+  Tune the default badge icon sizing for the main XRDB provider set.
+  
+  • add local defaults for TMDB, MDBList, IMDb, and SIMKL badge icons
+  • preserve explicit provider appearance overrides
+  • refresh the render seed so cached images pick up the updated badge look
+* add catalog tuning and readable locale labels
+  
+  Expand XRDB proxy configuration with clearer catalog controls and locale labels.
+  
+  • add readable regional language labels in the configurator
+  • add catalog naming, visibility, and search controls for generated proxy manifests
+  • refresh render seed inputs when MDBList or SIMKL state changes
+  • carry the new proxy rules through workspace serialization and manifest generation
+
+### Fixed
+* allow local proxy fixtures during asset refresh
+  
+  Use the existing private source test flag during local doc asset generation so proxy metadata examples can read the mock manifest server.
+  
+  • correct the private source test env var name used by the docs refresh script
+  • refresh the generated metadata translation and comparison board assets after the fix
+  • keep the release asset flow working for local version bumps
+
+### Other Changes
+* reorganize app structure and deployment files
+  
+  Reorganize XRDB into a clearer application and deployment layout.
+  
+  • split the product into home, configurator, and docs routes
+  • move rendering, proxy, and workspace runtime into dedicated XRDB modules while keeping entry paths minimal
+  • standardize Docker and compose files for stack and local deployment paths
+  • move the environment template to the repo root and refresh project docs to match
+* sync upstream changes
+* point users to the active XRDB repo
+  
+  Mark this repository as archived across the README, website, metadata, and package links.
+  
+  • add a shared archive notice that points people to IbbyLabs/XRDB
+  • update the public GitHub links to the active XRDB repository
+  • align the home page, configurator, docs, footer, and metadata with the archive handoff
+  • keep the old repository positioned as a read only reference while the active project moves to XRDB
+
 ## [v2.48.1] - 30/03/2026
 
 ### Fixed
